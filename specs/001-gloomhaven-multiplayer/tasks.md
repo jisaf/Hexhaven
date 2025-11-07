@@ -26,9 +26,9 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project directory structure (backend/, frontend/, shared/, docs/)
-- [ ] T002 Initialize backend NestJS project with TypeScript, Prisma, Socket.io dependencies in backend/
-- [ ] T003 Initialize frontend React project with Vite, PixiJS, react-i18next dependencies in frontend/
+- [X] T001 Create project directory structure (backend/, frontend/, shared/, docs/)
+- [X] T002 Initialize backend NestJS project with TypeScript, Prisma, Socket.io dependencies in backend/
+- [X] T003 Initialize frontend React project with Vite, PixiJS, react-i18next dependencies in frontend/
 - [ ] T004 [P] Configure ESLint and Prettier for backend in backend/.eslintrc.json
 - [ ] T005 [P] Configure ESLint and Prettier for frontend in frontend/.eslintrc.json
 - [ ] T006 [P] Setup TypeScript strict mode for backend in backend/tsconfig.json
