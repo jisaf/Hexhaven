@@ -1,0 +1,710 @@
+# WebSocket Event Contracts
+# Feature: 001-hexhaven-multiplayer
+# Protocol: Socket.io events for real-time game communication
+
+# This file defines all WebSocket events for client-server communication.
+# Each event includes payload schema, validation rules, and response patterns.
+
+---
+version: "1.0"
+namespace: /game/:roomCode
+
+# =============================================================================
+# CLIENT → SERVER EVENTS
+# =============================================================================
+
+client_events:
+
+  # ---------------------------------------------------------------------------
+  # Connection & Room Management
+  # ---------------------------------------------------------------------------
+
+  join_room:
+    description: Player attempts to join a game room
+    payload:
+      type: object
+      required: [uuid, nickname, roomCode]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          description: Anonymous player UUID from localStorage
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9 ]+$'
+          description: Player display name
+        roomCode:
+          type: string
+          length: 6
+          pattern: '^[A-Z0-9]{6}$'
+          description: 6-character room code
+    response_events:
+      - room_joined (success)
+      - join_error (failure)
+    validation:
+      - Room must exist and have status 'lobby'
+      - Room must have < 4 players
+      - Player must not already be in another room
+      - Nickname must be unique within room
+    example:
+      uuid: "550e8400-e29b-41d4-a716-446655440000"
+      nickname: "PlayerOne"
+      roomCode: "A3X9K2"
+
+  leave_room:
+    description: Player voluntarily leaves the game room
+    payload:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+    response_events:
+      - room_left (success)
+      - player_disconnected (broadcast to other players)
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+
+  # ---------------------------------------------------------------------------
+  # Character Selection
+  # ---------------------------------------------------------------------------
+
+  select_character:
+    description: Player selects a character class in the lobby
+    payload:
+      type: object
+      required: [playerId, characterClass]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        characterClass:
+          type: string
+          enum: [Brute, Tinkerer, Spellweaver, Scoundrel, Cragheart, Mindthief]
+    response_events:
+      - character_selected (broadcast to all players in room)
+      - select_error (failure)
+    validation:
+      - Room status must be 'lobby'
+      - Character class must not already be selected by another player
+      - Player must be in the room
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      characterClass: "Brute"
+
+  # ---------------------------------------------------------------------------
+  # Game Control
+  # ---------------------------------------------------------------------------
+
+  start_game:
+    description: Host starts the game (transitions lobby → active)
+    payload:
+      type: object
+      required: [playerId, scenarioId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: Must be the room host
+        scenarioId:
+          type: string
+          format: uuid
+    response_events:
+      - game_started (broadcast to all players)
+      - start_error (failure)
+    validation:
+      - Player must be room host
+      - Room status must be 'lobby'
+      - All players must have selected characters
+      - Room must have 2-4 players
+      - Scenario must exist
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      scenarioId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+  # ---------------------------------------------------------------------------
+  # Card Selection Phase
+  # ---------------------------------------------------------------------------
+
+  select_cards:
+    description: Player selects two ability cards for the round
+    payload:
+      type: object
+      required: [playerId, topCardId, bottomCardId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        topCardId:
+          type: string
+          format: uuid
+          description: Card for top action
+        bottomCardId:
+          type: string
+          format: uuid
+          description: Card for bottom action
+    response_events:
+      - cards_selected (acknowledge to player)
+      - all_cards_selected (broadcast when all players ready)
+      - turn_order_determined (broadcast with initiative order)
+    validation:
+      - Cards must be in player's hand
+      - Cards must belong to player's character
+      - topCardId and bottomCardId must be different
+      - Game status must be 'active'
+      - Must be card selection phase
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      topCardId: "8f14e45f-ceea-467a-9af3-5c9c1e9e7d5a"
+      bottomCardId: "3b241101-e2bb-4255-8caf-4136c566a962"
+
+  # ---------------------------------------------------------------------------
+  # Player Actions (Turn Phase)
+  # ---------------------------------------------------------------------------
+
+  move_character:
+    description: Player moves their character to a hex
+    payload:
+      type: object
+      required: [playerId, targetHex]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        targetHex:
+          type: object
+          required: [q, r]
+          properties:
+            q:
+              type: integer
+            r:
+              type: integer
+    response_events:
+      - character_moved (broadcast to all players)
+      - move_error (failure)
+    validation:
+      - Must be player's turn
+      - Target hex must be within movement range
+      - Target hex must not be occupied (unless flying over)
+      - Target hex must not be obstacle terrain (unless flying)
+      - Player must have movement action available
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      targetHex: { q: 3, r: 5 }
+
+  attack_target:
+    description: Player attacks a monster or enemy
+    payload:
+      type: object
+      required: [playerId, targetId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        targetId:
+          type: string
+          format: uuid
+          description: Monster or enemy character ID
+    response_events:
+      - attack_resolved (broadcast with damage, modifiers, effects)
+      - attack_error (failure)
+    validation:
+      - Must be player's turn
+      - Target must be within attack range
+      - Player must have attack action available
+      - Player must not be disarmed
+      - Target must be alive
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      targetId: "9b42f94c-4c5e-4b3e-8f7a-2f5e6c8d9a3b"
+
+  end_turn:
+    description: Player ends their turn
+    payload:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+    response_events:
+      - turn_ended (broadcast)
+      - next_turn_started (broadcast with next player/monster)
+      - round_ended (broadcast if all entities finished)
+    validation:
+      - Must be player's turn
+      - Player must have completed required actions (move/attack)
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+
+  # ---------------------------------------------------------------------------
+  # Rest Actions
+  # ---------------------------------------------------------------------------
+
+  short_rest:
+    description: Player performs a short rest (recover discards, lose 1 random)
+    payload:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+    response_events:
+      - rest_completed (broadcast)
+    validation:
+      - Must be player's turn
+      - Must be card selection phase
+      - Player must have cards in discard pile
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+
+  long_rest:
+    description: Player performs a long rest (recover discards, lose 1 chosen, heal 2)
+    payload:
+      type: object
+      required: [playerId, cardToLose]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        cardToLose:
+          type: string
+          format: uuid
+          description: Card to permanently lose
+    response_events:
+      - rest_completed (broadcast)
+    validation:
+      - Must be player's turn
+      - Must be card selection phase
+      - Card must be in discard pile
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      cardToLose: "8f14e45f-ceea-467a-9af3-5c9c1e9e7d5a"
+
+# =============================================================================
+# SERVER → CLIENT EVENTS
+# =============================================================================
+
+server_events:
+
+  # ---------------------------------------------------------------------------
+  # Connection & Room Management
+  # ---------------------------------------------------------------------------
+
+  room_joined:
+    description: Sent to player when successfully joined room
+    payload:
+      type: object
+      required: [player, room, otherPlayers]
+      properties:
+        player:
+          $ref: '#/schemas/Player'
+        room:
+          $ref: '#/schemas/GameRoom'
+        otherPlayers:
+          type: array
+          items:
+            $ref: '#/schemas/Player'
+    example:
+      player:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        nickname: "PlayerOne"
+        isHost: true
+      room:
+        id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        roomCode: "A3X9K2"
+        status: "lobby"
+      otherPlayers: []
+
+  join_error:
+    description: Sent when join attempt fails
+    payload:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [ROOM_NOT_FOUND, ROOM_FULL, DUPLICATE_NICKNAME, ALREADY_IN_ROOM]
+        message:
+          type: string
+    example:
+      error: "ROOM_FULL"
+      message: "This game room is full (4/4 players)"
+
+  player_joined:
+    description: Broadcast to all players when new player joins
+    payload:
+      $ref: '#/schemas/Player'
+    example:
+      id: "660f9410-f39c-52e5-b827-557766551111"
+      nickname: "PlayerTwo"
+      isHost: false
+      connectionStatus: "connected"
+
+  player_disconnected:
+    description: Broadcast when player disconnects
+    payload:
+      type: object
+      required: [playerId, nickname, willReconnect]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        willReconnect:
+          type: boolean
+          description: True if reconnection expected (timeout window)
+    example:
+      playerId: "660f9410-f39c-52e5-b827-557766551111"
+      nickname: "PlayerTwo"
+      willReconnect: true
+
+  player_reconnected:
+    description: Broadcast when player reconnects
+    payload:
+      type: object
+      required: [playerId, nickname]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+    example:
+      playerId: "660f9410-f39c-52e5-b827-557766551111"
+      nickname: "PlayerTwo"
+
+  # ---------------------------------------------------------------------------
+  # Character Selection
+  # ---------------------------------------------------------------------------
+
+  character_selected:
+    description: Broadcast when player selects character
+    payload:
+      type: object
+      required: [playerId, characterClass]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+        characterClass:
+          type: string
+    example:
+      playerId: "550e8400-e29b-41d4-a716-446655440000"
+      characterClass: "Brute"
+
+  # ---------------------------------------------------------------------------
+  # Game State Updates
+  # ---------------------------------------------------------------------------
+
+  game_started:
+    description: Broadcast when game transitions from lobby to active
+    payload:
+      type: object
+      required: [room, scenario, characters, initialBoard]
+      properties:
+        room:
+          $ref: '#/schemas/GameRoom'
+        scenario:
+          $ref: '#/schemas/Scenario'
+        characters:
+          type: array
+          items:
+            $ref: '#/schemas/Character'
+        initialBoard:
+          type: array
+          items:
+            $ref: '#/schemas/HexTile'
+    example:
+      room:
+        id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        roomCode: "A3X9K2"
+        status: "active"
+        currentRound: 1
+      scenario:
+        name: "Black Barrow"
+        difficulty: 1
+      characters: [...]
+      initialBoard: [...]
+
+  game_state_update:
+    description: Broadcast partial state updates (delta) for real-time sync
+    payload:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          enum: [CHARACTER_MOVED, MONSTER_MOVED, HEALTH_CHANGED, CONDITION_APPLIED, ELEMENT_CHANGED]
+        data:
+          type: object
+          description: Type-specific delta data
+    example:
+      type: "CHARACTER_MOVED"
+      data:
+        characterId: "550e8400-e29b-41d4-a716-446655440000"
+        fromHex: { q: 2, r: 3 }
+        toHex: { q: 3, r: 4 }
+
+  turn_order_determined:
+    description: Broadcast when all players select cards and initiative is calculated
+    payload:
+      type: object
+      required: [turnOrder, round]
+      properties:
+        turnOrder:
+          type: array
+          items:
+            type: object
+            properties:
+              entityId:
+                type: string
+                format: uuid
+              entityType:
+                type: string
+                enum: [player, monster]
+              initiative:
+                type: integer
+        round:
+          type: integer
+    example:
+      turnOrder:
+        - { entityId: "monster-1", entityType: "monster", initiative: 12 }
+        - { entityId: "550e8400-e29b-41d4-a716-446655440000", entityType: "player", initiative: 25 }
+        - { entityId: "660f9410-f39c-52e5-b827-557766551111", entityType: "player", initiative: 47 }
+      round: 1
+
+  next_turn_started:
+    description: Broadcast when turn advances to next entity
+    payload:
+      type: object
+      required: [entityId, entityType, turnIndex]
+      properties:
+        entityId:
+          type: string
+          format: uuid
+        entityType:
+          type: string
+          enum: [player, monster]
+        turnIndex:
+          type: integer
+    example:
+      entityId: "550e8400-e29b-41d4-a716-446655440000"
+      entityType: "player"
+      turnIndex: 1
+
+  # ---------------------------------------------------------------------------
+  # Combat & Actions
+  # ---------------------------------------------------------------------------
+
+  character_moved:
+    description: Broadcast when character moves
+    payload:
+      type: object
+      required: [characterId, fromHex, toHex]
+      properties:
+        characterId:
+          type: string
+          format: uuid
+        fromHex:
+          $ref: '#/schemas/Axial'
+        toHex:
+          $ref: '#/schemas/Axial'
+    example:
+      characterId: "550e8400-e29b-41d4-a716-446655440000"
+      fromHex: { q: 2, r: 3 }
+      toHex: { q: 3, r: 4 }
+
+  attack_resolved:
+    description: Broadcast when attack completes with results
+    payload:
+      type: object
+      required: [attackerId, targetId, damage, modifier, effects]
+      properties:
+        attackerId:
+          type: string
+          format: uuid
+        targetId:
+          type: string
+          format: uuid
+        damage:
+          type: integer
+        modifier:
+          type: string
+          description: Attack modifier drawn (e.g., "+1", "x2", "null")
+        effects:
+          type: array
+          items:
+            type: string
+          description: Additional effects applied (e.g., "Stun", "Push 2")
+    example:
+      attackerId: "550e8400-e29b-41d4-a716-446655440000"
+      targetId: "9b42f94c-4c5e-4b3e-8f7a-2f5e6c8d9a3b"
+      damage: 5
+      modifier: "+1"
+      effects: ["Stun"]
+
+  monster_activated:
+    description: Broadcast when monster AI takes its turn
+    payload:
+      type: object
+      required: [monsterId, actions]
+      properties:
+        monsterId:
+          type: string
+          format: uuid
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [move, attack]
+              target:
+                type: string
+                format: uuid
+                description: For attacks, the target entity ID
+              path:
+                type: array
+                items:
+                  $ref: '#/schemas/Axial'
+                description: For moves, the path taken
+    example:
+      monsterId: "9b42f94c-4c5e-4b3e-8f7a-2f5e6c8d9a3b"
+      actions:
+        - type: "move"
+          path: [{ q: 5, r: 6 }, { q: 4, r: 6 }, { q: 3, r: 6 }]
+        - type: "attack"
+          target: "550e8400-e29b-41d4-a716-446655440000"
+
+  scenario_completed:
+    description: Broadcast when scenario victory/defeat condition met
+    payload:
+      type: object
+      required: [result, reason]
+      properties:
+        result:
+          type: string
+          enum: [victory, defeat]
+        reason:
+          type: string
+          description: Human-readable completion reason
+    example:
+      result: "victory"
+      reason: "All monsters defeated"
+
+# =============================================================================
+# SHARED SCHEMAS
+# =============================================================================
+
+schemas:
+
+  Player:
+    type: object
+    required: [id, uuid, nickname, isHost, connectionStatus]
+    properties:
+      id:
+        type: string
+        format: uuid
+      uuid:
+        type: string
+        format: uuid
+      nickname:
+        type: string
+      isHost:
+        type: boolean
+      connectionStatus:
+        type: string
+        enum: [connected, disconnected, reconnecting]
+      characterClass:
+        type: string
+        nullable: true
+
+  GameRoom:
+    type: object
+    required: [id, roomCode, status]
+    properties:
+      id:
+        type: string
+        format: uuid
+      roomCode:
+        type: string
+      status:
+        type: string
+        enum: [lobby, active, completed, abandoned]
+      currentRound:
+        type: integer
+        nullable: true
+      scenarioId:
+        type: string
+        format: uuid
+        nullable: true
+
+  Character:
+    type: object
+    required: [id, playerId, classType, health, maxHealth, currentHex]
+    properties:
+      id:
+        type: string
+        format: uuid
+      playerId:
+        type: string
+        format: uuid
+      classType:
+        type: string
+      health:
+        type: integer
+      maxHealth:
+        type: integer
+      currentHex:
+        $ref: '#/schemas/Axial'
+        nullable: true
+      conditions:
+        type: array
+        items:
+          type: string
+
+  Scenario:
+    type: object
+    required: [id, name, difficulty]
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      difficulty:
+        type: integer
+
+  HexTile:
+    type: object
+    required: [coordinates, terrain]
+    properties:
+      coordinates:
+        $ref: '#/schemas/Axial'
+      terrain:
+        type: string
+        enum: [normal, obstacle, difficult, hazardous]
+      occupiedBy:
+        type: string
+        format: uuid
+        nullable: true
+      hasLoot:
+        type: boolean
+      hasTreasure:
+        type: boolean
+
+  Axial:
+    type: object
+    required: [q, r]
+    properties:
+      q:
+        type: integer
+      r:
+        type: integer

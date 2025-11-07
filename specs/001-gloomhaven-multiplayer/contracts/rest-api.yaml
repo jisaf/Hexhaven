@@ -1,0 +1,522 @@
+openapi: 3.0.3
+info:
+  title: Hexhaven Multiplayer API
+  description: REST API for game room management and non-real-time operations
+  version: 1.0.0
+  contact:
+    name: HexHaven Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://api.hexhaven.example.com/api
+    description: Production (placeholder)
+
+tags:
+  - name: rooms
+    description: Game room creation and management
+  - name: scenarios
+    description: Scenario browsing and selection
+  - name: health
+    description: Service health and monitoring
+
+paths:
+
+  # ===========================================================================
+  # Game Rooms
+  # ===========================================================================
+
+  /rooms:
+    post:
+      summary: Create a new game room
+      tags: [rooms]
+      description: |
+        Creates a new game room with a unique 6-character code.
+        The player who creates the room becomes the host.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uuid, nickname]
+              properties:
+                uuid:
+                  type: string
+                  format: uuid
+                  description: Anonymous player UUID from localStorage
+                nickname:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  pattern: '^[a-zA-Z0-9 ]+$'
+                  description: Player display name
+            examples:
+              create_room:
+                value:
+                  uuid: "550e8400-e29b-41d4-a716-446655440000"
+                  nickname: "PlayerOne"
+      responses:
+        '201':
+          description: Room created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [room, player]
+                properties:
+                  room:
+                    $ref: '#/components/schemas/GameRoom'
+                  player:
+                    $ref: '#/components/schemas/Player'
+              examples:
+                success:
+                  value:
+                    room:
+                      id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                      roomCode: "A3X9K2"
+                      status: "lobby"
+                      createdAt: "2025-11-07T12:00:00Z"
+                      expiresAt: "2025-11-08T12:00:00Z"
+                    player:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      nickname: "PlayerOne"
+                      isHost: true
+                      connectionStatus: "connected"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Player already in another room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                already_in_room:
+                  value:
+                    error: "ALREADY_IN_ROOM"
+                    message: "You are already in an active game room"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /rooms/{roomCode}:
+    get:
+      summary: Get game room details
+      tags: [rooms]
+      description: Retrieves current state of a game room by its code
+      parameters:
+        - name: roomCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z0-9]{6}$'
+          description: 6-character room code
+          example: "A3X9K2"
+      responses:
+        '200':
+          description: Room found
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [room, players]
+                properties:
+                  room:
+                    $ref: '#/components/schemas/GameRoom'
+                  players:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Player'
+              examples:
+                lobby_room:
+                  value:
+                    room:
+                      id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                      roomCode: "A3X9K2"
+                      status: "lobby"
+                      createdAt: "2025-11-07T12:00:00Z"
+                      expiresAt: "2025-11-08T12:00:00Z"
+                    players:
+                      - id: "550e8400-e29b-41d4-a716-446655440000"
+                        nickname: "PlayerOne"
+                        isHost: true
+                        connectionStatus: "connected"
+        '404':
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                not_found:
+                  value:
+                    error: "ROOM_NOT_FOUND"
+                    message: "Game room with code A3X9K2 not found"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ===========================================================================
+  # Scenarios
+  # ===========================================================================
+
+  /scenarios:
+    get:
+      summary: List available scenarios
+      tags: [scenarios]
+      description: |
+        Retrieves all available scenarios for selection.
+        MVP includes 5 pre-built scenarios.
+      parameters:
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 7
+          description: Filter by difficulty level
+      responses:
+        '200':
+          description: Scenarios retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [scenarios]
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Scenario'
+              examples:
+                all_scenarios:
+                  value:
+                    scenarios:
+                      - id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                        name: "Black Barrow"
+                        difficulty: 1
+                        objectivePrimary: "Kill all enemies"
+                      - id: "8d0f7680-8536-51ef-a055-f18fc2f91bf8"
+                        name: "Crypt of Blood"
+                        difficulty: 2
+                        objectivePrimary: "Survive 6 rounds"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /scenarios/{scenarioId}:
+    get:
+      summary: Get scenario details
+      tags: [scenarios]
+      description: Retrieves full details of a specific scenario including map layout
+      parameters:
+        - name: scenarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Scenario UUID
+      responses:
+        '200':
+          description: Scenario found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioDetail'
+        '404':
+          description: Scenario not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ===========================================================================
+  # Health & Monitoring
+  # ===========================================================================
+
+  /health:
+    get:
+      summary: Health check endpoint
+      tags: [health]
+      description: Returns service health status for load balancers and monitoring
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    description: Server uptime in seconds
+                  version:
+                    type: string
+                    description: API version
+              examples:
+                healthy:
+                  value:
+                    status: "healthy"
+                    timestamp: "2025-11-07T12:00:00Z"
+                    uptime: 3600
+                    version: "1.0.0"
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [unhealthy]
+                  reason:
+                    type: string
+
+  /health/db:
+    get:
+      summary: Database health check
+      tags: [health]
+      description: Checks database connectivity and query performance
+      responses:
+        '200':
+          description: Database is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, latency]
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  latency:
+                    type: number
+                    description: Query latency in milliseconds
+        '503':
+          description: Database unavailable
+
+# =============================================================================
+# COMPONENTS
+# =============================================================================
+
+components:
+
+  schemas:
+
+    GameRoom:
+      type: object
+      required: [id, roomCode, status, createdAt, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique room identifier
+        roomCode:
+          type: string
+          pattern: '^[A-Z0-9]{6}$'
+          description: 6-character shareable room code
+        status:
+          type: string
+          enum: [lobby, active, completed, abandoned]
+          description: Current room lifecycle state
+        scenarioId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Selected scenario (null if not yet chosen)
+        currentRound:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Current game round (null if in lobby)
+        createdAt:
+          type: string
+          format: date-time
+          description: Room creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last state update timestamp
+        expiresAt:
+          type: string
+          format: date-time
+          description: Room expiration time (24 hours after creation)
+
+    Player:
+      type: object
+      required: [id, uuid, nickname, isHost, connectionStatus]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Player unique identifier
+        uuid:
+          type: string
+          format: uuid
+          description: Anonymous UUID from browser localStorage
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Player display name
+        isHost:
+          type: boolean
+          description: Whether player is room host
+        connectionStatus:
+          type: string
+          enum: [connected, disconnected, reconnecting]
+          description: Current connection state
+        characterClass:
+          type: string
+          enum: [Brute, Tinkerer, Spellweaver, Scoundrel, Cragheart, Mindthief]
+          nullable: true
+          description: Selected character class (null if not selected)
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+
+    Scenario:
+      type: object
+      required: [id, name, difficulty, objectivePrimary]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Scenario name
+        difficulty:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: Difficulty level (affects monster stats)
+        objectivePrimary:
+          type: string
+          description: Primary victory condition
+        objectiveSecondary:
+          type: string
+          nullable: true
+          description: Optional secondary objective
+
+    ScenarioDetail:
+      allOf:
+        - $ref: '#/components/schemas/Scenario'
+        - type: object
+          required: [mapLayout, monsterGroups]
+          properties:
+            mapLayout:
+              type: array
+              items:
+                $ref: '#/components/schemas/HexTile'
+              description: Hex tiles defining the board
+            monsterGroups:
+              type: array
+              items:
+                type: object
+                required: [type, count, spawnPoints, isElite]
+                properties:
+                  type:
+                    type: string
+                    description: Monster type name
+                  count:
+                    type: integer
+                    minimum: 1
+                  spawnPoints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Axial'
+                  isElite:
+                    type: boolean
+            treasures:
+              type: array
+              items:
+                $ref: '#/components/schemas/Axial'
+              nullable: true
+
+    HexTile:
+      type: object
+      required: [coordinates, terrain]
+      properties:
+        coordinates:
+          $ref: '#/components/schemas/Axial'
+        terrain:
+          type: string
+          enum: [normal, obstacle, difficult, hazardous]
+
+    Axial:
+      type: object
+      required: [q, r]
+      description: Axial hex coordinate system
+      properties:
+        q:
+          type: integer
+        r:
+          type: integer
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error context
+
+  responses:
+
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation_error:
+              value:
+                error: "VALIDATION_ERROR"
+                message: "Nickname must be 1-50 characters"
+                details:
+                  field: "nickname"
+                  constraint: "length"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            server_error:
+              value:
+                error: "INTERNAL_ERROR"
+                message: "An unexpected error occurred"
+
+  securitySchemes:
+    # Future: Add authentication once production email + magic link implemented
+    # For MVP, UUID-based anonymous auth via WebSocket connection
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token (production only, not used in MVP)
+
+# Note: MVP uses anonymous UUID-based auth via WebSocket.
+# REST endpoints are public for room creation/browsing.
+# Production will add JWT bearer tokens for authenticated endpoints.
