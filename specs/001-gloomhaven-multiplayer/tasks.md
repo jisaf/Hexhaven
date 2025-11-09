@@ -103,8 +103,8 @@
 - [X] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
 - [X] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
 - [X] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
-- [ ] T043 [P] [US1] Unit test: Room code generation (unique 6-char alphanumeric) in backend/tests/unit/room-service.test.ts
-- [ ] T044 [P] [US1] Unit test: Player validation (nickname unique within room) in backend/tests/unit/player-service.test.ts
+- [X] T043 [P] [US1] Unit test: Room code generation (unique 6-char alphanumeric) in backend/tests/unit/room-service.test.ts
+- [X] T044 [P] [US1] Unit test: Player validation (nickname unique within room) in backend/tests/unit/player-service.test.ts
 
 ### Backend Implementation for User Story 1
 
