@@ -108,9 +108,9 @@
 
 ### Backend Implementation for User Story 1
 
-- [ ] T045 [P] [US1] Create Player model in backend/src/models/player.model.ts
-- [ ] T046 [P] [US1] Create GameRoom model in backend/src/models/game-room.model.ts
-- [ ] T047 [P] [US1] Create Character model in backend/src/models/character.model.ts
+- [X] T045 [P] [US1] Create Player model in backend/src/models/player.model.ts
+- [X] T046 [P] [US1] Create GameRoom model in backend/src/models/game-room.model.ts
+- [X] T047 [P] [US1] Create Character model in backend/src/models/character.model.ts
 - [ ] T048 [US1] Implement RoomService with createRoom, joinRoom, getRoom methods in backend/src/services/room.service.ts
 - [ ] T049 [US1] Implement PlayerService with createPlayer, validateNickname methods in backend/src/services/player.service.ts
 - [ ] T050 [US1] Implement CharacterService with createCharacter, selectCharacter methods in backend/src/services/character.service.ts
