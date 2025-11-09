@@ -129,15 +129,69 @@ async function main() {
       objectiveSecondary: 'Collect treasure',
       mapLayout: [
         // Simple 5x5 hex grid for MVP
-        { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 1 }, terrain: 'obstacle', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 0, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: true },
-        { coordinates: { q: 1, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+        {
+          coordinates: { q: 0, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 0, r: 1 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 1 },
+          terrain: 'obstacle',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 1 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 0, r: 2 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: true,
+        },
+        {
+          coordinates: { q: 1, r: 2 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 2 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
       ],
       monsterGroups: [
         {
@@ -156,12 +210,48 @@ async function main() {
       difficulty: 2,
       objectivePrimary: 'Defeat the boss',
       mapLayout: [
-        { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 0 }, terrain: 'difficult', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+        {
+          coordinates: { q: 0, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 0 },
+          terrain: 'difficult',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 0, r: 1 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 1 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 1 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
       ],
       monsterGroups: [
         {
@@ -181,9 +271,27 @@ async function main() {
       difficulty: 3,
       objectivePrimary: 'Survive 5 rounds',
       mapLayout: [
-        { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 0 }, terrain: 'hazardous', occupiedBy: null, hasLoot: false, hasTreasure: false },
+        {
+          coordinates: { q: 0, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 0 },
+          terrain: 'hazardous',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
       ],
       monsterGroups: [
         {
@@ -202,14 +310,29 @@ async function main() {
       difficulty: 1,
       objectivePrimary: 'Kill all enemies',
       mapLayout: [
-        { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+        {
+          coordinates: { q: 0, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
       ],
       monsterGroups: [
         {
           type: 'Living Corpse',
           count: 2,
-          spawnPoints: [{ q: 0, r: 0 }, { q: 1, r: 0 }],
+          spawnPoints: [
+            { q: 0, r: 0 },
+            { q: 1, r: 0 },
+          ],
           isElite: false,
         },
       ],
@@ -220,9 +343,27 @@ async function main() {
       objectivePrimary: 'Reach the exit',
       objectiveSecondary: 'Defeat the elite guard',
       mapLayout: [
-        { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 1, r: 0 }, terrain: 'obstacle', occupiedBy: null, hasLoot: false, hasTreasure: false },
-        { coordinates: { q: 2, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+        {
+          coordinates: { q: 0, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 1, r: 0 },
+          terrain: 'obstacle',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
+        {
+          coordinates: { q: 2, r: 0 },
+          terrain: 'normal',
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        },
       ],
       monsterGroups: [
         {

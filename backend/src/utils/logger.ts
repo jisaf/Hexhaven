@@ -84,7 +84,12 @@ class Logger {
   /**
    * Log a message with a specific level
    */
-  private log(level: LogLevel, message: string, context: LogContext = {}, error?: Error): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    context: LogContext = {},
+    error?: Error,
+  ): void {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -148,7 +153,11 @@ class Logger {
   /**
    * Log error message
    */
-  error(message: string, contextOrError?: LogContext | Error, error?: Error): void {
+  error(
+    message: string,
+    contextOrError?: LogContext | Error,
+    error?: Error,
+  ): void {
     if (contextOrError instanceof Error) {
       this.log(LogLevel.ERROR, message, {}, contextOrError);
     } else {
@@ -179,6 +188,9 @@ export function createRoomLogger(roomCode: string): Logger {
 /**
  * Helper to create a logger with player context
  */
-export function createPlayerLogger(playerId: string, roomCode?: string): Logger {
+export function createPlayerLogger(
+  playerId: string,
+  roomCode?: string,
+): Logger {
   return logger.child({ playerId, roomCode });
 }

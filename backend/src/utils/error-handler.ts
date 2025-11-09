@@ -94,7 +94,10 @@ export interface ErrorResponse {
 /**
  * Convert error to user-friendly response
  */
-export function errorToResponse(error: Error | AppError, correlationId?: string): ErrorResponse {
+export function errorToResponse(
+  error: Error | AppError,
+  correlationId?: string,
+): ErrorResponse {
   const timestamp = new Date().toISOString();
 
   if (error instanceof AppError) {
@@ -125,7 +128,10 @@ export function errorToResponse(error: Error | AppError, correlationId?: string)
 /**
  * Log error with appropriate level
  */
-export function logError(error: Error | AppError, context?: Record<string, unknown>): void {
+export function logError(
+  error: Error | AppError,
+  context?: Record<string, unknown>,
+): void {
   if (error instanceof AppError) {
     if (error.isOperational) {
       // Operational errors (validation, not found, etc.) - log as warnings
@@ -155,12 +161,13 @@ export function logError(error: Error | AppError, context?: Record<string, unkno
 
 /**
  * Error handler middleware for Express
+ * Note: All 4 parameters are required by Express error handler signature
  */
 export function errorHandler(
   error: Error | AppError,
-  req: any,
-  res: any,
-  next: any,
+  req: { method: string; url: string },
+  res: { status: (code: number) => { json: (data: unknown) => void } },
+  ..._: unknown[]
 ): void {
   const correlationId = logger.getCorrelationId() || undefined;
 
@@ -179,16 +186,21 @@ export function errorHandler(
 /**
  * Async handler wrapper to catch promise rejections
  */
-export function asyncHandler<T extends (...args: any[]) => Promise<any>>(fn: T) {
-  return (req: any, res: any, next: any) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+export function asyncHandler<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+) {
+  return (req: any, res: any, next: (err?: Error) => void) => {
+    void Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
 
 /**
  * Helper to assert non-null values
  */
-export function assertExists<T>(value: T | null | undefined, errorMessage: string): asserts value is T {
+export function assertExists<T>(
+  value: T | null | undefined,
+  errorMessage: string,
+): asserts value is T {
   if (value === null || value === undefined) {
     throw new NotFoundError(errorMessage);
   }

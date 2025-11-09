@@ -66,12 +66,12 @@ export function hexDistance(a: AxialCoord, b: AxialCoord): number {
  * Directions for hex neighbors (flat-top orientation)
  */
 const HEX_DIRECTIONS: AxialCoord[] = [
-  { q: 1, r: 0 },   // East
-  { q: 1, r: -1 },  // Northeast
-  { q: 0, r: -1 },  // Northwest
-  { q: -1, r: 0 },  // West
-  { q: -1, r: 1 },  // Southwest
-  { q: 0, r: 1 },   // Southeast
+  { q: 1, r: 0 }, // East
+  { q: 1, r: -1 }, // Northeast
+  { q: 0, r: -1 }, // Northwest
+  { q: -1, r: 0 }, // West
+  { q: -1, r: 1 }, // Southwest
+  { q: 0, r: 1 }, // Southeast
 ];
 
 /**
@@ -85,7 +85,7 @@ function hexAdd(a: AxialCoord, b: AxialCoord): AxialCoord {
  * Get all six neighbors of a hex
  */
 export function hexNeighbors(hex: AxialCoord): AxialCoord[] {
-  return HEX_DIRECTIONS.map(dir => hexAdd(hex, dir));
+  return HEX_DIRECTIONS.map((dir) => hexAdd(hex, dir));
 }
 
 /**
@@ -181,7 +181,11 @@ export function hexRound(hex: { q: number; r: number }): AxialCoord {
 /**
  * Linear interpolation between two hexes
  */
-export function hexLerp(a: AxialCoord, b: AxialCoord, t: number): { q: number; r: number } {
+export function hexLerp(
+  a: AxialCoord,
+  b: AxialCoord,
+  t: number,
+): { q: number; r: number } {
   return {
     q: a.q * (1 - t) + b.q * t,
     r: a.r * (1 - t) + b.r * t,
@@ -206,7 +210,11 @@ export function hexLine(a: AxialCoord, b: AxialCoord): AxialCoord[] {
 /**
  * Check if a hex is within a given range of a center hex
  */
-export function hexInRange(hex: AxialCoord, center: AxialCoord, range: number): boolean {
+export function hexInRange(
+  hex: AxialCoord,
+  center: AxialCoord,
+  range: number,
+): boolean {
   return hexDistance(hex, center) <= range;
 }
 

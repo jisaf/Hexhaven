@@ -9,16 +9,10 @@ import {
   IsString,
   IsUUID,
   IsInt,
-  IsBoolean,
   IsEnum,
-  IsArray,
   IsOptional,
   MinLength,
   MaxLength,
-  Min,
-  Max,
-  ArrayMinSize,
-  ArrayMaxSize,
   ValidateNested,
   IsNotEmpty,
 } from 'class-validator';
@@ -75,7 +69,14 @@ export class CreateRoomDto {
  * Select character DTO
  */
 export class SelectCharacterDto {
-  @IsEnum(['Brute', 'Tinkerer', 'Spellweaver', 'Scoundrel', 'Cragheart', 'Mindthief'])
+  @IsEnum([
+    'Brute',
+    'Tinkerer',
+    'Spellweaver',
+    'Scoundrel',
+    'Cragheart',
+    'Mindthief',
+  ])
   @IsNotEmpty()
   characterClass!: string;
 }
@@ -150,7 +151,9 @@ export function validateMovement(
   // Check if target is within movement range
   const distance = hexDistance(currentHex, targetHex);
   if (distance > movementRange) {
-    errors.push(`Target hex is ${distance} steps away, but movement range is only ${movementRange}`);
+    errors.push(
+      `Target hex is ${distance} steps away, but movement range is only ${movementRange}`,
+    );
   }
 
   // Check if target is not an obstacle
@@ -184,7 +187,9 @@ export function validateAttack(
   // Check if target is within attack range
   const distance = hexDistance(attackerHex, targetHex);
   if (distance > attackRange) {
-    errors.push(`Target is ${distance} hexes away, but attack range is only ${attackRange}`);
+    errors.push(
+      `Target is ${distance} hexes away, but attack range is only ${attackRange}`,
+    );
   }
 
   return {
@@ -289,7 +294,7 @@ export function validateGameStart(
 function hexDistance(a: AxialCoordDto, b: AxialCoordDto): number {
   const dq = Math.abs(a.q - b.q);
   const dr = Math.abs(a.r - b.r);
-  const ds = Math.abs((-a.q - a.r) - (-b.q - b.r));
+  const ds = Math.abs(-a.q - a.r - (-b.q - b.r));
   return Math.max(dq, dr, ds);
 }
 

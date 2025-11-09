@@ -57,29 +57,29 @@
 
 ### Backend Core Services
 
-- [ ] T018 [P] Implement hex coordinate utilities (axialToCube, cubeDistance, hexRange, hexNeighbors) in backend/src/utils/hex-utils.ts
-- [ ] T019 [P] Implement structured logging service with correlation IDs in backend/src/utils/logger.ts
-- [ ] T020 [P] Implement validation decorators and DTOs using class-validator in backend/src/utils/validation.ts
-- [ ] T021 [P] Create error handling middleware with user-friendly messages in backend/src/utils/error-handler.ts
-- [ ] T022 [P] Create environment configuration module in backend/src/config/env.config.ts
+- [X] T018 [P] Implement hex coordinate utilities (axialToCube, cubeDistance, hexRange, hexNeighbors) in backend/src/utils/hex-utils.ts
+- [X] T019 [P] Implement structured logging service with correlation IDs in backend/src/utils/logger.ts
+- [X] T020 [P] Implement validation decorators and DTOs using class-validator in backend/src/utils/validation.ts
+- [X] T021 [P] Create error handling middleware with user-friendly messages in backend/src/utils/error-handler.ts
+- [X] T022 [P] Create environment configuration module in backend/src/config/env.config.ts
 
 ### Frontend Core Infrastructure
 
-- [ ] T023 [P] Setup react-i18next with English translation files in frontend/src/i18n/
-- [ ] T024 [P] Create WebSocket client service with Socket.io integration in frontend/src/services/websocket.service.ts
-- [ ] T025 [P] Create game state management hook (useGameState) in frontend/src/hooks/useGameState.ts
-- [ ] T026 [P] Create WebSocket connection hook (useWebSocket) in frontend/src/hooks/useWebSocket.ts
-- [ ] T027 [P] Setup PixiJS Application wrapper component in frontend/src/game/PixiApp.tsx
-- [ ] T028 [P] Implement responsive layout utilities for mobile-first design in frontend/src/utils/responsive.ts
-- [ ] T029 [P] Create touch gesture utilities (tap, long-press, pinch-zoom, pan) in frontend/src/utils/gestures.ts
+- [X] T023 [P] Setup react-i18next with English translation files in frontend/src/i18n/
+- [X] T024 [P] Create WebSocket client service with Socket.io integration in frontend/src/services/websocket.service.ts
+- [X] T025 [P] Create game state management hook (useGameState) in frontend/src/hooks/useGameState.ts
+- [X] T026 [P] Create WebSocket connection hook (useWebSocket) in frontend/src/hooks/useWebSocket.ts
+- [X] T027 [P] Setup PixiJS Application wrapper component in frontend/src/game/PixiApp.tsx
+- [X] T028 [P] Implement responsive layout utilities for mobile-first design in frontend/src/utils/responsive.ts
+- [X] T029 [P] Create touch gesture utilities (tap, long-press, pinch-zoom, pan) in frontend/src/utils/gestures.ts
 
 ### Testing Infrastructure
 
-- [ ] T030 [P] Setup Jest configuration for backend unit/integration tests in backend/jest.config.js
-- [ ] T031 [P] Setup Jest configuration for frontend unit tests in frontend/jest.config.js
-- [ ] T032 [P] Setup Playwright configuration for E2E tests in frontend/playwright.config.ts
-- [ ] T033 [P] Create test fixtures for game room creation in backend/tests/fixtures/game-room.fixture.ts
-- [ ] T034 [P] Create test fixtures for player creation in backend/tests/fixtures/player.fixture.ts
+- [X] T030 [P] Setup Jest configuration for backend unit/integration tests in backend/jest.config.js
+- [X] T031 [P] Setup Jest configuration for frontend unit tests in frontend/jest.config.js
+- [X] T032 [P] Setup Playwright configuration for E2E tests in frontend/playwright.config.ts
+- [X] T033 [P] Create test fixtures for game room creation in backend/tests/fixtures/game-room.fixture.ts
+- [X] T034 [P] Create test fixtures for player creation in backend/tests/fixtures/player.fixture.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

@@ -51,7 +51,8 @@ function loadConfig(): Config {
     env,
     port: parseInt(process.env.PORT || '3000', 10),
     database: {
-      url: process.env.DATABASE_URL || 'postgresql://localhost:5432/hexhaven_dev',
+      url:
+        process.env.DATABASE_URL || 'postgresql://localhost:5432/hexhaven_dev',
     },
     cors: {
       origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -59,15 +60,23 @@ function loadConfig(): Config {
     },
     session: {
       ttlHours: parseInt(process.env.SESSION_TTL_HOURS || '24', 10),
-      maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS || '100', 10),
+      maxConcurrentSessions: parseInt(
+        process.env.MAX_CONCURRENT_SESSIONS || '100',
+        10,
+      ),
     },
     game: {
       minPlayers: 2,
       maxPlayers: 4,
-      turnTimeoutSeconds: parseInt(process.env.TURN_TIMEOUT_SECONDS || '60', 10),
+      turnTimeoutSeconds: parseInt(
+        process.env.TURN_TIMEOUT_SECONDS || '60',
+        10,
+      ),
     },
     logging: {
-      level: process.env.LOG_LEVEL || (env === Environment.Production ? 'info' : 'debug'),
+      level:
+        process.env.LOG_LEVEL ||
+        (env === Environment.Production ? 'info' : 'debug'),
     },
   };
 
