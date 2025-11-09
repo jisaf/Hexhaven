@@ -95,11 +95,11 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T035 [P] [US1] E2E test: Create game room and receive room code in frontend/tests/e2e/us1-create-room.spec.ts
-- [ ] T036 [P] [US1] E2E test: Join game room with valid code in frontend/tests/e2e/us1-join-room.spec.ts
-- [ ] T037 [P] [US1] E2E test: Character selection and game start in frontend/tests/e2e/us1-start-game.spec.ts
-- [ ] T038 [P] [US1] E2E test: Character movement visible to both players in frontend/tests/e2e/us1-movement.spec.ts
-- [ ] T039 [P] [US1] Contract test: WebSocket join_room event in backend/tests/contract/join-room.test.ts
+- [X] T035 [P] [US1] E2E test: Create game room and receive room code in frontend/tests/e2e/us1-create-room.spec.ts
+- [X] T036 [P] [US1] E2E test: Join game room with valid code in frontend/tests/e2e/us1-join-room.spec.ts
+- [X] T037 [P] [US1] E2E test: Character selection and game start in frontend/tests/e2e/us1-start-game.spec.ts
+- [X] T038 [P] [US1] E2E test: Character movement visible to both players in frontend/tests/e2e/us1-movement.spec.ts
+- [X] T039 [P] [US1] Contract test: WebSocket join_room event in backend/tests/contract/join-room.test.ts
 - [ ] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
 - [ ] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
 - [ ] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
