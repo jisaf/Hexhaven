@@ -5,7 +5,7 @@
  * starting a game session.
  */
 
-import type { RoomStatus } from '../../../shared/types/entities';
+import { RoomStatus } from '../../../shared/types/entities';
 import type { Player } from './player.model';
 
 export interface GameRoomData {
@@ -87,7 +87,7 @@ export class GameRoom {
   }
 
   get isStartable(): boolean {
-    if (this._status !== 'lobby') return false;
+    if (this._status !== RoomStatus.LOBBY) return false;
     if (this._players.size < 2) return false;
 
     // All players must have selected characters
@@ -104,7 +104,7 @@ export class GameRoom {
       throw new Error('Room is full');
     }
 
-    if (this._status !== 'lobby') {
+    if (this._status !== RoomStatus.LOBBY) {
       throw new Error('Cannot join room - game already started');
     }
 
@@ -113,9 +113,7 @@ export class GameRoom {
     }
 
     // Check for duplicate nickname
-    const existingNicknames = this.players.map((p) =>
-      p.nickname.toLowerCase(),
-    );
+    const existingNicknames = this.players.map((p) => p.nickname.toLowerCase());
     if (existingNicknames.includes(player.nickname.toLowerCase())) {
       throw new Error('Nickname already taken in this room');
     }
@@ -145,7 +143,7 @@ export class GameRoom {
   }
 
   startGame(scenarioId: string): void {
-    if (this._status !== 'lobby') {
+    if (this._status !== RoomStatus.LOBBY) {
       throw new Error('Game has already started');
     }
 
@@ -153,7 +151,7 @@ export class GameRoom {
       throw new Error('All players must select characters before starting');
     }
 
-    this._status = 'active';
+    this._status = RoomStatus.ACTIVE;
     this._scenarioId = scenarioId;
     this._currentRound = 1;
     this._currentTurnIndex = 0;
@@ -161,16 +159,16 @@ export class GameRoom {
   }
 
   completeGame(): void {
-    if (this._status !== 'active') {
+    if (this._status !== RoomStatus.ACTIVE) {
       throw new Error('Cannot complete game - game is not active');
     }
 
-    this._status = 'completed';
+    this._status = RoomStatus.COMPLETED;
     this._updatedAt = new Date();
   }
 
   abandonGame(): void {
-    this._status = 'abandoned';
+    this._status = RoomStatus.ABANDONED;
     this._updatedAt = new Date();
   }
 
@@ -214,7 +212,7 @@ export class GameRoom {
     const room = new GameRoom({
       id: `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       roomCode,
-      status: 'lobby',
+      status: RoomStatus.LOBBY,
       scenarioId: null,
       maxPlayers: 4,
       currentRound: null,

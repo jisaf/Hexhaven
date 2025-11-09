@@ -131,6 +131,7 @@ export function PixiApp({
       window.addEventListener('resize', handleResize);
 
       // Store cleanup function
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (app as any)._cleanupResize = () => {
         window.removeEventListener('resize', handleResize);
       };
@@ -148,7 +149,9 @@ export function PixiApp({
     // Cleanup
     return () => {
       if (appRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((appRef.current as any)._cleanupResize) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (appRef.current as any)._cleanupResize();
         }
 

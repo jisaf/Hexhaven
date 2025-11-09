@@ -8,8 +8,8 @@
 import type {
   CharacterClass,
   AxialCoordinates,
-  Condition,
 } from '../../../shared/types/entities';
+import { Condition } from '../../../shared/types/entities';
 
 export interface CharacterStats {
   health: number;
@@ -99,15 +99,15 @@ export class Character {
   }
 
   get isImmobilized(): boolean {
-    return this._conditions.has('immobilize');
+    return this._conditions.has(Condition.IMMOBILIZE);
   }
 
   get isStunned(): boolean {
-    return this._conditions.has('stun');
+    return this._conditions.has(Condition.STUN);
   }
 
   get isDisarmed(): boolean {
-    return this._conditions.has('disarm');
+    return this._conditions.has(Condition.DISARM);
   }
 
   get createdAt(): Date {
@@ -145,7 +145,10 @@ export class Character {
       throw new Error('Heal amount must be positive');
     }
 
-    const actualHeal = Math.min(amount, this._stats.maxHealth - this._currentHealth);
+    const actualHeal = Math.min(
+      amount,
+      this._stats.maxHealth - this._currentHealth,
+    );
     this._currentHealth += actualHeal;
     this._updatedAt = new Date();
 

@@ -20,6 +20,7 @@ import type {
   ErrorPayload,
 } from '../../../shared/types/events';
 import type { AxialCoordinates } from '../../../shared/types/entities';
+import { CharacterClass } from '../../../shared/types/entities';
 
 describe('WebSocket Contract: move_character event', () => {
   let hostSocket: ClientSocket;
@@ -79,8 +80,8 @@ describe('WebSocket Contract: move_character event', () => {
 
     // Select characters after both joined
     setTimeout(() => {
-      hostSocket.emit('select_character', { characterClass: 'Brute' });
-      client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+      hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+      client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
       checkStep(); // For both character emissions
     }, 100);
 
@@ -169,7 +170,7 @@ describe('WebSocket Contract: move_character event', () => {
 
     hostSocket.on('error', (payload: ErrorPayload) => {
       expect(payload.code).toBe('INVALID_MOVEMENT');
-      expect(payload.message).toContain('obstacle' || 'blocked');
+      expect(payload.message.toLowerCase()).toMatch(/obstacle|blocked/);
       done();
     });
 
@@ -181,7 +182,7 @@ describe('WebSocket Contract: move_character event', () => {
     let tinkererPosition: AxialCoordinates;
 
     hostSocket.on('game_started', (payload: any) => {
-      const tinkerer = payload.characters.find((c: any) => c.characterClass === 'Tinkerer');
+      const tinkerer = payload.characters.find((c: any) => c.characterClass === CharacterClass.TINKERER);
       tinkererPosition = tinkerer.position;
 
       // Try to move Brute to Tinkerer's position
@@ -209,7 +210,7 @@ describe('WebSocket Contract: move_character event', () => {
     // Host tries to move Player 2's character
     hostSocket.on('error', (payload: ErrorPayload) => {
       expect(payload.code).toBe('NOT_YOUR_CHARACTER');
-      expect(payload.message).toContain('not your character' || 'cannot control');
+      expect(payload.message.toLowerCase()).toMatch(/not your character|cannot control/);
       done();
     });
 

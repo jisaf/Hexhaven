@@ -78,6 +78,7 @@ export function isTouchDevice(): boolean {
   return (
     'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (navigator as any).msMaxTouchPoints > 0
   );
 }
@@ -219,7 +220,7 @@ export function ensureTouchTargetSize(currentSize: number): number {
  * @param wait - Debounce delay in milliseconds (default: 150ms)
  * @returns Debounced function
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: never[]) => unknown>(
   func: T,
   wait: number = 150
 ): (...args: Parameters<T>) => void {

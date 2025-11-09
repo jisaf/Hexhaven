@@ -5,7 +5,10 @@
  * character selection, and room association.
  */
 
-import type { CharacterClass, ConnectionStatus } from '../../../shared/types/entities';
+import type {
+  CharacterClass,
+} from '../../../shared/types/entities';
+import { ConnectionStatus } from '../../../shared/types/entities';
 
 export interface PlayerData {
   id: string;
@@ -165,7 +168,7 @@ export class Player {
       roomId: null,
       characterClass: null,
       isHost: false,
-      connectionStatus: 'connected',
+      connectionStatus: ConnectionStatus.CONNECTED,
       isReady: false,
       lastSeenAt: now,
       createdAt: now,

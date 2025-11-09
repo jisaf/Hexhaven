@@ -129,14 +129,13 @@ test.describe('User Story 1: Character Movement', () => {
   });
 
   test('should prevent movement to occupied hexes', async ({ page, context }) => {
-    const { player2Page } = await setupGame(page, context);
+    await setupGame(page, context);
 
     // Get both character positions
     const bruteSprite = page.locator('[data-testid="character-sprite-Brute"]');
     const tinkererSprite = page.locator('[data-testid="character-sprite-Tinkerer"]');
 
-    const bruteBounds = await bruteSprite.boundingBox();
-    const tinkererBounds = await tinkererSprite.boundingBox();
+    await bruteSprite.boundingBox();
 
     // Tap Brute to select
     await bruteSprite.click();

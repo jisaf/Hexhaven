@@ -47,13 +47,14 @@ export function useGameState() {
   /**
    * Handle room joined event
    */
-  const handleRoomJoined = useCallback((data: { roomCode: string; players: any[] }) => {
+  const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[] }) => {
     setGameState((prev) => ({
       ...prev,
       room: {
         roomCode: data.roomCode,
         status: 'lobby',
-        players: data.players,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        players: data.players as any[],
       },
     }));
     setIsLoading(false);
@@ -62,13 +63,14 @@ export function useGameState() {
   /**
    * Handle player joined event
    */
-  const handlePlayerJoined = useCallback((data: { player: any }) => {
+  const handlePlayerJoined = useCallback((data: { player: unknown }) => {
     setGameState((prev) => ({
       ...prev,
       room: prev.room
         ? {
             ...prev.room,
-            players: [...prev.room.players, data.player],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            players: [...prev.room.players, data.player as any],
           }
         : null,
     }));
@@ -112,11 +114,12 @@ export function useGameState() {
   /**
    * Handle game started event
    */
-  const handleGameStarted = useCallback((data: { gameState: any }) => {
+  const handleGameStarted = useCallback((data: { gameState: unknown }) => {
+    const gameState = data.gameState as { turnOrder?: string[] };
     setGameState((prev) => ({
       ...prev,
       room: prev.room ? { ...prev.room, status: 'active' } : null,
-      turnOrder: data.gameState.turnOrder || [],
+      turnOrder: gameState.turnOrder || [],
       currentTurnIndex: 0,
       currentRound: 1,
     }));
@@ -149,10 +152,10 @@ export function useGameState() {
   /**
    * Handle game state update event
    */
-  const handleGameStateUpdate = useCallback((data: { gameState: any }) => {
+  const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
     setGameState((prev) => ({
       ...prev,
-      ...data.gameState,
+      ...(data.gameState as Partial<GameState>),
     }));
   }, []);
 

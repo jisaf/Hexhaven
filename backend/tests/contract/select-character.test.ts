@@ -17,7 +17,7 @@ import type {
   CharacterSelectedPayload,
   ErrorPayload,
 } from '../../../shared/types/events';
-import type { CharacterClass } from '../../../shared/types/entities';
+import { CharacterClass } from '../../../shared/types/entities';
 
 describe('WebSocket Contract: select_character event', () => {
   let clientSocket: ClientSocket;
@@ -88,7 +88,7 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should emit character_selected when selecting valid character', (done) => {
     const selectPayload: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     clientSocket.on('character_selected', (payload: CharacterSelectedPayload) => {
@@ -97,7 +97,7 @@ describe('WebSocket Contract: select_character event', () => {
       expect(payload).toHaveProperty('characterClass');
 
       // Verify payload values
-      expect(payload.characterClass).toBe('Brute');
+      expect(payload.characterClass).toBe(CharacterClass.BRUTE);
       expect(payload.playerId).toBe('player-1');
 
       done();
@@ -108,12 +108,12 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should broadcast character_selected to all players in room', (done) => {
     const selectPayload: SelectCharacterPayload = {
-      characterClass: 'Tinkerer',
+      characterClass: CharacterClass.TINKERER,
     };
 
     // Setup listener on client 2 for broadcast
     client2Socket.on('character_selected', (payload: CharacterSelectedPayload) => {
-      expect(payload.characterClass).toBe('Tinkerer');
+      expect(payload.characterClass).toBe(CharacterClass.TINKERER);
       expect(payload.playerId).toBe('player-1');
       done();
     });
@@ -124,7 +124,7 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should emit error when selecting already-selected character', (done) => {
     const brutePayload: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     // Client 1 selects Brute
@@ -159,12 +159,12 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should allow all 6 character classes to be selected', (done) => {
     const characters: CharacterClass[] = [
-      'Brute',
-      'Tinkerer',
-      'Spellweaver',
-      'Scoundrel',
-      'Cragheart',
-      'Mindthief',
+      CharacterClass.BRUTE,
+      CharacterClass.TINKERER,
+      CharacterClass.SPELLWEAVER,
+      CharacterClass.SCOUNDREL,
+      CharacterClass.CRAGHEART,
+      CharacterClass.MINDTHIEF,
     ];
 
     let selectedCount = 0;
@@ -186,11 +186,11 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should allow changing character selection', (done) => {
     const firstSelection: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     const secondSelection: SelectCharacterPayload = {
-      characterClass: 'Tinkerer',
+      characterClass: CharacterClass.TINKERER,
     };
 
     let selectionCount = 0;
@@ -200,11 +200,11 @@ describe('WebSocket Contract: select_character event', () => {
 
       if (selectionCount === 1) {
         // First selection confirmed, now change to Tinkerer
-        expect(payload.characterClass).toBe('Brute');
+        expect(payload.characterClass).toBe(CharacterClass.BRUTE);
         clientSocket.emit('select_character', secondSelection);
       } else if (selectionCount === 2) {
         // Second selection confirmed
-        expect(payload.characterClass).toBe('Tinkerer');
+        expect(payload.characterClass).toBe(CharacterClass.TINKERER);
         done();
       }
     });
@@ -223,7 +223,7 @@ describe('WebSocket Contract: select_character event', () => {
       done();
     });
 
-    newSocket.emit('select_character', { characterClass: 'Brute' });
+    newSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
   });
 
   it('should emit error for missing payload', (done) => {
@@ -238,11 +238,11 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should allow character reselection after another player deselects', (done) => {
     const brutePayload: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     const tinkererPayload: SelectCharacterPayload = {
-      characterClass: 'Tinkerer',
+      characterClass: CharacterClass.TINKERER,
     };
 
     let step = 0;
@@ -262,7 +262,7 @@ describe('WebSocket Contract: select_character event', () => {
     client2Socket.on('character_selected', (payload: CharacterSelectedPayload) => {
       if (payload.playerId === 'player-2') {
         // Client 2 successfully selected Brute (which was freed up)
-        expect(payload.characterClass).toBe('Brute');
+        expect(payload.characterClass).toBe(CharacterClass.BRUTE);
         done();
       }
     });
@@ -272,18 +272,18 @@ describe('WebSocket Contract: select_character event', () => {
 
   it('should maintain character selection when other players join', (done) => {
     const brutePayload: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     clientSocket.on('character_selected', () => {
       // Create new client that joins the room
       const client3Socket = io(serverUrl, { transports: ['websocket'] });
 
-      client3Socket.on('room_joined', (roomPayload) => {
+      client3Socket.on('room_joined', (roomPayload: any) => {
         // Verify existing player's character selection is in the room state
         const player1 = roomPayload.players.find((p: any) => p.id === 'player-1');
         expect(player1).toBeDefined();
-        expect(player1.characterClass).toBe('Brute');
+        expect(player1.characterClass).toBe(CharacterClass.BRUTE);
 
         client3Socket.disconnect();
         done();

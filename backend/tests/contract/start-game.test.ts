@@ -19,6 +19,7 @@ import type {
   GameStartedPayload,
   ErrorPayload,
 } from '../../../shared/types/events';
+import { CharacterClass } from '../../../shared/types/entities';
 
 describe('WebSocket Contract: start_game event', () => {
   let hostSocket: ClientSocket;
@@ -90,11 +91,11 @@ describe('WebSocket Contract: start_game event', () => {
   it('should emit game_started to all players when host starts game', (done) => {
     // Both players select characters
     const hostCharacter: SelectCharacterPayload = {
-      characterClass: 'Brute',
+      characterClass: CharacterClass.BRUTE,
     };
 
     const player2Character: SelectCharacterPayload = {
-      characterClass: 'Tinkerer',
+      characterClass: CharacterClass.TINKERER,
     };
 
     let selectCount = 0;
@@ -124,8 +125,8 @@ describe('WebSocket Contract: start_game event', () => {
           // Verify character data
           expect(payload.characters.length).toBe(2);
           const characterClasses = payload.characters.map((c: any) => c.characterClass);
-          expect(characterClasses).toContain('Brute');
-          expect(characterClasses).toContain('Tinkerer');
+          expect(characterClasses).toContain(CharacterClass.BRUTE);
+          expect(characterClasses).toContain(CharacterClass.TINKERER);
 
           receivedCount++;
           if (receivedCount === 2) {
@@ -149,8 +150,8 @@ describe('WebSocket Contract: start_game event', () => {
 
   it('should emit error if non-host tries to start game', (done) => {
     // Select characters
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {
@@ -184,13 +185,13 @@ describe('WebSocket Contract: start_game event', () => {
       hostSocket.emit('start_game', { scenarioId: 'scenario-001' });
     });
 
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
   });
 
   it('should emit error for invalid scenario ID', (done) => {
     // Select characters
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {
@@ -235,8 +236,8 @@ describe('WebSocket Contract: start_game event', () => {
 
   it('should initialize hex map layout from scenario', (done) => {
     // Select characters
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {
@@ -265,8 +266,8 @@ describe('WebSocket Contract: start_game event', () => {
 
   it('should spawn monsters from scenario', (done) => {
     // Select characters
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {
@@ -295,8 +296,8 @@ describe('WebSocket Contract: start_game event', () => {
 
   it('should place characters at starting positions', (done) => {
     // Select characters
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {
@@ -326,8 +327,8 @@ describe('WebSocket Contract: start_game event', () => {
 
   it('should emit error when game already started', (done) => {
     // Select characters and start game
-    hostSocket.emit('select_character', { characterClass: 'Brute' });
-    client2Socket.emit('select_character', { characterClass: 'Tinkerer' });
+    hostSocket.emit('select_character', { characterClass: CharacterClass.BRUTE });
+    client2Socket.emit('select_character', { characterClass: CharacterClass.TINKERER });
 
     let selectCount = 0;
     const onSelect = () => {

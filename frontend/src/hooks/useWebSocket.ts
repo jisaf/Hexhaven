@@ -47,9 +47,11 @@ export function useWebSocket(url?: string) {
     websocketService.on('reconnecting', handleReconnecting);
     websocketService.on('reconnected', handleReconnected);
 
-    // Update initial state
-    setConnectionStatus(websocketService.getConnectionStatus());
-    setIsConnected(websocketService.isConnected());
+    // Update initial state using a microtask to avoid cascading renders
+    queueMicrotask(() => {
+      setConnectionStatus(websocketService.getConnectionStatus());
+      setIsConnected(websocketService.isConnected());
+    });
 
     // Cleanup on unmount
     return () => {

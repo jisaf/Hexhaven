@@ -20,8 +20,8 @@ export interface WebSocketEvents {
   reconnected: () => void;
 
   // Room events
-  room_joined: (data: { roomCode: string; players: any[] }) => void;
-  player_joined: (data: { player: any }) => void;
+  room_joined: (data: { roomCode: string; players: unknown[] }) => void;
+  player_joined: (data: { player: unknown }) => void;
   player_left: (data: { playerId: string }) => void;
   player_disconnected: (data: { playerId: string; playerName: string }) => void;
   player_reconnected: (data: { playerId: string; playerName: string }) => void;
@@ -30,7 +30,7 @@ export interface WebSocketEvents {
   character_selected: (data: { playerId: string; characterClass: string }) => void;
 
   // Game start
-  game_started: (data: { gameState: any }) => void;
+  game_started: (data: { gameState: unknown }) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;
@@ -44,20 +44,20 @@ export interface WebSocketEvents {
     attackerId: string;
     targetId: string;
     damage: number;
-    modifier: any;
+    modifier: unknown;
   }) => void;
 
   // Monster AI
-  monster_activated: (data: { monsterId: string; actions: any[] }) => void;
+  monster_activated: (data: { monsterId: string; actions: unknown[] }) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
 
   // Scenario
-  scenario_completed: (data: { victory: boolean; rewards: any }) => void;
+  scenario_completed: (data: { victory: boolean; rewards: unknown }) => void;
 
   // State updates
-  game_state_update: (data: { gameState: any }) => void;
+  game_state_update: (data: { gameState: unknown }) => void;
 
   // Errors
   error: (data: { message: string; code?: string }) => void;
@@ -69,7 +69,8 @@ export type EventHandler<T extends EventName> = WebSocketEvents[T];
 class WebSocketService {
   private socket: Socket | null = null;
   private connectionStatus: ConnectionStatus = 'disconnected';
-  private eventHandlers: Map<string, Set<Function>> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private eventHandlers: Map<string, Set<any>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
 
@@ -125,7 +126,7 @@ class WebSocketService {
       console.log('WebSocket reconnected');
     });
 
-    this.socket.on('error', (error: any) => {
+    this.socket.on('error', (error: Error) => {
       this.emit('error', { message: error.message || 'WebSocket error' });
       console.error('WebSocket error:', error);
     });
@@ -158,6 +159,7 @@ class WebSocketService {
     this.eventHandlers.get(event)!.add(handler);
 
     // Register with socket.io
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.socket.on(event, handler as any);
   }
 
@@ -168,6 +170,7 @@ class WebSocketService {
     if (!this.socket) return;
 
     if (handler) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.socket.off(event, handler as any);
       this.eventHandlers.get(event)?.delete(handler);
     } else {
@@ -179,7 +182,7 @@ class WebSocketService {
   /**
    * Emit event to server
    */
-  emit(event: string, data?: any): void {
+  emit(event: string, data?: unknown): void {
     if (!this.socket || !this.socket.connected) {
       console.warn(`Cannot emit ${event}: WebSocket not connected`);
       return;
