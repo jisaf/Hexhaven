@@ -14,11 +14,12 @@ export default {
   // Module file extensions
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
 
-  // Test match patterns
+  // Test match patterns (exclude e2e tests - those are for Playwright)
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
-    '**/tests/**/*.[jt]s?(x)'
+    '**/tests/unit/**/*.[jt]s?(x)',
+    '**/tests/integration/**/*.[jt]s?(x)'
   ],
 
   // Transform configuration
@@ -85,7 +86,8 @@ export default {
     '/build/',
     '/coverage/',
     '/tests/__mocks__/',
-    '/tests/setup.ts'
+    '/tests/setup.ts',
+    '/tests/e2e/'  // E2E tests run via Playwright, not Jest
   ],
 
   // Clear mocks between tests

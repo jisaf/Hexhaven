@@ -135,7 +135,7 @@ test.describe('User Story 1: Character Movement', () => {
     const bruteSprite = page.locator('[data-testid="character-sprite-Brute"]');
     const tinkererSprite = page.locator('[data-testid="character-sprite-Tinkerer"]');
 
-    await bruteSprite.boundingBox();
+    const bruteBounds = await bruteSprite.boundingBox();
 
     // Tap Brute to select
     await bruteSprite.click();

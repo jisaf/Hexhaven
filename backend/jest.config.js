@@ -70,7 +70,8 @@ module.exports = {
     '/dist/',
     '/coverage/',
     '/tests/fixtures/',
-    '/tests/setup.ts'
+    '/tests/setup.ts',
+    '/tests/contract/'  // Contract tests require running WebSocket server
   ],
 
   // Transform node_modules for ESM packages
