@@ -100,9 +100,9 @@
 - [X] T037 [P] [US1] E2E test: Character selection and game start in frontend/tests/e2e/us1-start-game.spec.ts
 - [X] T038 [P] [US1] E2E test: Character movement visible to both players in frontend/tests/e2e/us1-movement.spec.ts
 - [X] T039 [P] [US1] Contract test: WebSocket join_room event in backend/tests/contract/join-room.test.ts
-- [ ] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
-- [ ] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
-- [ ] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
+- [X] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
+- [X] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
+- [X] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
 - [ ] T043 [P] [US1] Unit test: Room code generation (unique 6-char alphanumeric) in backend/tests/unit/room-service.test.ts
 - [ ] T044 [P] [US1] Unit test: Player validation (nickname unique within room) in backend/tests/unit/player-service.test.ts
 
