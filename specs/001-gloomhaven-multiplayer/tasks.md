@@ -29,14 +29,14 @@
 - [X] T001 Create project directory structure (backend/, frontend/, shared/, docs/)
 - [X] T002 Initialize backend NestJS project with TypeScript, Prisma, Socket.io dependencies in backend/
 - [X] T003 Initialize frontend React project with Vite, PixiJS, react-i18next dependencies in frontend/
-- [ ] T004 [P] Configure ESLint and Prettier for backend in backend/.eslintrc.json
-- [ ] T005 [P] Configure ESLint and Prettier for frontend in frontend/.eslintrc.json
-- [ ] T006 [P] Setup TypeScript strict mode for backend in backend/tsconfig.json
-- [ ] T007 [P] Setup TypeScript strict mode for frontend in frontend/tsconfig.json
-- [ ] T008 [P] Create shared types directory structure in shared/types/
-- [ ] T009 [P] Configure Workbox for PWA service workers in frontend/vite.config.ts
-- [ ] T010 [P] Create PWA manifest.json in frontend/public/manifest.json
-- [ ] T011 [P] Setup GitHub Actions CI workflow in .github/workflows/ci.yml (test + build + lint gates)
+- [X] T004 [P] Configure ESLint and Prettier for backend in backend/.eslintrc.json
+- [X] T005 [P] Configure ESLint and Prettier for frontend in frontend/.eslintrc.json
+- [X] T006 [P] Setup TypeScript strict mode for backend in backend/tsconfig.json
+- [X] T007 [P] Setup TypeScript strict mode for frontend in frontend/tsconfig.json
+- [X] T008 [P] Create shared types directory structure in shared/types/
+- [X] T009 [P] Configure Workbox for PWA service workers in frontend/vite.config.ts
+- [X] T010 [P] Create PWA manifest.json in frontend/public/manifest.json
+- [X] T011 [P] Setup GitHub Actions CI workflow in .github/workflows/ci.yml (test + build + lint gates)
 
 ---
 
@@ -48,12 +48,12 @@
 
 ### Database & Backend Infrastructure
 
-- [ ] T012 Create Prisma schema with GameRoom, Player, GameState, Scenario tables in backend/src/db/schema.prisma
-- [ ] T013 Generate initial database migration in backend/src/db/migrations/
-- [ ] T014 Create database seed script with 6 character classes and 5 scenarios in backend/src/db/seed.ts
-- [ ] T015 [P] Create shared entity types (Player, GameRoom, Character, Monster, Scenario, HexTile, Condition, etc.) in shared/types/entities.ts
-- [ ] T016 [P] Create shared game state types in shared/types/game-state.ts
-- [ ] T017 [P] Create shared WebSocket event types in shared/types/events.ts
+- [X] T012 Create Prisma schema with GameRoom, Player, GameState, Scenario tables in backend/src/db/schema.prisma
+- [X] T013 Generate initial database migration in backend/src/db/migrations/
+- [X] T014 Create database seed script with 6 character classes and 5 scenarios in backend/src/db/seed.ts
+- [X] T015 [P] Create shared entity types (Player, GameRoom, Character, Monster, Scenario, HexTile, Condition, etc.) in shared/types/entities.ts
+- [X] T016 [P] Create shared game state types in shared/types/game-state.ts
+- [X] T017 [P] Create shared WebSocket event types in shared/types/events.ts
 
 ### Backend Core Services
 
