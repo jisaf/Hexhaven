@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [master, main, 'feature/**', '0**-**']
+    branches: [master, main]  # Only run on direct pushes to protected branches
   pull_request:
-    branches: [master, main]
+    branches: [master, main]  # Run on all PRs targeting these branches
 
 env:
   NODE_VERSION: '20'
