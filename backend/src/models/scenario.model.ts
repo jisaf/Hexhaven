@@ -115,9 +115,7 @@ export class Scenario {
       group.spawnPoints.forEach((spawn) => {
         const hex = this.getHexAt(spawn);
         if (!hex) {
-          throw new Error(
-            `Spawn point (${spawn.q},${spawn.r}) is not on map`,
-          );
+          throw new Error(`Spawn point (${spawn.q},${spawn.r}) is not on map`);
         }
         if (hex.terrain === TerrainType.OBSTACLE) {
           throw new Error(`Spawn point cannot be on obstacle terrain`);

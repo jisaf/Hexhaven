@@ -262,7 +262,10 @@ export class ModifierDeck {
     if (card1.modifier === 'null' && card2.modifier === 'null') return 0;
 
     // Both are numbers, compare values
-    if (typeof card1.modifier === 'number' && typeof card2.modifier === 'number') {
+    if (
+      typeof card1.modifier === 'number' &&
+      typeof card2.modifier === 'number'
+    ) {
       return card1.modifier - card2.modifier;
     }
 

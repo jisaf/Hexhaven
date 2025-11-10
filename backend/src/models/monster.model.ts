@@ -202,8 +202,8 @@ export class Monster {
   }
 
   getRetaliateValue(): number {
-    const retaliateAbility = Array.from(this._specialAbilities).find((ability) =>
-      ability.startsWith('Retaliate'),
+    const retaliateAbility = Array.from(this._specialAbilities).find(
+      (ability) => ability.startsWith('Retaliate'),
     );
 
     if (!retaliateAbility) {
@@ -369,23 +369,21 @@ export class Monster {
     monsterType: string,
     isElite: boolean,
   ): string[] {
-    const abilitiesMap: Record<
-      string,
-      { normal: string[]; elite: string[] }
-    > = {
-      'Bandit Guard': {
-        normal: [],
-        elite: ['Shield 1'],
-      },
-      'Living Bones': {
-        normal: [],
-        elite: ['Shield 1', 'Retaliate 1'],
-      },
-      'Bandit Archer': {
-        normal: [],
-        elite: ['Retaliate 1'],
-      },
-    };
+    const abilitiesMap: Record<string, { normal: string[]; elite: string[] }> =
+      {
+        'Bandit Guard': {
+          normal: [],
+          elite: ['Shield 1'],
+        },
+        'Living Bones': {
+          normal: [],
+          elite: ['Shield 1', 'Retaliate 1'],
+        },
+        'Bandit Archer': {
+          normal: [],
+          elite: ['Retaliate 1'],
+        },
+      };
 
     const abilities = abilitiesMap[monsterType];
     return abilities ? abilities[isElite ? 'elite' : 'normal'] : [];
