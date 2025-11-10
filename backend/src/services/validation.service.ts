@@ -7,9 +7,11 @@
 
 import { Character } from '../models/character.model';
 import { GameRoom } from '../models/game-room.model';
-import type { AxialCoordinates } from '../../../shared/types/entities';
+import {
+  RoomStatus,
+  type AxialCoordinates,
+} from '../../../shared/types/entities';
 import { cubeDistance, axialToCube } from '../utils/hex-utils';
-import { ValidationError } from '../utils/error-handler';
 
 export class ValidationService {
   /**
@@ -23,7 +25,10 @@ export class ValidationService {
   ): { valid: boolean; error?: string } {
     // Check if character is immobilized
     if (character.isImmobilized) {
-      return { valid: false, error: 'Character is immobilized and cannot move' };
+      return {
+        valid: false,
+        error: 'Character is immobilized and cannot move',
+      };
     }
 
     // Check if character is stunned
@@ -37,8 +42,8 @@ export class ValidationService {
     }
 
     // Calculate distance from current position to target
-    const currentCube = axialToCube(character.position.q, character.position.r);
-    const targetCube = axialToCube(targetHex.q, targetHex.r);
+    const currentCube = axialToCube(character.position);
+    const targetCube = axialToCube(targetHex);
     const distance = cubeDistance(currentCube, targetCube);
 
     // Check if target is within movement range
@@ -93,8 +98,8 @@ export class ValidationService {
     }
 
     // Calculate distance to target
-    const attackerCube = axialToCube(attacker.position.q, attacker.position.r);
-    const targetCube = axialToCube(targetPosition.q, targetPosition.r);
+    const attackerCube = axialToCube(attacker.position);
+    const targetCube = axialToCube(targetPosition);
     const distance = cubeDistance(attackerCube, targetCube);
 
     // Check if target is within attack range
@@ -146,7 +151,7 @@ export class ValidationService {
     }
 
     // Check room status
-    if (room.status !== 'lobby') {
+    if (room.status !== RoomStatus.LOBBY) {
       return { valid: false, error: 'Game has already started' };
     }
 
@@ -171,8 +176,11 @@ export class ValidationService {
     }
 
     // Check room status
-    if (room.status !== 'lobby') {
-      return { valid: false, error: 'Game has already started or is completed' };
+    if (room.status !== RoomStatus.LOBBY) {
+      return {
+        valid: false,
+        error: 'Game has already started or is completed',
+      };
     }
 
     // Check if room has minimum players

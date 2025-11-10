@@ -81,10 +81,7 @@ export class PlayerService {
   /**
    * Update player connection status
    */
-  updateConnectionStatus(
-    uuid: string,
-    status: ConnectionStatus,
-  ): Player {
+  updateConnectionStatus(uuid: string, status: ConnectionStatus): Player {
     const player = this.players.get(uuid);
     if (!player) {
       throw new NotFoundError('Player not found');

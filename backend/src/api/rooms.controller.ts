@@ -22,6 +22,7 @@ import {
   ValidationError,
   ConflictError,
 } from '../utils/error-handler';
+import { RoomStatus } from '../../../shared/types/entities';
 
 interface CreateRoomRequest {
   uuid: string;
@@ -86,7 +87,9 @@ export class RoomsController {
       // Validate nickname format
       const trimmedNickname = nickname.trim();
       if (trimmedNickname.length === 0 || trimmedNickname.length > 50) {
-        throw new ValidationError('Nickname must be between 1 and 50 characters');
+        throw new ValidationError(
+          'Nickname must be between 1 and 50 characters',
+        );
       }
 
       // Check if player already exists
@@ -95,7 +98,11 @@ export class RoomsController {
       // Check if player is already in a room
       if (player && player.roomId) {
         const existingRoom = roomService.getRoomById(player.roomId);
-        if (existingRoom && (existingRoom.status === 'lobby' || existingRoom.status === 'active')) {
+        if (
+          existingRoom &&
+          (existingRoom.status === RoomStatus.LOBBY ||
+            existingRoom.status === RoomStatus.ACTIVE)
+        ) {
           throw new ConflictError('Player is already in an active game room');
         }
       }
@@ -173,7 +180,9 @@ export class RoomsController {
       const room = roomService.getRoom(upperRoomCode);
 
       if (!room) {
-        throw new NotFoundError(`Game room with code ${upperRoomCode} not found`);
+        throw new NotFoundError(
+          `Game room with code ${upperRoomCode} not found`,
+        );
       }
 
       return {

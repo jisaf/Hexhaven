@@ -19,7 +19,7 @@ import { Logger } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
-import {
+import type {
   JoinRoomPayload,
   SelectCharacterPayload,
   StartGamePayload,
@@ -31,7 +31,11 @@ import {
   CharacterMovedPayload,
   ErrorPayload,
 } from '../../../shared/types/events';
-import type { CharacterClass } from '../../../shared/types/entities';
+import {
+  ConnectionStatus,
+  RoomStatus,
+  type CharacterClass,
+} from '../../../shared/types/entities';
 
 @WebSocketGateway({
   cors: {
@@ -65,7 +69,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Update player connection status
       try {
-        playerService.updateConnectionStatus(playerUUID, 'disconnected');
+        playerService.updateConnectionStatus(
+          playerUUID,
+          ConnectionStatus.DISCONNECTED,
+        );
 
         // Find player's room and broadcast disconnection
         const room = roomService.getRoomByPlayerId(playerUUID);
@@ -181,15 +188,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Validate room status
-      if (room.status !== 'lobby') {
+      if (room.status !== RoomStatus.LOBBY) {
         throw new Error('Game has already started');
       }
 
       // Check if character class is already taken
       const characterTaken = room.players.some(
         (p) =>
-          p.characterClass === payload.characterClass &&
-          p.uuid !== playerUUID,
+          p.characterClass === payload.characterClass && p.uuid !== playerUUID,
       );
 
       if (characterTaken) {
@@ -322,7 +328,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Validate game is active
-      if (room.status !== 'active') {
+      if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
       }
 

@@ -5,7 +5,7 @@
  * GameRoom instances in tests
  */
 
-import { RoomStatus } from '@prisma/client';
+import { RoomStatus } from '../../../shared/types/entities';
 
 /**
  * Generate a random 6-character alphanumeric room code
@@ -29,7 +29,7 @@ export function createTestGameRoom(overrides: Partial<TestGameRoom> = {}): TestG
   return {
     id: overrides.id || `test-room-${Date.now()}-${Math.random()}`,
     roomCode: overrides.roomCode || generateRoomCode(),
-    status: overrides.status || RoomStatus.lobby,
+    status: overrides.status || RoomStatus.LOBBY,
     scenarioId: overrides.scenarioId || null,
     createdAt: overrides.createdAt || now,
     updatedAt: overrides.updatedAt || now,
@@ -65,7 +65,7 @@ export interface TestGameRoom {
  */
 export function createLobbyRoom(overrides: Partial<TestGameRoom> = {}): TestGameRoom {
   return createTestGameRoom({
-    status: RoomStatus.lobby,
+    status: RoomStatus.LOBBY,
     scenarioId: null,
     ...overrides
   });
@@ -76,7 +76,7 @@ export function createLobbyRoom(overrides: Partial<TestGameRoom> = {}): TestGame
  */
 export function createActiveRoom(overrides: Partial<TestGameRoom> = {}): TestGameRoom {
   return createTestGameRoom({
-    status: RoomStatus.active,
+    status: RoomStatus.ACTIVE,
     scenarioId: overrides.scenarioId || 'test-scenario-1',
     ...overrides
   });
@@ -87,7 +87,7 @@ export function createActiveRoom(overrides: Partial<TestGameRoom> = {}): TestGam
  */
 export function createCompletedRoom(overrides: Partial<TestGameRoom> = {}): TestGameRoom {
   return createTestGameRoom({
-    status: RoomStatus.completed,
+    status: RoomStatus.COMPLETED,
     scenarioId: overrides.scenarioId || 'test-scenario-1',
     ...overrides
   });
@@ -98,7 +98,7 @@ export function createCompletedRoom(overrides: Partial<TestGameRoom> = {}): Test
  */
 export function createAbandonedRoom(overrides: Partial<TestGameRoom> = {}): TestGameRoom {
   return createTestGameRoom({
-    status: RoomStatus.abandoned,
+    status: RoomStatus.ABANDONED,
     ...overrides
   });
 }
@@ -140,14 +140,14 @@ export const GAME_ROOM_ASSERTIONS = {
    * Assert that a room is in lobby status
    */
   isLobby(room: TestGameRoom): boolean {
-    return room.status === RoomStatus.lobby && room.scenarioId === null;
+    return room.status === RoomStatus.LOBBY && room.scenarioId === null;
   },
 
   /**
    * Assert that a room is active
    */
   isActive(room: TestGameRoom): boolean {
-    return room.status === RoomStatus.active && room.scenarioId !== null;
+    return room.status === RoomStatus.ACTIVE && room.scenarioId !== null;
   },
 
   /**

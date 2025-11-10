@@ -6,14 +6,10 @@
  */
 
 import { Character } from '../models/character.model';
+import { NotFoundError, ConflictError } from '../utils/error-handler';
 import {
-  NotFoundError,
-  ValidationError,
-  ConflictError,
-} from '../utils/error-handler';
-import type {
   CharacterClass,
-  AxialCoordinates,
+  type AxialCoordinates,
 } from '../../../shared/types/entities';
 
 export class CharacterService {
@@ -108,10 +104,7 @@ export class CharacterService {
   /**
    * Move character to new position
    */
-  moveCharacter(
-    characterId: string,
-    newPosition: AxialCoordinates,
-  ): Character {
+  moveCharacter(characterId: string, newPosition: AxialCoordinates): Character {
     const character = this.characters.get(characterId);
     if (!character) {
       throw new NotFoundError('Character not found');
@@ -201,12 +194,12 @@ export class CharacterService {
    */
   getAvailableClasses(): CharacterClass[] {
     return [
-      'Brute',
-      'Tinkerer',
-      'Spellweaver',
-      'Scoundrel',
-      'Cragheart',
-      'Mindthief',
+      CharacterClass.BRUTE,
+      CharacterClass.TINKERER,
+      CharacterClass.SPELLWEAVER,
+      CharacterClass.SCOUNDREL,
+      CharacterClass.CRAGHEART,
+      CharacterClass.MINDTHIEF,
     ];
   }
 }
