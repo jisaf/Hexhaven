@@ -201,15 +201,15 @@
 - [ ] T113 [US2] Implement turn indicator (highlight current entity's turn) in frontend/src/components/TurnOrderDisplay.tsx
 - [ ] T114 [US2] Implement monster rendering on hex grid in frontend/src/game/HexGrid.ts
 - [ ] T115 [US2] Implement attack target selection (tap enemy → confirm attack) in frontend/src/pages/GameBoard.tsx
-- [ ] T116 [US2] Implement attack animation and damage number display in frontend/src/game/AttackAnimation.ts
-- [ ] T117 [US2] Implement elemental state UI (6 element icons with states) in frontend/src/components/ElementalStateDisplay.tsx
-- [ ] T118 [US2] Implement scenario completion UI (victory/defeat modal) in frontend/src/components/ScenarioCompleteModal.tsx
+- [X] T116 [US2] Implement attack animation and damage number display in frontend/src/game/AttackAnimation.ts
+- [X] T117 [US2] Implement elemental state UI (6 element icons with states) in frontend/src/components/ElementalStateDisplay.tsx
+- [X] T118 [US2] Implement scenario completion UI (victory/defeat modal) in frontend/src/components/ScenarioCompleteModal.tsx
 - [X] T119 [P] [US2] Create LootToken model in backend/src/models/loot-token.model.ts
 - [X] T120 [US2] Implement loot token spawning in ScenarioService in backend/src/services/scenario.service.ts
 - [X] T121 [US2] Add loot collection action to GameGateway (WebSocket: collect_loot event) in backend/src/websocket/game.gateway.ts
-- [ ] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
+- [X] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
 - [ ] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
-- [ ] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
+- [X] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
 - [ ] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - full tactical combat with cards, monsters, attacks, loot collection, and scenario completion is functional.
