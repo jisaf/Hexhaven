@@ -204,9 +204,9 @@
 - [ ] T116 [US2] Implement attack animation and damage number display in frontend/src/game/AttackAnimation.ts
 - [ ] T117 [US2] Implement elemental state UI (6 element icons with states) in frontend/src/components/ElementalStateDisplay.tsx
 - [ ] T118 [US2] Implement scenario completion UI (victory/defeat modal) in frontend/src/components/ScenarioCompleteModal.tsx
-- [ ] T119 [P] [US2] Create LootToken model in backend/src/models/loot-token.model.ts
-- [ ] T120 [US2] Implement loot token spawning in ScenarioService in backend/src/services/scenario.service.ts
-- [ ] T121 [US2] Add loot collection action to GameGateway (WebSocket: collect_loot event) in backend/src/websocket/game.gateway.ts
+- [X] T119 [P] [US2] Create LootToken model in backend/src/models/loot-token.model.ts
+- [X] T120 [US2] Implement loot token spawning in ScenarioService in backend/src/services/scenario.service.ts
+- [X] T121 [US2] Add loot collection action to GameGateway (WebSocket: collect_loot event) in backend/src/websocket/game.gateway.ts
 - [ ] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
 - [ ] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
 - [ ] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
