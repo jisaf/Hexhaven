@@ -35,8 +35,7 @@ class DamageNumberSprite extends PIXI.Container {
       fontSize: 24,
       fill: 0xffffff,
       fontWeight: 'bold',
-      stroke: 0x000000,
-      strokeThickness: 4,
+      stroke: { color: 0x000000, width: 4 },
     });
     this.text.anchor.set(0.5);
     this.addChild(this.text);
@@ -113,7 +112,7 @@ class DamageNumberSprite extends PIXI.Container {
    * Update animation
    * @returns true if animation is complete
    */
-  public update(deltaTime: number): boolean {
+  public update(): boolean {
     if (!this.isActive) return true;
 
     const duration = 1.5;
@@ -166,12 +165,10 @@ class DamageNumberSprite extends PIXI.Container {
 export class DamageNumberPool {
   private container: PIXI.Container;
   private pool: DamageNumberSprite[] = [];
-  private poolSize: number = 20;
-  private ticker: (delta: number) => void;
+  private ticker: (ticker: PIXI.Ticker) => void;
 
   constructor(container: PIXI.Container, poolSize: number = 20) {
     this.container = container;
-    this.poolSize = poolSize;
 
     // Pre-create sprites
     for (let i = 0; i < poolSize; i++) {
@@ -181,8 +178,8 @@ export class DamageNumberPool {
     }
 
     // Setup update ticker
-    this.ticker = (delta: number) => {
-      this.update(delta);
+    this.ticker = () => {
+      this.update();
     };
     PIXI.Ticker.shared.add(this.ticker);
   }
@@ -216,10 +213,10 @@ export class DamageNumberPool {
   /**
    * Update all active sprites
    */
-  private update(deltaTime: number): void {
+  private update(): void {
     for (const sprite of this.pool) {
       if (sprite.getIsActive()) {
-        sprite.update(deltaTime);
+        sprite.update();
       }
     }
   }

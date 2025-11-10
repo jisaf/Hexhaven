@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { ElementalInfusion, ElementType, ElementState } from '../../../shared/types/entities';
+import type { ElementalInfusion } from '../../../shared/types/entities';
+import { ElementType, ElementState } from '../../../shared/types/entities';
 import './ElementalStateDisplay.css';
 
 interface ElementalStateDisplayProps {

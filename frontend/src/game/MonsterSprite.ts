@@ -6,7 +6,8 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { Monster, Condition, AxialCoordinates } from '../../../shared/types/entities';
+import type { Monster } from '../../../shared/types/entities';
+import { Condition } from '../../../shared/types/entities';
 
 export class MonsterSprite extends PIXI.Container {
   private monster: Monster;
@@ -147,8 +148,7 @@ export class MonsterSprite extends PIXI.Container {
       fontSize: 12,
       fill: 0xffffff,
       fontWeight: 'bold',
-      stroke: 0x000000,
-      strokeThickness: 3,
+      stroke: { color: 0x000000, width: 3 },
     });
     text.anchor.set(0.5);
     text.y = -60;
@@ -165,8 +165,7 @@ export class MonsterSprite extends PIXI.Container {
       fontSize: 10,
       fill: 0xffffff,
       fontWeight: 'bold',
-      stroke: 0x000000,
-      strokeThickness: 3,
+      stroke: { color: 0x000000, width: 3 },
     });
     text.anchor.set(0.5);
     text.y = 45;
@@ -305,7 +304,7 @@ export class MonsterSprite extends PIXI.Container {
   /**
    * Animate hit effect
    */
-  public animateHit(damage: number): Promise<void> {
+  public animateHit(): Promise<void> {
     return new Promise((resolve) => {
       const originalAlpha = this.alpha;
       const originalScale = this.scale.x;
@@ -320,8 +319,8 @@ export class MonsterSprite extends PIXI.Container {
       // Shake and flash animation
       let time = 0;
       const duration = 0.5;
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration) {
           // Shake
@@ -353,14 +352,14 @@ export class MonsterSprite extends PIXI.Container {
       const duration = 1.0;
       let time = 0;
 
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration) {
           // Fade and shrink
           this.alpha = 1 - time / duration;
           this.scale.set(1 - time / duration);
-          this.rotation += delta * 0.1;
+          this.rotation += tick.deltaTime * 0.1;
         } else {
           this.visible = false;
           PIXI.Ticker.shared.remove(ticker);

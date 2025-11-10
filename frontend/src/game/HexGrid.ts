@@ -17,7 +17,7 @@ import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
 import { MovementHighlight } from './MovementHighlight';
 import { type Axial, axialKey, screenToAxial, hexRangeReachable } from './hex-utils';
-import { Monster } from '../../../shared/types/entities';
+import type { Monster } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
   width: number;

@@ -6,9 +6,13 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { AxialCoordinates } from '../../../shared/types/entities';
 
 export type AttackType = 'melee' | 'ranged' | 'magic';
+
+// Helper lerp function for interpolation
+function lerp(start: number, end: number, t: number): number {
+  return start * (1 - t) + end * t;
+}
 
 interface AttackAnimationOptions {
   attackType: AttackType;
@@ -60,8 +64,8 @@ export class AttackAnimation {
       let time = 0;
       const duration = 0.4;
 
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration) {
           slash.clear();
@@ -117,19 +121,19 @@ export class AttackAnimation {
       let time = 0;
       const duration = 0.5;
 
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration) {
           const progress = time / duration;
 
           // Move projectile
-          projectile.x = PIXI.utils.lerp(
+          projectile.x = lerp(
             this.options.fromPosition.x,
             this.options.toPosition.x,
             progress,
           );
-          projectile.y = PIXI.utils.lerp(
+          projectile.y = lerp(
             this.options.fromPosition.y,
             this.options.toPosition.y,
             progress,
@@ -216,8 +220,8 @@ export class AttackAnimation {
       const duration = 0.8;
       let blastPhase = false;
 
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration * 0.5 && !blastPhase) {
           // Charge phase - particles spiral inward
@@ -309,8 +313,8 @@ export class AttackAnimation {
       let time = 0;
       const duration = 0.3;
 
-      const ticker = (delta: number) => {
-        time += delta / 60;
+      const ticker = (tick: PIXI.Ticker) => {
+        time += tick.deltaTime / 60;
 
         if (time < duration) {
           impact.clear();

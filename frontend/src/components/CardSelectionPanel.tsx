@@ -6,8 +6,8 @@
  * Mobile-optimized with touch gestures.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
+import React, { useState, useRef } from 'react';
+import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
 import './CardSelectionPanel.css';
 
