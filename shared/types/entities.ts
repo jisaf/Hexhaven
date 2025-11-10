@@ -211,6 +211,19 @@ export interface AttackModifierDeck {
   discardPile: AttackModifierCard[];
 }
 
+// ========== LOOT (User Story 2) ==========
+
+export interface LootToken {
+  id: string;
+  roomId: string;
+  coordinates: AxialCoordinates;
+  value: number; // Gold value (1-3 based on scenario difficulty)
+  isCollected: boolean;
+  collectedBy: string | null; // Player UUID who collected it
+  createdAt: string;
+  collectedAt: string | null;
+}
+
 // ========== ACCOUNT & PROGRESSION (User Story 7) ==========
 
 export interface Account {

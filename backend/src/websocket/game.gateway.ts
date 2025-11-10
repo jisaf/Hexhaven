@@ -27,6 +27,7 @@ import type {
   SelectCardsPayload,
   AttackTargetPayload,
   EndTurnPayload,
+  CollectLootPayload,
   RoomJoinedPayload,
   PlayerJoinedPayload,
   CharacterSelectedPayload,
@@ -36,6 +37,7 @@ import type {
   TurnStartedPayload,
   AttackResolvedPayload,
   MonsterActivatedPayload,
+  LootCollectedPayload,
   ScenarioCompletedPayload,
   ErrorPayload,
 } from '../../../shared/types/events';
@@ -517,6 +519,77 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`Attack target error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'ATTACK_TARGET_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Collect loot token (US2 - T121)
+   */
+  @SubscribeMessage('collect_loot')
+  handleCollectLoot(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: CollectLootPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(
+        `Collect loot request from ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
+      );
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // TODO: Get loot tokens from room state
+      // TODO: Find loot token at specified coordinates
+      // TODO: Validate loot token exists and is not collected
+      // TODO: Validate character is adjacent to or on loot token hex
+      // TODO: Collect loot token (mark as collected, add gold to player)
+      // TODO: Remove loot token from active tokens list
+
+      // Placeholder loot collection
+      const lootValue = 2; // Based on difficulty
+      const lootTokenId = `loot_${Date.now()}`;
+
+      // Broadcast loot collected to all players
+      const lootCollectedPayload: LootCollectedPayload = {
+        playerId: playerUUID,
+        lootTokenId,
+        hexCoordinates: payload.hexCoordinates,
+        goldValue: lootValue,
+      };
+
+      this.server.to(room.roomCode).emit('loot_collected', lootCollectedPayload);
+
+      this.logger.log(
+        `Loot collected by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Collect loot error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'COLLECT_LOOT_ERROR',
         message: errorMessage,
       };
       client.emit('error', errorPayload);
