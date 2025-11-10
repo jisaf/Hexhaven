@@ -9,7 +9,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { Axial, axialToScreen, HEX_SIZE } from './hex-utils';
+import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
 
 export type TerrainType = 'normal' | 'obstacle' | 'difficult' | 'hazardous';
 

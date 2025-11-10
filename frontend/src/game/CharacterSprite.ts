@@ -10,7 +10,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { Axial, axialToScreen, HEX_SIZE } from './hex-utils';
+import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
 
 export type CharacterClass = 'Brute' | 'Tinkerer' | 'Spellweaver' | 'Scoundrel' | 'Cragheart' | 'Mindthief';
 
@@ -105,7 +105,7 @@ export class CharacterSprite extends PIXI.Container {
     });
 
     text.anchor.set(0.5);
-    graphic.addChild(text as any);
+    graphic.addChild(text);
 
     return graphic;
   }
@@ -192,7 +192,7 @@ export class CharacterSprite extends PIXI.Container {
     });
 
     text.anchor.set(0.5);
-    graphic.addChild(text as any);
+    graphic.addChild(text);
 
     return graphic;
   }
@@ -299,8 +299,7 @@ export class CharacterSprite extends PIXI.Container {
       fontSize: 20,
       fontWeight: 'bold',
       fill: 0xFF0000,
-      stroke: '#FFFFFF',
-      strokeThickness: 2
+      stroke: { color: '#FFFFFF', width: 2 }
     });
 
     damageText.anchor.set(0.5);

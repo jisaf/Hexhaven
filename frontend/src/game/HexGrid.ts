@@ -12,10 +12,10 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { HexTile, HexTileData, TerrainType } from './HexTile';
-import { CharacterSprite, CharacterData } from './CharacterSprite';
+import { HexTile, type HexTileData } from './HexTile';
+import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MovementHighlight } from './MovementHighlight';
-import { Axial, axialKey, screenToAxial, hexRange, hexRangeReachable } from './hex-utils';
+import { type Axial, axialKey, screenToAxial, hexRangeReachable } from './hex-utils';
 
 export interface HexGridOptions {
   width: number;
@@ -27,7 +27,7 @@ export interface HexGridOptions {
 export interface GameBoardData {
   tiles: HexTileData[];
   characters: CharacterData[];
-  monsters?: any[]; // Will be implemented in User Story 2
+  monsters?: unknown[]; // Will be implemented in User Story 2
 }
 
 export class HexGrid {
@@ -355,7 +355,7 @@ export class HexGrid {
   public destroy(): void {
     this.clearBoard();
     this.movementHighlight.destroy();
-    this.app.destroy(true, { children: true, texture: true, baseTexture: true });
+    this.app.destroy(true, { children: true, texture: true });
     this.container.removeChild(this.app.view as HTMLCanvasElement);
   }
 }

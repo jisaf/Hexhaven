@@ -9,7 +9,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { Axial, axialKey, axialToScreen, HEX_SIZE } from './hex-utils';
+import { type Axial, axialKey, axialToScreen, HEX_SIZE } from './hex-utils';
 
 export interface HighlightOptions {
   color: number;
