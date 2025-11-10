@@ -13,7 +13,7 @@
  * - T071: Implement character movement (tap character → tap hex → emit move event)
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
@@ -30,6 +30,63 @@ export function GameBoard() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
+
+  // Event handlers - defined before useEffects that use them
+  const handleGameStarted = useCallback((data: { gameState: { board: unknown; currentPlayerId: string } }) => {
+    if (!hexGridRef.current) return;
+
+    setCurrentPlayerId(data.gameState.currentPlayerId);
+    hexGridRef.current.initializeBoard(data.gameState.board as GameBoardData);
+  }, []);
+
+  const handleCharacterMoved = useCallback((data: { characterId: string; targetHex: Axial }) => {
+    if (!hexGridRef.current) return;
+
+    hexGridRef.current.moveCharacter(data.characterId, data.targetHex);
+    hexGridRef.current.deselectAll();
+    setSelectedCharacterId(null);
+  }, []);
+
+  const handleNextTurn = useCallback((data: { currentTurnIndex: number; entityId: string }) => {
+    // Check if it's current player's turn
+    const myTurn = data.entityId === currentPlayerId;
+    setIsMyTurn(myTurn);
+
+    if (!myTurn) {
+      // Deselect character when not our turn
+      hexGridRef.current?.deselectAll();
+      setSelectedCharacterId(null);
+    }
+  }, [currentPlayerId]);
+
+  const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
+    // Handle full game state updates (for reconnection, etc.)
+    console.log('Game state update:', data);
+  }, []);
+
+  // T071: Character movement implementation
+  const handleCharacterSelect = useCallback((characterId: string) => {
+    if (!isMyTurn) {
+      console.log('Not your turn');
+      return;
+    }
+
+    setSelectedCharacterId(characterId);
+  }, [isMyTurn]);
+
+  const handleHexClick = useCallback((hex: Axial) => {
+    if (!selectedCharacterId) return;
+    if (!isMyTurn) {
+      console.log('Not your turn');
+      return;
+    }
+
+    // Emit move event to server
+    websocketService.moveCharacter(hex);
+
+    // Optimistic update (server will confirm or reject)
+    // The server response will trigger handleCharacterMoved
+  }, [selectedCharacterId, isMyTurn]);
 
   // Initialize hex grid
   useEffect(() => {
@@ -61,7 +118,7 @@ export function GameBoard() {
       hexGrid.destroy();
       hexGridRef.current = null;
     };
-  }, []);
+  }, [handleHexClick, handleCharacterSelect]);
 
   // Setup WebSocket event listeners
   useEffect(() => {
@@ -85,64 +142,7 @@ export function GameBoard() {
       websocketService.off('next_turn_started');
       websocketService.off('game_state_update');
     };
-  }, []);
-
-  // Event handlers
-  const handleGameStarted = (data: { gameState: { board: unknown; currentPlayerId: string } }) => {
-    if (!hexGridRef.current) return;
-
-    setCurrentPlayerId(data.gameState.currentPlayerId);
-    hexGridRef.current.initializeBoard(data.gameState.board as GameBoardData);
-  };
-
-  const handleCharacterMoved = (data: { characterId: string; targetHex: Axial }) => {
-    if (!hexGridRef.current) return;
-
-    hexGridRef.current.moveCharacter(data.characterId, data.targetHex);
-    hexGridRef.current.deselectAll();
-    setSelectedCharacterId(null);
-  };
-
-  const handleNextTurn = (data: { currentTurnIndex: number; entityId: string }) => {
-    // Check if it's current player's turn
-    const myTurn = data.entityId === currentPlayerId;
-    setIsMyTurn(myTurn);
-
-    if (!myTurn) {
-      // Deselect character when not our turn
-      hexGridRef.current?.deselectAll();
-      setSelectedCharacterId(null);
-    }
-  };
-
-  const handleGameStateUpdate = (data: { gameState: unknown }) => {
-    // Handle full game state updates (for reconnection, etc.)
-    console.log('Game state update:', data);
-  };
-
-  // T071: Character movement implementation
-  const handleCharacterSelect = (characterId: string) => {
-    if (!isMyTurn) {
-      console.log('Not your turn');
-      return;
-    }
-
-    setSelectedCharacterId(characterId);
-  };
-
-  const handleHexClick = (hex: Axial) => {
-    if (!selectedCharacterId) return;
-    if (!isMyTurn) {
-      console.log('Not your turn');
-      return;
-    }
-
-    // Emit move event to server
-    websocketService.moveCharacter(hex);
-
-    // Optimistic update (server will confirm or reject)
-    // The server response will trigger handleCharacterMoved
-  };
+  }, [handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);
 
   const handleLeaveGame = () => {
     websocketService.leaveRoom();

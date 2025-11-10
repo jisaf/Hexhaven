@@ -15,7 +15,7 @@
  * - T070: Game start button (host only)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
@@ -44,6 +44,49 @@ export function Lobby() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Event handlers - defined before useEffect that uses them
+  const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => {
+    setRoom({ roomCode: data.roomCode, status: 'lobby' });
+    setPlayers(data.players as Player[]);
+    setCurrentPlayerId(data.playerId);
+    setIsHost(data.isHost);
+    setMode('in-room');
+    setIsLoading(false);
+    setError(null);
+  }, []);
+
+  const handlePlayerJoined = useCallback((data: { player: unknown }) => {
+    setPlayers((prev) => [...prev, data.player as Player]);
+  }, []);
+
+  const handlePlayerLeft = useCallback((data: { playerId: string }) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
+  }, []);
+
+  const handleCharacterSelected = useCallback((data: { playerId: string; characterClass: string }) => {
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === data.playerId
+          ? { ...p, characterClass: data.characterClass as CharacterClass, isReady: true }
+          : p
+      )
+    );
+
+    // Update own selection
+    if (data.playerId === currentPlayerId) {
+      setSelectedCharacter(data.characterClass as CharacterClass);
+    }
+  }, [currentPlayerId]);
+
+  const handleGameStarted = useCallback(() => {
+    navigate('/game');
+  }, [navigate]);
+
+  const handleError = useCallback((data: { message: string }) => {
+    setError(data.message);
+    setIsLoading(false);
+  }, []);
+
   // Connect to WebSocket on mount
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
@@ -66,50 +109,7 @@ export function Lobby() {
       websocketService.off('game_started');
       websocketService.off('error');
     };
-  }, []);
-
-  // Event handlers
-  const handleRoomJoined = (data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => {
-    setRoom({ roomCode: data.roomCode, status: 'lobby' });
-    setPlayers(data.players as Player[]);
-    setCurrentPlayerId(data.playerId);
-    setIsHost(data.isHost);
-    setMode('in-room');
-    setIsLoading(false);
-    setError(null);
-  };
-
-  const handlePlayerJoined = (data: { player: unknown }) => {
-    setPlayers((prev) => [...prev, data.player as Player]);
-  };
-
-  const handlePlayerLeft = (data: { playerId: string }) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
-  };
-
-  const handleCharacterSelected = (data: { playerId: string; characterClass: string }) => {
-    setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === data.playerId
-          ? { ...p, characterClass: data.characterClass as CharacterClass, isReady: true }
-          : p
-      )
-    );
-
-    // Update own selection
-    if (data.playerId === currentPlayerId) {
-      setSelectedCharacter(data.characterClass as CharacterClass);
-    }
-  };
-
-  const handleGameStarted = () => {
-    navigate('/game');
-  };
-
-  const handleError = (data: { message: string }) => {
-    setError(data.message);
-    setIsLoading(false);
-  };
+  }, [handleRoomJoined, handlePlayerJoined, handlePlayerLeft, handleCharacterSelected, handleGameStarted, handleError]);
 
   // Room creation flow (T067)
   const handleCreateRoom = async () => {
