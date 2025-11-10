@@ -12,40 +12,77 @@
     "success": "Success"
   },
   "lobby": {
-    "title": "Hexhaven Lobby",
+    "title": "Hexhaven Multiplayer",
     "createGame": "Create Game",
+    "createRoom": "Create Game",
+    "creating": "Creating...",
     "joinGame": "Join Game",
+    "joinRoom": "Join Game",
+    "joinGameTitle": "Join a Game",
+    "joining": "Joining...",
+    "join": "Join",
+    "or": "or",
+    "back": "Back",
     "roomCode": "Room Code",
-    "enterRoomCode": "Enter 6-character room code",
+    "roomCodeLabel": "Room code",
+    "enterRoomCode": "Enter Room Code",
+    "enterRoomCodeInstruction": "Enter the 6-character room code",
+    "invalidRoomCode": "Invalid room code (6 characters required)",
     "nickname": "Nickname",
     "enterNickname": "Enter your nickname",
-    "waitingForPlayers": "Waiting for players...",
+    "waitingForPlayers": "Waiting for all players to select characters...",
+    "waitingForPlayer": "Waiting for player...",
+    "waitingForHost": "Waiting for host to start the game...",
+    "players": "Players",
     "playersInLobby": "Players in Lobby",
     "selectCharacter": "Select Your Character",
     "selectScenario": "Select Scenario",
     "allPlayersReady": "All players ready!",
     "startGame": "Start Game",
-    "hostWillStart": "Host will start the game"
+    "hostWillStart": "Host will start the game",
+    "you": "(You)",
+    "youAreHost": "You are the host",
+    "host": "Host",
+    "ready": "Ready",
+    "taken": "Taken",
+    "notAllReady": "All players must select a character",
+    "needMorePlayers": "Need at least 2 players to start",
+    "connectionStatus": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "reconnecting": "Reconnecting"
+    }
   },
   "characters": {
-    "brute": "Brute",
-    "tinkerer": "Tinkerer",
-    "spellweaver": "Spellweaver",
-    "scoundrel": "Scoundrel",
-    "cragheart": "Cragheart",
-    "mindthief": "Mindthief",
-    "description": {
-      "brute": "Powerful melee fighter with high health",
-      "tinkerer": "Support character with healing and gadgets",
-      "spellweaver": "Ranged spellcaster with elemental magic",
-      "scoundrel": "Agile damage dealer with positioning bonuses",
-      "cragheart": "Versatile ranged attacker with obstacles",
-      "mindthief": "Mind control specialist with augments"
+    "Brute": {
+      "name": "Brute",
+      "description": "Powerful melee fighter with high health"
+    },
+    "Tinkerer": {
+      "name": "Tinkerer",
+      "description": "Support class with healing and recovery"
+    },
+    "Spellweaver": {
+      "name": "Spellweaver",
+      "description": "Elemental magic with area attacks"
+    },
+    "Scoundrel": {
+      "name": "Scoundrel",
+      "description": "Fast striker with adjacency bonuses"
+    },
+    "Cragheart": {
+      "name": "Cragheart",
+      "description": "Ranged attacker with obstacle manipulation"
+    },
+    "Mindthief": {
+      "name": "Mindthief",
+      "description": "Mind control and melee augmentation"
     }
   },
   "game": {
+    "title": "Hexhaven Battle",
     "yourTurn": "Your Turn",
-    "opponentTurn": "{{playerName}}'s Turn",
+    "opponentTurn": "Opponent's Turn",
     "selectCards": "Select 2 Cards",
     "move": "Move",
     "attack": "Attack",
@@ -54,7 +91,15 @@
     "health": "Health",
     "initiative": "Initiative",
     "turnOrder": "Turn Order",
-    "elements": "Elements"
+    "elements": "Elements",
+    "leaveGame": "Leave Game",
+    "movementHint": "Tap a highlighted hex to move your character",
+    "reconnecting": "Reconnecting...",
+    "connection": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "reconnecting": "Reconnecting"
+    }
   },
   "cards": {
     "topAction": "Top Action",
