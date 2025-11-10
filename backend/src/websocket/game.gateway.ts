@@ -24,11 +24,19 @@ import type {
   SelectCharacterPayload,
   StartGamePayload,
   MoveCharacterPayload,
+  SelectCardsPayload,
+  AttackTargetPayload,
+  EndTurnPayload,
   RoomJoinedPayload,
   PlayerJoinedPayload,
   CharacterSelectedPayload,
   GameStartedPayload,
   CharacterMovedPayload,
+  CardsSelectedPayload,
+  TurnStartedPayload,
+  AttackResolvedPayload,
+  MonsterActivatedPayload,
+  ScenarioCompletedPayload,
   ErrorPayload,
 } from '../../../shared/types/events';
 import {
@@ -376,6 +384,288 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         message: errorMessage,
       };
       client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Select two ability cards for the round (US2 - T097)
+   */
+  @SubscribeMessage('select_cards')
+  handleSelectCards(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() _payload: SelectCardsPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(`Select cards request from ${playerUUID}`);
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // TODO: Validate cards are in player's hand
+      // TODO: Calculate initiative from selected cards
+      const topCardInitiative = 50; // Placeholder
+      const bottomCardInitiative = 30; // Placeholder
+
+      // Broadcast cards selected (hide actual card IDs, only show initiative)
+      const cardsSelectedPayload: CardsSelectedPayload = {
+        playerId: playerUUID,
+        topCardInitiative,
+        bottomCardInitiative,
+      };
+
+      this.server
+        .to(room.roomCode)
+        .emit('cards_selected', cardsSelectedPayload);
+
+      this.logger.log(`Player ${playerUUID} selected cards`);
+
+      // TODO: Check if all players have selected cards
+      // TODO: If yes, determine turn order and broadcast
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Select cards error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'SELECT_CARDS_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Attack a target (monster or character) (US2 - T097)
+   */
+  @SubscribeMessage('attack_target')
+  handleAttackTarget(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AttackTargetPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(
+        `Attack target request from ${playerUUID} -> ${payload.targetId}`,
+      );
+
+      // Get attacker's character
+      const attacker = characterService.getCharacterByPlayerId(playerUUID);
+      if (!attacker) {
+        throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // TODO: Get target (monster or character)
+      // TODO: Validate attack (range, target alive, not disarmed)
+      // TODO: Draw attack modifier card
+      // TODO: Calculate damage
+      // TODO: Apply damage to target
+      // TODO: Check if target is dead
+      // TODO: Trigger retaliate if applicable
+
+      // Placeholder attack resolution
+      const attackResolvedPayload: AttackResolvedPayload = {
+        attackerId: attacker.id,
+        targetId: payload.targetId,
+        damage: 5,
+        modifier: 0,
+        effects: [],
+        targetHealth: 10,
+        targetDead: false,
+      };
+
+      this.server
+        .to(room.roomCode)
+        .emit('attack_resolved', attackResolvedPayload);
+
+      this.logger.log(`Attack resolved: ${attacker.id} -> ${payload.targetId}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Attack target error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'ATTACK_TARGET_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * End current entity's turn (US2 - T097)
+   */
+  @SubscribeMessage('end_turn')
+  handleEndTurn(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() _payload: EndTurnPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(`End turn request from ${playerUUID}`);
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // TODO: Verify it's this player's turn
+      // TODO: Get next entity in turn order
+      // TODO: If next entity is monster, activate monster AI
+      // TODO: If next entity is player, notify them
+
+      // Placeholder: advance to next turn
+      const turnStartedPayload: TurnStartedPayload = {
+        entityId: 'next_entity_id',
+        entityType: 'character',
+        turnIndex: 1,
+      };
+
+      this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
+
+      this.logger.log(`Turn ended for ${playerUUID}`);
+
+      // TODO: Check if round is complete (all entities have taken turns)
+      // TODO: If round complete, decay elements and start new round
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`End turn error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'END_TURN_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Activate monster AI (US2 - T099)
+   * Called when it's a monster's turn
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await
+  private async activateMonster(
+    monsterId: string,
+    roomCode: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(`Activating monster ${monsterId}`);
+
+      // TODO: Get monster from room state
+      // TODO: Get all characters in room
+      // TODO: Use MonsterAIService to determine focus target
+      // TODO: Use PathfindingService to calculate movement
+      // TODO: Use MonsterAIService to determine if monster attacks
+      // TODO: If attacking, use DamageCalculationService
+      // TODO: Draw attack modifier card for monster
+      // TODO: Apply damage to target
+      // TODO: Check if target is dead/exhausted
+
+      // Placeholder monster activation
+      const monsterActivatedPayload: MonsterActivatedPayload = {
+        monsterId,
+        focusTarget: 'character_uuid',
+        movement: { q: 1, r: 1 },
+        attack: {
+          targetId: 'character_uuid',
+          damage: 3,
+          modifier: 0,
+        },
+      };
+
+      this.server
+        .to(roomCode)
+        .emit('monster_activated', monsterActivatedPayload);
+
+      // TODO: Automatically advance to next turn after monster activation
+      this.logger.log(`Monster ${monsterId} activated`);
+    } catch (error) {
+      this.logger.error(
+        `Monster activation error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Check scenario completion and broadcast if complete (US2 - T100)
+   */
+  private checkScenarioCompletion(roomCode: string): void {
+    try {
+      // TODO: Get room state
+      // TODO: Get all characters
+      // TODO: Get all monsters
+      // TODO: Use ScenarioService.checkScenarioCompletion
+      // TODO: If complete, broadcast scenario_completed
+
+      // Placeholder
+      const allMonstersDead = false;
+      const allPlayersExhausted = false;
+
+      if (allMonstersDead || allPlayersExhausted) {
+        const scenarioCompletedPayload: ScenarioCompletedPayload = {
+          victory: allMonstersDead,
+          experience: 10,
+          loot: [],
+          completionTime: 1800, // 30 minutes
+        };
+
+        this.server
+          .to(roomCode)
+          .emit('scenario_completed', scenarioCompletedPayload);
+
+        this.logger.log(`Scenario completed in room ${roomCode}`);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Check scenario completion error: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
