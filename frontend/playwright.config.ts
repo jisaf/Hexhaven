@@ -46,58 +46,12 @@ export default defineConfig({
 
   // Configure projects for major browsers and devices
   projects: [
-    // Mobile devices (primary focus)
+    // Chrome only (mobile-first)
     {
       name: 'Mobile Chrome',
       use: {
         ...devices['Pixel 5'],
         viewport: { width: 393, height: 851 } // Pixel 5
-      }
-    },
-    {
-      name: 'Mobile Safari',
-      use: {
-        ...devices['iPhone 12'],
-        viewport: { width: 390, height: 844 } // iPhone 12
-      }
-    },
-    {
-      name: 'Mobile Safari Small',
-      use: {
-        ...devices['iPhone SE'],
-        viewport: { width: 375, height: 667 } // iPhone SE (minimum supported)
-      }
-    },
-
-    // Tablet
-    {
-      name: 'Tablet Chrome',
-      use: {
-        ...devices['iPad Pro'],
-        viewport: { width: 1024, height: 1366 }
-      }
-    },
-
-    // Desktop browsers (secondary)
-    {
-      name: 'Desktop Chrome',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 720 }
-      }
-    },
-    {
-      name: 'Desktop Firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        viewport: { width: 1280, height: 720 }
-      }
-    },
-    {
-      name: 'Desktop Safari',
-      use: {
-        ...devices['Desktop Safari'],
-        viewport: { width: 1280, height: 720 }
       }
     }
   ],
