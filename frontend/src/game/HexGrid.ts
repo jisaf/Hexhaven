@@ -14,20 +14,23 @@
 import * as PIXI from 'pixi.js';
 import { HexTile, type HexTileData } from './HexTile';
 import { CharacterSprite, type CharacterData } from './CharacterSprite';
+import { MonsterSprite } from './MonsterSprite';
 import { MovementHighlight } from './MovementHighlight';
 import { type Axial, axialKey, screenToAxial, hexRangeReachable } from './hex-utils';
+import { Monster } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
   width: number;
   height: number;
   onHexClick?: (hex: Axial) => void;
   onCharacterSelect?: (characterId: string) => void;
+  onMonsterSelect?: (monsterId: string) => void;
 }
 
 export interface GameBoardData {
   tiles: HexTileData[];
   characters: CharacterData[];
-  monsters?: unknown[]; // Will be implemented in User Story 2
+  monsters?: Monster[];
 }
 
 export class HexGrid {
@@ -42,10 +45,12 @@ export class HexGrid {
   // Tiles and entities
   private tiles: Map<string, HexTile>;
   private characters: Map<string, CharacterSprite>;
+  private monsters: Map<string, MonsterSprite>;
   private movementHighlight: MovementHighlight;
 
   // State
   private selectedCharacterId: string | null = null;
+  private selectedMonsterId: string | null = null;
   private options: HexGridOptions;
 
   // Viewport for pan/zoom (to be added with pixi-viewport in US3)
@@ -86,6 +91,7 @@ export class HexGrid {
     // Initialize collections
     this.tiles = new Map();
     this.characters = new Map();
+    this.monsters = new Map();
     this.movementHighlight = new MovementHighlight(this.highlightsLayer);
 
     // Setup background click handler
@@ -117,7 +123,12 @@ export class HexGrid {
       this.addCharacter(characterData);
     }
 
-    // TODO: Add monsters (User Story 2)
+    // Create monster sprites (User Story 2 - T114)
+    if (data.monsters) {
+      for (const monsterData of data.monsters) {
+        this.addMonster(monsterData);
+      }
+    }
   }
 
   /**
@@ -169,6 +180,52 @@ export class HexGrid {
   }
 
   /**
+   * Add a monster to the board (User Story 2 - T114)
+   */
+  public addMonster(monster: Monster): void {
+    const sprite = new MonsterSprite(monster);
+
+    // Enable interaction for targeting
+    sprite.eventMode = 'static';
+    sprite.cursor = 'pointer';
+    sprite.on('pointerdown', () => this.handleMonsterSelect(monster.id));
+
+    this.monsters.set(monster.id, sprite);
+    this.entitiesLayer.addChild(sprite);
+  }
+
+  /**
+   * Remove a monster from the board (User Story 2 - T114)
+   */
+  public removeMonster(monsterId: string): void {
+    const sprite = this.monsters.get(monsterId);
+
+    if (sprite) {
+      this.entitiesLayer.removeChild(sprite);
+      sprite.destroy();
+      this.monsters.delete(monsterId);
+    }
+  }
+
+  /**
+   * Update monster data (User Story 2 - T114)
+   */
+  public updateMonster(monsterId: string, monster: Monster): void {
+    const sprite = this.monsters.get(monsterId);
+
+    if (sprite) {
+      sprite.updateMonster(monster);
+    }
+  }
+
+  /**
+   * Get a monster sprite (User Story 2 - T114)
+   */
+  public getMonster(monsterId: string): MonsterSprite | undefined {
+    return this.monsters.get(monsterId);
+  }
+
+  /**
    * Handle character selection
    */
   private handleCharacterSelect(characterId: string): void {
@@ -208,6 +265,32 @@ export class HexGrid {
   }
 
   /**
+   * Handle monster selection (User Story 2 - T114)
+   */
+  private handleMonsterSelect(monsterId: string): void {
+    // Deselect previous monster
+    if (this.selectedMonsterId) {
+      const prevSprite = this.monsters.get(this.selectedMonsterId);
+      if (prevSprite) {
+        prevSprite.setSelected(false);
+      }
+    }
+
+    // Select new monster
+    this.selectedMonsterId = monsterId;
+    const sprite = this.monsters.get(monsterId);
+
+    if (sprite) {
+      sprite.setSelected(true);
+    }
+
+    // Notify parent component
+    if (this.options.onMonsterSelect) {
+      this.options.onMonsterSelect(monsterId);
+    }
+  }
+
+  /**
    * Handle hex click (for movement)
    */
   private handleHexClick(hex: Axial): void {
@@ -231,7 +314,7 @@ export class HexGrid {
   }
 
   /**
-   * Deselect all characters
+   * Deselect all characters and monsters (User Story 2 - T114)
    */
   public deselectAll(): void {
     if (this.selectedCharacterId) {
@@ -242,6 +325,15 @@ export class HexGrid {
 
       this.selectedCharacterId = null;
       this.movementHighlight.clear();
+    }
+
+    if (this.selectedMonsterId) {
+      const sprite = this.monsters.get(this.selectedMonsterId);
+      if (sprite) {
+        sprite.setSelected(false);
+      }
+
+      this.selectedMonsterId = null;
     }
   }
 
@@ -268,7 +360,13 @@ export class HexGrid {
       }
     }
 
-    // TODO: Check if occupied by monster (User Story 2)
+    // Check if occupied by monster (User Story 2 - T114)
+    for (const monster of this.monsters.values()) {
+      const monsterData = monster.getMonster();
+      if (monsterData.currentHex.q === hex.q && monsterData.currentHex.r === hex.r) {
+        return true;
+      }
+    }
 
     return false;
   }
@@ -311,7 +409,7 @@ export class HexGrid {
   }
 
   /**
-   * Clear the entire board
+   * Clear the entire board (User Story 2 - T114)
    */
   public clearBoard(): void {
     // Clear tiles
@@ -328,10 +426,18 @@ export class HexGrid {
     }
     this.characters.clear();
 
+    // Clear monsters (User Story 2 - T114)
+    for (const monster of this.monsters.values()) {
+      this.entitiesLayer.removeChild(monster);
+      monster.destroy();
+    }
+    this.monsters.clear();
+
     // Clear highlights
     this.movementHighlight.clear();
 
     this.selectedCharacterId = null;
+    this.selectedMonsterId = null;
   }
 
   /**
