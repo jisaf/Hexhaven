@@ -83,7 +83,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           });
         }
       } catch (error) {
-        this.logger.error(`Error handling disconnect: ${error}`);
+        this.logger.error(
+          `Error handling disconnect: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
 
       // Clean up mappings
@@ -148,11 +150,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.to(roomCode).emit('player_joined', playerJoinedPayload);
 
       this.logger.log(`Player ${nickname} joined room ${roomCode}`);
-    } catch (error: any) {
-      this.logger.error(`Join room error: ${error.message}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Join room error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'JOIN_ROOM_ERROR',
-        message: error.message,
+        message: errorMessage,
       };
       client.emit('error', errorPayload);
     }
@@ -162,10 +166,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Select character class
    */
   @SubscribeMessage('select_character')
-  async handleSelectCharacter(
+  handleSelectCharacter(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCharacterPayload,
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -218,11 +222,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(
         `Player ${player.nickname} selected ${payload.characterClass}`,
       );
-    } catch (error: any) {
-      this.logger.error(`Select character error: ${error.message}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Select character error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'SELECT_CHARACTER_ERROR',
-        message: error.message,
+        message: errorMessage,
       };
       client.emit('error', errorPayload);
     }
@@ -232,10 +238,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Start the game
    */
   @SubscribeMessage('start_game')
-  async handleStartGame(
+  handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: StartGamePayload,
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -289,11 +295,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(room.roomCode).emit('game_started', gameStartedPayload);
 
       this.logger.log(`Game started in room ${room.roomCode}`);
-    } catch (error: any) {
-      this.logger.error(`Start game error: ${error.message}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Start game error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'START_GAME_ERROR',
-        message: error.message,
+        message: errorMessage,
       };
       client.emit('error', errorPayload);
     }
@@ -303,10 +311,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Move character to a hex
    */
   @SubscribeMessage('move_character')
-  async handleMoveCharacter(
+  handleMoveCharacter(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: MoveCharacterPayload,
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -359,11 +367,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
       );
-    } catch (error: any) {
-      this.logger.error(`Move character error: ${error.message}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Move character error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'MOVE_CHARACTER_ERROR',
-        message: error.message,
+        message: errorMessage,
       };
       client.emit('error', errorPayload);
     }
