@@ -1,0 +1,343 @@
+/**
+ * TurnOrderDisplay Styles (US2 - T105)
+ *
+ * Mobile-first responsive design for turn order visualization
+ */
+
+.turn-order-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  border: 2px solid #3498db;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Round Counter */
+.round-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(155, 89, 182, 0.3);
+}
+
+.round-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ecf0f1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.round-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 12px;
+  border-radius: 4px;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Turn Order List */
+.turn-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-header {
+  font-size: 16px;
+  font-weight: bold;
+  color: #3498db;
+  text-align: center;
+  padding: 8px;
+  border-bottom: 2px solid rgba(52, 152, 219, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Entity List */
+.entity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+/* Custom Scrollbar */
+.entity-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.entity-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.entity-list::-webkit-scrollbar-thumb {
+  background: rgba(52, 152, 219, 0.5);
+  border-radius: 4px;
+}
+
+.entity-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 152, 219, 0.7);
+}
+
+/* Entity Item */
+.entity-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  min-height: 60px;
+}
+
+.entity-item.character {
+  border-left: 4px solid #3498db;
+}
+
+.entity-item.monster {
+  border-left: 4px solid #e74c3c;
+}
+
+.entity-item.current-turn {
+  background: linear-gradient(90deg, rgba(46, 204, 113, 0.2), rgba(46, 204, 113, 0.05));
+  border: 2px solid #2ecc71;
+  box-shadow: 0 0 16px rgba(46, 204, 113, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.entity-item.turn-passed {
+  opacity: 0.5;
+  filter: grayscale(30%);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(46, 204, 113, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(46, 204, 113, 0.5);
+  }
+}
+
+/* Turn Indicator */
+.turn-indicator {
+  position: absolute;
+  left: -12px;
+  font-size: 20px;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+.indicator-arrow {
+  color: #2ecc71;
+  filter: drop-shadow(0 0 4px rgba(46, 204, 113, 0.6));
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+/* Entity Icon */
+.entity-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+/* Entity Info */
+.entity-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.entity-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ecf0f1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.elite-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f39c12;
+  color: white;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Health Bar */
+.health-bar-container {
+  position: relative;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.health-bar {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 8px;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Entity Initiative */
+.entity-initiative {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(243, 156, 18, 0.2);
+  border: 2px solid #f39c12;
+  border-radius: 50%;
+}
+
+.initiative-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #f39c12;
+}
+
+/* Current Turn Banner */
+.current-turn-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.banner-icon {
+  font-size: 28px;
+}
+
+.banner-text {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 375px) {
+  .turn-order-display {
+    max-width: 100%;
+    padding: 8px;
+  }
+
+  .entity-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 28px;
+  }
+
+  .entity-name {
+    font-size: 14px;
+  }
+
+  .entity-initiative {
+    width: 40px;
+    height: 40px;
+  }
+
+  .initiative-value {
+    font-size: 16px;
+  }
+
+  .banner-text {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .turn-order-display {
+    max-width: 450px;
+  }
+
+  .entity-list {
+    max-height: 500px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .entity-item.current-turn,
+  .turn-indicator,
+  .current-turn-banner {
+    animation: none;
+  }
+
+  .health-bar {
+    transition: none;
+  }
+}

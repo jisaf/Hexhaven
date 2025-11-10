@@ -1,0 +1,284 @@
+/**
+ * CardSelectionPanel Styles (US2 - T104)
+ *
+ * Mobile-first swipeable carousel for ability card selection
+ */
+
+.card-selection-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+/* Selection Instructions */
+.selection-instructions {
+  text-align: center;
+  padding: 12px;
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 8px;
+  border: 2px solid #3498db;
+}
+
+.selection-instructions h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: #3498db;
+}
+
+.selection-instructions p {
+  margin: 0;
+  font-size: 14px;
+  color: #ecf0f1;
+}
+
+/* Selection Summary */
+.selection-summary {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(46, 204, 113, 0.1);
+  border-radius: 8px;
+  border: 2px solid #2ecc71;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-label {
+  font-weight: bold;
+  color: #95a5a6;
+  font-size: 14px;
+}
+
+.summary-value {
+  font-weight: bold;
+  color: #2ecc71;
+  font-size: 14px;
+}
+
+/* Carousel Container */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+  width: 100%;
+  touch-action: pan-y;
+}
+
+.carousel-item {
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* Carousel Navigation */
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  min-width: 44px; /* Touch target minimum */
+  min-height: 44px;
+  border: none;
+  background: rgba(52, 152, 219, 0.9);
+  color: white;
+  font-size: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav:hover:not(:disabled) {
+  background: rgba(41, 128, 185, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-nav.prev {
+  left: 8px;
+}
+
+.carousel-nav.next {
+  right: 8px;
+}
+
+/* Carousel Indicators */
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #7f8c8d;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.indicator:hover {
+  border-color: #3498db;
+}
+
+.indicator.active {
+  background: #3498db;
+  border-color: #3498db;
+  width: 16px;
+  height: 16px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.action-buttons button {
+  flex: 1;
+  max-width: 200px;
+  min-height: 44px; /* Touch target minimum */
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-clear {
+  background: rgba(231, 76, 60, 0.8);
+  color: white;
+}
+
+.btn-clear:hover:not(:disabled) {
+  background: rgba(231, 76, 60, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.btn-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-confirm {
+  background: rgba(46, 204, 113, 0.8);
+  color: white;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: rgba(46, 204, 113, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+}
+
+.btn-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-confirm:active:not(:disabled),
+.btn-clear:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+  .card-selection-panel {
+    padding: 24px;
+  }
+
+  .carousel-container {
+    gap: 16px;
+  }
+
+  .carousel-nav {
+    width: 56px;
+    height: 56px;
+  }
+
+  .carousel-nav.prev {
+    left: 16px;
+  }
+
+  .carousel-nav.next {
+    right: 16px;
+  }
+
+  .carousel-item {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 375px) {
+  .card-selection-panel {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .selection-instructions h3 {
+    font-size: 18px;
+  }
+
+  .selection-instructions p {
+    font-size: 13px;
+  }
+
+  .action-buttons button {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-track {
+    transition: none;
+  }
+
+  .carousel-nav,
+  .indicator {
+    transition: none;
+  }
+}

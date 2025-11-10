@@ -1,0 +1,272 @@
+/**
+ * Scenario Service (US2 - T096, T100)
+ *
+ * Manages scenario lifecycle:
+ * - Load scenario data from database
+ * - Spawn monsters based on scenario definition
+ * - Scale monster stats by difficulty level
+ * - Check scenario completion conditions
+ * - Handle loot token spawning
+ */
+
+import { Injectable } from '@nestjs/common';
+import {
+  Scenario,
+  Monster,
+  Character,
+  AxialCoordinates,
+} from '../../../shared/types/entities';
+
+interface MonsterStats {
+  health: number;
+  movement: number;
+  attack: number;
+  range: number;
+}
+
+@Injectable()
+export class ScenarioService {
+  /**
+   * Load scenario by ID
+   * In production, this would query the database
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async loadScenario(_scenarioId: string): Promise<Scenario | null> {
+    // TODO: Implement database query
+    // For now, return null as placeholder
+    return null;
+  }
+
+  /**
+   * Spawn monsters for a scenario based on monster groups
+   */
+  spawnMonsters(
+    scenario: Scenario,
+    roomId: string,
+    difficulty: number,
+  ): Monster[] {
+    const monsters: Monster[] = [];
+
+    for (const group of scenario.monsterGroups) {
+      for (let i = 0; i < group.count; i++) {
+        const spawnPoint = group.spawnPoints[i];
+        if (!spawnPoint) {
+          console.warn(
+            `Not enough spawn points for monster group ${group.type}`,
+          );
+          continue;
+        }
+
+        const baseStats = this.getMonsterBaseStats(group.type, group.isElite);
+        const scaledStats = this.scaleMonsterStats(baseStats, difficulty);
+
+        const monster: Monster = {
+          id: this.generateMonsterId(),
+          roomId,
+          monsterType: group.type,
+          isElite: group.isElite,
+          health: scaledStats.health,
+          maxHealth: scaledStats.health,
+          movement: scaledStats.movement,
+          attack: scaledStats.attack,
+          range: scaledStats.range,
+          currentHex: spawnPoint,
+          specialAbilities: this.getMonsterSpecialAbilities(group.type),
+          conditions: [],
+          isDead: false,
+        };
+
+        monsters.push(monster);
+      }
+    }
+
+    return monsters;
+  }
+
+  /**
+   * Check if scenario is complete
+   * Returns: { isComplete: boolean, victory: boolean, reason: string }
+   */
+  checkScenarioCompletion(
+    characters: Character[],
+    monsters: Monster[],
+    _scenario: Scenario,
+  ): { isComplete: boolean; victory: boolean; reason: string } {
+    // Check if all players are exhausted (defeat)
+    const allPlayersExhausted = characters.every((char) => char.isExhausted);
+    if (allPlayersExhausted) {
+      return {
+        isComplete: true,
+        victory: false,
+        reason: 'All players exhausted',
+      };
+    }
+
+    // Check if all monsters are dead (victory)
+    const allMonstersDead = monsters.every((monster) => monster.isDead);
+    if (allMonstersDead) {
+      return {
+        isComplete: true,
+        victory: true,
+        reason: 'All monsters defeated',
+      };
+    }
+
+    // Check custom objective completion (if implemented)
+    // TODO: Implement custom objective checking based on scenario.objectivePrimary
+
+    return {
+      isComplete: false,
+      victory: false,
+      reason: 'Scenario in progress',
+    };
+  }
+
+  /**
+   * Scale monster stats based on difficulty level
+   * Difficulty 0-7, where 0 is easiest
+   */
+  scaleMonsterStats(baseStats: MonsterStats, difficulty: number): MonsterStats {
+    // Clamp difficulty to valid range
+    const clampedDifficulty = Math.max(0, Math.min(7, difficulty));
+
+    // Scale factor: +10% per difficulty level
+    const scaleFactor = 1 + clampedDifficulty * 0.1;
+
+    return {
+      health: Math.floor(baseStats.health * scaleFactor),
+      movement: baseStats.movement, // Movement doesn't scale
+      attack: Math.floor(baseStats.attack * scaleFactor),
+      range: baseStats.range, // Range doesn't scale
+    };
+  }
+
+  /**
+   * Get base stats for monster type
+   * In production, this would query a monster database
+   */
+  private getMonsterBaseStats(
+    monsterType: string,
+    isElite: boolean,
+  ): MonsterStats {
+    // Default stats for common monster types
+    const baseStats: Record<string, MonsterStats> = {
+      'Bandit Guard': { health: 5, movement: 2, attack: 2, range: 0 },
+      'Living Bones': { health: 4, movement: 2, attack: 1, range: 0 },
+      'Bandit Archer': { health: 4, movement: 2, attack: 2, range: 3 },
+      'City Guard': { health: 6, movement: 2, attack: 3, range: 0 },
+    };
+
+    const stats = baseStats[monsterType] || {
+      health: 5,
+      movement: 2,
+      attack: 2,
+      range: 0,
+    };
+
+    // Elite monsters have +2 health and +1 attack
+    if (isElite) {
+      return {
+        ...stats,
+        health: stats.health + 2,
+        attack: stats.attack + 1,
+      };
+    }
+
+    return stats;
+  }
+
+  /**
+   * Get special abilities for monster type
+   */
+  private getMonsterSpecialAbilities(monsterType: string): string[] {
+    const abilities: Record<string, string[]> = {
+      'Bandit Guard': ['Retaliate 1'],
+      'Living Bones': [],
+      'Bandit Archer': [],
+      'City Guard': ['Shield 1'],
+    };
+
+    return abilities[monsterType] || [];
+  }
+
+  /**
+   * Generate unique monster ID
+   */
+  private generateMonsterId(): string {
+    return `monster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Spawn loot token on hex when monster dies
+   */
+  spawnLootToken(monsterHex: AxialCoordinates): {
+    hex: AxialCoordinates;
+    lootId: string;
+  } {
+    return {
+      hex: monsterHex,
+      lootId: `loot_${Date.now()}`,
+    };
+  }
+
+  /**
+   * Validate scenario data
+   */
+  validateScenario(scenario: Scenario): {
+    valid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    // Check map layout has minimum tiles
+    if (scenario.mapLayout.length < 10) {
+      errors.push('Map layout must have at least 10 tiles');
+    }
+
+    // Check monster groups exist
+    if (scenario.monsterGroups.length === 0) {
+      errors.push('Scenario must have at least one monster group');
+    }
+
+    // Check spawn points match terrain
+    for (const group of scenario.monsterGroups) {
+      for (const spawnPoint of group.spawnPoints) {
+        const tile = scenario.mapLayout.find(
+          (t) =>
+            t.coordinates.q === spawnPoint.q &&
+            t.coordinates.r === spawnPoint.r,
+        );
+
+        if (!tile) {
+          errors.push(
+            `Spawn point (${spawnPoint.q},${spawnPoint.r}) not found in map layout`,
+          );
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        } else if (tile.terrain === 'obstacle') {
+          errors.push(
+            `Spawn point (${spawnPoint.q},${spawnPoint.r}) is on obstacle terrain`,
+          );
+        }
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
+   * Get available scenarios list
+   * In production, this would query the database
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async getAvailableScenarios(): Promise<
+    Array<{ id: string; name: string; difficulty: number }>
+  > {
+    // TODO: Implement database query
+    // Placeholder return
+    return [];
+  }
+}
