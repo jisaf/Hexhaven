@@ -6,11 +6,8 @@
  * class has a unique deck of ability cards.
  */
 
-import type {
-  CharacterClass,
-  Action,
-  ElementType,
-} from '../../../shared/types/entities';
+import type { Action, ElementType } from '../../../shared/types/entities';
+import { CharacterClass } from '../../../shared/types/entities';
 
 export interface AbilityCardData {
   id: string;
@@ -111,12 +108,10 @@ export class AbilityCard {
     return action.elementConsume || null;
   }
 
-  getElementBonus(position: 'top' | 'bottom'):
-    | {
-        effect: string;
-        value: number;
-      }
-    | null {
+  getElementBonus(position: 'top' | 'bottom'): {
+    effect: string;
+    value: number;
+  } | null {
     const action = this.getActionByPosition(position);
     return action.elementBonus || null;
   }
@@ -335,7 +330,8 @@ export class AbilityCard {
 
     // For now, only Brute cards are implemented
     // Other classes would have their own starter decks
-    const cardTemplates = characterClass === 'Brute' ? bruteCards : [];
+    const cardTemplates =
+      characterClass === CharacterClass.BRUTE ? bruteCards : [];
 
     return cardTemplates.map((template) =>
       AbilityCard.create(
