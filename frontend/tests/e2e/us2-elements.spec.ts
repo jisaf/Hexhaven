@@ -166,6 +166,7 @@ test.describe('User Story 2: Elemental Infusion Generation and Consumption', () 
       await monster.click();
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const fireElement = page.locator('[data-testid="element-fire"]');
     // Fire should be strong
     // await expect(fireElement).toHaveAttribute('data-state', 'strong', { timeout: 2000 });
@@ -254,6 +255,7 @@ test.describe('User Story 2: Elemental Infusion Generation and Consumption', () 
     await page.locator('[data-testid="close-monster-stats"]').click();
 
     // Fire element should now be strong
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const fireElement = page.locator('[data-testid="element-fire"]');
     // await expect(fireElement).toHaveAttribute('data-state', 'strong', { timeout: 2000 });
 

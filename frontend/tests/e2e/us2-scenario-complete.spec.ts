@@ -270,6 +270,7 @@ test.describe('User Story 2: Scenario Completion Detection', () => {
     await page.locator('[data-testid="confirm-cards-button"]').click();
 
     // Record start time
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const startTime = Date.now();
 
     // Play for several rounds
