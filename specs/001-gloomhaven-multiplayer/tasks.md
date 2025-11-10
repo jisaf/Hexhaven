@@ -111,14 +111,14 @@
 - [X] T045 [P] [US1] Create Player model in backend/src/models/player.model.ts
 - [X] T046 [P] [US1] Create GameRoom model in backend/src/models/game-room.model.ts
 - [X] T047 [P] [US1] Create Character model in backend/src/models/character.model.ts
-- [ ] T048 [US1] Implement RoomService with createRoom, joinRoom, getRoom methods in backend/src/services/room.service.ts
-- [ ] T049 [US1] Implement PlayerService with createPlayer, validateNickname methods in backend/src/services/player.service.ts
-- [ ] T050 [US1] Implement CharacterService with createCharacter, selectCharacter methods in backend/src/services/character.service.ts
-- [ ] T051 [US1] Implement GameGateway WebSocket handlers (join_room, select_character, start_game, move_character) in backend/src/websocket/game.gateway.ts
-- [ ] T052 [US1] Implement REST POST /api/rooms endpoint for room creation in backend/src/api/rooms.controller.ts
-- [ ] T053 [US1] Implement REST GET /api/rooms/:roomCode endpoint in backend/src/api/rooms.controller.ts
-- [ ] T054 [US1] Add server-authoritative validation for movement (range, obstacles, occupancy) in backend/src/services/validation.service.ts
-- [ ] T055 [US1] Implement real-time state broadcast on player actions in backend/src/websocket/game.gateway.ts
+- [X] T048 [US1] Implement RoomService with createRoom, joinRoom, getRoom methods in backend/src/services/room.service.ts
+- [X] T049 [US1] Implement PlayerService with createPlayer, validateNickname methods in backend/src/services/player.service.ts
+- [X] T050 [US1] Implement CharacterService with createCharacter, selectCharacter methods in backend/src/services/character.service.ts
+- [X] T051 [US1] Implement GameGateway WebSocket handlers (join_room, select_character, start_game, move_character) in backend/src/websocket/game.gateway.ts
+- [X] T052 [US1] Implement REST POST /api/rooms endpoint for room creation in backend/src/api/rooms.controller.ts
+- [X] T053 [US1] Implement REST GET /api/rooms/:roomCode endpoint in backend/src/api/rooms.controller.ts
+- [X] T054 [US1] Add server-authoritative validation for movement (range, obstacles, occupancy) in backend/src/services/validation.service.ts
+- [X] T055 [US1] Implement real-time state broadcast on player actions in backend/src/websocket/game.gateway.ts
 
 ### Frontend Implementation for User Story 1
 
