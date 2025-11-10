@@ -1,8 +1,20 @@
 <!--
-SYNC IMPACT REPORT - Constitution v1.3.1
+SYNC IMPACT REPORT - Constitution v1.4.0
 ================================================================================
-Version Change: 1.3.0 → 1.3.1 (PATCH - clarification)
-Last Amendment: 2025-11-07
+Version Change: 1.3.1 → 1.4.0 (MINOR - new CI/CD requirements)
+Last Amendment: 2025-11-09
+
+Changes in v1.4.0:
+- Added new CI/CD Pipeline Requirements section under Quality Gates
+  - GitHub Actions checks MUST pass before merge (NON-NEGOTIABLE)
+  - Backend checks: lint, type check, tests, build
+  - Frontend checks: lint, type check, tests, build
+  - E2E tests run after all builds pass
+  - Common failure patterns documented with solutions
+  - Enum usage patterns (value imports vs type-only imports)
+  - Async/await patterns (remove when unnecessary)
+  - Frontend ESLint config requirements (tseslint.config format)
+  - React hooks patterns (avoid cascading renders)
 
 Changes in v1.3.1:
 - Enhanced Quality Gates with explicit Task Completion Gates
@@ -285,6 +297,66 @@ A task CANNOT be considered complete and MUST NOT be reported to the user until:
 - Remediation plan with timeline
 - Note: Task completion gates have NO exceptions - they are absolute requirements
 
+### CI/CD Pipeline Requirements (NON-NEGOTIABLE)
+
+**Every pull request MUST pass all GitHub Actions checks before merging.**
+
+**Backend Requirements:**
+- `npm run lint` MUST pass with zero errors
+- `npx tsc --noEmit` MUST pass (type checking)
+- `npm test` MUST pass with adequate coverage
+- `npm run build` MUST succeed
+
+**Frontend Requirements:**
+- `npm run lint` MUST pass with zero errors (warnings allowed)
+- `npx tsc -b` MUST pass (type checking)
+- `npm test` MUST pass
+- `npm run build` MUST succeed
+
+**End-to-End Tests:**
+- Playwright E2E tests run after all builds pass
+- Cover critical user journeys (P1 user stories minimum)
+
+**Common Failure Patterns & Solutions:**
+
+1. **Enum Comparison Errors**
+   - ❌ Wrong: `if (status === 'lobby')` (string literal)
+   - ✅ Correct: `if (status === RoomStatus.LOBBY)` (enum value)
+   - Solution: Always use enum values, never string literals
+
+2. **Enum Import Errors**
+   - ❌ Wrong: `import type { RoomStatus }` when using as value
+   - ✅ Correct: `import { RoomStatus }` (value import for enums)
+   - Solution: Use type-only imports for types, value imports for enums used as values
+
+3. **Unnecessary Async/Await**
+   - ❌ Wrong: `async method() { return this.data; }` (no await needed)
+   - ✅ Correct: `method() { return this.data; }` (synchronous)
+   - Solution: Remove async/await from methods that don't use await
+
+4. **Frontend ESLint Configuration**
+   - ❌ Wrong: Using deprecated flat config format or plugins as strings
+   - ✅ Correct: Use `tseslint.config()` with plugins as objects
+   - Solution: Follow typescript-eslint migration guide for ESLint 9+
+
+5. **React Hooks Cascading Renders**
+   - ❌ Wrong: `useEffect(() => { setState(value); })` (synchronous setState in effect)
+   - ✅ Correct: `useEffect(() => { queueMicrotask(() => setState(value)); })`
+   - Solution: Use queueMicrotask or move state updates to callbacks
+
+6. **TypeScript `any` Usage**
+   - ❌ Wrong: Using `any` without justification
+   - ✅ Correct: Use `unknown` or specific types, add `// eslint-disable-next-line` if truly needed
+   - Solution: Prefer `unknown` for truly dynamic types, use explicit types when possible
+
+**Handling CI Failures:**
+1. Review the specific failing check in GitHub Actions logs
+2. Reproduce the failure locally
+3. Fix the root cause (not just the symptom)
+4. Run full local validation: `npm run lint && npm run build && npm test`
+5. Push fixes and verify all checks pass
+6. No pull request may be merged with failing checks - no exceptions
+
 ## Complexity Justification
 
 **The default is SIMPLE. Complexity MUST be justified:**
@@ -325,6 +397,6 @@ Examples requiring justification:
 
 ---
 
-**Version**: 1.3.1
+**Version**: 1.4.0
 **Ratified**: 2025-11-07
-**Last Amended**: 2025-11-07
+**Last Amended**: 2025-11-09

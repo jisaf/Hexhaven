@@ -1,0 +1,140 @@
+// Hexhaven Multiplayer - Prisma Schema
+// Hybrid approach: JSONB for full state, normalized tables for queries
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== CORE TABLES ==========
+
+model GameRoom {
+  id          String   @id @default(uuid()) @db.Uuid
+  roomCode    String   @unique @db.VarChar(6)
+  status      RoomStatus
+  scenarioId  String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime // 24-hour TTL
+
+  players     Player[]
+  gameState   GameState?
+  scenario    Scenario? @relation(fields: [scenarioId], references: [id])
+
+  @@index([roomCode])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("game_rooms")
+}
+
+model Player {
+  id               String   @id @default(uuid()) @db.Uuid
+  uuid             String   @unique @db.VarChar(36)
+  nickname         String   @db.VarChar(50)
+  roomId           String?  @db.Uuid
+  isHost           Boolean  @default(false)
+  connectionStatus ConnectionStatus @default(connected)
+  lastSeenAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  room             GameRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([uuid])
+  @@index([roomId])
+  @@map("players")
+}
+
+// Full game state stored as JSONB for fast serialization/deserialization
+model GameState {
+  roomId    String   @id @db.Uuid
+  state     Json     // Complete game state: characters, monsters, board, etc.
+  updatedAt DateTime @updatedAt
+
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("game_states")
+}
+
+model Scenario {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @db.VarChar(100)
+  difficulty        Int      @db.SmallInt
+  mapLayout         Json     // Array of HexTile objects
+  monsterGroups     Json     // Array of MonsterGroup objects
+  objectivePrimary  String   @db.VarChar(500)
+  objectiveSecondary String? @db.VarChar(500)
+  treasures         Json?    // Array of TreasureLocation objects
+
+  rooms             GameRoom[]
+
+  @@index([difficulty])
+  @@map("scenarios")
+}
+
+// ========== CHARACTER CLASSES (Static Data) ==========
+
+model CharacterClass {
+  id          String   @id @default(uuid()) @db.Uuid
+  className   String   @unique @db.VarChar(50) // "Brute", "Tinkerer", etc.
+  maxHealth   Int      @db.SmallInt
+  abilityDeck Json     // Array of AbilityCard objects
+  description String   @db.VarChar(500)
+  imageUrl    String?  @db.VarChar(255)
+
+  @@map("character_classes")
+}
+
+// ========== ACCOUNT & PROGRESSION (User Story 7) ==========
+
+model Account {
+  id        String   @id @default(uuid()) @db.Uuid
+  uuid      String   @unique @db.VarChar(36)
+  email     String?  @unique @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  progressions Progression[]
+
+  @@index([uuid])
+  @@index([email])
+  @@map("accounts")
+}
+
+model Progression {
+  id                  String   @id @default(uuid()) @db.Uuid
+  accountId           String   @db.Uuid
+  characterClass      String   @db.VarChar(50)
+  experience          Int      @default(0)
+  level               Int      @default(1) @db.SmallInt
+  unlockedPerks       Json     // Array of perk IDs
+  completedScenarios  Json     // Array of scenario IDs
+  updatedAt           DateTime @updatedAt
+
+  account             Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, characterClass])
+  @@index([accountId])
+  @@map("progressions")
+}
+
+// ========== ENUMS ==========
+
+enum RoomStatus {
+  lobby
+  active
+  completed
+  abandoned
+
+  @@map("room_status")
+}
+
+enum ConnectionStatus {
+  connected
+  disconnected
+  reconnecting
+
+  @@map("connection_status")
+}

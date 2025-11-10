@@ -1,0 +1,89 @@
+{
+  "common": {
+    "create": "Create",
+    "join": "Join",
+    "start": "Start",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "lobby": {
+    "title": "Hexhaven Lobby",
+    "createGame": "Create Game",
+    "joinGame": "Join Game",
+    "roomCode": "Room Code",
+    "enterRoomCode": "Enter 6-character room code",
+    "nickname": "Nickname",
+    "enterNickname": "Enter your nickname",
+    "waitingForPlayers": "Waiting for players...",
+    "playersInLobby": "Players in Lobby",
+    "selectCharacter": "Select Your Character",
+    "selectScenario": "Select Scenario",
+    "allPlayersReady": "All players ready!",
+    "startGame": "Start Game",
+    "hostWillStart": "Host will start the game"
+  },
+  "characters": {
+    "brute": "Brute",
+    "tinkerer": "Tinkerer",
+    "spellweaver": "Spellweaver",
+    "scoundrel": "Scoundrel",
+    "cragheart": "Cragheart",
+    "mindthief": "Mindthief",
+    "description": {
+      "brute": "Powerful melee fighter with high health",
+      "tinkerer": "Support character with healing and gadgets",
+      "spellweaver": "Ranged spellcaster with elemental magic",
+      "scoundrel": "Agile damage dealer with positioning bonuses",
+      "cragheart": "Versatile ranged attacker with obstacles",
+      "mindthief": "Mind control specialist with augments"
+    }
+  },
+  "game": {
+    "yourTurn": "Your Turn",
+    "opponentTurn": "{{playerName}}'s Turn",
+    "selectCards": "Select 2 Cards",
+    "move": "Move",
+    "attack": "Attack",
+    "endTurn": "End Turn",
+    "round": "Round {{number}}",
+    "health": "Health",
+    "initiative": "Initiative",
+    "turnOrder": "Turn Order",
+    "elements": "Elements"
+  },
+  "cards": {
+    "topAction": "Top Action",
+    "bottomAction": "Bottom Action",
+    "initiative": "Initiative: {{value}}",
+    "selectTopCard": "Select top card",
+    "selectBottomCard": "Select bottom card"
+  },
+  "scenarios": {
+    "selectScenario": "Select a Scenario",
+    "difficulty": "Difficulty: {{level}}",
+    "objective": "Objective",
+    "monsters": "Monsters"
+  },
+  "connection": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting...",
+    "reconnected": "Reconnected",
+    "playerDisconnected": "{{playerName}} disconnected",
+    "playerReconnected": "{{playerName}} reconnected"
+  },
+  "errors": {
+    "roomNotFound": "Room not found",
+    "roomFull": "Room is full",
+    "gameAlreadyStarted": "Game has already started",
+    "invalidMove": "Invalid move",
+    "invalidAttack": "Invalid attack",
+    "notYourTurn": "Not your turn",
+    "connectionError": "Connection error - please try again"
+  }
+}

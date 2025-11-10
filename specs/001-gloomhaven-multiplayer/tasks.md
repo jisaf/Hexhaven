@@ -29,14 +29,14 @@
 - [X] T001 Create project directory structure (backend/, frontend/, shared/, docs/)
 - [X] T002 Initialize backend NestJS project with TypeScript, Prisma, Socket.io dependencies in backend/
 - [X] T003 Initialize frontend React project with Vite, PixiJS, react-i18next dependencies in frontend/
-- [ ] T004 [P] Configure ESLint and Prettier for backend in backend/.eslintrc.json
-- [ ] T005 [P] Configure ESLint and Prettier for frontend in frontend/.eslintrc.json
-- [ ] T006 [P] Setup TypeScript strict mode for backend in backend/tsconfig.json
-- [ ] T007 [P] Setup TypeScript strict mode for frontend in frontend/tsconfig.json
-- [ ] T008 [P] Create shared types directory structure in shared/types/
-- [ ] T009 [P] Configure Workbox for PWA service workers in frontend/vite.config.ts
-- [ ] T010 [P] Create PWA manifest.json in frontend/public/manifest.json
-- [ ] T011 [P] Setup GitHub Actions CI workflow in .github/workflows/ci.yml (test + build + lint gates)
+- [X] T004 [P] Configure ESLint and Prettier for backend in backend/.eslintrc.json
+- [X] T005 [P] Configure ESLint and Prettier for frontend in frontend/.eslintrc.json
+- [X] T006 [P] Setup TypeScript strict mode for backend in backend/tsconfig.json
+- [X] T007 [P] Setup TypeScript strict mode for frontend in frontend/tsconfig.json
+- [X] T008 [P] Create shared types directory structure in shared/types/
+- [X] T009 [P] Configure Workbox for PWA service workers in frontend/vite.config.ts
+- [X] T010 [P] Create PWA manifest.json in frontend/public/manifest.json
+- [X] T011 [P] Setup GitHub Actions CI workflow in .github/workflows/ci.yml (test + build + lint gates)
 
 ---
 
@@ -48,38 +48,38 @@
 
 ### Database & Backend Infrastructure
 
-- [ ] T012 Create Prisma schema with GameRoom, Player, GameState, Scenario tables in backend/src/db/schema.prisma
-- [ ] T013 Generate initial database migration in backend/src/db/migrations/
-- [ ] T014 Create database seed script with 6 character classes and 5 scenarios in backend/src/db/seed.ts
-- [ ] T015 [P] Create shared entity types (Player, GameRoom, Character, Monster, Scenario, HexTile, Condition, etc.) in shared/types/entities.ts
-- [ ] T016 [P] Create shared game state types in shared/types/game-state.ts
-- [ ] T017 [P] Create shared WebSocket event types in shared/types/events.ts
+- [X] T012 Create Prisma schema with GameRoom, Player, GameState, Scenario tables in backend/src/db/schema.prisma
+- [X] T013 Generate initial database migration in backend/src/db/migrations/
+- [X] T014 Create database seed script with 6 character classes and 5 scenarios in backend/src/db/seed.ts
+- [X] T015 [P] Create shared entity types (Player, GameRoom, Character, Monster, Scenario, HexTile, Condition, etc.) in shared/types/entities.ts
+- [X] T016 [P] Create shared game state types in shared/types/game-state.ts
+- [X] T017 [P] Create shared WebSocket event types in shared/types/events.ts
 
 ### Backend Core Services
 
-- [ ] T018 [P] Implement hex coordinate utilities (axialToCube, cubeDistance, hexRange, hexNeighbors) in backend/src/utils/hex-utils.ts
-- [ ] T019 [P] Implement structured logging service with correlation IDs in backend/src/utils/logger.ts
-- [ ] T020 [P] Implement validation decorators and DTOs using class-validator in backend/src/utils/validation.ts
-- [ ] T021 [P] Create error handling middleware with user-friendly messages in backend/src/utils/error-handler.ts
-- [ ] T022 [P] Create environment configuration module in backend/src/config/env.config.ts
+- [X] T018 [P] Implement hex coordinate utilities (axialToCube, cubeDistance, hexRange, hexNeighbors) in backend/src/utils/hex-utils.ts
+- [X] T019 [P] Implement structured logging service with correlation IDs in backend/src/utils/logger.ts
+- [X] T020 [P] Implement validation decorators and DTOs using class-validator in backend/src/utils/validation.ts
+- [X] T021 [P] Create error handling middleware with user-friendly messages in backend/src/utils/error-handler.ts
+- [X] T022 [P] Create environment configuration module in backend/src/config/env.config.ts
 
 ### Frontend Core Infrastructure
 
-- [ ] T023 [P] Setup react-i18next with English translation files in frontend/src/i18n/
-- [ ] T024 [P] Create WebSocket client service with Socket.io integration in frontend/src/services/websocket.service.ts
-- [ ] T025 [P] Create game state management hook (useGameState) in frontend/src/hooks/useGameState.ts
-- [ ] T026 [P] Create WebSocket connection hook (useWebSocket) in frontend/src/hooks/useWebSocket.ts
-- [ ] T027 [P] Setup PixiJS Application wrapper component in frontend/src/game/PixiApp.tsx
-- [ ] T028 [P] Implement responsive layout utilities for mobile-first design in frontend/src/utils/responsive.ts
-- [ ] T029 [P] Create touch gesture utilities (tap, long-press, pinch-zoom, pan) in frontend/src/utils/gestures.ts
+- [X] T023 [P] Setup react-i18next with English translation files in frontend/src/i18n/
+- [X] T024 [P] Create WebSocket client service with Socket.io integration in frontend/src/services/websocket.service.ts
+- [X] T025 [P] Create game state management hook (useGameState) in frontend/src/hooks/useGameState.ts
+- [X] T026 [P] Create WebSocket connection hook (useWebSocket) in frontend/src/hooks/useWebSocket.ts
+- [X] T027 [P] Setup PixiJS Application wrapper component in frontend/src/game/PixiApp.tsx
+- [X] T028 [P] Implement responsive layout utilities for mobile-first design in frontend/src/utils/responsive.ts
+- [X] T029 [P] Create touch gesture utilities (tap, long-press, pinch-zoom, pan) in frontend/src/utils/gestures.ts
 
 ### Testing Infrastructure
 
-- [ ] T030 [P] Setup Jest configuration for backend unit/integration tests in backend/jest.config.js
-- [ ] T031 [P] Setup Jest configuration for frontend unit tests in frontend/jest.config.js
-- [ ] T032 [P] Setup Playwright configuration for E2E tests in frontend/playwright.config.ts
-- [ ] T033 [P] Create test fixtures for game room creation in backend/tests/fixtures/game-room.fixture.ts
-- [ ] T034 [P] Create test fixtures for player creation in backend/tests/fixtures/player.fixture.ts
+- [X] T030 [P] Setup Jest configuration for backend unit/integration tests in backend/jest.config.js
+- [X] T031 [P] Setup Jest configuration for frontend unit tests in frontend/jest.config.js
+- [X] T032 [P] Setup Playwright configuration for E2E tests in frontend/playwright.config.ts
+- [X] T033 [P] Create test fixtures for game room creation in backend/tests/fixtures/game-room.fixture.ts
+- [X] T034 [P] Create test fixtures for player creation in backend/tests/fixtures/player.fixture.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -95,22 +95,22 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T035 [P] [US1] E2E test: Create game room and receive room code in frontend/tests/e2e/us1-create-room.spec.ts
-- [ ] T036 [P] [US1] E2E test: Join game room with valid code in frontend/tests/e2e/us1-join-room.spec.ts
-- [ ] T037 [P] [US1] E2E test: Character selection and game start in frontend/tests/e2e/us1-start-game.spec.ts
-- [ ] T038 [P] [US1] E2E test: Character movement visible to both players in frontend/tests/e2e/us1-movement.spec.ts
-- [ ] T039 [P] [US1] Contract test: WebSocket join_room event in backend/tests/contract/join-room.test.ts
-- [ ] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
-- [ ] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
-- [ ] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
-- [ ] T043 [P] [US1] Unit test: Room code generation (unique 6-char alphanumeric) in backend/tests/unit/room-service.test.ts
-- [ ] T044 [P] [US1] Unit test: Player validation (nickname unique within room) in backend/tests/unit/player-service.test.ts
+- [X] T035 [P] [US1] E2E test: Create game room and receive room code in frontend/tests/e2e/us1-create-room.spec.ts
+- [X] T036 [P] [US1] E2E test: Join game room with valid code in frontend/tests/e2e/us1-join-room.spec.ts
+- [X] T037 [P] [US1] E2E test: Character selection and game start in frontend/tests/e2e/us1-start-game.spec.ts
+- [X] T038 [P] [US1] E2E test: Character movement visible to both players in frontend/tests/e2e/us1-movement.spec.ts
+- [X] T039 [P] [US1] Contract test: WebSocket join_room event in backend/tests/contract/join-room.test.ts
+- [X] T040 [P] [US1] Contract test: WebSocket select_character event in backend/tests/contract/select-character.test.ts
+- [X] T041 [P] [US1] Contract test: WebSocket start_game event in backend/tests/contract/start-game.test.ts
+- [X] T042 [P] [US1] Contract test: WebSocket move_character event in backend/tests/contract/move-character.test.ts
+- [X] T043 [P] [US1] Unit test: Room code generation (unique 6-char alphanumeric) in backend/tests/unit/room-service.test.ts
+- [X] T044 [P] [US1] Unit test: Player validation (nickname unique within room) in backend/tests/unit/player-service.test.ts
 
 ### Backend Implementation for User Story 1
 
-- [ ] T045 [P] [US1] Create Player model in backend/src/models/player.model.ts
-- [ ] T046 [P] [US1] Create GameRoom model in backend/src/models/game-room.model.ts
-- [ ] T047 [P] [US1] Create Character model in backend/src/models/character.model.ts
+- [X] T045 [P] [US1] Create Player model in backend/src/models/player.model.ts
+- [X] T046 [P] [US1] Create GameRoom model in backend/src/models/game-room.model.ts
+- [X] T047 [P] [US1] Create Character model in backend/src/models/character.model.ts
 - [ ] T048 [US1] Implement RoomService with createRoom, joinRoom, getRoom methods in backend/src/services/room.service.ts
 - [ ] T049 [US1] Implement PlayerService with createPlayer, validateNickname methods in backend/src/services/player.service.ts
 - [ ] T050 [US1] Implement CharacterService with createCharacter, selectCharacter methods in backend/src/services/character.service.ts

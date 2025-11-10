@@ -31,58 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Code Quality & Maintainability**:
-- [ ] Feature complexity justified (or meets simplicity standards)
-- [ ] YAGNI: No speculative features or premature abstractions
-- [ ] KISS: Simplest solution chosen (complex solutions justified in Complexity Tracking)
-- [ ] No anticipated violations of single responsibility principle
-- [ ] Type safety approach defined
-- [ ] DRY principle applied (no duplicate logic)
-
-**Testing Standards**:
-- [ ] TDD approach confirmed (tests before implementation)
-- [ ] Test types identified (unit, integration, contract, e2e)
-- [ ] Target code coverage defined (80%+ for new code)
-- [ ] Task completion requirement understood (tests MUST pass before marking tasks done)
-- [ ] CI verification strategy (no "works on my machine")
-
-**User Experience Consistency**:
-- [ ] User stories prioritized (P1, P2, P3...)
-- [ ] Each story independently testable
-- [ ] Error handling approach defined
-- [ ] User feedback mechanisms specified
-- [ ] Mobile and desktop compatibility confirmed (responsive design)
-- [ ] Internationalization (i18n) framework selected
-- [ ] All UI text extraction strategy defined (no hardcoded strings)
-- [ ] Multi-lingual support approach documented
-
-**Performance Requirements**:
-- [ ] Response time targets defined (<200ms read, <500ms write for APIs)
-- [ ] Resource efficiency constraints documented
-- [ ] Scalability approach (horizontal scaling planned)
-- [ ] Performance testing strategy defined
-
-**Documentation & Communication**:
-- [ ] spec.md with user stories exists
-- [ ] This plan.md documents technical approach
-- [ ] quickstart.md will be created (working example in <5 min)
-- [ ] API documentation approach defined (auto-generated from code)
-- [ ] AI-first documentation strategy confirmed (scannable, top-down context)
-- [ ] README includes architecture overview and navigation guide
-- [ ] ARCHITECTURE.md planned (if project complexity warrants)
-- [ ] Documentation explains WHY decisions made, not just WHAT
-
-**Security & Reliability**:
-- [ ] Input validation strategy defined
-- [ ] Authentication/authorization approach specified (if applicable)
-- [ ] Error handling and logging strategy defined
-- [ ] No secrets in version control (approach for secrets management)
-
-**Quality Gates & Task Completion**:
-- [ ] Task completion gates understood (tests pass + builds without errors before marking done)
-- [ ] Linting and type checking configured
-- [ ] Code review process defined
-- [ ] Definition of "done" documented (aligns with constitution Quality Gates)
+[Gates determined based on constitution file]
 
 ## Project Structure
 
