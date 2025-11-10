@@ -5,9 +5,7 @@
  * character selection, and room association.
  */
 
-import type {
-  CharacterClass,
-} from '../../../shared/types/entities';
+import type { CharacterClass } from '../../../shared/types/entities';
 import { ConnectionStatus } from '../../../shared/types/entities';
 
 export interface PlayerData {

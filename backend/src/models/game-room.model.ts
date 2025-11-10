@@ -18,6 +18,7 @@ export interface GameRoomData {
   currentTurnIndex: number | null;
   createdAt: Date;
   updatedAt: Date;
+  expiresAt: Date;
 }
 
 export class GameRoom {
@@ -30,6 +31,7 @@ export class GameRoom {
   private _currentTurnIndex: number | null;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
+  private readonly _expiresAt: Date;
   private _players: Map<string, Player>;
 
   constructor(data: GameRoomData) {
@@ -42,6 +44,7 @@ export class GameRoom {
     this._currentTurnIndex = data.currentTurnIndex;
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
+    this._expiresAt = data.expiresAt;
     this._players = new Map();
   }
 
@@ -72,6 +75,10 @@ export class GameRoom {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get expiresAt(): Date {
+    return this._expiresAt;
   }
 
   get players(): Player[] {
@@ -198,6 +205,7 @@ export class GameRoom {
       currentTurnIndex: this._currentTurnIndex,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
+      expiresAt: this._expiresAt,
       players: this.players.map((p) => p.toJSON()),
     };
   }
@@ -207,6 +215,7 @@ export class GameRoom {
    */
   static create(hostPlayer: Player): GameRoom {
     const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
     const roomCode = GameRoom.generateRoomCode();
 
     const room = new GameRoom({
@@ -219,6 +228,7 @@ export class GameRoom {
       currentTurnIndex: null,
       createdAt: now,
       updatedAt: now,
+      expiresAt,
     });
 
     // Add host player

@@ -5,7 +5,7 @@
  * Player instances in tests
  */
 
-import { ConnectionStatus } from '@prisma/client';
+import { ConnectionStatus } from '../../../shared/types/entities';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -40,7 +40,7 @@ export function createTestPlayer(overrides: Partial<TestPlayer> = {}): TestPlaye
     nickname: overrides.nickname || generateNickname(),
     roomId: overrides.roomId || null,
     isHost: overrides.isHost ?? false,
-    connectionStatus: overrides.connectionStatus || ConnectionStatus.connected,
+    connectionStatus: overrides.connectionStatus || ConnectionStatus.CONNECTED,
     lastSeenAt: overrides.lastSeenAt || now,
     createdAt: overrides.createdAt || now,
     ...overrides
@@ -85,7 +85,7 @@ export function createHostPlayer(overrides: Partial<TestPlayer> = {}): TestPlaye
  */
 export function createConnectedPlayer(overrides: Partial<TestPlayer> = {}): TestPlayer {
   return createTestPlayer({
-    connectionStatus: ConnectionStatus.connected,
+    connectionStatus: ConnectionStatus.CONNECTED,
     lastSeenAt: new Date(),
     ...overrides
   });
@@ -97,7 +97,7 @@ export function createConnectedPlayer(overrides: Partial<TestPlayer> = {}): Test
 export function createDisconnectedPlayer(overrides: Partial<TestPlayer> = {}): TestPlayer {
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   return createTestPlayer({
-    connectionStatus: ConnectionStatus.disconnected,
+    connectionStatus: ConnectionStatus.DISCONNECTED,
     lastSeenAt: fiveMinutesAgo,
     ...overrides
   });
@@ -108,7 +108,7 @@ export function createDisconnectedPlayer(overrides: Partial<TestPlayer> = {}): T
  */
 export function createReconnectingPlayer(overrides: Partial<TestPlayer> = {}): TestPlayer {
   return createTestPlayer({
-    connectionStatus: ConnectionStatus.reconnecting,
+    connectionStatus: ConnectionStatus.RECONNECTING,
     ...overrides
   });
 }
@@ -181,7 +181,7 @@ export const PLAYER_ASSERTIONS = {
    * Assert that a player is connected
    */
   isConnected(player: TestPlayer): boolean {
-    return player.connectionStatus === ConnectionStatus.connected;
+    return player.connectionStatus === ConnectionStatus.CONNECTED;
   },
 
   /**
