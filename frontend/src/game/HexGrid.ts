@@ -16,7 +16,8 @@ import { HexTile, type HexTileData } from './HexTile';
 import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
 import { MovementHighlight } from './MovementHighlight';
-import { type Axial, axialKey, screenToAxial, hexRangeReachable } from './hex-utils';
+import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
+import { type Axial, axialKey, screenToAxial, hexRangeReachable, axialToScreen } from './hex-utils';
 import type { Monster } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
@@ -25,6 +26,7 @@ export interface HexGridOptions {
   onHexClick?: (hex: Axial) => void;
   onCharacterSelect?: (characterId: string) => void;
   onMonsterSelect?: (monsterId: string) => void;
+  onLootTokenClick?: (tokenId: string) => void;
 }
 
 export interface GameBoardData {
@@ -41,12 +43,14 @@ export class HexGrid {
   private tilesLayer: PIXI.Container;
   private highlightsLayer: PIXI.Container;
   private entitiesLayer: PIXI.Container;
+  private lootLayer: PIXI.Container;
 
   // Tiles and entities
   private tiles: Map<string, HexTile>;
   private characters: Map<string, CharacterSprite>;
   private monsters: Map<string, MonsterSprite>;
   private movementHighlight: MovementHighlight;
+  private lootTokenPool: LootTokenPool;
 
   // State
   private selectedCharacterId: string | null = null;
@@ -82,10 +86,12 @@ export class HexGrid {
     // Create layers
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
+    this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
+    this.viewport.addChild(this.lootLayer);
     this.viewport.addChild(this.entitiesLayer);
 
     // Initialize collections
@@ -93,6 +99,7 @@ export class HexGrid {
     this.characters = new Map();
     this.monsters = new Map();
     this.movementHighlight = new MovementHighlight(this.highlightsLayer);
+    this.lootTokenPool = new LootTokenPool(this.lootLayer);
 
     // Setup background click handler
     this.app.stage.eventMode = 'static';
@@ -433,6 +440,9 @@ export class HexGrid {
     }
     this.monsters.clear();
 
+    // Clear loot tokens (User Story 2 - T123)
+    this.lootTokenPool.clear();
+
     // Clear highlights
     this.movementHighlight.clear();
 
@@ -456,11 +466,50 @@ export class HexGrid {
   }
 
   /**
+   * Spawn loot token on the board (US2 - T123)
+   */
+  public spawnLootToken(lootData: LootTokenData): void {
+    const screenPos = axialToScreen(lootData.coordinates);
+    const token = this.lootTokenPool.addToken(lootData, new PIXI.Point(screenPos.x, screenPos.y));
+
+    // Attach click handler if callback is provided
+    if (this.options.onLootTokenClick) {
+      token.on('pointerdown', () => {
+        if (this.options.onLootTokenClick && !token.collected) {
+          this.options.onLootTokenClick(token.id);
+        }
+      });
+    }
+  }
+
+  /**
+   * Collect loot token with animation (US2 - T123)
+   */
+  public async collectLootToken(tokenId: string): Promise<void> {
+    await this.lootTokenPool.collectToken(tokenId);
+  }
+
+  /**
+   * Highlight collectible loot tokens (US2 - T123)
+   */
+  public highlightCollectibleLoot(characterPosition: Axial): void {
+    this.lootTokenPool.highlightCollectibleTokens(characterPosition, 1);
+  }
+
+  /**
+   * Clear loot highlights (US2 - T123)
+   */
+  public clearLootHighlights(): void {
+    this.lootTokenPool.clearHighlights();
+  }
+
+  /**
    * Destroy and cleanup
    */
   public destroy(): void {
     this.clearBoard();
     this.movementHighlight.destroy();
+    this.lootTokenPool.destroy();
     this.app.destroy(true, { children: true, texture: true });
     this.container.removeChild(this.app.view as HTMLCanvasElement);
   }
