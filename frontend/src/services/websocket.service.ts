@@ -20,7 +20,7 @@ export interface WebSocketEvents {
   reconnected: () => void;
 
   // Room events
-  room_joined: (data: { roomCode: string; players: unknown[] }) => void;
+  room_joined: (data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => void;
   player_joined: (data: { player: unknown }) => void;
   player_left: (data: { playerId: string }) => void;
   player_disconnected: (data: { playerId: string; playerName: string }) => void;
@@ -30,7 +30,7 @@ export interface WebSocketEvents {
   character_selected: (data: { playerId: string; characterClass: string }) => void;
 
   // Game start
-  game_started: (data: { gameState: unknown }) => void;
+  game_started: (data: { gameState: { board: unknown; currentPlayerId: string } }) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;

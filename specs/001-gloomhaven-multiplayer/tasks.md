@@ -122,22 +122,22 @@
 
 ### Frontend Implementation for User Story 1
 
-- [ ] T056 [P] [US1] Create Lobby page component in frontend/src/pages/Lobby.tsx
-- [ ] T057 [P] [US1] Create GameBoard page component in frontend/src/pages/GameBoard.tsx
-- [ ] T058 [P] [US1] Create RoomCodeInput component in frontend/src/components/RoomCodeInput.tsx
-- [ ] T059 [P] [US1] Create CharacterSelect component in frontend/src/components/CharacterSelect.tsx
-- [ ] T060 [P] [US1] Create PlayerList component in frontend/src/components/PlayerList.tsx
+- [X] T056 [P] [US1] Create Lobby page component in frontend/src/pages/Lobby.tsx
+- [X] T057 [P] [US1] Create GameBoard page component in frontend/src/pages/GameBoard.tsx
+- [X] T058 [P] [US1] Create RoomCodeInput component in frontend/src/components/RoomCodeInput.tsx
+- [X] T059 [P] [US1] Create CharacterSelect component in frontend/src/components/CharacterSelect.tsx
+- [X] T060 [P] [US1] Create PlayerList component in frontend/src/components/PlayerList.tsx
 - [X] T061 [US1] Implement HexGrid rendering with PixiJS in frontend/src/game/HexGrid.ts
 - [X] T062 [US1] Implement HexTile sprite component in frontend/src/game/HexTile.ts
 - [X] T063 [US1] Implement CharacterSprite component with tap-to-select in frontend/src/game/CharacterSprite.ts
 - [X] T064 [US1] Implement hex coordinate conversion utilities (screen ↔ axial) in frontend/src/game/hex-utils.ts
 - [X] T065 [US1] Implement movement range highlighting in frontend/src/game/MovementHighlight.ts
 - [X] T066 [US1] Connect WebSocket events (room_joined, character_selected, game_started, character_moved) in frontend/src/services/websocket.service.ts
-- [ ] T067 [US1] Implement room creation flow (create button → API call → receive room code) in frontend/src/pages/Lobby.tsx
-- [ ] T068 [US1] Implement room join flow (enter code → WebSocket join → see other players) in frontend/src/pages/Lobby.tsx
-- [ ] T069 [US1] Implement character selection UI (6 classes, visual feedback on selection) in frontend/src/components/CharacterSelect.tsx
-- [ ] T070 [US1] Implement game start button (host only) in frontend/src/pages/Lobby.tsx
-- [ ] T071 [US1] Implement character movement (tap character → tap hex → emit move event) in frontend/src/pages/GameBoard.tsx
+- [X] T067 [US1] Implement room creation flow (create button → API call → receive room code) in frontend/src/pages/Lobby.tsx
+- [X] T068 [US1] Implement room join flow (enter code → WebSocket join → see other players) in frontend/src/pages/Lobby.tsx
+- [X] T069 [US1] Implement character selection UI (6 classes, visual feedback on selection) in frontend/src/components/CharacterSelect.tsx
+- [X] T070 [US1] Implement game start button (host only) in frontend/src/pages/Lobby.tsx
+- [X] T071 [US1] Implement character movement (tap character → tap hex → emit move event) in frontend/src/pages/GameBoard.tsx
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - players can create/join rooms, select characters, start game, see hex grid, and move characters with real-time sync.
 
