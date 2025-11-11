@@ -12,6 +12,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { Viewport } from 'pixi-viewport';
 import { HexTile, type HexTileData } from './HexTile';
 import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
@@ -57,8 +58,8 @@ export class HexGrid {
   private selectedMonsterId: string | null = null;
   private options: HexGridOptions;
 
-  // Viewport for pan/zoom (to be added with pixi-viewport in US3)
-  private viewport: PIXI.Container;
+  // Viewport for pan/zoom (US3 - T133)
+  private viewport: Viewport;
 
   constructor(container: HTMLElement, options: HexGridOptions) {
     this.container = container;
@@ -76,12 +77,67 @@ export class HexGrid {
 
     container.appendChild(this.app.view as HTMLCanvasElement);
 
-    // Create viewport (simple container for now, will add pixi-viewport in US3)
-    this.viewport = new PIXI.Container();
+    // Create viewport with pan/zoom/pinch support (US3 - T133-T135)
+    // World bounds: 2000x2000 provides enough space for typical scenarios
+    const worldWidth = 2000;
+    const worldHeight = 2000;
+
+    this.viewport = new Viewport({
+      screenWidth: options.width,
+      screenHeight: options.height,
+      worldWidth,
+      worldHeight,
+      events: this.app.renderer.events
+    });
+
     this.app.stage.addChild(this.viewport);
 
-    // Center the viewport
-    this.viewport.position.set(options.width / 2, options.height / 2);
+    // Configure pan gesture with momentum (US3 - T135)
+    this.viewport
+      .drag({
+        wheel: false, // Don't use wheel for panning, use it for zooming
+        mouseButtons: 'left'
+      })
+      .decelerate({
+        friction: 0.88, // Momentum friction (higher = more inertia)
+        bounce: 0.5,    // Bounce when hitting boundaries
+        minSpeed: 0.01  // Minimum speed before stopping
+      });
+
+    // Configure pinch-zoom for touch devices (US3 - T134)
+    this.viewport
+      .pinch({
+        noDrag: false,  // Allow simultaneous pan while pinching
+        percent: 2      // Pinch sensitivity
+      });
+
+    // Configure wheel zoom for desktop (US3 - T134)
+    this.viewport
+      .wheel({
+        smooth: 3,      // Smoothing factor for wheel zoom
+        percent: 0.1,   // Zoom sensitivity
+        reverse: false  // Standard zoom direction (wheel up = zoom in)
+      });
+
+    // Set zoom constraints (US3 - T134): 0.5x to 3x
+    this.viewport
+      .clampZoom({
+        minScale: 0.5,
+        maxScale: 3.0
+      });
+
+    // Set world boundaries to prevent panning outside the game board (US3 - T135)
+    this.viewport
+      .clamp({
+        left: -worldWidth / 2,
+        right: worldWidth / 2,
+        top: -worldHeight / 2,
+        bottom: worldHeight / 2,
+        direction: 'all'
+      });
+
+    // Center the viewport on the world
+    this.viewport.moveCenter(0, 0);
 
     // Create layers
     this.tilesLayer = new PIXI.Container();
@@ -451,11 +507,13 @@ export class HexGrid {
   }
 
   /**
-   * Resize the canvas
+   * Resize the canvas (US3 - T133)
    */
   public resize(width: number, height: number): void {
     this.app.renderer.resize(width, height);
-    this.viewport.position.set(width / 2, height / 2);
+
+    // Update viewport screen dimensions
+    this.viewport.resize(width, height);
   }
 
   /**
@@ -463,6 +521,52 @@ export class HexGrid {
    */
   public getApp(): PIXI.Application {
     return this.app;
+  }
+
+  /**
+   * Get current viewport state (for orientation preservation - US3 - T141)
+   */
+  public getViewportState(): { scale: number; x: number; y: number } {
+    return {
+      scale: this.viewport.scale.x,
+      x: this.viewport.center.x,
+      y: this.viewport.center.y
+    };
+  }
+
+  /**
+   * Set viewport state (for orientation preservation - US3 - T141)
+   */
+  public setViewportState(state: { scale: number; x: number; y: number }): void {
+    this.viewport.setZoom(state.scale, true);
+    this.viewport.moveCenter(state.x, state.y);
+  }
+
+  /**
+   * Zoom to a specific level (US3 - T134)
+   */
+  public zoomTo(scale: number, animate: boolean = true): void {
+    this.viewport.setZoom(scale, animate);
+  }
+
+  /**
+   * Pan to a specific hex (US3 - T135)
+   */
+  public panToHex(hex: Axial, animate: boolean = true): void {
+    const screenPos = axialToScreen(hex);
+    this.viewport.moveCenter(screenPos.x, screenPos.y);
+
+    if (!animate) {
+      this.viewport.emit('moved-end');
+    }
+  }
+
+  /**
+   * Reset viewport to default view (US3 - T133)
+   */
+  public resetViewport(): void {
+    this.viewport.setZoom(1, true);
+    this.viewport.moveCenter(0, 0);
   }
 
   /**
