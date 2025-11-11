@@ -59,3 +59,8 @@ prisma/migrations/**/migration.sql
 .cache/
 .parcel-cache/
 .eslintcache
+
+# Compiled TypeScript (shared types and backend tests)
+shared/types/**/*.js
+shared/types/**/*.d.ts
+shared/types/**/*.js.map

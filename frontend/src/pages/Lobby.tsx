@@ -18,6 +18,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { v4 as uuidv4 } from 'uuid';
 import { websocketService } from '../services/websocket.service';
 import { RoomCodeInput } from '../components/RoomCodeInput';
 import { PlayerList, type Player } from '../components/PlayerList';
@@ -120,7 +121,7 @@ export function Lobby() {
       // Get or create UUID
       let uuid = localStorage.getItem('playerUUID');
       if (!uuid) {
-        uuid = crypto.randomUUID();
+        uuid = uuidv4();
         localStorage.setItem('playerUUID', uuid);
       }
 
@@ -161,7 +162,7 @@ export function Lobby() {
     // Get or create UUID
     let uuid = localStorage.getItem('playerUUID');
     if (!uuid) {
-      uuid = crypto.randomUUID();
+      uuid = uuidv4();
       localStorage.setItem('playerUUID', uuid);
     }
 
