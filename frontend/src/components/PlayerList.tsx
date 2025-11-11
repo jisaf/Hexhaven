@@ -52,7 +52,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
   };
 
   return (
-    <div className="player-list">
+    <div className="player-list" data-testid="player-list">
       <h3 className="player-list-title">
         {t('lobby.players', 'Players')} ({players.length}/4)
       </h3>
@@ -62,6 +62,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
           <li
             key={player.id}
             className={`player-item ${player.id === currentPlayerId ? 'current-player' : ''}`}
+            data-testid="player-item"
           >
             <div className="player-info">
               <span

@@ -203,7 +203,7 @@ class WebSocketService {
    * Join a game room
    */
   joinRoom(roomCode: string, nickname: string, uuid?: string): void {
-    this.emit('join_room', { roomCode, nickname, uuid });
+    this.emit('join_room', { roomCode, nickname, playerUUID: uuid });
   }
 
   /**
