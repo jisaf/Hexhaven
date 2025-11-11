@@ -20,7 +20,7 @@ import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import { websocketService } from '../services/websocket.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCardData } from '../components/AbilityCard';
+import type { AbilityCard } from '../../../shared/types/entities';
 
 export function GameBoard() {
   const { t } = useTranslation();
@@ -35,7 +35,8 @@ export function GameBoard() {
 
   // Card selection state (T111)
   const [showCardSelection, setShowCardSelection] = useState(false);
-  const [playerHand, setPlayerHand] = useState<AbilityCardData[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<{ top: string | null; bottom: string | null }>({ top: null, bottom: null });
 
   // Attack targeting state (T115)
@@ -100,6 +101,8 @@ export function GameBoard() {
     }
   }, [attackMode, isMyTurn, attackableTargets]);
 
+  // Attack initiation - called when player chooses to attack from their card
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleInitiateAttack = useCallback(() => {
     if (!isMyTurn) return;
 
