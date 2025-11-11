@@ -9,8 +9,6 @@
  * - Swipe detection
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 // Mock touch gesture utilities (to be implemented)
 // These would be in frontend/src/utils/gestures.ts
 
@@ -56,8 +54,12 @@ class GestureDetector {
 
       // Start long-press timer
       this.longPressTimer = setTimeout(() => {
-        if (this.isLongPress()) {
-          this.onLongPress?.(x, y);
+        // Check if finger hasn't moved too much
+        if (this.touchStart && this.touchCurrent) {
+          const distance = this.getDistance(this.touchStart, this.touchCurrent);
+          if (distance < 10) {
+            this.onLongPress?.(this.touchStart.x, this.touchStart.y);
+          }
         }
       }, this.config.longPressMinDuration);
     } else if (touchId === 1) {
@@ -95,7 +97,9 @@ class GestureDetector {
     }
 
     if (touchId === 0 && this.touchStart && this.touchCurrent) {
-      const duration = this.touchCurrent.timestamp - this.touchStart.timestamp;
+      // Calculate duration from start to now
+      const endTime = Date.now();
+      const duration = endTime - this.touchStart.timestamp;
       const distance = this.getDistance(this.touchStart, this.touchCurrent);
 
       if (duration < this.config.tapMaxDuration && distance < 10) {
@@ -186,7 +190,7 @@ describe('GestureDetector', () => {
 
   describe('Tap Detection', () => {
     it('should detect a tap gesture', () => {
-      const tapHandler = vi.fn();
+      const tapHandler = jest.fn();
       detector.onTap = tapHandler;
 
       // Simulate tap (touch down and up quickly at same position)
@@ -197,7 +201,7 @@ describe('GestureDetector', () => {
     });
 
     it('should not detect tap if touch moves too far', () => {
-      const tapHandler = vi.fn();
+      const tapHandler = jest.fn();
       detector.onTap = tapHandler;
 
       detector.onTouchStart(100, 100);
@@ -208,7 +212,7 @@ describe('GestureDetector', () => {
     });
 
     it('should not detect tap if held too long', async () => {
-      const tapHandler = vi.fn();
+      const tapHandler = jest.fn();
       detector.onTap = tapHandler;
 
       detector.onTouchStart(100, 100);
@@ -224,7 +228,7 @@ describe('GestureDetector', () => {
 
   describe('Long-Press Detection', () => {
     it('should detect a long-press gesture', async () => {
-      const longPressHandler = vi.fn();
+      const longPressHandler = jest.fn();
       detector.onLongPress = longPressHandler;
 
       detector.onTouchStart(100, 100);
@@ -238,7 +242,7 @@ describe('GestureDetector', () => {
     });
 
     it('should not detect long-press if finger moves', async () => {
-      const longPressHandler = vi.fn();
+      const longPressHandler = jest.fn();
       detector.onLongPress = longPressHandler;
 
       detector.onTouchStart(100, 100);
@@ -252,7 +256,7 @@ describe('GestureDetector', () => {
     });
 
     it('should not detect long-press if released too quickly', () => {
-      const longPressHandler = vi.fn();
+      const longPressHandler = jest.fn();
       detector.onLongPress = longPressHandler;
 
       detector.onTouchStart(100, 100);
@@ -264,7 +268,7 @@ describe('GestureDetector', () => {
 
   describe('Swipe Detection', () => {
     it('should detect a left swipe', () => {
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       detector.onSwipe = swipeHandler;
 
       detector.onTouchStart(200, 100);
@@ -276,7 +280,7 @@ describe('GestureDetector', () => {
     });
 
     it('should detect a right swipe', () => {
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       detector.onSwipe = swipeHandler;
 
       detector.onTouchStart(100, 100);
@@ -287,7 +291,7 @@ describe('GestureDetector', () => {
     });
 
     it('should detect an up swipe', () => {
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       detector.onSwipe = swipeHandler;
 
       detector.onTouchStart(100, 200);
@@ -298,7 +302,7 @@ describe('GestureDetector', () => {
     });
 
     it('should detect a down swipe', () => {
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       detector.onSwipe = swipeHandler;
 
       detector.onTouchStart(100, 100);
@@ -309,7 +313,7 @@ describe('GestureDetector', () => {
     });
 
     it('should not detect swipe if distance is too small', () => {
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       detector.onSwipe = swipeHandler;
 
       detector.onTouchStart(100, 100);
@@ -397,7 +401,7 @@ describe('GestureDetector', () => {
   describe('Custom Configuration', () => {
     it('should use custom tap max duration', () => {
       const customDetector = new GestureDetector({ tapMaxDuration: 100 });
-      const tapHandler = vi.fn();
+      const tapHandler = jest.fn();
       customDetector.onTap = tapHandler;
 
       customDetector.onTouchStart(100, 100);
@@ -408,7 +412,7 @@ describe('GestureDetector', () => {
 
     it('should use custom long-press min duration', async () => {
       const customDetector = new GestureDetector({ longPressMinDuration: 300 });
-      const longPressHandler = vi.fn();
+      const longPressHandler = jest.fn();
       customDetector.onLongPress = longPressHandler;
 
       customDetector.onTouchStart(100, 100);
@@ -422,7 +426,7 @@ describe('GestureDetector', () => {
 
     it('should use custom swipe min distance', () => {
       const customDetector = new GestureDetector({ swipeMinDistance: 100 });
-      const swipeHandler = vi.fn();
+      const swipeHandler = jest.fn();
       customDetector.onSwipe = swipeHandler;
 
       customDetector.onTouchStart(100, 100);
@@ -441,7 +445,7 @@ describe('GestureDetector', () => {
 
   describe('Complex Gestures', () => {
     it('should cancel long-press when second finger touches (pinch)', async () => {
-      const longPressHandler = vi.fn();
+      const longPressHandler = jest.fn();
       detector.onLongPress = longPressHandler;
 
       detector.onTouchStart(100, 100, 0);
@@ -458,7 +462,7 @@ describe('GestureDetector', () => {
     });
 
     it('should handle rapid tap sequences', () => {
-      const tapHandler = vi.fn();
+      const tapHandler = jest.fn();
       detector.onTap = tapHandler;
 
       // First tap
