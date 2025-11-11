@@ -210,7 +210,7 @@
 - [X] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
 - [X] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
 - [X] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
-- [ ] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
+- [X] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - full tactical combat with cards, monsters, attacks, loot collection, and scenario completion is functional.
 
@@ -224,27 +224,27 @@
 
 ### Tests for User Story 3
 
-- [ ] T126 [P] [US3] E2E test: Pinch-zoom on hex grid (mobile viewport) in frontend/tests/e2e/us3-pinch-zoom.spec.ts
-- [ ] T127 [P] [US3] E2E test: Pan gesture on game board in frontend/tests/e2e/us3-pan.spec.ts
-- [ ] T128 [P] [US3] E2E test: Long-press context menu in frontend/tests/e2e/us3-long-press.spec.ts
-- [ ] T129 [P] [US3] E2E test: Card carousel swipe gesture in frontend/tests/e2e/us3-swipe-cards.spec.ts
-- [ ] T130 [P] [US3] E2E test: Orientation change (portrait ↔ landscape) preserves state in frontend/tests/e2e/us3-orientation.spec.ts
-- [ ] T131 [P] [US3] E2E test: Touch target sizes (all buttons ≥44px) in frontend/tests/e2e/us3-touch-targets.spec.ts
-- [ ] T132 [P] [US3] Unit test: Touch gesture detection (tap, long-press, pinch, pan) in frontend/tests/unit/gestures.test.ts
+- [X] T126 [P] [US3] E2E test: Pinch-zoom on hex grid (mobile viewport) in frontend/tests/e2e/us3-pinch-zoom.spec.ts
+- [X] T127 [P] [US3] E2E test: Pan gesture on game board in frontend/tests/e2e/us3-pan.spec.ts
+- [X] T128 [P] [US3] E2E test: Long-press context menu in frontend/tests/e2e/us3-long-press.spec.ts
+- [X] T129 [P] [US3] E2E test: Card carousel swipe gesture in frontend/tests/e2e/us3-swipe-cards.spec.ts
+- [X] T130 [P] [US3] E2E test: Orientation change (portrait ↔ landscape) preserves state in frontend/tests/e2e/us3-orientation.spec.ts
+- [X] T131 [P] [US3] E2E test: Touch target sizes (all buttons ≥44px) in frontend/tests/e2e/us3-touch-targets.spec.ts
+- [X] T132 [P] [US3] Unit test: Touch gesture detection (tap, long-press, pinch, pan) in frontend/tests/unit/gestures.test.ts
 
 ### Frontend Implementation for User Story 3
 
-- [ ] T133 [P] [US3] Integrate pixi-viewport for pan and pinch-zoom in frontend/src/game/HexGrid.ts
-- [ ] T134 [P] [US3] Implement pinch-zoom with inertia and boundary constraints in frontend/src/game/Viewport.ts
-- [ ] T135 [P] [US3] Implement pan gesture with momentum scrolling in frontend/src/game/Viewport.ts
-- [ ] T136 [P] [US3] Implement long-press detection for context menus in frontend/src/utils/gestures.ts
-- [ ] T137 [P] [US3] Create ContextMenu component for hex actions in frontend/src/components/ContextMenu.tsx
-- [ ] T138 [P] [US3] Implement swipeable card carousel (react-swipeable or custom) in frontend/src/components/CardSelectionPanel.tsx
-- [ ] T139 [P] [US3] Add touch-target sizing utility (44px min) in frontend/src/utils/touch-targets.ts
-- [ ] T140 [US3] Apply responsive breakpoints (375px phone, 768px tablet, 1920px desktop) in frontend/src/utils/responsive.ts
-- [ ] T141 [US3] Implement orientation change handler (save viewport state, re-render) in frontend/src/hooks/useOrientation.ts
-- [ ] T142 [US3] Optimize PixiJS rendering for mobile (sprite culling, texture atlases, pooling) in frontend/src/game/PixiApp.tsx
-- [ ] T143 [US3] Test on mobile viewports in Playwright (iPhone SE, iPad, Pixel 5) in frontend/playwright.config.ts
+- [X] T133 [P] [US3] Integrate pixi-viewport for pan and pinch-zoom in frontend/src/game/HexGrid.ts
+- [X] T134 [P] [US3] Implement pinch-zoom with inertia and boundary constraints in frontend/src/game/Viewport.ts
+- [X] T135 [P] [US3] Implement pan gesture with momentum scrolling in frontend/src/game/Viewport.ts
+- [X] T136 [P] [US3] Implement long-press detection for context menus in frontend/src/utils/gestures.ts
+- [X] T137 [P] [US3] Create ContextMenu component for hex actions in frontend/src/components/ContextMenu.tsx
+- [X] T138 [P] [US3] Implement swipeable card carousel (react-swipeable or custom) in frontend/src/components/CardSelectionPanel.tsx
+- [X] T139 [P] [US3] Add touch-target sizing utility (44px min) in frontend/src/utils/responsive.ts
+- [X] T140 [US3] Apply responsive breakpoints (375px phone, 768px tablet, 1920px desktop) in frontend/src/utils/responsive.ts
+- [X] T141 [US3] Implement orientation change handler (save viewport state, re-render) in frontend/src/hooks/useOrientation.ts
+- [X] T142 [US3] Optimize PixiJS rendering for mobile (sprite culling, texture atlases, pooling) in frontend/src/game/PixiApp.tsx
+- [X] T143 [US3] Test on mobile viewports in Playwright (iPhone SE, iPad, Pixel 5) in frontend/playwright.config.ts
 
 **Checkpoint**: All user stories 1, 2, and 3 should now work independently - game is fully playable on mobile with excellent touch UX.
 

@@ -6,9 +6,10 @@
  * Mobile-optimized with touch gestures.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
+import { GestureHandler, type SwipeEvent } from '../utils/gestures';
 import './CardSelectionPanel.css';
 
 interface CardSelectionPanelProps {
@@ -31,41 +32,52 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   disabled = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [selectionMode, setSelectionMode] = useState<'top' | 'bottom' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const gestureHandlerRef = useRef<GestureHandler | null>(null);
 
-  // Minimum swipe distance (in px)
-  const minSwipeDistance = 50;
+  // Initialize gesture handler
+  useEffect(() => {
+    if (!carouselRef.current) return;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
+    const handler = new GestureHandler(carouselRef.current, {
+      swipeVelocityThreshold: 0.3,
+      swipeDistanceThreshold: 50,
+      enablePan: false, // Disable pan to avoid conflicts
+      enablePinch: false,
+    });
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+    // Handle swipe gestures for card navigation
+    handler.onSwipe((event: SwipeEvent) => {
+      if (isAnimating) return;
 
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+      const isLeftSwipe = event.direction === 'left';
+      const isRightSwipe = event.direction === 'right';
 
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+      setIsAnimating(true);
 
-    if (isLeftSwipe && currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
+      if (isLeftSwipe && currentIndex < cards.length - 1) {
+        setCurrentIndex((prev) => Math.min(prev + 1, cards.length - 1));
+      } else if (isRightSwipe && currentIndex > 0) {
+        setCurrentIndex((prev) => Math.max(prev - 1, 0));
+      }
 
-    if (isRightSwipe && currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
+      // Reset animation flag after transition
+      setTimeout(() => setIsAnimating(false), 300);
+    });
 
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
+    // Prevent tap from selecting during swipe
+    handler.onTap(() => {
+      // Taps are handled by card click handlers
+    });
+
+    gestureHandlerRef.current = handler;
+
+    return () => {
+      handler.destroy();
+    };
+  }, [cards.length, currentIndex, isAnimating]);
 
   const handleCardClick = (cardId: string) => {
     if (disabled) return;
@@ -144,6 +156,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
           onClick={handlePrevious}
           disabled={currentIndex === 0}
           aria-label="Previous card"
+          data-testid="carousel-prev"
         >
           ◀
         </button>
@@ -151,11 +164,10 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         <div
           className="carousel-track"
           ref={carouselRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          data-testid="card-carousel"
           style={{
             transform: `translateX(-${currentIndex * 100}%)`,
+            transition: isAnimating ? 'transform 0.3s ease-out' : 'none',
           }}
         >
           {cards.map((card) => {
@@ -182,19 +194,22 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
           onClick={handleNext}
           disabled={currentIndex === cards.length - 1}
           aria-label="Next card"
+          data-testid="carousel-next"
         >
           ▶
         </button>
       </div>
 
       {/* Carousel Indicators */}
-      <div className="carousel-indicators">
+      <div className="carousel-indicators" data-testid="carousel-pagination">
         {cards.map((card, idx) => (
           <button
             key={card.id}
             className={`indicator ${idx === currentIndex ? 'active' : ''}`}
             onClick={() => setCurrentIndex(idx)}
             aria-label={`Go to card ${idx + 1}`}
+            data-testid={`pagination-dot-${idx}`}
+            data-active={idx === currentIndex}
           />
         ))}
       </div>
@@ -216,6 +231,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
           className="btn-confirm"
           onClick={onConfirm}
           disabled={!canConfirm || disabled}
+          data-testid="confirm-cards-button"
         >
           Confirm Cards
         </button>
