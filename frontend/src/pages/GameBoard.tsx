@@ -36,7 +36,7 @@ export function GameBoard() {
   // Card selection state (T111)
   const [showCardSelection, setShowCardSelection] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
+  const [playerHand, _setPlayerHand] = useState<AbilityCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<{ top: string | null; bottom: string | null }>({ top: null, bottom: null });
 
   // Attack targeting state (T115)
@@ -100,17 +100,6 @@ export function GameBoard() {
       setAttackableTargets([]);
     }
   }, [attackMode, isMyTurn, attackableTargets]);
-
-  // Attack initiation - called when player chooses to attack from their card
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleInitiateAttack = useCallback(() => {
-    if (!isMyTurn) return;
-
-    // TODO: Get attackable targets from game state based on character position and range
-    // For now, use a placeholder
-    setAttackMode(true);
-    setAttackableTargets([]); // Would be populated from actual game state
-  }, [isMyTurn]);
 
   // T071: Character movement implementation
   const handleCharacterSelect = useCallback((characterId: string) => {
@@ -232,11 +221,11 @@ export function GameBoard() {
       {showCardSelection && (
         <CardSelectionPanel
           cards={playerHand}
-          selectedTop={selectedCards.top}
-          selectedBottom={selectedCards.bottom}
-          onSelectCard={handleCardSelect}
+          selectedTopCard={selectedCards.top}
+          selectedBottomCard={selectedCards.bottom}
+          onSelectTop={(cardId) => handleCardSelect(cardId, 'top')}
+          onSelectBottom={(cardId) => handleCardSelect(cardId, 'bottom')}
           onConfirm={handleConfirmCardSelection}
-          onCancel={() => setShowCardSelection(false)}
         />
       )}
 

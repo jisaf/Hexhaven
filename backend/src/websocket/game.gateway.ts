@@ -579,7 +579,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         goldValue: lootValue,
       };
 
-      this.server.to(room.roomCode).emit('loot_collected', lootCollectedPayload);
+      this.server
+        .to(room.roomCode)
+        .emit('loot_collected', lootCollectedPayload);
 
       this.logger.log(
         `Loot collected by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,

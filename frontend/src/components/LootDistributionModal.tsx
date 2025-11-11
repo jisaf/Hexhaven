@@ -52,7 +52,7 @@ export const LootDistributionModal: React.FC<LootDistributionModalProps> = ({
             <div className="column-gold">Gold</div>
           </div>
 
-          {loot.map((playerLoot, idx) => (
+          {loot.map((playerLoot) => (
             <div key={playerLoot.playerId} className="loot-row">
               <div className="column-player">
                 <div className="player-info">

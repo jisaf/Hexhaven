@@ -6,7 +6,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import type { AxialCoordinates } from './hex-utils';
+import type { AxialCoordinates } from '../../../shared/types/entities';
 
 export interface LootTokenData {
   id: string;
@@ -228,7 +228,7 @@ export class LootTokenSprite extends PIXI.Container {
   /**
    * Cleanup
    */
-  public destroy(options?: boolean | PIXI.IDestroyOptions): void {
+  public destroy(options?: boolean | PIXI.DestroyOptions): void {
     this.removeAllListeners();
     super.destroy(options);
   }
