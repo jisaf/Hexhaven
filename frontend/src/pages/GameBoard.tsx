@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import { websocketService } from '../services/websocket.service';
 import type { Axial } from '../game/hex-utils';
+import { CardSelectionPanel } from '../components/CardSelectionPanel';
+import type { AbilityCard } from '../../../shared/types/entities';
 
 export function GameBoard() {
   const { t } = useTranslation();
@@ -30,6 +32,16 @@ export function GameBoard() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
+
+  // Card selection state (T111)
+  const [showCardSelection, setShowCardSelection] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [playerHand, _setPlayerHand] = useState<AbilityCard[]>([]);
+  const [selectedCards, setSelectedCards] = useState<{ top: string | null; bottom: string | null }>({ top: null, bottom: null });
+
+  // Attack targeting state (T115)
+  const [attackMode, setAttackMode] = useState(false);
+  const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Event handlers - defined before useEffects that use them
   const handleGameStarted = useCallback((data: { gameState: { board: unknown; currentPlayerId: string } }) => {
@@ -63,6 +75,31 @@ export function GameBoard() {
     // Handle full game state updates (for reconnection, etc.)
     console.log('Game state update:', data);
   }, []);
+
+  // T111: Card selection handlers
+  const handleCardSelect = useCallback((cardId: string, slot: 'top' | 'bottom') => {
+    setSelectedCards(prev => ({ ...prev, [slot]: cardId }));
+  }, []);
+
+  const handleConfirmCardSelection = useCallback(() => {
+    if (selectedCards.top && selectedCards.bottom) {
+      websocketService.selectCards(selectedCards.top, selectedCards.bottom);
+      setShowCardSelection(false);
+      setSelectedCards({ top: null, bottom: null });
+    }
+  }, [selectedCards]);
+
+  // T115: Attack target selection handlers
+  const handleMonsterSelect = useCallback((monsterId: string) => {
+    if (!attackMode || !isMyTurn) return;
+
+    if (attackableTargets.includes(monsterId)) {
+      // Confirm attack
+      websocketService.attackTarget(monsterId);
+      setAttackMode(false);
+      setAttackableTargets([]);
+    }
+  }, [attackMode, isMyTurn, attackableTargets]);
 
   // T071: Character movement implementation
   const handleCharacterSelect = useCallback((characterId: string) => {
@@ -100,6 +137,7 @@ export function GameBoard() {
       height,
       onHexClick: handleHexClick,
       onCharacterSelect: handleCharacterSelect,
+      onMonsterSelect: handleMonsterSelect,
     });
 
     hexGridRef.current = hexGrid;
@@ -118,7 +156,7 @@ export function GameBoard() {
       hexGrid.destroy();
       hexGridRef.current = null;
     };
-  }, [handleHexClick, handleCharacterSelect]);
+  }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
 
   // Setup WebSocket event listeners
   useEffect(() => {
@@ -179,7 +217,26 @@ export function GameBoard() {
 
       <div ref={containerRef} className="game-container" />
 
-      {selectedCharacterId && isMyTurn && (
+      {/* T111: Card Selection Panel */}
+      {showCardSelection && (
+        <CardSelectionPanel
+          cards={playerHand}
+          selectedTopCard={selectedCards.top}
+          selectedBottomCard={selectedCards.bottom}
+          onSelectTop={(cardId) => handleCardSelect(cardId, 'top')}
+          onSelectBottom={(cardId) => handleCardSelect(cardId, 'bottom')}
+          onConfirm={handleConfirmCardSelection}
+        />
+      )}
+
+      {/* T115: Attack Mode Indicator */}
+      {attackMode && (
+        <div className="attack-mode-hint">
+          {t('game.attackHint', 'Select an enemy to attack')}
+        </div>
+      )}
+
+      {selectedCharacterId && isMyTurn && !attackMode && (
         <div className="movement-hint">
           {t('game.movementHint', 'Tap a highlighted hex to move your character')}
         </div>
@@ -294,7 +351,8 @@ export function GameBoard() {
           overflow: hidden;
         }
 
-        .movement-hint {
+        .movement-hint,
+        .attack-mode-hint {
           position: absolute;
           bottom: 24px;
           left: 50%;
@@ -308,6 +366,10 @@ export function GameBoard() {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
           pointer-events: none;
           animation: slideUp 0.3s ease-out;
+        }
+
+        .attack-mode-hint {
+          background: rgba(239, 68, 68, 0.9);
         }
 
         @keyframes slideUp {

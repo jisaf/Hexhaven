@@ -47,6 +47,14 @@ export interface WebSocketEvents {
     modifier: unknown;
   }) => void;
 
+  // Loot (US2 - T123)
+  loot_collected: (data: {
+    playerId: string;
+    lootTokenId: string;
+    hexCoordinates: { q: number; r: number };
+    goldValue: number;
+  }) => void;
+
   // Monster AI
   monster_activated: (data: { monsterId: string; actions: unknown[] }) => void;
 
@@ -252,6 +260,13 @@ class WebSocketService {
    */
   endTurn(): void {
     this.emit('end_turn');
+  }
+
+  /**
+   * Collect loot token (US2 - T123)
+   */
+  collectLoot(hexCoordinates: { q: number; r: number }): void {
+    this.emit('collect_loot', { hexCoordinates });
   }
 
   /**

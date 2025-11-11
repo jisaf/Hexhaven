@@ -169,6 +169,13 @@ export interface RoundEndedPayload {
   };
 }
 
+export interface LootCollectedPayload {
+  playerId: string;
+  lootTokenId: string;
+  hexCoordinates: AxialCoordinates;
+  goldValue: number;
+}
+
 export interface ScenarioCompletedPayload {
   victory: boolean;
   experience: number;
@@ -230,6 +237,7 @@ export interface ServerEvents {
   attack_resolved: AttackResolvedPayload;
   monster_activated: MonsterActivatedPayload;
   elemental_state_changed: ElementalStateChangedPayload;
+  loot_collected: LootCollectedPayload;
   round_ended: RoundEndedPayload;
   scenario_completed: ScenarioCompletedPayload;
   player_disconnected: PlayerDisconnectedPayload;

@@ -16,6 +16,7 @@ import {
   Character,
   AxialCoordinates,
 } from '../../../shared/types/entities';
+import { LootToken } from '../models/loot-token.model';
 
 interface MonsterStats {
   health: number;
@@ -198,16 +199,52 @@ export class ScenarioService {
   }
 
   /**
-   * Spawn loot token on hex when monster dies
+   * Spawn loot token on hex when monster dies (T120)
+   * @param roomId - Game room ID
+   * @param monsterHex - Hex coordinates where monster died
+   * @param difficulty - Scenario difficulty level (0-7)
+   * @returns LootToken instance
    */
-  spawnLootToken(monsterHex: AxialCoordinates): {
-    hex: AxialCoordinates;
-    lootId: string;
-  } {
-    return {
-      hex: monsterHex,
-      lootId: `loot_${Date.now()}`,
-    };
+  spawnLootToken(
+    roomId: string,
+    monsterHex: AxialCoordinates,
+    difficulty: number,
+  ): LootToken {
+    // Calculate loot value based on difficulty
+    const lootValue = LootToken.calculateLootValue(difficulty);
+
+    // Create loot token at monster's hex
+    const lootToken = LootToken.create(roomId, monsterHex, lootValue);
+
+    return lootToken;
+  }
+
+  /**
+   * Spawn multiple loot tokens from defeated monsters
+   * @param roomId - Game room ID
+   * @param defeatedMonsters - Array of monsters that died this round
+   * @param difficulty - Scenario difficulty level
+   * @returns Array of LootToken instances
+   */
+  spawnLootTokensFromDefeatedMonsters(
+    roomId: string,
+    defeatedMonsters: Monster[],
+    difficulty: number,
+  ): LootToken[] {
+    const lootTokens: LootToken[] = [];
+
+    for (const monster of defeatedMonsters) {
+      if (monster.isDead) {
+        const lootToken = this.spawnLootToken(
+          roomId,
+          monster.currentHex,
+          difficulty,
+        );
+        lootTokens.push(lootToken);
+      }
+    }
+
+    return lootTokens;
   }
 
   /**
