@@ -208,7 +208,7 @@
 - [X] T120 [US2] Implement loot token spawning in ScenarioService in backend/src/services/scenario.service.ts
 - [X] T121 [US2] Add loot collection action to GameGateway (WebSocket: collect_loot event) in backend/src/websocket/game.gateway.ts
 - [X] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
-- [ ] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
+- [X] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
 - [X] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
 - [ ] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
 
