@@ -58,12 +58,14 @@ export function RoomCodeInput({ onSubmit, isLoading, error }: RoomCodeInputProps
           aria-invalid={hasError ? 'true' : 'false'}
           aria-describedby={hasError ? 'room-code-error' : undefined}
           autoComplete="off"
+          data-testid="room-code-input"
         />
         <button
           type="submit"
           disabled={!isValid || isLoading}
           className="join-button"
           aria-label={t('lobby.joinRoom', 'Join Room')}
+          data-testid="join-room-button"
         >
           {isLoading ? t('lobby.joining', 'Joining...') : t('lobby.join', 'Join')}
         </button>

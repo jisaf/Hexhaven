@@ -19,6 +19,12 @@ test.describe('User Story 1: Create Game Room', () => {
     // Verify landing page elements
     await expect(page.locator('h1')).toContainText('Hexhaven');
 
+    // Handle nickname prompt dialog
+    page.once('dialog', async dialog => {
+      expect(dialog.type()).toBe('prompt');
+      await dialog.accept('TestPlayer');
+    });
+
     // Click "Create Game" button
     const createButton = page.locator('button:has-text("Create Game")');
     await expect(createButton).toBeVisible();
@@ -48,12 +54,24 @@ test.describe('User Story 1: Create Game Room', () => {
   test('should generate unique room codes for multiple games', async ({ page, context }) => {
     // Create first game
     await page.goto('/');
+
+    // Handle nickname prompt dialog for first game
+    page.once('dialog', async dialog => {
+      await dialog.accept('TestPlayer1');
+    });
+
     await page.locator('button:has-text("Create Game")').click();
     const roomCode1 = await page.locator('[data-testid="room-code"]').textContent();
 
     // Open second tab and create another game
     const page2 = await context.newPage();
     await page2.goto('/');
+
+    // Handle nickname prompt dialog for second game
+    page2.once('dialog', async dialog => {
+      await dialog.accept('TestPlayer2');
+    });
+
     await page2.locator('button:has-text("Create Game")').click();
     const roomCode2 = await page2.locator('[data-testid="room-code"]').textContent();
 
@@ -71,6 +89,12 @@ test.describe('User Story 1: Create Game Room', () => {
     });
 
     await page.goto('/');
+
+    // Handle nickname prompt dialog
+    page.once('dialog', async dialog => {
+      await dialog.accept('TestPlayer');
+    });
+
     await page.locator('button:has-text("Create Game")').click();
 
     // Verify error message is displayed
@@ -84,6 +108,12 @@ test.describe('User Story 1: Create Game Room', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
     await page.goto('/');
+
+    // Handle nickname prompt dialog
+    page.once('dialog', async dialog => {
+      await dialog.accept('TestPlayer');
+    });
+
     await page.locator('button:has-text("Create Game")').click();
 
     // Wait for room code
