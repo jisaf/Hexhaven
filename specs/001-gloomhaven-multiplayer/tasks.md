@@ -210,7 +210,7 @@
 - [X] T122 [P] [US2] Create LootTokenSprite component in frontend/src/game/LootTokenSprite.ts
 - [X] T123 [US2] Implement loot collection UI (tap token → collect) in frontend/src/pages/GameBoard.tsx
 - [X] T124 [US2] Implement end-of-scenario loot distribution modal in frontend/src/components/LootDistributionModal.tsx
-- [ ] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
+- [X] T125 [P] [US2] E2E test: Loot token collection and distribution in frontend/tests/e2e/us2-loot.spec.ts
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - full tactical combat with cards, monsters, attacks, loot collection, and scenario completion is functional.
 
@@ -224,13 +224,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T126 [P] [US3] E2E test: Pinch-zoom on hex grid (mobile viewport) in frontend/tests/e2e/us3-pinch-zoom.spec.ts
-- [ ] T127 [P] [US3] E2E test: Pan gesture on game board in frontend/tests/e2e/us3-pan.spec.ts
-- [ ] T128 [P] [US3] E2E test: Long-press context menu in frontend/tests/e2e/us3-long-press.spec.ts
-- [ ] T129 [P] [US3] E2E test: Card carousel swipe gesture in frontend/tests/e2e/us3-swipe-cards.spec.ts
-- [ ] T130 [P] [US3] E2E test: Orientation change (portrait ↔ landscape) preserves state in frontend/tests/e2e/us3-orientation.spec.ts
-- [ ] T131 [P] [US3] E2E test: Touch target sizes (all buttons ≥44px) in frontend/tests/e2e/us3-touch-targets.spec.ts
-- [ ] T132 [P] [US3] Unit test: Touch gesture detection (tap, long-press, pinch, pan) in frontend/tests/unit/gestures.test.ts
+- [X] T126 [P] [US3] E2E test: Pinch-zoom on hex grid (mobile viewport) in frontend/tests/e2e/us3-pinch-zoom.spec.ts
+- [X] T127 [P] [US3] E2E test: Pan gesture on game board in frontend/tests/e2e/us3-pan.spec.ts
+- [X] T128 [P] [US3] E2E test: Long-press context menu in frontend/tests/e2e/us3-long-press.spec.ts
+- [X] T129 [P] [US3] E2E test: Card carousel swipe gesture in frontend/tests/e2e/us3-swipe-cards.spec.ts
+- [X] T130 [P] [US3] E2E test: Orientation change (portrait ↔ landscape) preserves state in frontend/tests/e2e/us3-orientation.spec.ts
+- [X] T131 [P] [US3] E2E test: Touch target sizes (all buttons ≥44px) in frontend/tests/e2e/us3-touch-targets.spec.ts
+- [X] T132 [P] [US3] Unit test: Touch gesture detection (tap, long-press, pinch, pan) in frontend/tests/unit/gestures.test.ts
 
 ### Frontend Implementation for User Story 3
 
