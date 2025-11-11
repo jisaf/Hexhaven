@@ -20,11 +20,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { websocketService } from '../services/websocket.service';
-import { RoomCodeInput } from '../components/RoomCodeInput';
+import { JoinRoomForm } from '../components/JoinRoomForm';
+import { NicknameInput } from '../components/NicknameInput';
 import { PlayerList, type Player } from '../components/PlayerList';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
 
-type LobbyMode = 'initial' | 'creating' | 'joining' | 'in-room';
+type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
 interface GameRoom {
   roomCode: string;
@@ -44,6 +45,9 @@ export function Lobby() {
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string>('');
+  const [pendingRoomCode, setPendingRoomCode] = useState<string>('');
+  const [showCopied, setShowCopied] = useState(false);
 
   // Event handlers - defined before useEffect that uses them
   const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => {
@@ -113,7 +117,25 @@ export function Lobby() {
   }, [handleRoomJoined, handlePlayerJoined, handlePlayerLeft, handleCharacterSelected, handleGameStarted, handleError]);
 
   // Room creation flow (T067)
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = () => {
+    // Check if nickname is already set
+    const storedNickname = localStorage.getItem('playerNickname');
+    if (storedNickname) {
+      // If nickname exists, proceed directly
+      proceedWithRoomCreation(storedNickname);
+    } else {
+      // Show nickname input first
+      setMode('nickname-for-create');
+    }
+  };
+
+  const handleNicknameSubmit = (submittedNickname: string) => {
+    setNickname(submittedNickname);
+    localStorage.setItem('playerNickname', submittedNickname);
+    proceedWithRoomCreation(submittedNickname);
+  };
+
+  const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -125,18 +147,11 @@ export function Lobby() {
         localStorage.setItem('playerUUID', uuid);
       }
 
-      // Get nickname from localStorage or prompt
-      let nickname = localStorage.getItem('playerNickname');
-      if (!nickname) {
-        nickname = prompt(t('lobby.enterNickname', 'Enter your nickname:')) || 'Player';
-        localStorage.setItem('playerNickname', nickname);
-      }
-
       // Call REST API to create room
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid, nickname }),
+        body: JSON.stringify({ uuid, nickname: playerNickname }),
       });
 
       if (!response.ok) {
@@ -146,7 +161,7 @@ export function Lobby() {
       const data = await response.json();
 
       // Join the room via WebSocket
-      websocketService.joinRoom(data.room.roomCode, nickname, uuid);
+      websocketService.joinRoom(data.room.roomCode, playerNickname, uuid);
       setMode('creating');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create room');
@@ -155,7 +170,7 @@ export function Lobby() {
   };
 
   // Room join flow (T068)
-  const handleJoinRoom = (roomCode: string) => {
+  const handleJoinRoom = (roomCode: string, playerNickname: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -166,14 +181,10 @@ export function Lobby() {
       localStorage.setItem('playerUUID', uuid);
     }
 
-    // Get nickname
-    let nickname = localStorage.getItem('playerNickname');
-    if (!nickname) {
-      nickname = prompt(t('lobby.enterNickname', 'Enter your nickname:')) || 'Player';
-      localStorage.setItem('playerNickname', nickname);
-    }
+    // Store nickname
+    localStorage.setItem('playerNickname', playerNickname);
 
-    websocketService.joinRoom(roomCode, nickname, uuid);
+    websocketService.joinRoom(roomCode, playerNickname, uuid);
     setMode('joining');
   };
 
@@ -199,6 +210,19 @@ export function Lobby() {
     }
 
     websocketService.startGame();
+  };
+
+  // Copy room code to clipboard
+  const handleCopyRoomCode = async () => {
+    if (!room) return;
+
+    try {
+      await navigator.clipboard.writeText(room.roomCode);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy room code:', err);
+    }
   };
 
   // Get disabled character classes
@@ -242,6 +266,36 @@ export function Lobby() {
           </div>
         )}
 
+        {mode === 'nickname-for-create' && (
+          <div className="nickname-mode">
+            <button
+              className="back-button"
+              onClick={() => {
+                setMode('initial');
+                setError(null);
+              }}
+            >
+              ← {t('lobby.back', 'Back')}
+            </button>
+
+            <div className="nickname-content">
+              <h2>{t('lobby.enterNicknameTitle', 'Enter Your Nickname')}</h2>
+              <p className="nickname-instruction">
+                {t('lobby.nicknameInstruction', 'Choose a nickname for this game')}
+              </p>
+
+              <NicknameInput
+                onSubmit={handleNicknameSubmit}
+                onCancel={() => setMode('initial')}
+                isLoading={isLoading}
+                error={error || undefined}
+                initialValue={localStorage.getItem('playerNickname') || ''}
+                showCancel={true}
+              />
+            </div>
+          </div>
+        )}
+
         {mode === 'joining' && !room && (
           <div className="join-mode">
             <button
@@ -257,26 +311,44 @@ export function Lobby() {
             <div className="join-content">
               <h2>{t('lobby.joinGameTitle', 'Join a Game')}</h2>
               <p className="join-instruction">
-                {t('lobby.enterRoomCodeInstruction', 'Enter the 6-character room code')}
+                {t('lobby.enterJoinDetails', 'Enter the room code and your nickname')}
               </p>
 
-              <RoomCodeInput
+              <JoinRoomForm
                 onSubmit={handleJoinRoom}
                 isLoading={isLoading}
                 error={error || undefined}
+                initialNickname={localStorage.getItem('playerNickname') || ''}
               />
             </div>
           </div>
         )}
 
         {mode === 'in-room' && room && (
-          <div className="in-room-mode">
+          <div className="in-room-mode" data-testid="lobby-page">
             <div className="room-header">
-              <h2>
-                {t('lobby.roomCode', 'Room Code')}: <span className="room-code">{room.roomCode}</span>
-              </h2>
+              <div className="room-code-section">
+                <h2>
+                  {t('lobby.roomCode', 'Room Code')}: <span className="room-code" data-testid="room-code">{room.roomCode}</span>
+                </h2>
+                <div className="copy-area">
+                  <button
+                    className="copy-button"
+                    onClick={handleCopyRoomCode}
+                    data-testid="copy-room-code"
+                    aria-label={t('lobby.copyRoomCode', 'Copy room code')}
+                  >
+                    📋 {t('lobby.copy', 'Copy')}
+                  </button>
+                  {showCopied && (
+                    <span className="copied-message">
+                      {t('lobby.copied', 'Copied!')}
+                    </span>
+                  )}
+                </div>
+              </div>
               {isHost && (
-                <span className="host-indicator">
+                <span className="host-indicator" data-testid="host-indicator">
                   👑 {t('lobby.youAreHost', 'You are the host')}
                 </span>
               )}
@@ -449,18 +521,21 @@ export function Lobby() {
           color: #4a8fc4;
         }
 
-        .join-content {
+        .join-content,
+        .nickname-content {
           max-width: 500px;
           margin: 0 auto;
           text-align: center;
         }
 
-        .join-content h2 {
+        .join-content h2,
+        .nickname-content h2 {
           margin: 0 0 16px 0;
           font-size: 28px;
         }
 
-        .join-instruction {
+        .join-instruction,
+        .nickname-instruction {
           margin: 0 0 32px 0;
           color: #aaa;
         }
@@ -479,11 +554,48 @@ export function Lobby() {
           font-weight: 500;
         }
 
+        .room-code-section {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
         .room-code {
           font-size: 32px;
           font-weight: 700;
           letter-spacing: 0.2em;
           color: #5a9fd4;
+        }
+
+        .copy-area {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .copy-button {
+          padding: 8px 16px;
+          font-size: 14px;
+          background: #5a9fd4;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .copy-button:hover {
+          background: #4a8fc4;
+          transform: translateY(-1px);
+        }
+
+        .copied-message {
+          color: #10b981;
+          font-size: 14px;
+          font-weight: 600;
+          animation: fadeIn 0.2s;
         }
 
         .host-indicator {
