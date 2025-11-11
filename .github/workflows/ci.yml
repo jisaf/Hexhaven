@@ -291,20 +291,11 @@ jobs:
         run: npm run build
         working-directory: ./backend
 
-      - name: Start backend server
-        run: npm run start:prod &
-        working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
-          NODE_ENV: test
-          PORT: 3000
-
-      - name: Wait for backend to be ready
-        run: npx wait-on http://localhost:3000/api/health -t 60000
-
       - name: Run E2E tests
         run: npm run test:e2e
         env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
+          NODE_ENV: test
           BACKEND_URL: http://localhost:3000
 
       - name: Upload Playwright report
