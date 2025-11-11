@@ -252,6 +252,10 @@ jobs:
       run:
         working-directory: ./frontend
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
+      NODE_ENV: test
+
     services:
       postgres:
         image: postgres:14
@@ -293,10 +297,6 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
-          NODE_ENV: test
-          BACKEND_URL: http://localhost:3000
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
