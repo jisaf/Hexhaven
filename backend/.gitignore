@@ -1,6 +1,3 @@
-backend/tests/**/*.js
-backend/tests/**/*.d.ts
-backend/tests/**/*.js.map
-shared/types/**/*.js
-shared/types/**/*.d.ts
-shared/types/**/*.js.map
+tests/**/*.js
+tests/**/*.d.ts
+tests/**/*.js.map
