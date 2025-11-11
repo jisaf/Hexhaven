@@ -45,7 +45,20 @@ export default defineConfig({
   },
 
   // Configure projects for major browsers and devices (US3 - T143)
+  // Currently running on Desktop Chrome only to reduce test execution time
+  // TODO: Re-enable mobile devices (iPhone SE, iPad, Pixel 5) once features are implemented
   projects: [
+    // Desktop Chrome
+    {
+      name: 'Desktop Chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+
+    // Disabled for now - uncomment when features are ready for cross-device testing
+    /*
     // iPhone SE - Mobile portrait (minimum supported width: 375px)
     {
       name: 'iPhone SE',
@@ -72,15 +85,7 @@ export default defineConfig({
         viewport: { width: 393, height: 851 },
       },
     },
-
-    // Desktop Chrome (for comparison)
-    {
-      name: 'Desktop Chrome',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
-      },
-    },
+    */
   ],
 
   // Run local dev servers (backend and frontend) before starting the tests
