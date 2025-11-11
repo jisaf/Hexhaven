@@ -45,8 +45,6 @@ export function Lobby() {
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nickname, setNickname] = useState<string>('');
-  const [pendingRoomCode, setPendingRoomCode] = useState<string>('');
   const [showCopied, setShowCopied] = useState(false);
 
   // Event handlers - defined before useEffect that uses them
@@ -130,7 +128,6 @@ export function Lobby() {
   };
 
   const handleNicknameSubmit = (submittedNickname: string) => {
-    setNickname(submittedNickname);
     localStorage.setItem('playerNickname', submittedNickname);
     proceedWithRoomCreation(submittedNickname);
   };

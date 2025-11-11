@@ -50,7 +50,6 @@ export function JoinRoomForm({
 
   const showRoomCodeError = touched.roomCode && !isRoomCodeValid && roomCode.length > 0;
   const showNicknameError = touched.nickname && !isNicknameValid && nickname.length > 0;
-  const hasError = error || showRoomCodeError || showNicknameError;
 
   return (
     <form onSubmit={handleSubmit} className="join-room-form">
