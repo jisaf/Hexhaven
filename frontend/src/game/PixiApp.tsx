@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Application, Container, type ApplicationOptions, settings } from 'pixi.js';
+import { Application, Container, type ApplicationOptions } from 'pixi.js';
 
 export interface PixiAppProps {
   /**
@@ -89,23 +89,8 @@ export function PixiApp({
       const rect = container.getBoundingClientRect();
 
       // Configure global PixiJS settings for mobile performance (US3 - T142)
-      // Enable sprite batching to reduce draw calls
-      settings.SPRITE_MAX_TEXTURES = Math.min(
-        settings.SPRITE_MAX_TEXTURES,
-        16 // Limit for mobile compatibility
-      );
-
-      // Optimize garbage collection (reduce memory pressure on mobile)
-      settings.GC_MODE = 1; // AUTO mode
-      settings.GC_MAX_IDLE = 60 * 60; // 1 minute
-      settings.GC_MAX_CHECK_COUNT = 60 * 10; // 10 seconds
-
-      // Enable texture caching for better performance
-      settings.RENDER_OPTIONS = {
-        ...settings.RENDER_OPTIONS,
-        clearBeforeRender: true,
-        preserveDrawingBuffer: false, // Better performance, disable if screenshots needed
-      };
+      // Note: PixiJS v8+ handles many optimizations automatically
+      // Custom settings can be configured via ApplicationOptions
 
       // Default options optimized for mobile (US3 - T142)
       const defaultOptions: Partial<ApplicationOptions> = {

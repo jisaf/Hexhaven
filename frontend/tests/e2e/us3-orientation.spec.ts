@@ -9,10 +9,10 @@
  * 5. Viewport and zoom settings are maintained
  */
 
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('User Story 3: Orientation Change', () => {
-  test('should adapt layout when changing from portrait to landscape', async ({ page, browser }) => {
+  test('should adapt layout when changing from portrait to landscape', async ({ page }) => {
     // Start in portrait mode (iPhone SE)
     await page.setViewportSize({ width: 375, height: 667 });
 
@@ -217,10 +217,6 @@ test.describe('User Story 3: Orientation Change', () => {
     // Position should be different in landscape
     if (portraitPanelBox && landscapePanelBox) {
       // In landscape, UI might be repositioned (e.g., cards on side instead of bottom)
-      const positionChanged =
-        Math.abs(portraitPanelBox.x - landscapePanelBox.x) > 50 ||
-        Math.abs(portraitPanelBox.y - landscapePanelBox.y) > 50;
-
       // Position change is expected for responsive layout
       // Just verify the panel is still usable
       expect(landscapePanelBox.width).toBeGreaterThan(0);

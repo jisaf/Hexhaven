@@ -5,7 +5,7 @@
  * Triggered by long-press gestures on mobile devices.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { MIN_TOUCH_TARGET_SIZE } from '../utils/responsive';
 import type { AxialCoordinates } from '../../../shared/types/entities';
 
@@ -48,39 +48,47 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   'data-testid': dataTestId = 'context-menu',
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Calculate adjusted position to keep menu within viewport
+  const getAdjustedPosition = () => {
+    if (!menuRef.current) return { x, y };
+
+    const menu = menuRef.current;
+    const rect = menu.getBoundingClientRect();
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+
+    let adjustedX = x;
+    let adjustedY = y;
+
+    // Keep within horizontal bounds
+    if (x + rect.width > viewport.width) {
+      adjustedX = viewport.width - rect.width - 8; // 8px margin
+    }
+    if (adjustedX < 8) {
+      adjustedX = 8;
+    }
+
+    // Keep within vertical bounds
+    if (y + rect.height > viewport.height) {
+      adjustedY = viewport.height - rect.height - 8;
+    }
+    if (adjustedY < 8) {
+      adjustedY = 8;
+    }
+
+    return { x: adjustedX, y: adjustedY };
+  };
+
   const [position, setPosition] = useState({ x, y });
 
-  useEffect(() => {
-    // Adjust position to keep menu within viewport
-    if (menuRef.current) {
-      const menu = menuRef.current;
-      const rect = menu.getBoundingClientRect();
-      const viewport = {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      };
-
-      let adjustedX = x;
-      let adjustedY = y;
-
-      // Keep within horizontal bounds
-      if (x + rect.width > viewport.width) {
-        adjustedX = viewport.width - rect.width - 8; // 8px margin
-      }
-      if (adjustedX < 8) {
-        adjustedX = 8;
-      }
-
-      // Keep within vertical bounds
-      if (y + rect.height > viewport.height) {
-        adjustedY = viewport.height - rect.height - 8;
-      }
-      if (adjustedY < 8) {
-        adjustedY = 8;
-      }
-
-      setPosition({ x: adjustedX, y: adjustedY });
-    }
+  // Update position when props change
+  useLayoutEffect(() => {
+    const adjustedPos = getAdjustedPosition();
+    setPosition(adjustedPos);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [x, y]);
 
   useEffect(() => {
@@ -295,8 +303,8 @@ export function createHexContextItems(
  * Helper to create context menu items for characters
  */
 export function createCharacterContextItems(
-  characterId: string,
-  characterName: string,
+  _characterId: string,
+  _characterName: string,
   canAct: boolean,
   onViewStats?: () => void,
   onUseAbility?: () => void,
@@ -340,9 +348,9 @@ export function createCharacterContextItems(
  * Helper to create context menu items for monsters
  */
 export function createMonsterContextItems(
-  monsterId: string,
-  monsterType: string,
-  isElite: boolean,
+  _monsterId: string,
+  _monsterType: string,
+  _isElite: boolean,
   canTarget: boolean,
   onViewStats?: () => void,
   onTarget?: () => void

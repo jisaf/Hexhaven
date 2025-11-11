@@ -249,11 +249,6 @@ test.describe('User Story 3: Pan Gesture on Game Board', () => {
     const character = page.locator('[data-testid^="character"]').first();
     await expect(character).toBeVisible({ timeout: 2000 });
 
-    const hexGrid = page.locator('[data-testid="hex-grid"]');
-    const initialTransform = await hexGrid.evaluate((el) =>
-      window.getComputedStyle(el).transform
-    );
-
     // Try to drag starting from character (should select, not pan)
     const characterBox = await character.boundingBox();
 

@@ -176,22 +176,12 @@ test.describe('User Story 3: Touch Target Sizes', () => {
     const createButton = page.locator('button:has-text("Create Game")');
     await expect(createButton).toBeVisible();
 
-    // Get initial styles
-    const initialBackgroundColor = await createButton.evaluate((el) =>
-      window.getComputedStyle(el).backgroundColor
-    );
-
     // Tap button
     await createButton.hover();
     await page.mouse.down();
 
     // During press, visual feedback should be visible (color change, ripple, etc.)
     await page.waitForTimeout(100);
-
-    // Check if active/pressed state is different
-    const pressedBackgroundColor = await createButton.evaluate((el) =>
-      window.getComputedStyle(el).backgroundColor
-    );
 
     // Release
     await page.mouse.up();

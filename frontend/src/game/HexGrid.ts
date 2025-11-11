@@ -557,7 +557,7 @@ export class HexGrid {
     this.viewport.moveCenter(screenPos.x, screenPos.y);
 
     if (!animate) {
-      this.viewport.emit('moved-end');
+      this.viewport.emit('moved-end', this.viewport);
     }
   }
 

@@ -347,8 +347,6 @@ test.describe('User Story 3: Long-Press Context Menu', () => {
 
     if (viewport) {
       // Try to trigger context menu near bottom-right corner
-      const hexGrid = page.locator('[data-testid="hex-grid"]');
-
       // Pan to bottom-right area
       await page.mouse.move(viewport.width - 50, viewport.height - 50);
       await page.mouse.down();

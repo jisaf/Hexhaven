@@ -114,13 +114,10 @@ export function useOrientation(options: UseOrientationOptions = {}) {
     }
   }, [state.orientation, onChange, getViewportState, setViewportState]);
 
-  // Debounced handler to avoid excessive updates
-  const debouncedHandler = useCallback(
-    debounce(handleOrientationChange, debounceDelay),
-    [handleOrientationChange, debounceDelay]
-  );
-
   useEffect(() => {
+    // Create debounced handler to avoid excessive updates
+    const debouncedHandler = debounce(handleOrientationChange, debounceDelay);
+
     // Listen for resize events (which fire on orientation change)
     window.addEventListener('resize', debouncedHandler);
 
@@ -140,36 +137,21 @@ export function useOrientation(options: UseOrientationOptions = {}) {
         window.screen.orientation.removeEventListener('change', debouncedHandler);
       }
     };
-  }, [debouncedHandler]);
+  }, [handleOrientationChange, debounceDelay]);
 
   return state;
 }
 
 /**
  * Hook to lock orientation (experimental, not widely supported)
+ * Disabled for now as it requires additional TypeScript types
  */
-export function useOrientationLock(orientation?: OrientationLockType) {
+export function useOrientationLock(_orientation?: string) {
   useEffect(() => {
-    if (!orientation || !window.screen?.orientation?.lock) {
-      return;
-    }
-
-    const lockOrientation = async () => {
-      try {
-        await window.screen.orientation.lock(orientation);
-      } catch (error) {
-        console.warn('Orientation lock failed:', error);
-      }
-    };
-
-    lockOrientation();
-
-    return () => {
-      if (window.screen?.orientation?.unlock) {
-        window.screen.orientation.unlock();
-      }
-    };
-  }, [orientation]);
+    // Orientation lock API is experimental and not widely supported
+    // Implementation requires additional @types/screen-orientation package
+    console.warn('Orientation lock is not implemented in this version');
+  }, [_orientation]);
 }
 
 /**
