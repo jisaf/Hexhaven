@@ -5,6 +5,7 @@
  * Loot tokens spawn when monsters are defeated and provide gold rewards.
  */
 
+import { randomUUID } from 'crypto';
 import type { AxialCoordinates } from '../../../shared/types/entities';
 
 export interface LootTokenData {
@@ -137,7 +138,7 @@ export class LootToken {
     }
 
     const data: LootTokenData = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       roomId,
       coordinates,
       value,

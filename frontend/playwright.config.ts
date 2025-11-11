@@ -83,13 +83,25 @@ export default defineConfig({
     },
   ],
 
-  // Run local dev server before starting the tests
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000 // 2 minutes
-  },
+  // Run local dev servers (backend and frontend) before starting the tests
+  webServer: [
+    {
+      command: 'cd ../backend && npm run start:prod',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000, // 2 minutes
+      stdout: 'pipe',
+      stderr: 'pipe'
+    },
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000, // 2 minutes
+      stdout: 'pipe',
+      stderr: 'pipe'
+    }
+  ],
 
   // Test timeout
   timeout: 30 * 1000, // 30 seconds
