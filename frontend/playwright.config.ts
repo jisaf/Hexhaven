@@ -45,15 +45,17 @@ export default defineConfig({
   },
 
   // Configure projects for major browsers and devices (US3 - T143)
-  // Currently running on Desktop Chrome only to reduce test execution time
-  // TODO: Re-enable mobile devices (iPhone SE, iPad, Pixel 5) once features are implemented
+  // Running on Pixel 6 only - mobile-first game with touch interactions
+  // TODO: Add more mobile devices for cross-device testing once features are implemented
   projects: [
-    // Desktop Chrome
+    // Pixel 6 - Primary mobile testing device
     {
-      name: 'Desktop Chrome',
+      name: 'Pixel 6',
       use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
+        ...devices['Pixel 5'], // Use Pixel 5 as base (Pixel 6 not in default devices)
+        viewport: { width: 412, height: 915 }, // Pixel 6 dimensions
+        hasTouch: true,
+        isMobile: true,
       },
     },
 
@@ -77,12 +79,12 @@ export default defineConfig({
       },
     },
 
-    // Pixel 5 - Android mobile
+    // Desktop Chrome (for comparison)
     {
-      name: 'Pixel 5',
+      name: 'Desktop Chrome',
       use: {
-        ...devices['Pixel 5'],
-        viewport: { width: 393, height: 851 },
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
       },
     },
     */
