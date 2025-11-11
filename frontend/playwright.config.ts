@@ -110,11 +110,14 @@ export default defineConfig({
     }
   ],
 
-  // Test timeout
-  timeout: 30 * 1000, // 30 seconds
+  // Test timeout - reduced for faster failures during development
+  timeout: 10 * 1000, // 10 seconds (reduced from 30s)
 
-  // Expect timeout
+  // Expect timeout - reduced for faster failures
   expect: {
-    timeout: 5 * 1000 // 5 seconds
-  }
+    timeout: 3 * 1000 // 3 seconds (reduced from 5s)
+  },
+
+  // Max failures - stop after 5 failures to save CI time
+  maxFailures: process.env.CI ? 5 : undefined,
 });
