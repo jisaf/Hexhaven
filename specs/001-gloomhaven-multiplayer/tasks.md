@@ -168,38 +168,38 @@
 
 ### Backend Implementation for User Story 2
 
-- [ ] T086 [P] [US2] Create Monster model in backend/src/models/monster.model.ts
-- [ ] T087 [P] [US2] Create AbilityCard model in backend/src/models/ability-card.model.ts
-- [ ] T088 [P] [US2] Create AttackModifierDeck model in backend/src/models/modifier-deck.model.ts
-- [ ] T089 [P] [US2] Create Scenario model with map layout and monster groups in backend/src/models/scenario.model.ts
-- [ ] T090 [US2] Implement TurnOrderService (calculate initiative, build turn order array) in backend/src/services/turn-order.service.ts
-- [ ] T091 [US2] Implement MonsterAIService (determineFocus, calculateMovement, selectAttack) in backend/src/services/monster-ai.service.ts
-- [ ] T092 [US2] Implement PathfindingService (A* algorithm for hex grids) in backend/src/services/pathfinding.service.ts
-- [ ] T093 [US2] Implement DamageCalculationService (base damage + modifier + effects) in backend/src/services/damage-calculation.service.ts
-- [ ] T094 [US2] Implement ModifierDeckService (draw, reshuffle on null/x2) in backend/src/services/modifier-deck.service.ts
-- [ ] T095 [US2] Implement ElementalStateService (generate, consume, decay per round) in backend/src/services/elemental-state.service.ts
-- [ ] T096 [US2] Implement ScenarioService (load scenario, spawn monsters, check completion) in backend/src/services/scenario.service.ts
-- [ ] T097 [US2] Add WebSocket handlers (select_cards, attack_target, end_turn) in backend/src/websocket/game.gateway.ts
-- [ ] T098 [US2] Implement server-authoritative attack validation (range, target alive, not disarmed) in backend/src/services/validation.service.ts
-- [ ] T099 [US2] Implement monster activation logic (AI calculates actions, broadcasts results) in backend/src/services/monster-ai.service.ts
-- [ ] T100 [US2] Implement scenario completion detection (all monsters dead or all players exhausted) in backend/src/services/scenario.service.ts
+- [X] T086 [P] [US2] Create Monster model in backend/src/models/monster.model.ts
+- [X] T087 [P] [US2] Create AbilityCard model in backend/src/models/ability-card.model.ts
+- [X] T088 [P] [US2] Create AttackModifierDeck model in backend/src/models/modifier-deck.model.ts
+- [X] T089 [P] [US2] Create Scenario model with map layout and monster groups in backend/src/models/scenario.model.ts
+- [X] T090 [US2] Implement TurnOrderService (calculate initiative, build turn order array) in backend/src/services/turn-order.service.ts
+- [X] T091 [US2] Implement MonsterAIService (determineFocus, calculateMovement, selectAttack) in backend/src/services/monster-ai.service.ts
+- [X] T092 [US2] Implement PathfindingService (A* algorithm for hex grids) in backend/src/services/pathfinding.service.ts
+- [X] T093 [US2] Implement DamageCalculationService (base damage + modifier + effects) in backend/src/services/damage-calculation.service.ts
+- [X] T094 [US2] Implement ModifierDeckService (draw, reshuffle on null/x2) in backend/src/services/modifier-deck.service.ts
+- [X] T095 [US2] Implement ElementalStateService (generate, consume, decay per round) in backend/src/services/elemental-state.service.ts
+- [X] T096 [US2] Implement ScenarioService (load scenario, spawn monsters, check completion) in backend/src/services/scenario.service.ts
+- [X] T097 [US2] Add WebSocket handlers (select_cards, attack_target, end_turn) in backend/src/websocket/game.gateway.ts
+- [X] T098 [US2] Implement server-authoritative attack validation (range, target alive, not disarmed) in backend/src/services/validation.service.ts
+- [X] T099 [US2] Implement monster activation logic (AI calculates actions, broadcasts results) in backend/src/services/monster-ai.service.ts
+- [X] T100 [US2] Implement scenario completion detection (all monsters dead or all players exhausted) in backend/src/services/scenario.service.ts
 - [ ] T101 [US2] Add REST GET /api/scenarios endpoint for scenario browsing in backend/src/api/scenarios.controller.ts
 - [ ] T102 [US2] Add REST GET /api/scenarios/:id endpoint for scenario details in backend/src/api/scenarios.controller.ts
 
 ### Frontend Implementation for User Story 2
 
-- [ ] T103 [P] [US2] Create AbilityCard component in frontend/src/components/AbilityCard.tsx
-- [ ] T104 [P] [US2] Create CardSelectionPanel component with swipe carousel in frontend/src/components/CardSelectionPanel.tsx
-- [ ] T105 [P] [US2] Create TurnOrderDisplay component in frontend/src/components/TurnOrderDisplay.tsx
-- [ ] T106 [P] [US2] Create MonsterSprite component in frontend/src/game/MonsterSprite.ts
-- [ ] T107 [P] [US2] Create AttackAnimation component in frontend/src/game/AttackAnimation.ts
-- [ ] T108 [P] [US2] Create DamageNumber component (pooled sprites for performance) in frontend/src/game/DamageNumber.ts
-- [ ] T109 [P] [US2] Create ElementalStateDisplay component in frontend/src/components/ElementalStateDisplay.tsx
-- [ ] T110 [P] [US2] Create ScenarioCompleteModal component in frontend/src/components/ScenarioCompleteModal.tsx
+- [X] T103 [P] [US2] Create AbilityCard component in frontend/src/components/AbilityCard.tsx
+- [X] T104 [P] [US2] Create CardSelectionPanel component with swipe carousel in frontend/src/components/CardSelectionPanel.tsx
+- [X] T105 [P] [US2] Create TurnOrderDisplay component in frontend/src/components/TurnOrderDisplay.tsx
+- [X] T106 [P] [US2] Create MonsterSprite component in frontend/src/game/MonsterSprite.ts
+- [X] T107 [P] [US2] Create AttackAnimation component in frontend/src/game/AttackAnimation.ts
+- [X] T108 [P] [US2] Create DamageNumber component (pooled sprites for performance) in frontend/src/game/DamageNumber.ts
+- [X] T109 [P] [US2] Create ElementalStateDisplay component in frontend/src/components/ElementalStateDisplay.tsx
+- [X] T110 [P] [US2] Create ScenarioCompleteModal component in frontend/src/components/ScenarioCompleteModal.tsx
 - [ ] T111 [US2] Implement card selection phase UI (select 2 cards, highlight selected) in frontend/src/pages/GameBoard.tsx
 - [ ] T112 [US2] Connect WebSocket events (cards_selected, turn_order_determined, next_turn_started, monster_activated, attack_resolved, scenario_completed) in frontend/src/services/websocket.service.ts
 - [ ] T113 [US2] Implement turn indicator (highlight current entity's turn) in frontend/src/components/TurnOrderDisplay.tsx
-- [ ] T114 [US2] Implement monster rendering on hex grid in frontend/src/game/HexGrid.ts
+- [X] T114 [US2] Implement monster rendering on hex grid in frontend/src/game/HexGrid.ts
 - [ ] T115 [US2] Implement attack target selection (tap enemy → confirm attack) in frontend/src/pages/GameBoard.tsx
 - [X] T116 [US2] Implement attack animation and damage number display in frontend/src/game/AttackAnimation.ts
 - [X] T117 [US2] Implement elemental state UI (6 element icons with states) in frontend/src/components/ElementalStateDisplay.tsx
