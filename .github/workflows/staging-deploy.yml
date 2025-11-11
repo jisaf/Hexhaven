@@ -1,0 +1,125 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  NODE_VERSION: '20'
+  STAGING_HOST: '150.136.88.138'
+  DEPLOY_USER: 'hexhaven'
+  DEPLOY_PATH: '/opt/hexhaven'
+
+jobs:
+  deploy:
+    name: Deploy to Staging Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: ./backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Build backend
+        run: npm run build
+        working-directory: ./backend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: http://${{ env.STAGING_HOST }}:3000
+
+      - name: Create deployment archive
+        run: |
+          mkdir -p deploy-staging
+          cp -r backend deploy-staging/
+          cp -r frontend/dist deploy-staging/frontend
+          cp scripts/deploy.sh deploy-staging/
+          tar -czf deploy.tar.gz deploy-staging/
+          ls -lh deploy.tar.gz
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -H ${{ env.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload deployment package
+        run: |
+          scp -i ~/.ssh/staging_key deploy.tar.gz ${{ env.DEPLOY_USER }}@${{ env.STAGING_HOST }}:/tmp/
+
+      - name: Deploy on server
+        run: |
+          ssh -i ~/.ssh/staging_key ${{ env.DEPLOY_USER }}@${{ env.STAGING_HOST }} << 'ENDSSH'
+            set -e
+
+            # Extract deployment package
+            cd /tmp
+            tar -xzf deploy.tar.gz
+
+            # Stop existing services
+            sudo systemctl stop hexhaven-backend || true
+            sudo systemctl stop hexhaven-frontend || true
+
+            # Backup current deployment
+            if [ -d "${{ env.DEPLOY_PATH }}" ]; then
+              sudo mv ${{ env.DEPLOY_PATH }} ${{ env.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+
+            # Deploy new version
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}
+            sudo cp -r /tmp/deploy-staging/* ${{ env.DEPLOY_PATH }}/
+            sudo chown -R ${{ env.DEPLOY_USER }}:${{ env.DEPLOY_USER }} ${{ env.DEPLOY_PATH }}
+
+            # Run deployment script
+            cd ${{ env.DEPLOY_PATH }}
+            chmod +x deploy.sh
+            ./deploy.sh
+
+            # Start services
+            sudo systemctl start hexhaven-backend
+            sudo systemctl start hexhaven-frontend
+
+            # Verify services are running
+            sleep 5
+            sudo systemctl status hexhaven-backend
+            sudo systemctl status hexhaven-frontend
+
+            # Cleanup
+            rm -rf /tmp/deploy-staging /tmp/deploy.tar.gz
+
+            echo "Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 10
+
+          # Check backend health
+          curl -f http://${{ env.STAGING_HOST }}:3000/health || echo "Backend health check failed"
+
+          # Check frontend
+          curl -f http://${{ env.STAGING_HOST }}:80 || echo "Frontend health check failed"
+
+          echo "Deployment verification completed"
+
+      - name: Cleanup SSH keys
+        if: always()
+        run: |
+          rm -f ~/.ssh/staging_key
