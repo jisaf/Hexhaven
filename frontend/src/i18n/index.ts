@@ -13,7 +13,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enTranslation from './locales/en/translation.json';
 
 // Initialize i18next
-i18n
+void i18n
   .use(LanguageDetector) // Detect user language from browser
   .use(initReactI18next) // Pass i18n instance to react-i18next
   .init({
@@ -23,9 +23,13 @@ i18n
       },
     },
     fallbackLng: 'en',
+    lng: 'en', // Force English to avoid async language detection
     debug: import.meta.env.DEV, // Enable debug in development
     interpolation: {
       escapeValue: false, // React already escapes values
+    },
+    react: {
+      useSuspense: false, // Disable suspense to avoid async issues
     },
     detection: {
       // Order of language detection

@@ -16,6 +16,11 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
     // Host creates room
     await page.goto('/');
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Player 2 joins
@@ -85,6 +90,11 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
     // Host creates room
     await page.goto('/');
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Player 2 joins
@@ -117,6 +127,11 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
     // Host creates room
     await page.goto('/');
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Player 2 joins
@@ -144,6 +159,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
     await page.goto('/');
     await page.locator('button:has-text("Create Game")').click();
 
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     // Verify all 6 character cards are visible
     const expectedClasses = ['Brute', 'Tinkerer', 'Spellweaver', 'Scoundrel', 'Cragheart', 'Mindthief'];
     for (const characterClass of expectedClasses) {
@@ -156,6 +175,11 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
     // Host creates room
     await page.goto('/');
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Player 2 joins

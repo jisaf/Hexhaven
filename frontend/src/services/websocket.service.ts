@@ -13,11 +13,11 @@ export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
  * WebSocket event types
  */
 export interface WebSocketEvents {
-  // Connection events
-  connect: () => void;
-  disconnect: () => void;
-  reconnecting: () => void;
-  reconnected: () => void;
+  // Connection events (renamed to avoid Socket.IO reserved events)
+  ws_connected: () => void;
+  ws_disconnected: () => void;
+  ws_reconnecting: () => void;
+  ws_reconnected: () => void;
 
   // Room events
   room_joined: (data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => void;
@@ -111,26 +111,26 @@ class WebSocketService {
     this.socket.on('connect', () => {
       this.connectionStatus = 'connected';
       this.reconnectAttempts = 0;
-      this.emit('connect');
+      this.emit('ws_connected');
       console.log('WebSocket connected');
     });
 
     this.socket.on('disconnect', () => {
       this.connectionStatus = 'disconnected';
-      this.emit('disconnect');
+      this.emit('ws_disconnected');
       console.log('WebSocket disconnected');
     });
 
     this.socket.on('reconnect_attempt', () => {
       this.connectionStatus = 'reconnecting';
       this.reconnectAttempts++;
-      this.emit('reconnecting');
+      this.emit('ws_reconnecting');
       console.log(`Reconnecting... (attempt ${this.reconnectAttempts})`);
     });
 
     this.socket.on('reconnect', () => {
       this.connectionStatus = 'connected';
-      this.emit('reconnected');
+      this.emit('ws_reconnected');
       console.log('WebSocket reconnected');
     });
 
