@@ -87,11 +87,20 @@ trap cleanup EXIT
 
 # Start backend in background
 cd backend
-npm run dev &
+# Start tsc in watch mode
+npx tsc -w --preserveWatchOutput 2>&1 | sed 's/^/[TSC] /' &
+TSC_PID=$!
+
+# Wait for initial compilation
+echo "Waiting for initial TypeScript compilation..."
+sleep 5
+
+# Start backend with nodemon watching the dist directory
+npx nodemon --watch dist/backend/src --exec "node dist/backend/src/main.js" &
 BACKEND_PID=$!
 
 # Give backend a moment to start
-sleep 2
+sleep 3
 
 # Start frontend in background
 cd ../frontend

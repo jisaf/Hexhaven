@@ -59,7 +59,6 @@ import {
     origin: '*', // Configure based on environment
     credentials: true,
   },
-  namespace: '/game',
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -151,8 +150,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         player = playerService.createPlayer(playerUUID, nickname);
       }
 
-      // Join room
-      const room = roomService.joinRoom(roomCode, player);
+      // Check if player is already in the room (e.g., they created it via HTTP)
+      let room = roomService.getRoomByPlayerId(playerUUID);
+      const isAlreadyInRoom = room && room.roomCode === roomCode;
+
+      if (!isAlreadyInRoom) {
+        // Join room (adds player to room state)
+        room = roomService.joinRoom(roomCode, player);
+      } else {
+        // Player is already in the room, just get the room
+        room = roomService.getRoom(roomCode);
+        if (!room) {
+          throw new Error('Room not found');
+        }
+        this.logger.log(`Player ${nickname} is already in room ${roomCode}, connecting socket`);
+      }
 
       // Associate socket with player
       this.socketToPlayer.set(client.id, playerUUID);
@@ -176,14 +188,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit('room_joined', roomJoinedPayload);
 
-      // Broadcast to other players in room
-      const playerJoinedPayload: PlayerJoinedPayload = {
-        playerId: player.uuid,
-        nickname: player.nickname,
-        isHost: player.isHost,
-      };
+      // Only broadcast to other players if this is a new join (not reconnecting)
+      if (!isAlreadyInRoom) {
+        const playerJoinedPayload: PlayerJoinedPayload = {
+          playerId: player.uuid,
+          nickname: player.nickname,
+          isHost: player.isHost,
+        };
 
-      client.to(roomCode).emit('player_joined', playerJoinedPayload);
+        client.to(roomCode).emit('player_joined', playerJoinedPayload);
+      }
 
       this.logger.log(`Player ${nickname} joined room ${roomCode}`);
     } catch (error) {

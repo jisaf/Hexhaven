@@ -24,6 +24,7 @@ import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import { PlayerList, type Player } from '../components/PlayerList';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
+import { DebugConsole } from '../components/DebugConsole';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
@@ -49,6 +50,7 @@ export function Lobby() {
 
   // Event handlers - defined before useEffect that uses them
   const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => {
+    console.log('Room joined event received:', data);
     setRoom({ roomCode: data.roomCode, status: 'lobby' });
     setPlayers(data.players as Player[]);
     setCurrentPlayerId(data.playerId);
@@ -144,23 +146,64 @@ export function Lobby() {
         localStorage.setItem('playerUUID', uuid);
       }
 
+      console.log('Creating room for:', { uuid, nickname: playerNickname });
+
       // Call REST API to create room
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/rooms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid, nickname: playerNickname }),
-      });
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      console.log('API URL:', apiUrl);
 
-      if (!response.ok) {
-        throw new Error('Failed to create room');
+      // Add timeout to fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        console.log('Starting fetch request...');
+        const response = await fetch(`${apiUrl}/rooms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ uuid, nickname: playerNickname }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        console.log('API Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('API Error:', errorData);
+          throw new Error('Failed to create room');
+        }
+
+        const data = await response.json();
+        console.log('Room created:', data);
+
+        // Check WebSocket connection status
+        console.log('WebSocket connected:', websocketService.isConnected());
+
+        // Join the room via WebSocket
+        console.log('Joining room via WebSocket:', data.room.roomCode);
+        websocketService.joinRoom(data.room.roomCode, playerNickname, uuid);
+        setMode('creating');
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          console.error('Request timed out after 10 seconds');
+          throw new Error('Request timed out - please check your network connection');
+        }
+        throw fetchErr;
       }
-
-      const data = await response.json();
-
-      // Join the room via WebSocket
-      websocketService.joinRoom(data.room.roomCode, playerNickname, uuid);
-      setMode('creating');
     } catch (err) {
+      console.error('Room creation error:', err);
+      console.error('Error type:', err.constructor.name);
+      console.error('Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
       setError(err instanceof Error ? err.message : 'Failed to create room');
       setIsLoading(false);
     }
@@ -231,6 +274,7 @@ export function Lobby() {
 
   return (
     <div className="lobby-page">
+      <DebugConsole />
       <header className="lobby-header">
         <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
       </header>

@@ -103,7 +103,24 @@ export class RoomsController {
           (existingRoom.status === RoomStatus.LOBBY ||
             existingRoom.status === RoomStatus.ACTIVE)
         ) {
-          throw new ConflictError('Player is already in an active game room');
+          // Return the existing room instead of creating a new one
+          // This allows the player to resume after a page refresh
+          return {
+            room: {
+              id: existingRoom.id,
+              roomCode: existingRoom.roomCode,
+              status: existingRoom.status,
+              createdAt: existingRoom.createdAt.toISOString(),
+              expiresAt: existingRoom.expiresAt.toISOString(),
+            },
+            player: {
+              id: player.id,
+              uuid: player.uuid,
+              nickname: player.nickname,
+              isHost: player.isHost,
+              connectionStatus: player.connectionStatus,
+            },
+          };
         }
       }
 
