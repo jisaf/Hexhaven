@@ -17,6 +17,8 @@ import {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { LootToken } from '../models/loot-token.model';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface MonsterStats {
   health: number;
@@ -27,15 +29,36 @@ interface MonsterStats {
 
 @Injectable()
 export class ScenarioService {
+  private scenarios: Scenario[] | null = null;
+
+  /**
+   * Load all scenarios from JSON file (lazy load)
+   */
+  private loadScenariosFromFile(): Scenario[] {
+    if (this.scenarios) {
+      return this.scenarios;
+    }
+
+    try {
+      const scenariosPath = path.join(__dirname, '../data/scenarios.json');
+      const fileContent = fs.readFileSync(scenariosPath, 'utf-8');
+      const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
+      this.scenarios = data.scenarios;
+      return this.scenarios;
+    } catch (error) {
+      console.error('Failed to load scenarios.json:', error);
+      return [];
+    }
+  }
+
   /**
    * Load scenario by ID
-   * In production, this would query the database
    */
   // eslint-disable-next-line @typescript-eslint/require-await
-  async loadScenario(_scenarioId: string): Promise<Scenario | null> {
-    // TODO: Implement database query
-    // For now, return null as placeholder
-    return null;
+  async loadScenario(scenarioId: string): Promise<Scenario | null> {
+    const scenarios = this.loadScenariosFromFile();
+    const scenario = scenarios.find((s) => s.id === scenarioId);
+    return scenario || null;
   }
 
   /**
@@ -150,11 +173,18 @@ export class ScenarioService {
     monsterType: string,
     isElite: boolean,
   ): MonsterStats {
-    // Default stats for common monster types
+    // Default stats for monster types from scenarios.json
     const baseStats: Record<string, MonsterStats> = {
       'Bandit Guard': { health: 5, movement: 2, attack: 2, range: 0 },
-      'Living Bones': { health: 4, movement: 2, attack: 1, range: 0 },
       'Bandit Archer': { health: 4, movement: 2, attack: 2, range: 3 },
+      'Living Bones': { health: 4, movement: 2, attack: 1, range: 0 },
+      'Inox Guard': { health: 8, movement: 2, attack: 3, range: 0 },
+      'Inox Shaman': { health: 6, movement: 2, attack: 2, range: 3 },
+      'Vermling Scout': { health: 3, movement: 3, attack: 2, range: 0 },
+      'Vermling Shaman': { health: 4, movement: 2, attack: 1, range: 2 },
+      'Flame Demon': { health: 6, movement: 2, attack: 3, range: 0 },
+      'Frost Demon': { health: 6, movement: 2, attack: 2, range: 2 },
+      'Earth Demon': { health: 8, movement: 1, attack: 3, range: 0 },
       'City Guard': { health: 6, movement: 2, attack: 3, range: 0 },
     };
 
@@ -183,8 +213,15 @@ export class ScenarioService {
   private getMonsterSpecialAbilities(monsterType: string): string[] {
     const abilities: Record<string, string[]> = {
       'Bandit Guard': ['Retaliate 1'],
-      'Living Bones': [],
       'Bandit Archer': [],
+      'Living Bones': [],
+      'Inox Guard': ['Shield 1'],
+      'Inox Shaman': ['Heal 2', 'Curse'],
+      'Vermling Scout': [],
+      'Vermling Shaman': ['Bless', 'Poison'],
+      'Flame Demon': ['Fire Generation', 'Retaliate 2'],
+      'Frost Demon': ['Ice Generation', 'Immobilize'],
+      'Earth Demon': ['Earth Generation', 'Shield 2'],
       'City Guard': ['Shield 1'],
     };
 
@@ -296,14 +333,16 @@ export class ScenarioService {
 
   /**
    * Get available scenarios list
-   * In production, this would query the database
    */
   // eslint-disable-next-line @typescript-eslint/require-await
   async getAvailableScenarios(): Promise<
     Array<{ id: string; name: string; difficulty: number }>
   > {
-    // TODO: Implement database query
-    // Placeholder return
-    return [];
+    const scenarios = this.loadScenariosFromFile();
+    return scenarios.map((s) => ({
+      id: s.id,
+      name: s.name,
+      difficulty: s.difficulty,
+    }));
   }
 }

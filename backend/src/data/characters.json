@@ -1,0 +1,130 @@
+{
+  "characters": [
+    {
+      "id": "char-brute",
+      "classType": "Brute",
+      "name": "Brute",
+      "maxHealth": 10,
+      "startingHandSize": 10,
+      "description": "A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies.",
+      "perks": [],
+      "abilityCards": [
+        "brute-trample",
+        "brute-eye-for-eye",
+        "brute-balanced-measure",
+        "brute-overwhelming-assault",
+        "brute-shield-bash",
+        "brute-warding-strength",
+        "brute-skewer",
+        "brute-spare-dagger",
+        "brute-grab-and-go",
+        "brute-leaping-cleave"
+      ]
+    },
+    {
+      "id": "char-tinkerer",
+      "classType": "Tinkerer",
+      "name": "Tinkerer",
+      "maxHealth": 8,
+      "startingHandSize": 12,
+      "description": "A support specialist who heals allies and summons mechanical contraptions to aid the party.",
+      "perks": [],
+      "abilityCards": [
+        "tinkerer-ink-bomb",
+        "tinkerer-potent-potables",
+        "tinkerer-enhancement-field",
+        "tinkerer-volatile-concoction",
+        "tinkerer-crank-bow",
+        "tinkerer-restorative-mist",
+        "tinkerer-gas-canister",
+        "tinkerer-micro-bots",
+        "tinkerer-flamethrower",
+        "tinkerer-reviving-ether"
+      ]
+    },
+    {
+      "id": "char-spellweaver",
+      "classType": "Spellweaver",
+      "name": "Spellweaver",
+      "maxHealth": 6,
+      "startingHandSize": 8,
+      "description": "A powerful mage who controls elemental forces to devastate enemies from range.",
+      "perks": [],
+      "abilityCards": [
+        "spellweaver-frost-armor",
+        "spellweaver-flame-strike",
+        "spellweaver-ice-missile",
+        "spellweaver-mana-bolt",
+        "spellweaver-impaling-eruption",
+        "spellweaver-reviving-ether",
+        "spellweaver-fire-orbs",
+        "spellweaver-cold-fire",
+        "spellweaver-freezing-nova",
+        "spellweaver-riding-the-storm"
+      ]
+    },
+    {
+      "id": "char-scoundrel",
+      "classType": "Scoundrel",
+      "name": "Scoundrel",
+      "maxHealth": 8,
+      "startingHandSize": 9,
+      "description": "An agile rogue who strikes from advantage and uses cunning to outmaneuver foes.",
+      "perks": [],
+      "abilityCards": [
+        "scoundrel-smoke-bomb",
+        "scoundrel-backstab",
+        "scoundrel-quick-hands",
+        "scoundrel-single-out",
+        "scoundrel-visage-of-night",
+        "scoundrel-flanking-strike",
+        "scoundrel-thief-knack",
+        "scoundrel-throwing-knives",
+        "scoundrel-smoke-bomb",
+        "scoundrel-venom-shiv"
+      ]
+    },
+    {
+      "id": "char-cragheart",
+      "classType": "Cragheart",
+      "name": "Cragheart",
+      "maxHealth": 10,
+      "startingHandSize": 11,
+      "description": "A versatile earth elemental who can manipulate terrain and deals area damage.",
+      "perks": [],
+      "abilityCards": [
+        "cragheart-dirt-tornado",
+        "cragheart-obstacle-avalanche",
+        "cragheart-rumbling-advance",
+        "cragheart-massive-boulder",
+        "cragheart-backup-ammunition",
+        "cragheart-rock-tunnel",
+        "cragheart-earthen-clod",
+        "cragheart-unstable-upheaval",
+        "cragheart-crater",
+        "cragheart-natures-wrath"
+      ]
+    },
+    {
+      "id": "char-mindthief",
+      "classType": "Mindthief",
+      "name": "Mindthief",
+      "maxHealth": 6,
+      "startingHandSize": 10,
+      "description": "A psionic assassin who augments melee attacks with mind control and illusions.",
+      "perks": [],
+      "abilityCards": [
+        "mindthief-feedback-loop",
+        "mindthief-into-the-night",
+        "mindthief-submissive-affliction",
+        "mindthief-fearsome-blade",
+        "mindthief-parasitic-influence",
+        "mindthief-the-minds-weakness",
+        "mindthief-perverse-edge",
+        "mindthief-possession",
+        "mindthief-scurry",
+        "mindthief-gnawing-horde"
+      ]
+    }
+  ]
+}

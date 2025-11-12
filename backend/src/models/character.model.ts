@@ -41,6 +41,11 @@ export class Character {
   private _currentHealth: number;
   private _conditions: Set<Condition>;
   private _exhausted: boolean;
+  private _selectedCards?: {
+    topCardId: string;
+    bottomCardId: string;
+    initiative: number;
+  };
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -116,6 +121,21 @@ export class Character {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get selectedCards():
+    | { topCardId: string; bottomCardId: string; initiative: number }
+    | undefined {
+    return this._selectedCards ? { ...this._selectedCards } : undefined;
+  }
+
+  set selectedCards(
+    cards:
+      | { topCardId: string; bottomCardId: string; initiative: number }
+      | undefined,
+  ) {
+    this._selectedCards = cards ? { ...cards } : undefined;
+    this._updatedAt = new Date();
   }
 
   // Methods

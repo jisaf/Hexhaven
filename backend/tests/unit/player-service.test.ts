@@ -9,301 +9,456 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-
-// Import service to be implemented
-// import { PlayerService } from '../../src/services/player.service';
+import { PlayerService } from '../../src/services/player.service';
+import { Player } from '../../src/models/player.model';
+import { CharacterClass, ConnectionStatus } from '../../../shared/types/entities';
 
 describe('PlayerService', () => {
-  // let playerService: PlayerService;
+  let playerService: PlayerService;
 
   beforeEach(() => {
-    // playerService = new PlayerService();
+    playerService = new PlayerService();
+  });
+
+  afterEach(() => {
+    playerService.clearAllPlayers();
   });
 
   describe('validateNickname', () => {
     it('should accept valid nicknames (1-20 characters)', () => {
-      // const validNicknames = [
-      //   'A',
-      //   'Player',
-      //   'Player123',
-      //   'The_Best_Player_20',
-      //   'αβγδε', // Unicode support
-      // ];
+      const validNicknames = [
+        'A',
+        'Player',
+        'Player123',
+        'The_Best_Player_20',
+        'αβγδε', // Unicode support
+      ];
 
-      // validNicknames.forEach(nickname => {
-      //   expect(() => playerService.validateNickname(nickname, [])).not.toThrow();
-      // });
-      expect(true).toBe(true); // Placeholder
+      validNicknames.forEach((nickname) => {
+        const result = playerService.validateNickname(nickname, []);
+        expect(result.valid).toBe(true);
+        expect(result.error).toBeUndefined();
+      });
     });
 
     it('should reject empty nicknames', () => {
-      // expect(() => playerService.validateNickname('', []))
-      //   .toThrow('Nickname cannot be empty');
-      expect(true).toBe(true); // Placeholder
+      const result = playerService.validateNickname('', []);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Nickname cannot be empty');
     });
 
     it('should reject nicknames longer than 20 characters', () => {
-      // const tooLong = 'ThisNicknameIsWayTooLongAndExceedsTwentyCharacters';
+      const tooLong = 'ThisNicknameIsWayTooLongAndExceedsTwentyCharacters';
 
-      // expect(() => playerService.validateNickname(tooLong, []))
-      //   .toThrow('Nickname must be between 1 and 20 characters');
-      expect(true).toBe(true); // Placeholder
+      const result = playerService.validateNickname(tooLong, []);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Nickname must be between 1 and 20 characters');
     });
 
     it('should reject duplicate nicknames in same room', () => {
-      // const existingPlayers = [
-      //   { nickname: 'Player1', uuid: 'uuid1' },
-      //   { nickname: 'Player2', uuid: 'uuid2' },
-      // ];
+      const existingPlayer = Player.create('uuid1', 'Player1');
+      const existingPlayers = [existingPlayer];
 
-      // expect(() => playerService.validateNickname('Player1', existingPlayers))
-      //   .toThrow('Nickname already taken');
-      expect(true).toBe(true); // Placeholder
+      const result = playerService.validateNickname('Player1', existingPlayers);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Nickname already taken in this room');
     });
 
     it('should allow same nickname in different rooms', () => {
-      // Room 1
-      // const room1Players = [{ nickname: 'Player1', uuid: 'uuid1' }];
-      // expect(() => playerService.validateNickname('Player1', room1Players))
-      //   .toThrow();
+      // Room 1 - Player1 exists
+      const room1Player = Player.create('uuid1', 'Player1');
+      const room1Players = [room1Player];
 
-      // Room 2 (different set of players)
-      // const room2Players = [{ nickname: 'Player2', uuid: 'uuid2' }];
-      // expect(() => playerService.validateNickname('Player1', room2Players))
-      //   .not.toThrow();
-      expect(true).toBe(true); // Placeholder
+      // Verify Player1 is taken in room 1
+      const result1 = playerService.validateNickname('Player1', room1Players);
+      expect(result1.valid).toBe(false);
+
+      // Room 2 - different set of players (empty)
+      const room2Players: Player[] = [];
+
+      // Player1 should be available in room 2
+      const result2 = playerService.validateNickname('Player1', room2Players);
+      expect(result2.valid).toBe(true);
     });
 
     it('should trim whitespace from nicknames', () => {
-      // const nicknameWithSpaces = '  Player1  ';
-      // const normalized = playerService.normalizeNickname(nicknameWithSpaces);
+      const nicknameWithSpaces = '  Player1  ';
 
-      // expect(normalized).toBe('Player1');
-      expect(true).toBe(true); // Placeholder
+      const result = playerService.validateNickname(nicknameWithSpaces, []);
+      expect(result.valid).toBe(true);
     });
 
     it('should reject nicknames with only whitespace', () => {
-      // expect(() => playerService.validateNickname('   ', []))
-      //   .toThrow('Nickname cannot be empty');
-      expect(true).toBe(true); // Placeholder
+      const result = playerService.validateNickname('   ', []);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Nickname cannot be empty');
     });
 
     it('should be case-insensitive for duplicate check', () => {
-      // const existingPlayers = [{ nickname: 'Player1', uuid: 'uuid1' }];
+      const existingPlayer = Player.create('uuid1', 'Player1');
+      const existingPlayers = [existingPlayer];
 
-      // expect(() => playerService.validateNickname('PLAYER1', existingPlayers))
-      //   .toThrow('Nickname already taken');
+      const result1 = playerService.validateNickname('PLAYER1', existingPlayers);
+      expect(result1.valid).toBe(false);
+      expect(result1.error).toBe('Nickname already taken in this room');
 
-      // expect(() => playerService.validateNickname('player1', existingPlayers))
-      //   .toThrow('Nickname already taken');
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should reject nicknames with offensive words', () => {
-      // const offensiveWords = ['badword1', 'badword2'];
-      // playerService.setOffensiveWords(offensiveWords);
-
-      // expect(() => playerService.validateNickname('badword1', []))
-      //   .toThrow('Nickname contains inappropriate content');
-      expect(true).toBe(true); // Placeholder - optional feature
+      const result2 = playerService.validateNickname('player1', existingPlayers);
+      expect(result2.valid).toBe(false);
+      expect(result2.error).toBe('Nickname already taken in this room');
     });
   });
 
   describe('createPlayer', () => {
     it('should create player with UUID and nickname', () => {
-      // const playerData = {
-      //   uuid: 'player-uuid-123',
-      //   nickname: 'TestPlayer',
-      // };
+      const player = playerService.createPlayer('player-uuid-123', 'TestPlayer');
 
-      // const player = playerService.createPlayer(playerData);
+      expect(player).toHaveProperty('id');
+      expect(player).toHaveProperty('uuid');
+      expect(player).toHaveProperty('nickname');
+      expect(player).toHaveProperty('isHost');
+      expect(player).toHaveProperty('characterClass');
+      expect(player).toHaveProperty('isReady');
 
-      // expect(player).toHaveProperty('id');
-      // expect(player).toHaveProperty('uuid');
-      // expect(player).toHaveProperty('nickname');
-      // expect(player).toHaveProperty('isHost');
-      // expect(player).toHaveProperty('characterClass');
-      // expect(player).toHaveProperty('isReady');
-
-      // expect(player.uuid).toBe(playerData.uuid);
-      // expect(player.nickname).toBe(playerData.nickname);
-      // expect(player.isHost).toBe(false);
-      // expect(player.characterClass).toBeNull();
-      // expect(player.isReady).toBe(false);
-      expect(true).toBe(true); // Placeholder
+      expect(player.uuid).toBe('player-uuid-123');
+      expect(player.nickname).toBe('TestPlayer');
+      expect(player.isHost).toBe(false);
+      expect(player.characterClass).toBeNull();
+      expect(player.isReady).toBe(false);
+      expect(player.connectionStatus).toBe(ConnectionStatus.CONNECTED);
     });
 
-    it('should set isHost flag when creating host player', () => {
-      // const hostData = {
-      //   uuid: 'host-uuid',
-      //   nickname: 'Host',
-      //   isHost: true,
-      // };
+    it('should throw error for duplicate UUID', () => {
+      playerService.createPlayer('uuid1', 'Player1');
 
-      // const player = playerService.createPlayer(hostData);
-      // expect(player.isHost).toBe(true);
-      expect(true).toBe(true); // Placeholder
+      expect(() => {
+        playerService.createPlayer('uuid1', 'DifferentName');
+      }).toThrow('Player with this UUID already exists');
     });
 
     it('should generate unique player ID', () => {
-      // const player1 = playerService.createPlayer({ uuid: 'uuid1', nickname: 'P1' });
-      // const player2 = playerService.createPlayer({ uuid: 'uuid2', nickname: 'P2' });
+      const player1 = playerService.createPlayer('uuid1', 'P1');
+      const player2 = playerService.createPlayer('uuid2', 'P2');
 
-      // expect(player1.id).not.toBe(player2.id);
-      expect(true).toBe(true); // Placeholder
+      expect(player1.id).not.toBe(player2.id);
     });
 
     it('should initialize player with null character', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
-      // expect(player.characterClass).toBeNull();
-      expect(true).toBe(true); // Placeholder
+      const player = playerService.createPlayer('uuid', 'Player');
+      expect(player.characterClass).toBeNull();
+    });
+
+    it('should trim nickname whitespace', () => {
+      const player = playerService.createPlayer('uuid', '  Player  ');
+      expect(player.nickname).toBe('Player');
+    });
+
+    it('should throw error for empty nickname', () => {
+      expect(() => {
+        playerService.createPlayer('uuid', '');
+      }).toThrow('Nickname cannot be empty');
+    });
+
+    it('should throw error for nickname longer than 20 characters', () => {
+      const longNickname = 'ThisIsAVeryLongNicknameExceeding20Chars';
+
+      expect(() => {
+        playerService.createPlayer('uuid', longNickname);
+      }).toThrow('Nickname must be between 1 and 20 characters');
     });
   });
 
-  describe('selectCharacter', () => {
-    it('should assign character class to player', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
+  describe('getPlayerByUuid', () => {
+    it('should return player by UUID', () => {
+      const created = playerService.createPlayer('uuid123', 'Player');
+      const retrieved = playerService.getPlayerByUuid('uuid123');
 
-      // playerService.selectCharacter(player.id, 'Brute');
-
-      // const updated = playerService.getPlayer(player.id);
-      // expect(updated?.characterClass).toBe('Brute');
-      expect(true).toBe(true); // Placeholder
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.uuid).toBe('uuid123');
+      expect(retrieved?.nickname).toBe('Player');
     });
 
-    it('should set isReady to true when character selected', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
-
-      // playerService.selectCharacter(player.id, 'Tinkerer');
-
-      // const updated = playerService.getPlayer(player.id);
-      // expect(updated?.isReady).toBe(true);
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should allow changing character selection', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
-
-      // playerService.selectCharacter(player.id, 'Brute');
-      // let updated = playerService.getPlayer(player.id);
-      // expect(updated?.characterClass).toBe('Brute');
-
-      // playerService.selectCharacter(player.id, 'Spellweaver');
-      // updated = playerService.getPlayer(player.id);
-      // expect(updated?.characterClass).toBe('Spellweaver');
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should throw error for invalid character class', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
-
-      // expect(() => playerService.selectCharacter(player.id, 'InvalidClass' as any))
-      //   .toThrow('Invalid character class');
-      expect(true).toBe(true); // Placeholder
+    it('should return null for non-existent UUID', () => {
+      const player = playerService.getPlayerByUuid('non-existent');
+      expect(player).toBeNull();
     });
   });
 
-  describe('isRoomReady', () => {
-    it('should return true when all players have selected characters', () => {
-      // const players = [
-      //   { id: '1', characterClass: 'Brute', isReady: true },
-      //   { id: '2', characterClass: 'Tinkerer', isReady: true },
-      // ];
+  describe('getPlayerById', () => {
+    it('should return player by ID', () => {
+      const created = playerService.createPlayer('uuid', 'Player');
+      const retrieved = playerService.getPlayerById(created.id);
 
-      // expect(playerService.isRoomReady(players)).toBe(true);
-      expect(true).toBe(true); // Placeholder
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe(created.id);
+      expect(retrieved?.uuid).toBe('uuid');
     });
 
-    it('should return false when any player has not selected character', () => {
-      // const players = [
-      //   { id: '1', characterClass: 'Brute', isReady: true },
-      //   { id: '2', characterClass: null, isReady: false },
-      // ];
-
-      // expect(playerService.isRoomReady(players)).toBe(false);
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should return false for empty player list', () => {
-      // expect(playerService.isRoomReady([])).toBe(false);
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should require minimum 2 players to be ready', () => {
-      // const singlePlayer = [
-      //   { id: '1', characterClass: 'Brute', isReady: true },
-      // ];
-
-      // expect(playerService.isRoomReady(singlePlayer)).toBe(false);
-      expect(true).toBe(true); // Placeholder
+    it('should return null for non-existent ID', () => {
+      const player = playerService.getPlayerById('non-existent-id');
+      expect(player).toBeNull();
     });
   });
 
-  describe('getPlayersByRoom', () => {
-    it('should return all players in a room', async () => {
-      // const players = await playerService.getPlayersByRoom('room-123');
+  describe('getOrCreatePlayer', () => {
+    it('should return existing player if UUID exists', () => {
+      const created = playerService.createPlayer('uuid1', 'OriginalName');
 
-      // expect(Array.isArray(players)).toBe(true);
-      // players.forEach(player => {
-      //   expect(player).toHaveProperty('uuid');
-      //   expect(player).toHaveProperty('nickname');
-      //   expect(player).toHaveProperty('isHost');
-      // });
-      expect(true).toBe(true); // Placeholder
+      // Try to get or create with same UUID but different nickname
+      const retrieved = playerService.getOrCreatePlayer('uuid1', 'NewName');
+
+      expect(retrieved.uuid).toBe('uuid1');
+      expect(retrieved.nickname).toBe('OriginalName'); // Should keep original
+      expect(retrieved.id).toBe(created.id);
     });
 
-    it('should return empty array for room with no players', async () => {
-      // const players = await playerService.getPlayersByRoom('empty-room');
-      // expect(players).toEqual([]);
-      expect(true).toBe(true); // Placeholder
-    });
+    it('should create new player if UUID does not exist', () => {
+      const player = playerService.getOrCreatePlayer('new-uuid', 'NewPlayer');
 
-    it('should order players with host first', async () => {
-      // const players = await playerService.getPlayersByRoom('room-123');
-
-      // if (players.length > 0) {
-      //   expect(players[0].isHost).toBe(true);
-      // }
-      expect(true).toBe(true); // Placeholder
+      expect(player.uuid).toBe('new-uuid');
+      expect(player.nickname).toBe('NewPlayer');
     });
   });
 
-  describe('getHostPlayer', () => {
-    it('should return the host player in a room', async () => {
-      // const host = await playerService.getHostPlayer('room-123');
-
-      // expect(host).toBeDefined();
-      // expect(host?.isHost).toBe(true);
-      expect(true).toBe(true); // Placeholder
-    });
-
-    it('should return null if room has no host', async () => {
-      // const host = await playerService.getHostPlayer('no-host-room');
-      // expect(host).toBeNull();
-      expect(true).toBe(true); // Placeholder
-    });
-  });
-
-  describe('updatePlayerConnection', () => {
+  describe('updateConnectionStatus', () => {
     it('should mark player as disconnected', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
+      const player = playerService.createPlayer('uuid', 'Player');
 
-      // playerService.updatePlayerConnection(player.id, false);
+      const updated = playerService.updateConnectionStatus(
+        'uuid',
+        ConnectionStatus.DISCONNECTED,
+      );
 
-      // const updated = playerService.getPlayer(player.id);
-      // expect(updated?.isConnected).toBe(false);
-      expect(true).toBe(true); // Placeholder
+      expect(updated.connectionStatus).toBe(ConnectionStatus.DISCONNECTED);
     });
 
-    it('should mark player as reconnected', () => {
-      // const player = playerService.createPlayer({ uuid: 'uuid', nickname: 'Player' });
+    it('should mark player as reconnecting', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
 
-      // playerService.updatePlayerConnection(player.id, false);
-      // playerService.updatePlayerConnection(player.id, true);
+      playerService.updateConnectionStatus('uuid', ConnectionStatus.DISCONNECTED);
+      const updated = playerService.updateConnectionStatus(
+        'uuid',
+        ConnectionStatus.RECONNECTING,
+      );
 
-      // const updated = playerService.getPlayer(player.id);
-      // expect(updated?.isConnected).toBe(true);
-      expect(true).toBe(true); // Placeholder
+      expect(updated.connectionStatus).toBe(ConnectionStatus.RECONNECTING);
+    });
+
+    it('should mark player as connected', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      playerService.updateConnectionStatus('uuid', ConnectionStatus.DISCONNECTED);
+      const updated = playerService.updateConnectionStatus(
+        'uuid',
+        ConnectionStatus.CONNECTED,
+      );
+
+      expect(updated.connectionStatus).toBe(ConnectionStatus.CONNECTED);
+    });
+
+    it('should throw error for non-existent player', () => {
+      expect(() => {
+        playerService.updateConnectionStatus('non-existent', ConnectionStatus.DISCONNECTED);
+      }).toThrow('Player not found');
+    });
+
+    it('should update lastSeenAt timestamp', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+      const originalLastSeen = player.lastSeenAt.getTime();
+
+      // Update connection status
+      const updated = playerService.updateConnectionStatus(
+        'uuid',
+        ConnectionStatus.DISCONNECTED,
+      );
+
+      // LastSeenAt should be >= original (may be equal if very fast)
+      expect(updated.lastSeenAt.getTime()).toBeGreaterThanOrEqual(originalLastSeen);
+    });
+  });
+
+  describe('updateNickname', () => {
+    it('should update player nickname', () => {
+      const player = playerService.createPlayer('uuid', 'OldName');
+
+      const updated = playerService.updateNickname('uuid', 'NewName');
+
+      expect(updated.nickname).toBe('NewName');
+    });
+
+    it('should trim whitespace from new nickname', () => {
+      const player = playerService.createPlayer('uuid', 'OldName');
+
+      const updated = playerService.updateNickname('uuid', '  NewName  ');
+
+      expect(updated.nickname).toBe('NewName');
+    });
+
+    it('should throw error for empty nickname', () => {
+      const player = playerService.createPlayer('uuid', 'OldName');
+
+      expect(() => {
+        playerService.updateNickname('uuid', '');
+      }).toThrow('Nickname cannot be empty');
+    });
+
+    it('should throw error for nickname longer than 20 characters', () => {
+      const player = playerService.createPlayer('uuid', 'OldName');
+      const longNickname = 'ThisIsAVeryLongNicknameExceeding20Chars';
+
+      expect(() => {
+        playerService.updateNickname('uuid', longNickname);
+      }).toThrow('Nickname must be between 1 and 20 characters');
+    });
+
+    it('should throw error for non-existent player', () => {
+      expect(() => {
+        playerService.updateNickname('non-existent', 'NewName');
+      }).toThrow('Player not found');
+    });
+  });
+
+  describe('removePlayer', () => {
+    it('should remove player from registry', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      const removed = playerService.removePlayer('uuid');
+      expect(removed).toBe(true);
+
+      const retrieved = playerService.getPlayerByUuid('uuid');
+      expect(retrieved).toBeNull();
+    });
+
+    it('should return false for non-existent player', () => {
+      const removed = playerService.removePlayer('non-existent');
+      expect(removed).toBe(false);
+    });
+
+    it('should remove player from both UUID and ID indexes', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+      const playerId = player.id;
+
+      playerService.removePlayer('uuid');
+
+      expect(playerService.getPlayerByUuid('uuid')).toBeNull();
+      expect(playerService.getPlayerById(playerId)).toBeNull();
+    });
+  });
+
+  describe('getAllPlayers', () => {
+    it('should return all players', () => {
+      playerService.createPlayer('uuid1', 'Player1');
+      playerService.createPlayer('uuid2', 'Player2');
+      playerService.createPlayer('uuid3', 'Player3');
+
+      const players = playerService.getAllPlayers();
+      expect(players).toHaveLength(3);
+    });
+
+    it('should return empty array when no players exist', () => {
+      const players = playerService.getAllPlayers();
+      expect(players).toHaveLength(0);
+    });
+  });
+
+  describe('clearAllPlayers', () => {
+    it('should remove all players', () => {
+      playerService.createPlayer('uuid1', 'Player1');
+      playerService.createPlayer('uuid2', 'Player2');
+
+      playerService.clearAllPlayers();
+
+      const players = playerService.getAllPlayers();
+      expect(players).toHaveLength(0);
+    });
+  });
+
+  describe('getPlayerCount', () => {
+    it('should return correct player count', () => {
+      expect(playerService.getPlayerCount()).toBe(0);
+
+      playerService.createPlayer('uuid1', 'Player1');
+      expect(playerService.getPlayerCount()).toBe(1);
+
+      playerService.createPlayer('uuid2', 'Player2');
+      expect(playerService.getPlayerCount()).toBe(2);
+
+      playerService.removePlayer('uuid1');
+      expect(playerService.getPlayerCount()).toBe(1);
+    });
+  });
+
+  describe('Player Model Integration', () => {
+    it('should allow player to select character', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      player.selectCharacter(CharacterClass.BRUTE);
+
+      expect(player.characterClass).toBe(CharacterClass.BRUTE);
+      expect(player.isReady).toBe(true);
+    });
+
+    it('should allow player to clear character selection', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      player.selectCharacter(CharacterClass.BRUTE);
+      player.clearCharacter();
+
+      expect(player.characterClass).toBeNull();
+      expect(player.isReady).toBe(false);
+    });
+
+    it('should allow player to change character selection', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      player.selectCharacter(CharacterClass.BRUTE);
+      expect(player.characterClass).toBe(CharacterClass.BRUTE);
+
+      player.selectCharacter(CharacterClass.SPELLWEAVER);
+      expect(player.characterClass).toBe(CharacterClass.SPELLWEAVER);
+    });
+
+    it('should track player room membership', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      expect(player.roomId).toBeNull();
+      expect(player.isHost).toBe(false);
+
+      player.joinRoom('room123', true);
+
+      expect(player.roomId).toBe('room123');
+      expect(player.isHost).toBe(true);
+    });
+
+    it('should clear player state when leaving room', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      player.joinRoom('room123', true);
+      player.selectCharacter(CharacterClass.TINKERER);
+
+      player.leaveRoom();
+
+      expect(player.roomId).toBeNull();
+      expect(player.isHost).toBe(false);
+      expect(player.characterClass).toBeNull();
+      expect(player.isReady).toBe(false);
+    });
+
+    it('should promote player to host', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      player.joinRoom('room123', false);
+      expect(player.isHost).toBe(false);
+
+      player.promoteToHost();
+      expect(player.isHost).toBe(true);
+    });
+
+    it('should throw error when promoting player not in room', () => {
+      const player = playerService.createPlayer('uuid', 'Player');
+
+      expect(() => {
+        player.promoteToHost();
+      }).toThrow('Player must be in a room to be promoted to host');
     });
   });
 });
