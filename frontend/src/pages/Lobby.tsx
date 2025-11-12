@@ -145,7 +145,7 @@ export function Lobby() {
       }
 
       // Call REST API to create room
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/rooms`, {
+      const response = await fetch('/api/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid, nickname: playerNickname }),

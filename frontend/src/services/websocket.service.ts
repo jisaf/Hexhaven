@@ -85,13 +85,17 @@ class WebSocketService {
   /**
    * Connect to WebSocket server
    */
-  connect(url: string = 'http://localhost:3000'): void {
+  connect(url?: string): void {
     if (this.socket?.connected) {
       console.warn('WebSocket already connected');
       return;
     }
 
-    this.socket = io(url, {
+    // If no URL provided, Socket.IO will connect to the current origin
+    // This works in both dev (via Vite proxy) and production (via Nginx)
+    const socketUrl = url || window.location.origin;
+
+    this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,

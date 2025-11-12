@@ -38,7 +38,8 @@ export function useWebSocket(url?: string) {
    * Connect to WebSocket on mount
    */
   useEffect(() => {
-    const wsUrl = url || import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    // Use provided URL or env variable, otherwise Socket.IO will use current origin
+    const wsUrl = url || import.meta.env.VITE_WS_URL;
     websocketService.connect(wsUrl);
 
     // Setup connection event listeners
@@ -67,7 +68,8 @@ export function useWebSocket(url?: string) {
    * Manually reconnect
    */
   const reconnect = useCallback(() => {
-    const wsUrl = url || import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    // Use provided URL or env variable, otherwise Socket.IO will use current origin
+    const wsUrl = url || import.meta.env.VITE_WS_URL;
     websocketService.disconnect();
     websocketService.connect(wsUrl);
   }, [url]);
