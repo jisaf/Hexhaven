@@ -9,7 +9,7 @@
 ## Current Session Summary (Latest)
 
 ### ✅ Phase 2: COMPLETE - All Unit Tests Fixed
-**262 comprehensive tests now passing** across 7 test files:
+**262 comprehensive tests now passing** across 8 test files:
 - room-service.test.ts (45 tests)
 - player-service.test.ts (81 tests)
 - turn-order.test.ts (40 tests)
@@ -21,22 +21,50 @@
 
 **Quality**: All tests follow AAA pattern, test real implementations, zero placeholders, zero TODOs
 
-### ⏳ Phase 3: IN PROGRESS - Gateway TODOs
-**Completed**:
-- ✅ ScenarioService implementation (load from scenarios.json)
-- ✅ Game start scenario loading (3 TODOs resolved)
-- ✅ Monster spawning with proper stats
-- ✅ Player positioning from scenario data
+### ✅ Phase 3: MAJOR PROGRESS - Core Gameplay Implemented
+**22 of ~44 critical TODOs resolved** - Core game loop is now functional!
 
-**Remaining** (~40 TODOs):
-- Card selection & initiative calculation
-- Turn order management & monster AI activation
-- Attack resolution & damage calculation
-- Loot collection mechanics
-- Movement path validation
-- Element decay & round management
+#### Completed Features:
 
-**Estimated Effort**: 10-14 hours remaining for Phase 3 + Phase 4
+**1. Scenario Loading & Game Start** (3 TODOs):
+- ✅ ScenarioService loads scenarios from JSON with lazy loading
+- ✅ Game start validates scenario and spawns monsters
+- ✅ Players positioned at scenario-defined starting positions
+- ✅ Monster stats scaled by difficulty level
+- ✅ Attack modifier deck initialized per room
+
+**2. Card Selection & Turn Order** (6 TODOs):
+- ✅ AbilityCardService validates card selections
+- ✅ Initiative calculated from selected cards
+- ✅ Turn order determined using TurnOrderService
+- ✅ Auto-start round when all players ready
+- ✅ Turn order stored per room
+
+**3. Attack Resolution** (7 TODOs):
+- ✅ Target validation (monster or character)
+- ✅ Disarm condition checked
+- ✅ Attack modifier card drawn from room deck
+- ✅ Auto-reshuffle on null/x2 cards
+- ✅ Damage calculated using DamageCalculationService
+- ✅ Damage applied to targets (monsters/characters)
+- ✅ Target marked dead when health reaches 0
+
+**4. End Turn & Round Management** (6 TODOs):
+- ✅ Verify current player's turn
+- ✅ Get next living entity in turn order
+- ✅ Advance turn index with wraparound
+- ✅ Round completion detection
+- ✅ Clear cards on round end
+- ✅ Broadcast round_ended/turn_started events
+
+#### Remaining TODOs (~22):
+- Loot collection (6) - token management
+- Movement validation (2) - pathfinding integration
+- Monster AI activation (8) - full AI
+- Element decay (2) - round end decay
+- Retaliate/other combat (2)
+
+**Estimated Remaining**: 4-6 hours Phase 3 + 2-3 hours Phase 4
 
 ---
 
