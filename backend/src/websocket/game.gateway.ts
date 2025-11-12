@@ -84,6 +84,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly roomMaps = new Map<string, Map<string, any>>(); // roomCode -> hex map
   private readonly roomLootTokens = new Map<string, any[]>(); // roomCode -> loot tokens
+  private readonly roomMonsterInitiatives = new Map<
+    string,
+    Map<string, number>
+  >(); // roomCode -> (monsterType -> initiative)
 
   /**
    * Handle client connection
@@ -353,6 +357,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Store monsters for this room
       this.roomMonsters.set(room.roomCode, monsters);
 
+      // Initialize monster initiatives (one per monster type)
+      this.drawMonsterInitiatives(room.roomCode, monsters);
+
       // Create hex map from scenario map layout for pathfinding
       const hexMap = new Map<string, any>();
       scenario.mapLayout.forEach((tile) => {
@@ -617,6 +624,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Get monsters from room state
     const monsters = this.roomMonsters.get(roomCode) || [];
 
+    // Get monster initiatives for this room
+    const monsterInitiatives =
+      this.roomMonsterInitiatives.get(roomCode) || new Map();
+
     // Build turn order entries
     const turnOrderEntries = [
       ...characters.map((c: any) => ({
@@ -631,7 +642,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ...monsters.map((m) => ({
         entityId: m.id,
         entityType: 'monster' as const,
-        initiative: 50, // TODO: Get from monster ability card
+        initiative: monsterInitiatives.get(m.monsterType) || 50, // Get from monster type initiative
         name: m.monsterType, // Use monster type as name
         characterClass: undefined,
         isDead: m.isDead,
@@ -999,6 +1010,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         });
 
+        // Draw new monster initiatives for the new round (simulates drawing new ability cards)
+        const monsters = this.roomMonsters.get(room.roomCode) || [];
+        if (monsters.length > 0) {
+          this.drawMonsterInitiatives(room.roomCode, monsters);
+        }
+
         // Notify all players that round ended and to select new cards
         this.server.to(room.roomCode).emit('round_ended', {
           message: 'Round complete, please select your cards for the next round',
@@ -1234,6 +1251,35 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
       }, 100);
     }
+  }
+
+  /**
+   * Draw monster ability card initiatives
+   * In Gloomhaven, each monster type draws one ability card per round
+   * All monsters of the same type use the same initiative
+   */
+  private drawMonsterInitiatives(
+    roomCode: string,
+    monsters: any[],
+  ): Map<string, number> {
+    // Get unique monster types
+    const monsterTypes = new Set(monsters.map((m) => m.monsterType));
+
+    // Generate initiative for each type (10-90, typical Gloomhaven range)
+    const initiatives = new Map<string, number>();
+    monsterTypes.forEach((type) => {
+      const initiative = Math.floor(Math.random() * 81) + 10; // 10-90
+      initiatives.set(type, initiative);
+    });
+
+    // Store for this room
+    this.roomMonsterInitiatives.set(roomCode, initiatives);
+
+    this.logger.log(
+      `Drew monster initiatives for room ${roomCode}: ${Array.from(initiatives.entries()).map(([type, init]) => `${type}=${init}`).join(', ')}`,
+    );
+
+    return initiatives;
   }
 
   /**
