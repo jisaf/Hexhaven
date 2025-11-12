@@ -25,6 +25,7 @@ import { TurnOrderService } from '../services/turn-order.service';
 import { DamageCalculationService } from '../services/damage-calculation.service';
 import { ModifierDeckService } from '../services/modifier-deck.service';
 import { PathfindingService } from '../services/pathfinding.service';
+import { MonsterAIService } from '../services/monster-ai.service';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -50,6 +51,7 @@ import type {
 import {
   ConnectionStatus,
   RoomStatus,
+  type Character,
   type CharacterClass,
 } from '../../../shared/types/entities';
 
@@ -71,6 +73,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly damageService = new DamageCalculationService();
   private readonly modifierDeckService = new ModifierDeckService();
   private readonly pathfindingService = new PathfindingService();
+  private readonly monsterAIService = new MonsterAIService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 
@@ -808,6 +811,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(
         `Attack resolved: ${attacker.id} -> ${payload.targetId}, damage: ${damage}, modifier: ${modifierCard.modifier}`,
       );
+
+      // Check scenario completion after attack (in case last monster died)
+      if (targetDead && isMonsterTarget) {
+        this.checkScenarioCompletion(room.roomCode);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1019,6 +1027,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           // In full implementation, would call activateMonster()
           this.logger.log(`Monster turn: ${nextEntity.entityId} (AI not fully implemented)`);
         }
+
+        // Check scenario completion after turn advancement
+        this.checkScenarioCompletion(room.roomCode);
       }
     } catch (error) {
       const errorMessage =
@@ -1044,33 +1055,132 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       this.logger.log(`Activating monster ${monsterId}`);
 
-      // TODO: Get monster from room state
-      // TODO: Get all characters in room
-      // TODO: Use MonsterAIService to determine focus target
-      // TODO: Use PathfindingService to calculate movement
-      // TODO: Use MonsterAIService to determine if monster attacks
-      // TODO: If attacking, use DamageCalculationService
-      // TODO: Draw attack modifier card for monster
-      // TODO: Apply damage to target
-      // TODO: Check if target is dead/exhausted
+      // Get monster from room state
+      const monsters = this.roomMonsters.get(roomCode) || [];
+      const monster = monsters.find((m: any) => m.id === monsterId);
+      if (!monster) {
+        throw new Error(`Monster ${monsterId} not found in room ${roomCode}`);
+      }
 
-      // Placeholder monster activation
+      // Get room and all characters
+      const room = roomService.getRoom(roomCode);
+      if (!room) {
+        throw new Error(`Room ${roomCode} not found`);
+      }
+
+      // Get all characters in room (cast to any to bypass type mismatch)
+      const characters = room.players
+        .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c: any) => c !== null);
+
+      // Use MonsterAIService to determine focus target
+      const focusTargetId = this.monsterAIService.selectFocusTarget(
+        monster as any,
+        characters as any,
+      );
+
+      if (!focusTargetId) {
+        this.logger.log(`No valid focus target for monster ${monsterId}`);
+        // No target, skip activation and advance turn
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      const focusTarget = characters.find((c: any) => c.id === focusTargetId);
+      if (!focusTarget) {
+        this.logger.error(`Focus target ${focusTargetId} not found`);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Get hex map and obstacles for movement calculation
+      const hexMap = this.roomMaps.get(roomCode);
+      const obstacles: any[] = [];
+      if (hexMap) {
+        hexMap.forEach((tile: any) => {
+          if (tile.terrain === 'obstacle') {
+            obstacles.push(tile.coordinates);
+          }
+        });
+      }
+
+      // Determine movement
+      const movementHex = this.monsterAIService.determineMovement(
+        monster as any,
+        focusTarget as any,
+        obstacles,
+      );
+
+      // Apply movement if determined
+      if (movementHex) {
+        monster.currentHex = movementHex;
+        this.logger.log(
+          `Monster ${monsterId} moved to (${movementHex.q}, ${movementHex.r})`,
+        );
+      }
+
+      // Check if monster should attack
+      const shouldAttack = this.monsterAIService.shouldAttack(
+        monster as any,
+        focusTarget as any,
+      );
+
+      let attackResult = null;
+      if (shouldAttack) {
+        // Draw attack modifier card
+        const modifierDeck = this.modifierDecks.get(roomCode);
+        if (!modifierDeck) {
+          throw new Error(`Modifier deck not found for room ${roomCode}`);
+        }
+
+        const modifierDrawResult = this.modifierDeckService.drawCard(modifierDeck);
+        const modifierCard = modifierDrawResult.card;
+
+        // Update deck after draw
+        this.modifierDecks.set(roomCode, modifierDrawResult.remainingDeck);
+
+        // Calculate damage
+        const baseDamage = monster.attack;
+        const finalDamage = this.damageService.calculateDamage(
+          baseDamage,
+          modifierCard,
+        );
+
+        // Apply damage to target
+        const actualDamage = (focusTarget as any).takeDamage(finalDamage);
+
+        this.logger.log(
+          `Monster ${monsterId} attacked ${focusTargetId} for ${actualDamage} damage`,
+        );
+
+        attackResult = {
+          targetId: focusTargetId,
+          damage: actualDamage,
+          modifier: modifierCard.modifier,
+        };
+
+        // Check if target is dead/exhausted
+        if ((focusTarget as any).isDead) {
+          this.logger.log(`Character ${focusTargetId} was killed`);
+          // In real implementation, would handle character death/exhaustion
+        }
+      }
+
+      // Broadcast monster activation
       const monsterActivatedPayload: MonsterActivatedPayload = {
         monsterId,
-        focusTarget: 'character_uuid',
-        movement: { q: 1, r: 1 },
-        attack: {
-          targetId: 'character_uuid',
-          damage: 3,
-          modifier: 0,
-        },
+        focusTarget: focusTargetId,
+        movement: movementHex || monster.currentHex, // Use current hex if no movement
+        attack: attackResult,
       };
 
       this.server
         .to(roomCode)
         .emit('monster_activated', monsterActivatedPayload);
 
-      // TODO: Automatically advance to next turn after monster activation
+      // Automatically advance to next turn
+      this.advanceTurnAfterMonsterActivation(roomCode);
+
       this.logger.log(`Monster ${monsterId} activated`);
     } catch (error) {
       this.logger.error(
@@ -1080,33 +1190,98 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
+   * Advance turn after monster activation
+   */
+  private advanceTurnAfterMonsterActivation(roomCode: string): void {
+    // Get current turn order
+    const turnOrder = this.roomTurnOrder.get(roomCode);
+    if (!turnOrder) {
+      this.logger.error(`Turn order not found for room ${roomCode}`);
+      return;
+    }
+
+    // Get current turn index
+    let currentIndex = this.currentTurnIndex.get(roomCode) || 0;
+
+    // Advance to next turn
+    currentIndex = (currentIndex + 1) % turnOrder.length;
+    this.currentTurnIndex.set(roomCode, currentIndex);
+
+    // Get next entity
+    const nextEntity = turnOrder[currentIndex];
+
+    // Broadcast turn started for next entity
+    const turnStartedPayload: TurnStartedPayload = {
+      entityId: nextEntity.id,
+      entityType: nextEntity.type,
+      turnIndex: currentIndex,
+    };
+
+    this.server.to(roomCode).emit('turn_started', turnStartedPayload);
+
+    this.logger.log(
+      `Advanced to next turn in room ${roomCode}: ${nextEntity.id} (${nextEntity.type})`,
+    );
+
+    // If next entity is also a monster, activate it automatically
+    if (nextEntity.type === 'monster') {
+      // Use setTimeout to avoid deep recursion
+      setTimeout(() => {
+        this.activateMonster(nextEntity.id, roomCode).catch((error) => {
+          this.logger.error(
+            `Auto-activation error: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      }, 100);
+    }
+  }
+
+  /**
    * Check scenario completion and broadcast if complete (US2 - T100)
    */
   private checkScenarioCompletion(roomCode: string): void {
     try {
-      // TODO: Get room state
-      // TODO: Get all characters
-      // TODO: Get all monsters
-      // TODO: Use ScenarioService.checkScenarioCompletion
-      // TODO: If complete, broadcast scenario_completed
+      // Get room state
+      const room = roomService.getRoom(roomCode);
+      if (!room) {
+        return;
+      }
 
-      // Placeholder
-      const allMonstersDead = false;
-      const allPlayersExhausted = false;
+      // Get all characters in room
+      // Note: CharacterService returns Character class, but ScenarioService expects Character interface
+      // For now, we cast to any to bypass type checking
+      const characters = room.players
+        .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c) => c !== null) as any[];
 
-      if (allMonstersDead || allPlayersExhausted) {
+      // Get all monsters in room
+      const monsters = this.roomMonsters.get(roomCode) || [];
+
+      // Use ScenarioService to check completion
+      // Note: We don't have the actual scenario object here, so we pass null
+      // In full implementation, would store scenario per room
+      const completion = this.scenarioService.checkScenarioCompletion(
+        characters,
+        monsters,
+        null as any, // Placeholder for scenario
+      );
+
+      // If scenario is complete, broadcast result
+      if (completion.isComplete) {
         const scenarioCompletedPayload: ScenarioCompletedPayload = {
-          victory: allMonstersDead,
-          experience: 10,
-          loot: [],
-          completionTime: 1800, // 30 minutes
+          victory: completion.victory,
+          experience: completion.victory ? 10 : 0,
+          loot: [], // Would calculate from collected loot tokens
+          completionTime: 0, // Would calculate from start time
         };
 
         this.server
           .to(roomCode)
           .emit('scenario_completed', scenarioCompletedPayload);
 
-        this.logger.log(`Scenario completed in room ${roomCode}`);
+        this.logger.log(
+          `Scenario completed in room ${roomCode}: ${completion.reason}`,
+        );
       }
     } catch (error) {
       this.logger.error(
