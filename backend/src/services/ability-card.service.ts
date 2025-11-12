@@ -109,9 +109,7 @@ export class AbilityCardService {
 
     // Check both cards belong to character class
     if (topCard && topCard.characterClass !== characterClass) {
-      errors.push(
-        `Top card ${topCardId} does not belong to ${characterClass}`,
-      );
+      errors.push(`Top card ${topCardId} does not belong to ${characterClass}`);
     }
 
     if (bottomCard && bottomCard.characterClass !== characterClass) {

@@ -126,13 +126,13 @@ export class Character {
   get selectedCards():
     | { topCardId: string; bottomCardId: string; initiative: number }
     | undefined {
-    return this._selectedCards
-      ? { ...this._selectedCards }
-      : undefined;
+    return this._selectedCards ? { ...this._selectedCards } : undefined;
   }
 
   set selectedCards(
-    cards: { topCardId: string; bottomCardId: string; initiative: number } | undefined,
+    cards:
+      | { topCardId: string; bottomCardId: string; initiative: number }
+      | undefined,
   ) {
     this._selectedCards = cards ? { ...cards } : undefined;
     this._updatedAt = new Date();

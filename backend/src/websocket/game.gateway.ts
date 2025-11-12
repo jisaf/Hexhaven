@@ -51,7 +51,6 @@ import type {
 import {
   ConnectionStatus,
   RoomStatus,
-  type Character,
   type CharacterClass,
 } from '../../../shared/types/entities';
 
@@ -314,9 +313,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Validate scenario
       const validation = this.scenarioService.validateScenario(scenario);
       if (!validation.valid) {
-        throw new Error(
-          `Invalid scenario: ${validation.errors.join(', ')}`,
-        );
+        throw new Error(`Invalid scenario: ${validation.errors.join(', ')}`);
       }
 
       // Start the game
@@ -326,9 +323,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const playerCount = room.players.filter((p) => p.characterClass).length;
       const startingPositions = scenario.playerStartPositions[playerCount];
       if (!startingPositions || startingPositions.length < playerCount) {
-        throw new Error(
-          `Scenario does not support ${playerCount} players`,
-        );
+        throw new Error(`Scenario does not support ${playerCount} players`);
       }
 
       // Create characters for all players at starting positions
@@ -551,7 +546,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       if (!validation.valid) {
-        throw new Error(`Invalid card selection: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid card selection: ${validation.errors.join(', ')}`,
+        );
       }
 
       // Calculate initiative from selected cards
@@ -580,7 +577,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .to(room.roomCode)
         .emit('cards_selected', cardsSelectedPayload);
 
-      this.logger.log(`Player ${playerUUID} selected cards (initiative: ${initiative})`);
+      this.logger.log(
+        `Player ${playerUUID} selected cards (initiative: ${initiative})`,
+      );
 
       // Check if all players have selected cards
       const allCharacters = room.players
@@ -651,7 +650,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ];
 
     // Determine turn order
-    const turnOrder = this.turnOrderService.determineTurnOrder(turnOrderEntries);
+    const turnOrder =
+      this.turnOrderService.determineTurnOrder(turnOrderEntries);
 
     // Store turn order and reset turn index
     this.roomTurnOrder.set(roomCode, turnOrder);
@@ -717,7 +717,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Get target (check monsters first, then characters)
       const monsters = this.roomMonsters.get(room.roomCode) || [];
       let target: any = monsters.find((m: any) => m.id === payload.targetId);
-      let isMonsterTarget = !!target;
+      const isMonsterTarget = !!target;
 
       if (!target) {
         // Try to find as character
@@ -799,7 +799,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           );
         }
       } else {
-        const actualDamage = target.takeDamage(damage);
+        // Apply damage to character target
+        target.takeDamage(damage);
         targetHealth = target.currentHealth;
         targetDead = target.isDead;
       }
@@ -986,7 +987,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const currentEntity = turnOrder[currentIndex];
 
       // Verify it's this player's turn
-      if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
+      if (
+        currentEntity.entityType === 'character' &&
+        currentEntity.entityId !== character.id
+      ) {
         throw new Error('It is not your turn');
       }
 
@@ -1000,7 +1004,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const roundComplete = nextIndex === 0 && currentIndex !== 0;
 
       if (roundComplete) {
-        this.logger.log(`Round complete in room ${room.roomCode}, starting new round`);
+        this.logger.log(
+          `Round complete in room ${room.roomCode}, starting new round`,
+        );
 
         // Clear selected cards from all characters for new round
         room.players.forEach((p: any) => {
@@ -1018,7 +1024,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         // Notify all players that round ended and to select new cards
         this.server.to(room.roomCode).emit('round_ended', {
-          message: 'Round complete, please select your cards for the next round',
+          message:
+            'Round complete, please select your cards for the next round',
         });
       } else {
         // Advance to next turn
@@ -1042,7 +1049,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (nextEntity.entityType === 'monster') {
           // Simplified: just advance turn automatically for now
           // In full implementation, would call activateMonster()
-          this.logger.log(`Monster turn: ${nextEntity.entityId} (AI not fully implemented)`);
+          this.logger.log(
+            `Monster turn: ${nextEntity.entityId} (AI not fully implemented)`,
+          );
         }
 
         // Check scenario completion after turn advancement
@@ -1092,7 +1101,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Use MonsterAIService to determine focus target
       const focusTargetId = this.monsterAIService.selectFocusTarget(
-        monster as any,
+        monster,
         characters as any,
       );
 
@@ -1123,7 +1132,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Determine movement
       const movementHex = this.monsterAIService.determineMovement(
-        monster as any,
+        monster,
         focusTarget as any,
         obstacles,
       );
@@ -1138,7 +1147,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Check if monster should attack
       const shouldAttack = this.monsterAIService.shouldAttack(
-        monster as any,
+        monster,
         focusTarget as any,
       );
 
@@ -1150,7 +1159,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           throw new Error(`Modifier deck not found for room ${roomCode}`);
         }
 
-        const modifierDrawResult = this.modifierDeckService.drawCard(modifierDeck);
+        const modifierDrawResult =
+          this.modifierDeckService.drawCard(modifierDeck);
         const modifierCard = modifierDrawResult.card;
 
         // Update deck after draw
@@ -1263,7 +1273,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     monsters: any[],
   ): Map<string, number> {
     // Get unique monster types
-    const monsterTypes = new Set(monsters.map((m) => m.monsterType));
+    const monsterTypes = new Set(monsters.map((m) => m.monsterType as string));
 
     // Generate initiative for each type (10-90, typical Gloomhaven range)
     const initiatives = new Map<string, number>();
@@ -1276,7 +1286,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.roomMonsterInitiatives.set(roomCode, initiatives);
 
     this.logger.log(
-      `Drew monster initiatives for room ${roomCode}: ${Array.from(initiatives.entries()).map(([type, init]) => `${type}=${init}`).join(', ')}`,
+      `Drew monster initiatives for room ${roomCode}: ${Array.from(
+        initiatives.entries(),
+      )
+        .map(([type, init]) => `${type}=${init}`)
+        .join(', ')}`,
     );
 
     return initiatives;
