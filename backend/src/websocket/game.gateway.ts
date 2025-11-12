@@ -20,6 +20,8 @@ import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { ScenarioService } from '../services/scenario.service';
+import { AbilityCardService } from '../services/ability-card.service';
+import { TurnOrderService } from '../services/turn-order.service';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -61,6 +63,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(GameGateway.name);
   private readonly scenarioService = new ScenarioService();
+  private readonly abilityCardService = new AbilityCardService();
+  private readonly turnOrderService = new TurnOrderService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 
@@ -435,7 +439,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('select_cards')
   handleSelectCards(
     @ConnectedSocket() client: Socket,
-    @MessageBody() _payload: SelectCardsPayload,
+    @MessageBody() payload: SelectCardsPayload,
   ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
@@ -462,10 +466,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Game is not active');
       }
 
-      // TODO: Validate cards are in player's hand
-      // TODO: Calculate initiative from selected cards
-      const topCardInitiative = 50; // Placeholder
-      const bottomCardInitiative = 30; // Placeholder
+      // Validate cards are in player's hand (belong to character class)
+      const validation = this.abilityCardService.validateCardSelection(
+        payload.topCardId,
+        payload.bottomCardId,
+        character.characterClass,
+      );
+
+      if (!validation.valid) {
+        throw new Error(`Invalid card selection: ${validation.errors.join(', ')}`);
+      }
+
+      // Calculate initiative from selected cards
+      const topCardInitiative = validation.topCard!.initiative;
+      const bottomCardInitiative = validation.bottomCard!.initiative;
+      const initiative = this.turnOrderService.calculateInitiative(
+        topCardInitiative,
+        bottomCardInitiative,
+      );
+
+      // Store selected cards and initiative on character
+      character.selectedCards = {
+        topCardId: payload.topCardId,
+        bottomCardId: payload.bottomCardId,
+        initiative,
+      };
 
       // Broadcast cards selected (hide actual card IDs, only show initiative)
       const cardsSelectedPayload: CardsSelectedPayload = {
@@ -478,10 +503,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .to(room.roomCode)
         .emit('cards_selected', cardsSelectedPayload);
 
-      this.logger.log(`Player ${playerUUID} selected cards`);
+      this.logger.log(`Player ${playerUUID} selected cards (initiative: ${initiative})`);
 
-      // TODO: Check if all players have selected cards
-      // TODO: If yes, determine turn order and broadcast
+      // Check if all players have selected cards
+      const allCharacters = room.players
+        .map((p) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c) => c && !c.exhausted);
+
+      const allSelected = allCharacters.every(
+        (c) => c && c.selectedCards !== undefined,
+      );
+
+      // If all players selected, determine turn order and broadcast
+      if (allSelected) {
+        this.startNewRound(room.roomCode);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -491,6 +527,65 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         message: errorMessage,
       };
       client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Start a new round with turn order determination
+   */
+  private startNewRound(roomCode: string): void {
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      return;
+    }
+
+    // Get all characters and monsters
+    const characters = room.players
+      .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+      .filter((c: any) => c && !c.exhausted && c.selectedCards);
+
+    // TODO: Get monsters from room state
+    const monsters: any[] = []; // Placeholder
+
+    // Build turn order entries
+    const turnOrderEntries = [
+      ...characters.map((c: any) => ({
+        entityId: c!.id,
+        entityType: 'character' as const,
+        initiative: c!.selectedCards!.initiative,
+        name: c!.characterClass, // Use character class as name
+        characterClass: c!.characterClass,
+        isDead: false,
+        isExhausted: c!.exhausted,
+      })),
+      ...monsters.map((m) => ({
+        entityId: m.id,
+        entityType: 'monster' as const,
+        initiative: 50, // TODO: Get from monster ability card
+        name: m.monsterType, // Use monster type as name
+        characterClass: undefined,
+        isDead: m.isDead,
+        isExhausted: false,
+      })),
+    ];
+
+    // Determine turn order
+    const turnOrder = this.turnOrderService.determineTurnOrder(turnOrderEntries);
+
+    // Broadcast turn started for first entity
+    if (turnOrder.length > 0) {
+      const firstEntity = turnOrder[0];
+      const turnStartedPayload: TurnStartedPayload = {
+        entityId: firstEntity.entityId,
+        entityType: firstEntity.entityType,
+        turnIndex: 0,
+      };
+
+      this.server.to(roomCode).emit('turn_started', turnStartedPayload);
+
+      this.logger.log(
+        `Round started in room ${roomCode}, first turn: ${firstEntity.entityId} (initiative: ${firstEntity.initiative})`,
+      );
     }
   }
 
