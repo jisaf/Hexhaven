@@ -85,13 +85,16 @@ class WebSocketService {
   /**
    * Connect to WebSocket server
    */
-  connect(url: string = 'http://localhost:3000'): void {
+  connect(url?: string): void {
     if (this.socket?.connected) {
       console.warn('WebSocket already connected');
       return;
     }
 
-    this.socket = io(url, {
+    // Use provided URL, environment variable, or determine from current location
+    const wsUrl = url || import.meta.env.VITE_WS_URL || `${window.location.protocol}//${window.location.host}`;
+
+    this.socket = io(wsUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,

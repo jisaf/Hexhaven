@@ -92,7 +92,8 @@ export function Lobby() {
 
   // Connect to WebSocket on mount
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    // Use environment variable if set, otherwise determine URL from current location
+    const wsUrl = import.meta.env.VITE_WS_URL || `${window.location.protocol}//${window.location.host}`;
     websocketService.connect(wsUrl);
 
     // Setup event listeners
@@ -145,7 +146,8 @@ export function Lobby() {
       }
 
       // Call REST API to create room
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/rooms`, {
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiUrl}/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uuid, nickname: playerNickname }),
