@@ -79,6 +79,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
+  private readonly roomMaps = new Map<string, Map<string, any>>(); // roomCode -> hex map
+  private readonly roomLootTokens = new Map<string, any[]>(); // roomCode -> loot tokens
 
   /**
    * Handle client connection
@@ -348,6 +350,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Store monsters for this room
       this.roomMonsters.set(room.roomCode, monsters);
 
+      // Create hex map from scenario map layout for pathfinding
+      const hexMap = new Map<string, any>();
+      scenario.mapLayout.forEach((tile) => {
+        const key = `${tile.coordinates.q},${tile.coordinates.r}`;
+        hexMap.set(key, tile);
+      });
+      this.roomMaps.set(room.roomCode, hexMap);
+
+      // Initialize empty loot tokens array for this room
+      this.roomLootTokens.set(room.roomCode, []);
+
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
@@ -413,24 +426,59 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Game is not active');
       }
 
-      // TODO: Add validation for:
-      // - Is it player's turn?
-      // - Is target hex within movement range?
-      // - Is target hex occupied?
-      // - Is target hex an obstacle?
+      // Check if character is immobilized
+      if (character.isImmobilized) {
+        throw new Error('Character is immobilized and cannot move');
+      }
 
       // Store previous position
       const fromHex = character.position;
 
+      // Get hex map for pathfinding
+      const hexMap = this.roomMaps.get(room.roomCode);
+      if (!hexMap) {
+        throw new Error('Map not initialized for this room');
+      }
+
+      // Calculate path using pathfinding service
+      const path = this.pathfindingService.findPath(
+        fromHex,
+        payload.targetHex,
+        hexMap,
+      );
+
+      if (!path) {
+        throw new Error('No valid path to target hex (blocked by obstacles)');
+      }
+
+      // Get reachable hexes within movement range
+      const reachableHexes = this.pathfindingService.getReachableHexes(
+        fromHex,
+        character.movement,
+        hexMap,
+      );
+
+      // Check if target is within movement range
+      const targetKey = `${payload.targetHex.q},${payload.targetHex.r}`;
+      const isReachable = reachableHexes.some(
+        (hex) => `${hex.q},${hex.r}` === targetKey,
+      );
+
+      if (!isReachable) {
+        throw new Error(
+          `Target hex is not reachable within movement range of ${character.movement}`,
+        );
+      }
+
       // Move character
       characterService.moveCharacter(character.id, payload.targetHex);
 
-      // Broadcast character moved to all players
+      // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
         characterId: character.id,
         fromHex,
         toHex: payload.targetHex,
-        movementPath: [fromHex, payload.targetHex], // TODO: Calculate actual path
+        movementPath: path,
       };
 
       this.server
@@ -720,6 +768,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         targetDead = target.health === 0;
         if (targetDead) {
           target.isDead = true;
+
+          // Spawn loot token when monster dies
+          const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
+          const lootToken = {
+            id: `loot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            hexCoordinates: target.currentHex,
+            goldValue: 1 + Math.floor(Math.random() * 3), // 1-3 gold (simplified)
+            collected: false,
+          };
+          lootTokens.push(lootToken);
+          this.roomLootTokens.set(room.roomCode, lootTokens);
+
+          this.logger.log(
+            `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id}`,
+          );
         }
       } else {
         const actualDamage = target.takeDamage(damage);
@@ -792,23 +855,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Game is not active');
       }
 
-      // TODO: Get loot tokens from room state
-      // TODO: Find loot token at specified coordinates
-      // TODO: Validate loot token exists and is not collected
-      // TODO: Validate character is adjacent to or on loot token hex
-      // TODO: Collect loot token (mark as collected, add gold to player)
-      // TODO: Remove loot token from active tokens list
+      // Get loot tokens from room state
+      const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
 
-      // Placeholder loot collection
-      const lootValue = 2; // Based on difficulty
-      const lootTokenId = `loot_${Date.now()}`;
+      // Find loot token at specified coordinates
+      const lootToken = lootTokens.find(
+        (token: any) =>
+          token.hexCoordinates.q === payload.hexCoordinates.q &&
+          token.hexCoordinates.r === payload.hexCoordinates.r &&
+          !token.collected,
+      );
+
+      // Validate loot token exists and is not collected
+      if (!lootToken) {
+        throw new Error('No loot token found at specified coordinates');
+      }
+
+      // Validate character is adjacent to or on loot token hex
+      const charPos = character.position;
+      const lootPos = payload.hexCoordinates;
+
+      // Check if on same hex
+      const onSameHex = charPos.q === lootPos.q && charPos.r === lootPos.r;
+
+      // Check if adjacent (using pathfinding service)
+      const hexMap = this.roomMaps.get(room.roomCode);
+      let isAdjacent = false;
+      if (hexMap) {
+        isAdjacent = this.pathfindingService.isHexAdjacent(charPos, lootPos);
+      }
+
+      if (!onSameHex && !isAdjacent) {
+        throw new Error(
+          'Character must be on or adjacent to loot token to collect it',
+        );
+      }
+
+      // Mark loot token as collected
+      lootToken.collected = true;
+
+      // In a full implementation, would add gold to player's inventory
+      // For now, just broadcast the collection
 
       // Broadcast loot collected to all players
       const lootCollectedPayload: LootCollectedPayload = {
         playerId: playerUUID,
-        lootTokenId,
+        lootTokenId: lootToken.id,
         hexCoordinates: payload.hexCoordinates,
-        goldValue: lootValue,
+        goldValue: lootToken.goldValue,
       };
 
       this.server
@@ -816,7 +910,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .emit('loot_collected', lootCollectedPayload);
 
       this.logger.log(
-        `Loot collected by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
+        `Loot collected by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), value: ${lootToken.goldValue} gold`,
       );
     } catch (error) {
       const errorMessage =
