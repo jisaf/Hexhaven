@@ -161,9 +161,9 @@ export function GameBoard() {
   // Setup WebSocket event listeners
   useEffect(() => {
     // Connection status
-    websocketService.on('connect', () => setConnectionStatus('connected'));
-    websocketService.on('disconnect', () => setConnectionStatus('disconnected'));
-    websocketService.on('reconnecting', () => setConnectionStatus('reconnecting'));
+    websocketService.on('ws_connected', () => setConnectionStatus('connected'));
+    websocketService.on('ws_disconnected', () => setConnectionStatus('disconnected'));
+    websocketService.on('ws_reconnecting', () => setConnectionStatus('reconnecting'));
 
     // Game events
     websocketService.on('game_started', handleGameStarted);
@@ -172,9 +172,9 @@ export function GameBoard() {
     websocketService.on('game_state_update', handleGameStateUpdate);
 
     return () => {
-      websocketService.off('connect');
-      websocketService.off('disconnect');
-      websocketService.off('reconnecting');
+      websocketService.off('ws_connected');
+      websocketService.off('ws_disconnected');
+      websocketService.off('ws_reconnecting');
       websocketService.off('game_started');
       websocketService.off('character_moved');
       websocketService.off('next_turn_started');

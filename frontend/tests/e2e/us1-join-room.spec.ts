@@ -16,13 +16,12 @@ test.describe('User Story 1: Join Game Room', () => {
   test('should join an existing room with valid code', async ({ page, context }) => {
     // Host creates a room
     await page.goto('/');
-
-    // Handle nickname prompt dialog for host
-    page.once('dialog', async dialog => {
-      await dialog.accept('Host');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Second player joins
@@ -40,20 +39,16 @@ test.describe('User Story 1: Join Game Room', () => {
     await expect(joinButton).toBeVisible();
     await joinButton.click();
 
-    // Enter room code
+    // Enter room code and nickname
     const roomCodeInput = player2Page.locator('[data-testid="room-code-input"]');
     await expect(roomCodeInput).toBeVisible();
     await roomCodeInput.fill(roomCode!);
 
-    // Handle nickname prompt dialog (will appear when clicking join button)
-    // Note: Since player2 shares localStorage with host in same context,
-    // the nickname might already be set and prompt might not appear
-    player2Page.once('dialog', async dialog => {
-      await dialog.accept('Player2');
-    });
+    const nicknameInput = player2Page.locator('[data-testid="nickname-input"]');
+    await nicknameInput.fill('Player2');
 
-    // Click join button
-    const confirmJoinButton = player2Page.locator('[data-testid="join-room-button"]');
+    // Click join button (submit button in the form)
+    const confirmJoinButton = player2Page.locator('button:has-text("Join")');
     await confirmJoinButton.click();
 
     // Wait for lobby to load
@@ -93,13 +88,12 @@ test.describe('User Story 1: Join Game Room', () => {
   test('should show error when room is full (4 players max)', async ({ page, context }) => {
     // Create room and add 4 players
     await page.goto('/');
-
-    // Handle nickname prompt dialog for host
-    page.once('dialog', async dialog => {
-      await dialog.accept('Host');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Add 3 more players (total 4 with host)
@@ -128,15 +122,14 @@ test.describe('User Story 1: Join Game Room', () => {
   });
 
   test('should reject duplicate nicknames in same room', async ({ page, context }) => {
-    // Host creates room with nickname "Player 1"
+    // Host creates room with nickname "Host"
     await page.goto('/');
-
-    // Handle nickname prompt dialog for host
-    page.once('dialog', async dialog => {
-      await dialog.accept('Host');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Second player tries to join with same nickname
@@ -144,7 +137,7 @@ test.describe('User Story 1: Join Game Room', () => {
     await player2Page.goto('/');
     await player2Page.locator('button:has-text("Join Game")').click();
     await player2Page.locator('[data-testid="room-code-input"]').fill(roomCode!);
-    await player2Page.locator('[data-testid="nickname-input"]').fill('Host'); // Assuming host has default "Host" nickname
+    await player2Page.locator('[data-testid="nickname-input"]').fill('Host'); // Same nickname as host
     await player2Page.locator('button:has-text("Join")').click();
 
     // Verify error message
@@ -156,13 +149,12 @@ test.describe('User Story 1: Join Game Room', () => {
   test('should show real-time player list updates', async ({ page, context }) => {
     // Host creates room
     await page.goto('/');
-
-    // Handle nickname prompt dialog for host
-    page.once('dialog', async dialog => {
-      await dialog.accept('Host');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for host
+    await page.locator('[data-testid="nickname-input"]').fill('Host');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Verify initial player count

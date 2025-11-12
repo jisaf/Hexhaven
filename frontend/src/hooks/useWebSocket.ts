@@ -42,10 +42,10 @@ export function useWebSocket(url?: string) {
     websocketService.connect(wsUrl);
 
     // Setup connection event listeners
-    websocketService.on('connect', handleConnect);
-    websocketService.on('disconnect', handleDisconnect);
-    websocketService.on('reconnecting', handleReconnecting);
-    websocketService.on('reconnected', handleReconnected);
+    websocketService.on('ws_connected', handleConnect);
+    websocketService.on('ws_disconnected', handleDisconnect);
+    websocketService.on('ws_reconnecting', handleReconnecting);
+    websocketService.on('ws_reconnected', handleReconnected);
 
     // Update initial state using a microtask to avoid cascading renders
     queueMicrotask(() => {
@@ -55,10 +55,10 @@ export function useWebSocket(url?: string) {
 
     // Cleanup on unmount
     return () => {
-      websocketService.off('connect', handleConnect);
-      websocketService.off('disconnect', handleDisconnect);
-      websocketService.off('reconnecting', handleReconnecting);
-      websocketService.off('reconnected', handleReconnected);
+      websocketService.off('ws_connected', handleConnect);
+      websocketService.off('ws_disconnected', handleDisconnect);
+      websocketService.off('ws_reconnecting', handleReconnecting);
+      websocketService.off('ws_reconnected', handleReconnected);
       websocketService.disconnect();
     };
   }, [url, handleConnect, handleDisconnect, handleReconnecting, handleReconnected]);

@@ -19,16 +19,20 @@ test.describe('User Story 1: Create Game Room', () => {
     // Verify landing page elements
     await expect(page.locator('h1')).toContainText('Hexhaven');
 
-    // Handle nickname prompt dialog
-    page.once('dialog', async dialog => {
-      expect(dialog.type()).toBe('prompt');
-      await dialog.accept('TestPlayer');
-    });
-
     // Click "Create Game" button
     const createButton = page.locator('button:has-text("Create Game")');
     await expect(createButton).toBeVisible();
     await createButton.click();
+
+    // Fill in nickname using the component (not browser dialog)
+    const nicknameInput = page.locator('[data-testid="nickname-input"]');
+    await expect(nicknameInput).toBeVisible({ timeout: 5000 });
+    await nicknameInput.fill('TestPlayer');
+
+    // Click submit button
+    const submitButton = page.locator('[data-testid="nickname-submit"]');
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
 
     // Wait for room code to be displayed
     const roomCodeDisplay = page.locator('[data-testid="room-code"]');
@@ -54,25 +58,23 @@ test.describe('User Story 1: Create Game Room', () => {
   test('should generate unique room codes for multiple games', async ({ page, context }) => {
     // Create first game
     await page.goto('/');
-
-    // Handle nickname prompt dialog for first game
-    page.once('dialog', async dialog => {
-      await dialog.accept('TestPlayer1');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for first game
+    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer1');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode1 = await page.locator('[data-testid="room-code"]').textContent();
 
     // Open second tab and create another game
     const page2 = await context.newPage();
     await page2.goto('/');
-
-    // Handle nickname prompt dialog for second game
-    page2.once('dialog', async dialog => {
-      await dialog.accept('TestPlayer2');
-    });
-
     await page2.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname for second game
+    await page2.locator('[data-testid="nickname-input"]').fill('TestPlayer2');
+    await page2.locator('[data-testid="nickname-submit"]').click();
+
     const roomCode2 = await page2.locator('[data-testid="room-code"]').textContent();
 
     // Verify codes are different
@@ -89,16 +91,14 @@ test.describe('User Story 1: Create Game Room', () => {
     });
 
     await page.goto('/');
-
-    // Handle nickname prompt dialog
-    page.once('dialog', async dialog => {
-      await dialog.accept('TestPlayer');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
 
-    // Verify error message is displayed
-    const errorMessage = page.locator('[data-testid="error-message"]');
+    // Fill in nickname
+    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer');
+    await page.locator('[data-testid="nickname-submit"]').click();
+
+    // Verify error message is displayed (use more specific selector)
+    const errorMessage = page.locator('.error-banner[role="alert"]');
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
     await expect(errorMessage).toContainText('Failed to create room');
   });
@@ -108,13 +108,11 @@ test.describe('User Story 1: Create Game Room', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
     await page.goto('/');
-
-    // Handle nickname prompt dialog
-    page.once('dialog', async dialog => {
-      await dialog.accept('TestPlayer');
-    });
-
     await page.locator('button:has-text("Create Game")').click();
+
+    // Fill in nickname
+    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer');
+    await page.locator('[data-testid="nickname-submit"]').click();
 
     // Wait for room code
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
