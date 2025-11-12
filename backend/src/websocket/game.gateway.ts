@@ -19,6 +19,7 @@ import { Logger } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
+import { ScenarioService } from '../services/scenario.service';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -59,6 +60,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server!: Server;
 
   private readonly logger = new Logger(GameGateway.name);
+  private readonly scenarioService = new ScenarioService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 
@@ -248,10 +250,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Start the game
    */
   @SubscribeMessage('start_game')
-  handleStartGame(
+  async handleStartGame(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: StartGamePayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -276,16 +278,39 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Only the host can start the game');
       }
 
+      // Load scenario data
+      const scenario = await this.scenarioService.loadScenario(
+        payload.scenarioId,
+      );
+      if (!scenario) {
+        throw new Error(`Scenario not found: ${payload.scenarioId}`);
+      }
+
+      // Validate scenario
+      const validation = this.scenarioService.validateScenario(scenario);
+      if (!validation.valid) {
+        throw new Error(
+          `Invalid scenario: ${validation.errors.join(', ')}`,
+        );
+      }
+
       // Start the game
       roomService.startGame(room.roomCode, payload.scenarioId, playerUUID);
 
-      // Create characters for all players at starting positions
-      // TODO: Load scenario data to get starting positions
-      const startingPosition = { q: 0, r: 0 }; // Default position
+      // Get player starting positions from scenario
+      const playerCount = room.players.filter((p) => p.characterClass).length;
+      const startingPositions = scenario.playerStartPositions[playerCount];
+      if (!startingPositions || startingPositions.length < playerCount) {
+        throw new Error(
+          `Scenario does not support ${playerCount} players`,
+        );
+      }
 
+      // Create characters for all players at starting positions
       const characters = room.players
         .filter((p) => p.characterClass)
-        .map((p) => {
+        .map((p, index) => {
+          const startingPosition = startingPositions[index];
           return characterService.selectCharacter(
             p.uuid,
             p.characterClass as CharacterClass,
@@ -293,12 +318,27 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           );
         });
 
+      // Spawn monsters
+      const monsters = this.scenarioService.spawnMonsters(
+        scenario,
+        room.roomCode,
+        scenario.difficulty,
+      );
+
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
-        scenarioName: 'Scenario Name', // TODO: Load from scenario data
-        mapLayout: [], // TODO: Load from scenario data
-        monsters: [], // TODO: Load from scenario data
+        scenarioName: scenario.name,
+        mapLayout: scenario.mapLayout,
+        monsters: monsters.map((m) => ({
+          id: m.id,
+          monsterType: m.monsterType,
+          isElite: m.isElite,
+          currentHex: m.currentHex,
+          health: m.health,
+          maxHealth: m.maxHealth,
+          conditions: m.conditions,
+        })),
         characters: characters.map((c) => c.toJSON()),
       };
 

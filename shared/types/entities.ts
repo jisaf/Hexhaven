@@ -165,6 +165,7 @@ export interface Scenario {
   difficulty: number;
   mapLayout: HexTile[];
   monsterGroups: MonsterGroup[];
+  playerStartPositions: Record<number, AxialCoordinates[]>; // Keyed by player count (2, 3, 4)
   objectivePrimary: string;
   objectiveSecondary?: string;
   treasures?: TreasureLocation[];

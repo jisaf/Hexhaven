@@ -34,16 +34,19 @@ describe('MonsterAIService', () => {
   ): Monster {
     return {
       id: 'monster1',
+      roomId: 'test-room',
+      monsterType: 'Bandit Guard',
+      isElite: false,
       currentHex,
       range,
       attack: 2,
       movement: 3,
       conditions,
       specialAbilities,
-      currentHealth: 5,
+      health: 5,
       maxHealth: 5,
       isDead: false,
-    } as Monster;
+    };
   }
 
   // Helper to create test character
