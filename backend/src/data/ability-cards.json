@@ -1,0 +1,507 @@
+{
+  "abilityCards": [
+    {
+      "id": "brute-trample",
+      "characterClass": "Brute",
+      "name": "Trample",
+      "level": 1,
+      "initiative": 72,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 0,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": ["Push 1 (all adjacent enemies)"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-eye-for-eye",
+      "characterClass": "Brute",
+      "name": "Eye for an Eye",
+      "level": 1,
+      "initiative": 51,
+      "topAction": {
+        "type": "special",
+        "value": null,
+        "range": null,
+        "effects": ["Retaliate 2 for the round"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "special",
+        "value": null,
+        "range": null,
+        "effects": ["Shield 1 for the round"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-balanced-measure",
+      "characterClass": "Brute",
+      "name": "Balanced Measure",
+      "level": 1,
+      "initiative": 20,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 0,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-overwhelming-assault",
+      "characterClass": "Brute",
+      "name": "Overwhelming Assault",
+      "level": 1,
+      "initiative": 65,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 0,
+        "effects": ["Target all adjacent enemies"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-shield-bash",
+      "characterClass": "Brute",
+      "name": "Shield Bash",
+      "level": 1,
+      "initiative": 15,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 0,
+        "effects": ["Push 1", "Stun"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-warding-strength",
+      "characterClass": "Brute",
+      "name": "Warding Strength",
+      "level": 1,
+      "initiative": 32,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 0,
+        "effects": [],
+        "elementGenerate": "light",
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "special",
+        "value": null,
+        "range": null,
+        "effects": ["Heal 2 self"],
+        "elementGenerate": null,
+        "elementConsume": "light",
+        "elementBonus": {
+          "effect": "Heal +2",
+          "value": 2
+        }
+      }
+    },
+    {
+      "id": "brute-skewer",
+      "characterClass": "Brute",
+      "name": "Skewer",
+      "level": 1,
+      "initiative": 43,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 1,
+        "effects": ["Pull 1"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-spare-dagger",
+      "characterClass": "Brute",
+      "name": "Spare Dagger",
+      "level": 1,
+      "initiative": 27,
+      "topAction": {
+        "type": "attack",
+        "value": 1,
+        "range": 3,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-grab-and-go",
+      "characterClass": "Brute",
+      "name": "Grab and Go",
+      "level": 1,
+      "initiative": 64,
+      "topAction": {
+        "type": "loot",
+        "value": 1,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "range": null,
+        "effects": ["Jump"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "brute-leaping-cleave",
+      "characterClass": "Brute",
+      "name": "Leaping Cleave",
+      "level": 1,
+      "initiative": 54,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 0,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": ["Jump"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-ink-bomb",
+      "characterClass": "Tinkerer",
+      "name": "Ink Bomb",
+      "level": 1,
+      "initiative": 62,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 2,
+        "effects": ["Target all adjacent enemies", "Muddle"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-potent-potables",
+      "characterClass": "Tinkerer",
+      "name": "Potent Potables",
+      "level": 1,
+      "initiative": 21,
+      "topAction": {
+        "type": "special",
+        "value": null,
+        "range": 2,
+        "effects": ["Heal 3"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "special",
+        "value": null,
+        "range": 2,
+        "effects": ["Bless"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-enhancement-field",
+      "characterClass": "Tinkerer",
+      "name": "Enhancement Field",
+      "level": 1,
+      "initiative": 74,
+      "topAction": {
+        "type": "special",
+        "value": null,
+        "range": 2,
+        "effects": ["Strengthen", "All allies within range"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-volatile-concoction",
+      "characterClass": "Tinkerer",
+      "name": "Volatile Concoction",
+      "level": 1,
+      "initiative": 47,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 3,
+        "effects": ["Wound"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 2,
+        "effects": ["Poison"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-crank-bow",
+      "characterClass": "Tinkerer",
+      "name": "Crank Bow",
+      "level": 1,
+      "initiative": 33,
+      "topAction": {
+        "type": "attack",
+        "value": 1,
+        "range": 3,
+        "effects": ["Attack 3 times"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-restorative-mist",
+      "characterClass": "Tinkerer",
+      "name": "Restorative Mist",
+      "level": 1,
+      "initiative": 24,
+      "topAction": {
+        "type": "special",
+        "value": null,
+        "range": 2,
+        "effects": ["Heal 3", "All allies in range"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-gas-canister",
+      "characterClass": "Tinkerer",
+      "name": "Gas Canister",
+      "level": 1,
+      "initiative": 56,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 2,
+        "effects": ["Poison"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "special",
+        "value": null,
+        "range": null,
+        "effects": ["Create poison trap"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-micro-bots",
+      "characterClass": "Tinkerer",
+      "name": "Micro Bots",
+      "level": 1,
+      "initiative": 81,
+      "topAction": {
+        "type": "summon",
+        "value": null,
+        "range": null,
+        "effects": ["Summon Micro Bot", "Move 3", "Attack 1"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-flamethrower",
+      "characterClass": "Tinkerer",
+      "name": "Flamethrower",
+      "level": 1,
+      "initiative": 68,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 0,
+        "effects": ["Target all adjacent enemies"],
+        "elementGenerate": "fire",
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    },
+    {
+      "id": "tinkerer-reviving-ether",
+      "characterClass": "Tinkerer",
+      "name": "Reviving Ether",
+      "level": 1,
+      "initiative": 14,
+      "topAction": {
+        "type": "special",
+        "value": null,
+        "range": 3,
+        "effects": ["Heal 6"],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null
+      }
+    }
+  ]
+}
