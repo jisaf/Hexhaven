@@ -22,6 +22,7 @@ npm test && npm run lint
 TypeScript (latest stable) for both frontend and backend: Follow standard conventions
 
 ## Recent Changes
+- 002-fix-create-room-cors: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 - 001-gloomhaven-multiplayer: Added TypeScript (latest stable) for both frontend and backend
 

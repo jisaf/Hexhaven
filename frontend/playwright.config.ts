@@ -56,6 +56,17 @@ export default defineConfig({
         viewport: { width: 412, height: 915 }, // Pixel 6 dimensions
         hasTouch: true,
         isMobile: true,
+        // Use headless mode for CI/CD and Docker environments
+        headless: process.env.CI ? true : false,
+        // Reduce animation delays for faster test execution
+        launchOptions: {
+          args: process.env.CI ? [
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--disable-setuid-sandbox',
+            '--no-sandbox',
+          ] : [],
+        },
       },
     },
 

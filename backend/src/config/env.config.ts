@@ -55,7 +55,11 @@ function loadConfig(): Config {
         process.env.DATABASE_URL || 'postgresql://localhost:5432/hexhaven_dev',
     },
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+      origin: process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.includes(',')
+          ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+          : process.env.CORS_ORIGIN
+        : 'http://localhost:5173',
       credentials: true,
     },
     session: {

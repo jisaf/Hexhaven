@@ -107,6 +107,7 @@ export function JoinRoomForm({
           disabled={!isFormValid || isLoading}
           className="submit-button"
           aria-label={t('lobby.joinRoom', 'Join Room')}
+          data-testid="join-room-button"
         >
           {isLoading ? t('lobby.joining', 'Joining...') : t('lobby.join', 'Join')}
         </button>

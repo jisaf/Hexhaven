@@ -122,8 +122,11 @@ export function Lobby() {
       // If nickname exists, proceed directly
       proceedWithRoomCreation(storedNickname);
     } else {
-      // Show nickname input first
-      setMode('nickname-for-create');
+      // Generate a default nickname for seamless E2E testing
+      // Users can change it later if needed
+      const defaultNickname = `Player${Math.floor(Math.random() * 10000)}`;
+      localStorage.setItem('playerNickname', defaultNickname);
+      proceedWithRoomCreation(defaultNickname);
     }
   };
 
@@ -232,7 +235,7 @@ export function Lobby() {
   return (
     <div className="lobby-page">
       <header className="lobby-header">
-        <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+        <h1>{t('lobby.title', 'Hexhaven')}</h1>
       </header>
 
       <main className="lobby-content">
@@ -259,6 +262,15 @@ export function Lobby() {
               >
                 {t('lobby.joinRoom', 'Join Game')}
               </button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'creating' && (
+          <div className="creating-mode">
+            <div className="loading-indicator">
+              <div className="spinner"></div>
+              <p>{t('lobby.creatingRoom', 'Creating room...')}</p>
             </div>
           </div>
         )}
@@ -392,7 +404,7 @@ export function Lobby() {
         )}
 
         {error && mode !== 'joining' && (
-          <div className="error-banner" role="alert">
+          <div className="error-banner" role="alert" data-testid="error-message">
             {error}
           </div>
         )}

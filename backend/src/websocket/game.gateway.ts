@@ -16,6 +16,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { config } from '../config/env.config';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
@@ -49,8 +50,8 @@ import {
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // Configure based on environment
-    credentials: true,
+    origin: config.cors.origin,
+    credentials: config.cors.credentials,
   },
   namespace: '/game',
 })

@@ -319,6 +319,7 @@ jobs:
       - frontend-typecheck
       - frontend-test
       - frontend-build
+      - e2e-tests
     steps:
       - name: All quality gates passed
         run: echo "✓ All CI checks passed successfully!"
