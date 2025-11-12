@@ -22,6 +22,9 @@ import { characterService } from '../services/character.service';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
+import { DamageCalculationService } from '../services/damage-calculation.service';
+import { ModifierDeckService } from '../services/modifier-deck.service';
+import { PathfindingService } from '../services/pathfinding.service';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -65,8 +68,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly scenarioService = new ScenarioService();
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
+  private readonly damageService = new DamageCalculationService();
+  private readonly modifierDeckService = new ModifierDeckService();
+  private readonly pathfindingService = new PathfindingService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
+
+  // Game state: per-room state
+  private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
+  private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
 
   /**
    * Handle client connection
@@ -329,6 +339,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         scenario.difficulty,
       );
 
+      // Initialize attack modifier deck for this room
+      const modifierDeck = this.modifierDeckService.initializeStandardDeck();
+      this.modifierDecks.set(room.roomCode, modifierDeck);
+
+      // Store monsters for this room
+      this.roomMonsters.set(room.roomCode, monsters);
+
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
@@ -544,8 +561,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
       .filter((c: any) => c && !c.exhausted && c.selectedCards);
 
-    // TODO: Get monsters from room state
-    const monsters: any[] = []; // Placeholder
+    // Get monsters from room state
+    const monsters = this.roomMonsters.get(roomCode) || [];
 
     // Build turn order entries
     const turnOrderEntries = [
@@ -624,30 +641,104 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Game is not active');
       }
 
-      // TODO: Get target (monster or character)
-      // TODO: Validate attack (range, target alive, not disarmed)
-      // TODO: Draw attack modifier card
-      // TODO: Calculate damage
-      // TODO: Apply damage to target
-      // TODO: Check if target is dead
-      // TODO: Trigger retaliate if applicable
+      // Check if attacker is disarmed
+      if (attacker.isDisarmed) {
+        throw new Error('Attacker is disarmed and cannot attack');
+      }
 
-      // Placeholder attack resolution
+      // Get target (check monsters first, then characters)
+      const monsters = this.roomMonsters.get(room.roomCode) || [];
+      let target: any = monsters.find((m: any) => m.id === payload.targetId);
+      let isMonsterTarget = !!target;
+
+      if (!target) {
+        // Try to find as character
+        const targetPlayer = room.players.find((p: any) => {
+          const char = characterService.getCharacterByPlayerId(p.uuid);
+          return char && char.id === payload.targetId;
+        });
+        if (targetPlayer) {
+          target = characterService.getCharacterByPlayerId(targetPlayer.uuid);
+        }
+      }
+
+      if (!target) {
+        throw new Error('Target not found');
+      }
+
+      // Validate target is alive
+      if (isMonsterTarget && target.isDead) {
+        throw new Error('Target monster is already dead');
+      }
+      if (!isMonsterTarget && target.isDead) {
+        throw new Error('Target character is already dead');
+      }
+
+      // Get attack value from attacker (simplified - using stats)
+      const baseAttack = attacker.attack;
+
+      // Draw attack modifier card
+      let modifierDeck = this.modifierDecks.get(room.roomCode);
+      if (!modifierDeck || modifierDeck.length === 0) {
+        // Reinitialize if empty
+        modifierDeck = this.modifierDeckService.initializeStandardDeck();
+        this.modifierDecks.set(room.roomCode, modifierDeck);
+      }
+
+      const { card: modifierCard, remainingDeck } =
+        this.modifierDeckService.drawCard(modifierDeck);
+      this.modifierDecks.set(room.roomCode, remainingDeck);
+
+      // Check if reshuffle needed (x2 or null triggers reshuffle)
+      if (this.modifierDeckService.checkReshuffle(modifierCard)) {
+        const reshuffled = this.modifierDeckService.reshuffleDeck(
+          remainingDeck,
+          [],
+        );
+        this.modifierDecks.set(room.roomCode, reshuffled);
+      }
+
+      // Calculate damage
+      const damage = this.damageService.calculateDamage(
+        baseAttack,
+        modifierCard,
+      );
+
+      // Apply damage to target
+      let targetHealth: number;
+      let targetDead = false;
+
+      if (isMonsterTarget) {
+        target.health = Math.max(0, target.health - damage);
+        targetHealth = target.health;
+        targetDead = target.health === 0;
+        if (targetDead) {
+          target.isDead = true;
+        }
+      } else {
+        const actualDamage = target.takeDamage(damage);
+        targetHealth = target.currentHealth;
+        targetDead = target.isDead;
+      }
+
+      // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
         attackerId: attacker.id,
         targetId: payload.targetId,
-        damage: 5,
-        modifier: 0,
-        effects: [],
-        targetHealth: 10,
-        targetDead: false,
+        damage,
+        modifier: modifierCard.modifier,
+        effects: modifierCard.effects || [],
+        targetHealth,
+        targetDead,
       };
 
       this.server
         .to(room.roomCode)
         .emit('attack_resolved', attackResolvedPayload);
 
-      this.logger.log(`Attack resolved: ${attacker.id} -> ${payload.targetId}`);
+      this.logger.log(
+        `Attack resolved: ${attacker.id} -> ${payload.targetId}, damage: ${damage}, modifier: ${modifierCard.modifier}`,
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
