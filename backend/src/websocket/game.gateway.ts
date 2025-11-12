@@ -77,6 +77,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
   private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
+  private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
+  private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
 
   /**
    * Handle client connection
@@ -589,6 +591,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Determine turn order
     const turnOrder = this.turnOrderService.determineTurnOrder(turnOrderEntries);
 
+    // Store turn order and reset turn index
+    this.roomTurnOrder.set(roomCode, turnOrder);
+    this.currentTurnIndex.set(roomCode, 0);
+
     // Broadcast turn started for first entity
     if (turnOrder.length > 0) {
       const firstEntity = turnOrder[0];
@@ -857,24 +863,69 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Game is not active');
       }
 
-      // TODO: Verify it's this player's turn
-      // TODO: Get next entity in turn order
-      // TODO: If next entity is monster, activate monster AI
-      // TODO: If next entity is player, notify them
+      // Get turn order for this room
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      if (!turnOrder || turnOrder.length === 0) {
+        throw new Error('Turn order not initialized');
+      }
 
-      // Placeholder: advance to next turn
-      const turnStartedPayload: TurnStartedPayload = {
-        entityId: 'next_entity_id',
-        entityType: 'character',
-        turnIndex: 1,
-      };
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      const currentEntity = turnOrder[currentIndex];
 
-      this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
+      // Verify it's this player's turn
+      if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
+        throw new Error('It is not your turn');
+      }
 
-      this.logger.log(`Turn ended for ${playerUUID}`);
+      // Get next living entity in turn order
+      const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
+        currentIndex,
+        turnOrder,
+      );
 
-      // TODO: Check if round is complete (all entities have taken turns)
-      // TODO: If round complete, decay elements and start new round
+      // Check if round is complete (wrapped back to start)
+      const roundComplete = nextIndex === 0 && currentIndex !== 0;
+
+      if (roundComplete) {
+        this.logger.log(`Round complete in room ${room.roomCode}, starting new round`);
+
+        // Clear selected cards from all characters for new round
+        room.players.forEach((p: any) => {
+          const char = characterService.getCharacterByPlayerId(p.uuid);
+          if (char) {
+            char.selectedCards = undefined;
+          }
+        });
+
+        // Notify all players that round ended and to select new cards
+        this.server.to(room.roomCode).emit('round_ended', {
+          message: 'Round complete, please select your cards for the next round',
+        });
+      } else {
+        // Advance to next turn
+        this.currentTurnIndex.set(room.roomCode, nextIndex);
+        const nextEntity = turnOrder[nextIndex];
+
+        // Broadcast turn started for next entity
+        const turnStartedPayload: TurnStartedPayload = {
+          entityId: nextEntity.entityId,
+          entityType: nextEntity.entityType,
+          turnIndex: nextIndex,
+        };
+
+        this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
+
+        this.logger.log(
+          `Turn advanced in room ${room.roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
+        );
+
+        // If next entity is a monster, activate monster AI
+        if (nextEntity.entityType === 'monster') {
+          // Simplified: just advance turn automatically for now
+          // In full implementation, would call activateMonster()
+          this.logger.log(`Monster turn: ${nextEntity.entityId} (AI not fully implemented)`);
+        }
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
