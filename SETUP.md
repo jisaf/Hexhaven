@@ -28,6 +28,41 @@ That's it! The script will:
 3. Run database migrations
 4. Start both development servers
 
+## NPM Workspace Commands (New)
+
+This project uses NPM workspaces, allowing you to run commands from the root directory:
+
+```bash
+# Install all dependencies (backend + frontend)
+npm install
+
+# Run both dev servers individually
+npm run dev:backend    # Backend only
+npm run dev:frontend   # Frontend only
+
+# Build both projects
+npm run build          # Build backend and frontend
+npm run build:backend  # Backend only
+npm run build:frontend # Frontend only
+
+# Run tests
+npm run test           # Test both
+npm run test:backend   # Backend tests only
+npm run test:frontend  # Frontend tests only
+
+# Run linters
+npm run lint           # Lint both
+npm run lint:backend   # Backend only
+npm run lint:frontend  # Frontend only
+
+# Database commands (from root)
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:studio
+```
+
+**Note**: To run both dev servers simultaneously, use the `./start-dev.sh` script (Linux/Mac) or `start-dev.bat` (Windows) for better process management.
+
 ## Manual Setup
 
 If you prefer to set up manually or need more control:
@@ -132,6 +167,16 @@ If ports 3000 or 5173 are already in use:
 - **Frontend**: Vite will automatically try the next available port
 
 ### Dependencies Issues
+
+Using NPM workspaces (recommended):
+
+```bash
+# Clean install for entire monorepo (from root)
+npm run clean
+npm install
+```
+
+Or manually for individual packages:
 
 ```bash
 # Clean install for backend

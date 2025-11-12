@@ -1,0 +1,46 @@
+{
+  "name": "hexhaven-monorepo",
+  "version": "1.0.0",
+  "description": "Hexhaven - Gloomhaven Multiplayer Game",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "build:frontend": "npm run build -w frontend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:backend": "npm run test -w backend",
+    "test:frontend": "npm run test -w frontend",
+    "lint": "npm run lint -w backend && npm run lint -w frontend",
+    "lint:backend": "npm run lint -w backend",
+    "lint:frontend": "npm run lint -w frontend",
+    "clean": "rm -rf backend/node_modules frontend/node_modules backend/dist frontend/dist node_modules",
+    "prisma:generate": "npm run prisma:generate -w backend",
+    "prisma:migrate": "npm run prisma:migrate -w backend",
+    "prisma:studio": "npm run prisma:studio -w backend"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jisaf/Hexhaven"
+  },
+  "keywords": [
+    "gloomhaven",
+    "multiplayer",
+    "game",
+    "nestjs",
+    "react",
+    "websockets"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}
