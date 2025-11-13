@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Backend service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    command: npm run start:prod -w backend
+    working_dir: /app/backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - e2e-network
+
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    command: npm run dev -w frontend
+    working_dir: /app/frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://backend:3000
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - e2e-network
+
+  # E2E test runner
+  e2e-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    command: npm run test:e2e -w frontend
+    working_dir: /app/frontend
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - VITE_URL=http://frontend:5173
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      # Mount test results and reports
+      - ./frontend/test-results:/app/frontend/test-results
+      - ./frontend/playwright-report:/app/frontend/playwright-report
+    networks:
+      - e2e-network
+
+networks:
+  e2e-network:
+    driver: bridge
