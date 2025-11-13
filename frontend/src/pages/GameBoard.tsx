@@ -29,14 +29,13 @@ export function GameBoard() {
   const hexGridRef = useRef<HexGrid | null>(null);
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
 
-  // Card selection state (T111)
+  // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [playerHand, _setPlayerHand] = useState<AbilityCard[]>([]);
+  const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<{ top: string | null; bottom: string | null }>({ top: null, bottom: null });
 
   // Attack targeting state (T115)
@@ -44,24 +43,69 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Event handlers - defined before useEffects that use them
-  const handleGameStarted = useCallback((data: { gameState: { board: unknown; currentPlayerId: string } }) => {
-    if (!hexGridRef.current) return;
+  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => {
+    console.log('handleGameStarted called with data:', data);
 
-    setCurrentPlayerId(data.gameState.currentPlayerId);
-    hexGridRef.current.initializeBoard(data.gameState.board as GameBoardData);
+    if (!hexGridRef.current) {
+      console.error('hexGridRef.current is null!');
+      return;
+    }
+
+    // Find my character from the characters array using playerUUID from localStorage
+    const playerUUID = websocketService.getPlayerUUID();
+    console.log('My playerUUID:', playerUUID);
+    console.log('Characters:', data.characters);
+
+    const myCharacter = data.characters.find((char: any) => char.playerId === playerUUID);
+    console.log('My character:', myCharacter);
+
+    if (myCharacter) {
+      setMyCharacterId(myCharacter.id);
+      console.log('Set myCharacterId to:', myCharacter.id);
+
+      // T181: Load character's unique ability deck
+      if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
+        console.log('Loading ability deck for character:', myCharacter.classType);
+        console.log('Ability deck:', myCharacter.abilityDeck);
+        setPlayerHand(myCharacter.abilityDeck);
+
+        // Show card selection at start of first turn
+        // In a real game, this would be triggered by turn_started event
+        setShowCardSelection(true);
+      } else {
+        console.warn('No ability deck found for character!');
+      }
+    } else {
+      console.error('Could not find my character in the characters array!');
+    }
+
+    // Initialize board with the map layout and entities
+    const boardData: GameBoardData = {
+      tiles: data.mapLayout,
+      characters: data.characters,
+      monsters: data.monsters,
+    };
+
+    console.log('Initializing board with:', boardData);
+    hexGridRef.current.initializeBoard(boardData);
   }, []);
 
-  const handleCharacterMoved = useCallback((data: { characterId: string; targetHex: Axial }) => {
+  const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
     if (!hexGridRef.current) return;
 
-    hexGridRef.current.moveCharacter(data.characterId, data.targetHex);
+    hexGridRef.current.moveCharacter(data.characterId, data.toHex);
     hexGridRef.current.deselectAll();
     setSelectedCharacterId(null);
   }, []);
 
-  const handleNextTurn = useCallback((data: { currentTurnIndex: number; entityId: string }) => {
-    // Check if it's current player's turn
-    const myTurn = data.entityId === currentPlayerId;
+  const handleNextTurn = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
+    console.log('handleNextTurn called with data:', data);
+    console.log('myCharacterId:', myCharacterId);
+
+    // Check if it's current player's turn by comparing entityId with my character ID
+    const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
+    console.log('Is my turn?', myTurn);
+
     setIsMyTurn(myTurn);
 
     if (!myTurn) {
@@ -69,7 +113,7 @@ export function GameBoard() {
       hexGridRef.current?.deselectAll();
       setSelectedCharacterId(null);
     }
-  }, [currentPlayerId]);
+  }, [myCharacterId]);
 
   const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
     // Handle full game state updates (for reconnection, etc.)
@@ -140,20 +184,45 @@ export function GameBoard() {
       onMonsterSelect: handleMonsterSelect,
     });
 
-    hexGridRef.current = hexGrid;
+    // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
+    let mounted = true;
+    let initCompleted = false;
+
+    hexGrid.init().then(() => {
+      initCompleted = true;
+      if (mounted) {
+        hexGridRef.current = hexGrid;
+      }
+      // Note: Don't destroy here if unmounted - the cleanup function will handle it
+    }).catch((error) => {
+      console.error('Failed to initialize HexGrid:', error);
+      initCompleted = true; // Mark as completed even on error
+    });
 
     // Handle resize
     const handleResize = () => {
-      if (containerRef.current) {
-        hexGrid.resize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      if (containerRef.current && hexGridRef.current) {
+        hexGridRef.current.resize(containerRef.current.clientWidth, containerRef.current.clientHeight);
       }
     };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
+      mounted = false;
       window.removeEventListener('resize', handleResize);
-      hexGrid.destroy();
+
+      // Only try to destroy if init has completed
+      // Otherwise, the PixiJS app hasn't been created yet and there's nothing to cleanup
+      if (initCompleted && hexGrid) {
+        try {
+          hexGrid.destroy();
+        } catch (error) {
+          console.error('Error destroying HexGrid:', error);
+        }
+      }
+
+      // Clear the ref
       hexGridRef.current = null;
     };
   }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
@@ -168,7 +237,7 @@ export function GameBoard() {
     // Game events
     websocketService.on('game_started', handleGameStarted);
     websocketService.on('character_moved', handleCharacterMoved);
-    websocketService.on('next_turn_started', handleNextTurn);
+    websocketService.on('turn_started', handleNextTurn);
     websocketService.on('game_state_update', handleGameStateUpdate);
 
     return () => {
@@ -177,7 +246,7 @@ export function GameBoard() {
       websocketService.off('ws_reconnecting');
       websocketService.off('game_started');
       websocketService.off('character_moved');
-      websocketService.off('next_turn_started');
+      websocketService.off('turn_started');
       websocketService.off('game_state_update');
     };
   }, [handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);

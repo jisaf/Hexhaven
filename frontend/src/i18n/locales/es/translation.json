@@ -1,0 +1,143 @@
+{
+  "common": {
+    "create": "Crear",
+    "join": "Unirse",
+    "start": "Comenzar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "lobby": {
+    "title": "Hexhaven Multijugador",
+    "createGame": "Crear Juego",
+    "createRoom": "Crear Juego",
+    "creating": "Creando...",
+    "joinGame": "Unirse al Juego",
+    "joinRoom": "Unirse al Juego",
+    "joinGameTitle": "Unirse a un Juego",
+    "joining": "Uniéndose...",
+    "join": "Unirse",
+    "or": "o",
+    "back": "Atrás",
+    "roomCode": "Código de Sala",
+    "roomCodeLabel": "Código de sala",
+    "enterRoomCode": "Ingresar Código de Sala",
+    "enterRoomCodeInstruction": "Ingrese el código de sala de 6 caracteres",
+    "invalidRoomCode": "Código de sala inválido (se requieren 6 caracteres)",
+    "nickname": "Apodo",
+    "nicknameLabel": "Apodo",
+    "enterNickname": "Ingrese su apodo",
+    "enterNicknameTitle": "Ingrese Su Apodo",
+    "nicknameInstruction": "Elija un apodo para este juego",
+    "invalidNickname": "El apodo debe tener 1-50 caracteres",
+    "enterJoinDetails": "Ingrese el código de sala y su apodo",
+    "copyRoomCode": "Copiar código de sala",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "waitingForPlayers": "Esperando a que todos los jugadores seleccionen personajes...",
+    "waitingForPlayer": "Esperando al jugador...",
+    "waitingForHost": "Esperando a que el anfitrión inicie el juego...",
+    "players": "Jugadores",
+    "playersInLobby": "Jugadores en el Vestíbulo",
+    "selectCharacter": "Selecciona Tu Personaje",
+    "selectScenario": "Seleccionar Escenario",
+    "allPlayersReady": "¡Todos los jugadores listos!",
+    "startGame": "Iniciar Juego",
+    "hostWillStart": "El anfitrión iniciará el juego",
+    "you": "(Tú)",
+    "youAreHost": "Eres el anfitrión",
+    "host": "Anfitrión",
+    "ready": "Listo",
+    "taken": "Ocupado",
+    "notAllReady": "Todos los jugadores deben seleccionar un personaje",
+    "needMorePlayers": "Se necesitan al menos 2 jugadores para comenzar",
+    "connectionStatus": {
+      "connected": "Conectado",
+      "disconnected": "Desconectado",
+      "reconnecting": "Reconectando"
+    }
+  },
+  "characters": {
+    "Brute": {
+      "name": "Bruto",
+      "description": "Luchador cuerpo a cuerpo poderoso con alta salud"
+    },
+    "Tinkerer": {
+      "name": "Inventor",
+      "description": "Clase de apoyo con curación y recuperación"
+    },
+    "Spellweaver": {
+      "name": "Tejedor de Hechizos",
+      "description": "Magia elemental con ataques de área"
+    },
+    "Scoundrel": {
+      "name": "Pícaro",
+      "description": "Atacante rápido con bonificaciones de adyacencia"
+    },
+    "Cragheart": {
+      "name": "Corazón Rocoso",
+      "description": "Atacante a distancia con manipulación de obstáculos"
+    },
+    "Mindthief": {
+      "name": "Ladrón de Mentes",
+      "description": "Control mental y aumento cuerpo a cuerpo"
+    }
+  },
+  "game": {
+    "title": "Batalla de Hexhaven",
+    "yourTurn": "Tu Turno",
+    "opponentTurn": "Turno del Oponente",
+    "selectCards": "Selecciona 2 Cartas",
+    "move": "Mover",
+    "attack": "Atacar",
+    "endTurn": "Terminar Turno",
+    "round": "Ronda {{number}}",
+    "health": "Salud",
+    "initiative": "Iniciativa",
+    "turnOrder": "Orden de Turnos",
+    "elements": "Elementos",
+    "leaveGame": "Salir del Juego",
+    "movementHint": "Toca un hexágono resaltado para mover tu personaje",
+    "reconnecting": "Reconectando...",
+    "connection": {
+      "connected": "Conectado",
+      "disconnected": "Desconectado",
+      "reconnecting": "Reconectando"
+    }
+  },
+  "cards": {
+    "topAction": "Acción Superior",
+    "bottomAction": "Acción Inferior",
+    "initiative": "Iniciativa: {{value}}",
+    "selectTopCard": "Seleccionar carta superior",
+    "selectBottomCard": "Seleccionar carta inferior"
+  },
+  "scenarios": {
+    "selectScenario": "Seleccionar un Escenario",
+    "difficulty": "Dificultad: {{level}}",
+    "objective": "Objetivo",
+    "monsters": "Monstruos"
+  },
+  "connection": {
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "reconnecting": "Reconectando...",
+    "reconnected": "Reconectado",
+    "playerDisconnected": "{{playerName}} se desconectó",
+    "playerReconnected": "{{playerName}} se reconectó"
+  },
+  "errors": {
+    "roomNotFound": "Sala no encontrada",
+    "roomFull": "La sala está llena",
+    "gameAlreadyStarted": "El juego ya ha comenzado",
+    "invalidMove": "Movimiento inválido",
+    "invalidAttack": "Ataque inválido",
+    "notYourTurn": "No es tu turno",
+    "connectionError": "Error de conexión - por favor intenta de nuevo"
+  }
+}

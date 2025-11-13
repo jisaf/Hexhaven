@@ -69,6 +69,7 @@ export interface ReconnectPayload {
 export interface RoomJoinedPayload {
   roomId: string;
   roomCode: string;
+  roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
   players: {
     id: string;
     nickname: string;

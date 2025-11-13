@@ -199,6 +199,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const roomJoinedPayload: RoomJoinedPayload = {
         roomId: room.id,
         roomCode: room.roomCode,
+        roomStatus: room.status,
         players: room.players.map((p) => ({
           id: p.uuid,
           nickname: p.nickname,
@@ -218,6 +219,70 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           nickname: player.nickname,
         });
         this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
+
+        // If game is active, send current game state to reconnecting player
+        if (room.status === RoomStatus.ACTIVE) {
+          // Get current scenario and game state
+          const monsters = this.roomMonsters.get(roomCode) || [];
+          const characters = room.players
+            .map((p) => characterService.getCharacterByPlayerId(p.uuid))
+            .filter((c) => c !== null);
+
+          // Get map from room state
+          const hexMap = this.roomMaps.get(roomCode);
+          const mapLayout: any[] = [];
+          if (hexMap) {
+            hexMap.forEach((tile: any) => {
+              mapLayout.push(tile);
+            });
+          }
+
+          // Send game_started event to reconnecting player with current state
+          const gameStartedPayload: GameStartedPayload = {
+            scenarioId: room.scenarioId || 'scenario-1',
+            scenarioName: 'Black Barrow', // TODO: Get from scenario
+            mapLayout,
+            monsters: monsters.map((m) => ({
+              id: m.id,
+              monsterType: m.monsterType,
+              isElite: m.isElite,
+              currentHex: m.currentHex,
+              health: m.health,
+              maxHealth: m.maxHealth,
+              conditions: m.conditions,
+            })),
+            characters: characters.map((c: any) => {
+              const charData = c.toJSON();
+              return {
+                id: charData.id,
+                playerId: charData.playerId,
+                classType: charData.characterClass,
+                health: charData.currentHealth,
+                maxHealth: charData.stats.maxHealth,
+                currentHex: charData.position,
+                conditions: charData.conditions,
+                isExhausted: charData.exhausted,
+              };
+            }),
+          };
+
+          client.emit('game_started', gameStartedPayload);
+          this.logger.log(`Sent game state to reconnecting player ${nickname}`);
+
+          // Also send current turn info if turn order exists
+          const turnOrder = this.roomTurnOrder.get(roomCode);
+          const currentTurnIdx = this.currentTurnIndex.get(roomCode) || 0;
+          if (turnOrder && turnOrder.length > 0) {
+            const currentEntity = turnOrder[currentTurnIdx];
+            const turnStartedPayload: TurnStartedPayload = {
+              entityId: currentEntity.entityId,
+              entityType: currentEntity.entityType,
+              turnIndex: currentTurnIdx,
+            };
+            client.emit('turn_started', turnStartedPayload);
+            this.logger.log(`Sent current turn to reconnecting player ${nickname}`);
+          }
+        }
 
         // Save session with updated connection status
         sessionService.saveSession(room);
@@ -242,6 +307,79 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`Join room error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'JOIN_ROOM_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Leave room (player voluntarily leaves)
+   */
+  @SubscribeMessage('leave_room')
+  handleLeaveRoom(@ConnectedSocket() client: Socket): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        this.logger.warn('Leave room request from unknown player');
+        return;
+      }
+
+      // Find which room this player is in
+      const room = roomService.findRoomByPlayer(playerUUID);
+      if (!room) {
+        this.logger.warn(`Player ${playerUUID} tried to leave but is not in any room`);
+        return;
+      }
+
+      const roomCode = room.roomCode;
+      this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
+
+      // Remove player from room
+      const player = room.players.find((p) => p.uuid === playerUUID);
+      roomService.removePlayerFromRoom(roomCode, playerUUID);
+
+      // Leave socket room
+      client.leave(roomCode);
+
+      // Remove from socket mapping
+      this.socketToPlayer.delete(client.id);
+
+      // Notify other players in the room
+      if (player) {
+        client.to(roomCode).emit('player_left', {
+          playerId: playerUUID,
+          nickname: player.nickname,
+        });
+      }
+
+      // Clean up game state if needed
+      const updatedRoom = roomService.findRoomByCode(roomCode);
+      if (!updatedRoom || updatedRoom.players.length === 0) {
+        // Room is empty, clean up all game state
+        this.roomMaps.delete(roomCode);
+        this.roomMonsters.delete(roomCode);
+        this.roomTurnOrder.delete(roomCode);
+        this.currentTurnIndex.delete(roomCode);
+        this.roomLoot.delete(roomCode);
+        this.logger.log(`Room ${roomCode} is empty, cleaning up`);
+
+        // Delete the room
+        if (updatedRoom) {
+          roomService.deleteRoom(roomCode);
+        }
+      } else {
+        // Room still has players, save updated session
+        sessionService.saveSession(updatedRoom);
+      }
+
+      this.logger.log(`Player ${playerUUID} left room ${roomCode}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Leave room error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'LEAVE_ROOM_ERROR',
         message: errorMessage,
       };
       client.emit('error', errorPayload);
@@ -430,7 +568,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           maxHealth: m.maxHealth,
           conditions: m.conditions,
         })),
-        characters: characters.map((c) => c.toJSON()),
+        characters: characters.map((c) => {
+          const charData = c.toJSON();
+          return {
+            id: charData.id,
+            playerId: charData.playerId,
+            classType: charData.characterClass,
+            health: charData.currentHealth,
+            maxHealth: charData.stats.maxHealth,
+            currentHex: charData.position,
+            conditions: charData.conditions,
+            isExhausted: charData.exhausted,
+          };
+        }),
       };
 
       this.server.to(room.roomCode).emit('game_started', gameStartedPayload);

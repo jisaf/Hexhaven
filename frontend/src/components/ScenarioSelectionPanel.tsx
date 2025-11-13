@@ -38,8 +38,8 @@ export function ScenarioSelectionPanel({
     const fetchScenarios = async () => {
       try {
         setLoading(true);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const response = await fetch(`${apiUrl}/api/scenarios`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const response = await fetch(`${apiUrl}/scenarios`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch scenarios');

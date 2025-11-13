@@ -297,10 +297,10 @@
 
 - [X] T162 [P] [US5] E2E test: Character class selection with descriptions in frontend/tests/e2e/us5-character-selection.spec.ts (Implemented with 5 test cases covering descriptions, stats, role distinction)
 - [X] T163 [P] [US5] E2E test: Scenario browsing and selection in frontend/tests/e2e/us5-scenario-selection.spec.ts (Implemented with 8 test cases covering host-only access, difficulty indicators, objectives)
-- [ ] T164 [P] [US5] E2E test: Different characters have unique ability decks in frontend/tests/e2e/us5-unique-abilities.spec.ts
-- [ ] T165 [P] [US5] E2E test: Different scenarios have unique map layouts in frontend/tests/e2e/us5-scenario-maps.spec.ts
-- [ ] T166 [P] [US5] Unit test: Load character data (6 classes with stats and ability decks) in backend/tests/unit/character-data.test.ts
-- [ ] T167 [P] [US5] Unit test: Load scenario data (5 scenarios with maps and objectives) in backend/tests/unit/scenario-data.test.ts
+- [X] T164 [P] [US5] E2E test: Different characters have unique ability decks in frontend/tests/e2e/us5-unique-abilities.spec.ts
+- [X] T165 [P] [US5] E2E test: Different scenarios have unique map layouts in frontend/tests/e2e/us5-scenario-maps.spec.ts
+- [X] T166 [P] [US5] Unit test: Load character data (6 classes with stats and ability decks) in backend/tests/unit/character-data.test.ts
+- [X] T167 [P] [US5] Unit test: Load scenario data (5 scenarios with maps and objectives) in backend/tests/unit/scenario-data.test.ts
 
 ### Backend Implementation for User Story 5
 
@@ -309,7 +309,7 @@
 - [X] T170 [P] [US5] Create scenario data JSON (5 scenarios with maps, monsters, objectives) in backend/src/data/scenarios.json
 - [X] T171 [US5] Implement CharacterDataService (load character by class, get ability deck) in backend/src/services/ability-card.service.ts (implemented as AbilityCardService)
 - [X] T172 [US5] Implement ScenarioDataService (load scenario by ID, get map layout) in backend/src/services/scenario.service.ts (integrated into ScenarioService)
-- [ ] T173 [US5] Update database seed to load 6 characters and 5 scenarios from JSON in backend/src/db/seed.ts
+- [X] T173 [US5] Update database seed to load 6 characters and 5 scenarios from JSON in backend/src/db/seed.ts
 - [X] T174 [US5] Add difficulty-based monster stat scaling in backend/src/services/scenario.service.ts (scaleMonsterStats method already implemented with +10% per difficulty level)
 
 ### Frontend Implementation for User Story 5
@@ -320,7 +320,7 @@
 - [X] T178 [US5] Fetch scenarios from API (/api/scenarios) in ScenarioSelectionPanel.tsx (Integrated directly in component using fetch)
 - [X] T179 [US5] Implement character selection grid (6 cards, visual feedback) in frontend/src/pages/Lobby.tsx (Enhanced CharacterSelect with stats display)
 - [X] T180 [US5] Implement scenario selection UI (5 cards, host only) in frontend/src/pages/Lobby.tsx (Integrated ScenarioSelectionPanel, added state and handlers for scenario selection)
-- [ ] T181 [US5] Display selected character's ability deck in game in frontend/src/components/CardSelectionPanel.tsx
+- [X] T181 [US5] Display selected character's ability deck in game in frontend/src/components/CardSelectionPanel.tsx
 
 **Checkpoint**: Variety is added - players can choose characters and scenarios for different gameplay experiences.
 
@@ -341,13 +341,13 @@
 
 ### Frontend Implementation for User Story 6
 
-- [ ] T186 [P] [US6] Create Spanish translation file in frontend/src/i18n/locales/es/translation.json
-- [ ] T187 [P] [US6] Create French translation file in frontend/src/i18n/locales/fr/translation.json
-- [ ] T188 [P] [US6] Create German translation file in frontend/src/i18n/locales/de/translation.json
-- [ ] T189 [P] [US6] Create Chinese translation file in frontend/src/i18n/locales/zh/translation.json
+- [X] T186 [P] [US6] Create Spanish translation file in frontend/src/i18n/locales/es/translation.json
+- [X] T187 [P] [US6] Create French translation file in frontend/src/i18n/locales/fr/translation.json
+- [X] T188 [P] [US6] Create German translation file in frontend/src/i18n/locales/de/translation.json
+- [X] T189 [P] [US6] Create Chinese translation file in frontend/src/i18n/locales/zh/translation.json
 - [ ] T190 [US6] Extract all hardcoded UI strings to translation keys in all components
-- [ ] T191 [US6] Implement language detection from device settings in frontend/src/i18n/index.ts
-- [ ] T192 [US6] Create LanguageSelector component for manual language change in frontend/src/components/LanguageSelector.tsx
+- [X] T191 [US6] Implement language detection from device settings in frontend/src/i18n/index.ts
+- [X] T192 [US6] Create LanguageSelector component for manual language change in frontend/src/components/LanguageSelector.tsx
 - [ ] T193 [US6] Add namespace-based lazy loading (common.json, game.json, lobby.json) in frontend/src/i18n/index.ts
 - [ ] T194 [US6] Test layout with long German strings (30-50% longer than English) in frontend/tests/e2e/us6-german-layout.spec.ts
 

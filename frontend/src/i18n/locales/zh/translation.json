@@ -1,0 +1,143 @@
+{
+  "common": {
+    "create": "创建",
+    "join": "加入",
+    "start": "开始",
+    "cancel": "取消",
+    "confirm": "确认",
+    "continue": "继续",
+    "back": "返回",
+    "next": "下一步",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功"
+  },
+  "lobby": {
+    "title": "海文多人游戏",
+    "createGame": "创建游戏",
+    "createRoom": "创建游戏",
+    "creating": "创建中...",
+    "joinGame": "加入游戏",
+    "joinRoom": "加入游戏",
+    "joinGameTitle": "加入游戏",
+    "joining": "加入中...",
+    "join": "加入",
+    "or": "或",
+    "back": "返回",
+    "roomCode": "房间代码",
+    "roomCodeLabel": "房间代码",
+    "enterRoomCode": "输入房间代码",
+    "enterRoomCodeInstruction": "输入6位房间代码",
+    "invalidRoomCode": "房间代码无效（需要6个字符）",
+    "nickname": "昵称",
+    "nicknameLabel": "昵称",
+    "enterNickname": "输入您的昵称",
+    "enterNicknameTitle": "输入您的昵称",
+    "nicknameInstruction": "为此游戏选择一个昵称",
+    "invalidNickname": "昵称必须是1-50个字符",
+    "enterJoinDetails": "输入房间代码和您的昵称",
+    "copyRoomCode": "复制房间代码",
+    "copy": "复制",
+    "copied": "已复制！",
+    "waitingForPlayers": "等待所有玩家选择角色...",
+    "waitingForPlayer": "等待玩家...",
+    "waitingForHost": "等待房主开始游戏...",
+    "players": "玩家",
+    "playersInLobby": "大厅中的玩家",
+    "selectCharacter": "选择您的角色",
+    "selectScenario": "选择场景",
+    "allPlayersReady": "所有玩家已准备好！",
+    "startGame": "开始游戏",
+    "hostWillStart": "房主将开始游戏",
+    "you": "（您）",
+    "youAreHost": "您是房主",
+    "host": "房主",
+    "ready": "准备就绪",
+    "taken": "已选",
+    "notAllReady": "所有玩家必须选择一个角色",
+    "needMorePlayers": "需要至少2名玩家才能开始",
+    "connectionStatus": {
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "reconnecting": "重新连接中"
+    }
+  },
+  "characters": {
+    "Brute": {
+      "name": "野蛮人",
+      "description": "强大的近战战士，拥有高生命值"
+    },
+    "Tinkerer": {
+      "name": "工匠",
+      "description": "具有治疗和恢复能力的支援职业"
+    },
+    "Spellweaver": {
+      "name": "法师",
+      "description": "元素魔法和范围攻击"
+    },
+    "Scoundrel": {
+      "name": "流氓",
+      "description": "快速打击者，具有相邻加成"
+    },
+    "Cragheart": {
+      "name": "岩心",
+      "description": "远程攻击者，具有障碍物操控能力"
+    },
+    "Mindthief": {
+      "name": "心灵窃贼",
+      "description": "精神控制和近战增强"
+    }
+  },
+  "game": {
+    "title": "海文战斗",
+    "yourTurn": "您的回合",
+    "opponentTurn": "对手的回合",
+    "selectCards": "选择2张卡牌",
+    "move": "移动",
+    "attack": "攻击",
+    "endTurn": "结束回合",
+    "round": "第{{number}}轮",
+    "health": "生命值",
+    "initiative": "先攻",
+    "turnOrder": "回合顺序",
+    "elements": "元素",
+    "leaveGame": "离开游戏",
+    "movementHint": "点击高亮的六边形以移动您的角色",
+    "reconnecting": "重新连接中...",
+    "connection": {
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "reconnecting": "重新连接中"
+    }
+  },
+  "cards": {
+    "topAction": "顶部行动",
+    "bottomAction": "底部行动",
+    "initiative": "先攻：{{value}}",
+    "selectTopCard": "选择顶部卡牌",
+    "selectBottomCard": "选择底部卡牌"
+  },
+  "scenarios": {
+    "selectScenario": "选择场景",
+    "difficulty": "难度：{{level}}",
+    "objective": "目标",
+    "monsters": "怪物"
+  },
+  "connection": {
+    "connected": "已连接",
+    "disconnected": "已断开",
+    "reconnecting": "重新连接中...",
+    "reconnected": "已重新连接",
+    "playerDisconnected": "{{playerName}}已断开连接",
+    "playerReconnected": "{{playerName}}已重新连接"
+  },
+  "errors": {
+    "roomNotFound": "未找到房间",
+    "roomFull": "房间已满",
+    "gameAlreadyStarted": "游戏已经开始",
+    "invalidMove": "无效移动",
+    "invalidAttack": "无效攻击",
+    "notYourTurn": "不是您的回合",
+    "connectionError": "连接错误 - 请重试"
+  }
+}
