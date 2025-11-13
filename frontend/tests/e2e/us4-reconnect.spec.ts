@@ -51,7 +51,7 @@ test.describe('User Story 4: Player Reconnection', () => {
   }
 
   test('should show reconnecting modal when connection is lost', async ({ page, context }) => {
-    const { hostPage, player2Page } = await setupTwoPlayerGame(page, context);
+    const { player2Page } = await setupTwoPlayerGame(page, context);
 
     // Simulate network disconnect for player 2
     await player2Page.context().setOffline(true);
@@ -210,8 +210,8 @@ test.describe('User Story 4: Player Reconnection', () => {
     // Wait for additional attempts (exponential backoff: 1s, 2s, 4s, 8s, 10s max)
     await player2Page.waitForTimeout(5000);
 
-    // Attempt counter should have increased
-    const attemptText2 = await reconnectingModal.locator('text=/Attempt \\d+\\/\\d+/i').textContent();
+    // Attempt counter should still be visible
+    await expect(reconnectingModal.locator('text=/Attempt \\d+\\/\\d+/i')).toBeVisible();
 
     // Restore connection before max attempts
     await player2Page.context().setOffline(false);

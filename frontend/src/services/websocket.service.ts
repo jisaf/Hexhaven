@@ -84,7 +84,6 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private playerUUID: string | null = null;
-  private currentRoomCode: string | null = null;
   private currentNickname: string | null = null;
 
   /**
@@ -270,7 +269,6 @@ class WebSocketService {
     const playerUUID = uuid || this.playerUUID || getOrCreatePlayerUUID();
 
     // Store for reconnection
-    this.currentRoomCode = roomCode;
     this.currentNickname = nickname;
     this.playerUUID = playerUUID;
 

@@ -6,7 +6,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { websocketService, ConnectionStatus } from '../services/websocket.service';
+import { websocketService } from '../services/websocket.service';
+import type { ConnectionStatus } from '../services/websocket.service';
 
 interface PlayerConnectionEvent {
   playerId: string;
@@ -119,9 +120,6 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
     websocketService.on('error', handleError);
     websocketService.on('player_disconnected', handlePlayerDisconnected);
     websocketService.on('player_reconnected', handlePlayerReconnected);
-
-    // Initialize status
-    setConnectionStatus(websocketService.getConnectionStatus());
 
     // Cleanup
     return () => {

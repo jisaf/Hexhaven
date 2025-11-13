@@ -155,7 +155,7 @@ test.describe.skip('User Story 4: Turn Skip on Disconnect Timeout', () => {
     const { hostPage, player2Page } = await setupTwoPlayerGameInProgress(page, context);
 
     // Ensure Player2 has the turn
-    let currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
+    const currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
     if (!currentTurnPlayer?.includes('Player2')) {
       await hostPage.locator('[data-testid="end-turn-button"]').click();
       await hostPage.waitForTimeout(1000);
@@ -184,7 +184,7 @@ test.describe.skip('User Story 4: Turn Skip on Disconnect Timeout', () => {
     const { hostPage, player2Page } = await setupTwoPlayerGameInProgress(page, context);
 
     // Ensure Player2 has the turn
-    let currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
+    const currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
     if (!currentTurnPlayer?.includes('Player2')) {
       await hostPage.locator('[data-testid="end-turn-button"]').click();
       await hostPage.waitForTimeout(1000);
@@ -218,7 +218,7 @@ test.describe.skip('User Story 4: Turn Skip on Disconnect Timeout', () => {
     const { hostPage, player2Page } = await setupTwoPlayerGameInProgress(page, context);
 
     // First turn skip
-    let currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
+    const currentTurnPlayer = await hostPage.locator('[data-testid="current-turn-player"]').textContent();
     if (!currentTurnPlayer?.includes('Player2')) {
       await hostPage.locator('[data-testid="end-turn-button"]').click();
       await hostPage.waitForTimeout(1000);
