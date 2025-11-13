@@ -19,6 +19,7 @@ import { Logger } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
+import { sessionService } from '../services/session.service';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
@@ -112,10 +113,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // Find player's room and broadcast disconnection
         const room = roomService.getRoomByPlayerId(playerUUID);
         if (room) {
+          // Save session to enable reconnection (US4 - T154)
+          sessionService.saveSession(room);
+
           this.server.to(room.roomCode).emit('player_disconnected', {
             playerId: playerUUID,
             nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
+            willReconnect: true, // Player can reconnect within 10 minutes
           });
+
+          this.logger.log(
+            `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
+          );
         }
       } catch (error) {
         this.logger.error(
@@ -150,9 +159,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         player = playerService.createPlayer(playerUUID, nickname);
       }
 
-      // Check if player is already in the room (e.g., they created it via HTTP)
+      // Check if player is already in the room (e.g., they created it via HTTP or are reconnecting)
       let room = roomService.getRoomByPlayerId(playerUUID);
       const isAlreadyInRoom = room && room.roomCode === roomCode;
+      const isReconnecting =
+        player.connectionStatus === ConnectionStatus.DISCONNECTED &&
+        isAlreadyInRoom;
 
       if (!isAlreadyInRoom) {
         // Join room (adds player to room state)
@@ -164,7 +176,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           throw new Error('Room not found');
         }
         this.logger.log(
-          `Player ${nickname} is already in room ${roomCode}, connecting socket`,
+          `Player ${nickname} is ${isReconnecting ? 'reconnecting to' : 'already in'} room ${roomCode}`,
+        );
+      }
+
+      // Update connection status to connected (US4 - T153)
+      if (isReconnecting) {
+        playerService.updateConnectionStatus(
+          playerUUID,
+          ConnectionStatus.CONNECTED,
         );
       }
 
@@ -190,8 +210,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit('room_joined', roomJoinedPayload);
 
-      // Only broadcast to other players if this is a new join (not reconnecting)
-      if (!isAlreadyInRoom) {
+      // Broadcast based on join type (US4 - T153)
+      if (isReconnecting) {
+        // Broadcast reconnection to other players
+        client.to(roomCode).emit('player_reconnected', {
+          playerId: player.uuid,
+          nickname: player.nickname,
+        });
+        this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
+
+        // Save session with updated connection status
+        sessionService.saveSession(room);
+      } else if (!isAlreadyInRoom) {
+        // Only broadcast new join to other players
         const playerJoinedPayload: PlayerJoinedPayload = {
           playerId: player.uuid,
           nickname: player.nickname,
@@ -199,9 +230,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         };
 
         client.to(roomCode).emit('player_joined', playerJoinedPayload);
+        this.logger.log(`Player ${nickname} joined room ${roomCode}`);
+      } else {
+        this.logger.log(
+          `Player ${nickname} connected socket to room ${roomCode}`,
+        );
       }
-
-      this.logger.log(`Player ${nickname} joined room ${roomCode}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
