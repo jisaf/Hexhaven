@@ -163,7 +163,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (!room) {
           throw new Error('Room not found');
         }
-        this.logger.log(`Player ${nickname} is already in room ${roomCode}, connecting socket`);
+        this.logger.log(
+          `Player ${nickname} is already in room ${roomCode}, connecting socket`,
+        );
       }
 
       // Associate socket with player
