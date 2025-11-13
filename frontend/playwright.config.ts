@@ -41,7 +41,24 @@ export default defineConfig({
     screenshot: 'only-on-failure',
 
     // Video on first retry
-    video: 'retain-on-failure'
+    video: 'retain-on-failure',
+
+    // Launch options for headless browsers on Linux
+    launchOptions: {
+      args: [
+        '--disable-dev-shm-usage', // Overcome limited resource problems in containers
+        '--no-sandbox', // Required for running in restricted environments
+        '--disable-setuid-sandbox',
+        '--disable-gpu', // Not needed in headless mode
+        '--disable-web-security', // Allow cross-origin requests in tests
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-accelerated-2d-canvas', // Disable hardware acceleration for canvas
+        '--disable-webgl', // Disable WebGL which often causes crashes in headless
+        '--disable-webgl2', // Disable WebGL2
+        '--use-gl=swiftshader', // Use software rendering
+        '--disable-blink-features=AutomationControlled', // Avoid detection as automated
+      ],
+    },
   },
 
   // Configure projects for major browsers and devices (US3 - T143)
