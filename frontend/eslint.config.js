@@ -10,6 +10,7 @@ export default tseslint.config(
       'node_modules/',
       'dist/',
       'dist-ssr/',
+      'dev-dist/',
       'build/',
       'coverage/',
       '.nyc_output/',
