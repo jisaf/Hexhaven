@@ -40,10 +40,39 @@ export class ScenarioService {
     }
 
     try {
-      const scenariosPath = path.join(__dirname, '../data/scenarios.json');
-      const fileContent = fs.readFileSync(scenariosPath, 'utf-8');
+      // Try multiple possible paths for scenarios.json
+      const possiblePaths = [
+        // Development path: backend/src/data/scenarios.json
+        path.join(__dirname, '../data/scenarios.json'),
+        // Production path in dist: backend/dist/data/scenarios.json
+        path.join(__dirname, '../../../data/scenarios.json'),
+        // Alternative production path
+        path.join(process.cwd(), 'backend/dist/data/scenarios.json'),
+        // Root dist path (monorepo structure)
+        path.join(process.cwd(), 'dist/data/scenarios.json'),
+      ];
+
+      let fileContent: string | null = null;
+      let successfulPath: string | null = null;
+
+      for (const scenariosPath of possiblePaths) {
+        try {
+          fileContent = fs.readFileSync(scenariosPath, 'utf-8');
+          successfulPath = scenariosPath;
+          break;
+        } catch {
+          // Try next path
+          continue;
+        }
+      }
+
+      if (!fileContent) {
+        throw new Error('scenarios.json not found in any expected location');
+      }
+
       const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
       this.scenarios = data.scenarios;
+      console.log(`Successfully loaded scenarios from: ${successfulPath}`);
       return this.scenarios;
     } catch (error) {
       console.error('Failed to load scenarios.json:', error);
