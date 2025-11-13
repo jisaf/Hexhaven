@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import type { AbilityCard as AbilityCardType, Action } from '../../../shared/types/entities';
-import { ElementType } from '../../../shared/types/entities';
+import type { AbilityCard as AbilityCardType, Action, ElementType } from '../../../shared/types/entities';
 import './AbilityCard.css';
 
 interface AbilityCardProps {

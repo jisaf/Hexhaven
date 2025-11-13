@@ -67,6 +67,17 @@ interface GetRoomResponse {
   }[];
 }
 
+interface ListRoomsResponse {
+  rooms: {
+    roomCode: string;
+    status: string;
+    playerCount: number;
+    maxPlayers: number;
+    hostNickname: string;
+    createdAt: string;
+  }[];
+}
+
 @Controller('api/rooms')
 export class RoomsController {
   /**
@@ -180,8 +191,54 @@ export class RoomsController {
   }
 
   /**
+   * GET /api/rooms/my-room/:playerUuid
+   * Get the current room for a player by their UUID
+   */
+  @Get('my-room/:playerUuid')
+  getMyRoom(@Param('playerUuid') playerUuid: string): GetRoomResponse | { room: null } {
+    try {
+      // Find room by player UUID
+      const room = roomService.getRoomByPlayerId(playerUuid);
+
+      if (!room) {
+        return { room: null };
+      }
+
+      return {
+        room: {
+          id: room.id,
+          roomCode: room.roomCode,
+          status: room.status,
+          scenarioId: room.scenarioId || undefined,
+          createdAt: room.createdAt.toISOString(),
+          updatedAt: room.updatedAt.toISOString(),
+          expiresAt: room.expiresAt.toISOString(),
+          playerCount: room.playerCount,
+        },
+        players: room.players.map((player) => ({
+          id: player.id,
+          uuid: player.uuid,
+          nickname: player.nickname,
+          isHost: player.isHost,
+          characterClass: player.characterClass || undefined,
+          connectionStatus: player.connectionStatus,
+        })),
+      };
+    } catch (error: any) {
+      throw new HttpException(
+        {
+          error: 'INTERNAL_ERROR',
+          message: 'Failed to retrieve player room',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * GET /api/rooms/:roomCode
    * Get game room details by room code
+   * NOTE: This must come BEFORE the @Get() route due to NestJS route matching order
    */
   @Get(':roomCode')
   getRoomByCode(@Param('roomCode') roomCode: string): GetRoomResponse {
@@ -247,6 +304,49 @@ export class RoomsController {
         {
           error: 'INTERNAL_ERROR',
           message: 'Failed to retrieve room',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * GET /api/rooms
+   * List all active/joinable game rooms
+   * NOTE: This must come AFTER the @Get(':roomCode') route due to NestJS route matching order
+   */
+  @Get()
+  listRooms(): ListRoomsResponse {
+    try {
+      const allRooms = roomService.getAllRooms();
+
+      // Filter for joinable rooms (in lobby status and not full)
+      const joinableRooms = allRooms
+        .filter(
+          (room) =>
+            room.status === RoomStatus.LOBBY &&
+            !room.isFull
+        )
+        .map((room) => ({
+          roomCode: room.roomCode,
+          status: room.status,
+          playerCount: room.playerCount,
+          maxPlayers: 4, // Max players constant
+          hostNickname: room.hostPlayer?.nickname || 'Unknown',
+          createdAt: room.createdAt.toISOString(),
+        }))
+        .sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ); // Sort by newest first
+
+      return {
+        rooms: joinableRooms,
+      };
+    } catch (error: any) {
+      throw new HttpException(
+        {
+          error: 'INTERNAL_ERROR',
+          message: 'Failed to list rooms',
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

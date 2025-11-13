@@ -22,7 +22,6 @@ export function DebugConsole() {
   const [copyStatus, setCopyStatus] = useState<string>('');
   const logIdCounter = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     // Store original console methods

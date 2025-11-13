@@ -33,6 +33,15 @@ interface GameRoom {
   status: 'lobby' | 'playing' | 'completed';
 }
 
+interface ActiveRoom {
+  roomCode: string;
+  status: string;
+  playerCount: number;
+  maxPlayers: number;
+  hostNickname: string;
+  createdAt: string;
+}
+
 export function Lobby() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -47,14 +56,28 @@ export function Lobby() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
+  const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
 
   // Event handlers - defined before useEffect that uses them
-  const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => {
+  const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId?: string; isHost?: boolean }) => {
     console.log('Room joined event received:', data);
     setRoom({ roomCode: data.roomCode, status: 'lobby' });
     setPlayers(data.players as Player[]);
-    setCurrentPlayerId(data.playerId);
-    setIsHost(data.isHost);
+
+    // Get current player ID from localStorage UUID
+    const uuid = localStorage.getItem('playerUUID');
+    if (uuid) {
+      setCurrentPlayerId(uuid);
+
+      // Find if this player is the host
+      const currentPlayer = (data.players as Player[]).find(p => p.id === uuid);
+      if (currentPlayer) {
+        setIsHost(currentPlayer.isHost);
+      }
+    }
+
     setMode('in-room');
     setIsLoading(false);
     setError(null);
@@ -91,6 +114,79 @@ export function Lobby() {
     setError(data.message);
     setIsLoading(false);
   }, []);
+
+  // Fetch player's current room
+  const fetchMyRoom = useCallback(async () => {
+    const uuid = localStorage.getItem('playerUUID');
+    if (!uuid) return;
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/rooms/my-room/${uuid}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.room) {
+          setMyRoom({
+            roomCode: data.room.roomCode,
+            status: data.room.status,
+            playerCount: data.room.playerCount,
+            maxPlayers: 4,
+            hostNickname: data.players.find((p: any) => p.isHost)?.nickname || 'Unknown',
+            createdAt: data.room.createdAt,
+          });
+        } else {
+          setMyRoom(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch my room:', err);
+      // Silently fail
+    }
+  }, []);
+
+  // Fetch active rooms
+  const fetchActiveRooms = useCallback(async () => {
+    if (mode !== 'initial') return; // Only fetch when in initial mode
+
+    try {
+      setLoadingRooms(true);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/rooms`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setActiveRooms(data.rooms || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch active rooms:', err);
+      // Silently fail - not critical to the user experience
+    } finally {
+      setLoadingRooms(false);
+    }
+  }, [mode]);
+
+  // Fetch my room on mount
+  useEffect(() => {
+    const loadMyRoom = async () => {
+      try {
+        await fetchMyRoom();
+      } catch (err) {
+        console.error('Error loading my room:', err);
+      }
+    };
+    loadMyRoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Fetch active rooms on mount and periodically
+  useEffect(() => {
+    if (mode === 'initial') {
+      fetchActiveRooms(); // Initial fetch
+      const interval = setInterval(fetchActiveRooms, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [mode, fetchActiveRooms]);
 
   // Connect to WebSocket on mount
   useEffect(() => {
@@ -188,22 +284,24 @@ export function Lobby() {
         console.log('Joining room via WebSocket:', data.room.roomCode);
         websocketService.joinRoom(data.room.roomCode, playerNickname, uuid);
         setMode('creating');
-      } catch (fetchErr) {
+      } catch (fetchErr: unknown) {
         clearTimeout(timeoutId);
-        if (fetchErr.name === 'AbortError') {
+        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
           console.error('Request timed out after 10 seconds');
           throw new Error('Request timed out - please check your network connection');
         }
         throw fetchErr;
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Room creation error:', err);
-      console.error('Error type:', err.constructor.name);
-      console.error('Error details:', {
-        message: err.message,
-        name: err.name,
-        stack: err.stack
-      });
+      if (err instanceof Error) {
+        console.error('Error type:', err.constructor.name);
+        console.error('Error details:', {
+          message: err.message,
+          name: err.name,
+          stack: err.stack
+        });
+      }
       setError(err instanceof Error ? err.message : 'Failed to create room');
       setIsLoading(false);
     }
@@ -228,6 +326,33 @@ export function Lobby() {
     setMode('joining');
   };
 
+  // Quick join from active room list
+  const handleQuickJoinRoom = (roomCode: string) => {
+    const storedNickname = localStorage.getItem('playerNickname');
+    if (storedNickname) {
+      // If nickname exists, join directly
+      handleJoinRoom(roomCode, storedNickname);
+    } else {
+      // Show join form with pre-filled room code
+      setMode('joining');
+    }
+  };
+
+  // Rejoin player's existing room
+  const handleRejoinMyRoom = () => {
+    if (!myRoom) return;
+
+    const storedNickname = localStorage.getItem('playerNickname');
+    const uuid = localStorage.getItem('playerUUID');
+
+    if (storedNickname && uuid) {
+      setIsLoading(true);
+      setError(null);
+      websocketService.joinRoom(myRoom.roomCode, storedNickname, uuid);
+      setMode('joining');
+    }
+  };
+
   // Character selection (T069)
   const handleSelectCharacter = (characterClass: CharacterClass) => {
     setSelectedCharacter(characterClass);
@@ -236,13 +361,7 @@ export function Lobby() {
 
   // Game start (T070 - host only)
   const handleStartGame = () => {
-    if (!isHost) return;
-
-    const allReady = players.every((p) => p.characterClass);
-    if (!allReady) {
-      setError(t('lobby.notAllReady', 'All players must select a character'));
-      return;
-    }
+    if (!isCurrentPlayerHost) return;
 
     if (players.length < 2) {
       setError(t('lobby.needMorePlayers', 'Need at least 2 players to start'));
@@ -270,18 +389,73 @@ export function Lobby() {
     .filter((p) => p.id !== currentPlayerId && p.characterClass)
     .map((p) => p.characterClass as CharacterClass);
 
-  const allPlayersReady = players.length >= 2 && players.every((p) => p.characterClass);
+  // Check if current player is host - use state or check players array
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const isCurrentPlayerHost = isHost || (currentPlayer?.isHost ?? false);
+
+  // Debug logging
+  console.log('Host check:', {
+    isHost,
+    currentPlayerId,
+    currentPlayer,
+    isCurrentPlayerHost,
+    players: players.map(p => ({ id: p.id, nickname: p.nickname, isHost: p.isHost }))
+  });
+
+  const canStartGame = players.length >= 2;
+  const allPlayersReady = players.every((p) => p.characterClass);
 
   return (
     <div className="lobby-page">
       <DebugConsole />
       <header className="lobby-header">
         <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+        {localStorage.getItem('playerNickname') && (
+          <p className="welcome-message">
+            Welcome, <strong>{localStorage.getItem('playerNickname')}</strong>
+          </p>
+        )}
       </header>
 
       <main className="lobby-content">
         {mode === 'initial' && (
           <div className="initial-mode">
+            {/* Your Active Game Section - Temporarily disabled for debugging */}
+            {myRoom && myRoom.roomCode && (
+              <div className="my-room-section">
+                <h2 className="my-room-title">
+                  {t('lobby.yourActiveGame', 'Your Active Game')}
+                </h2>
+                <div className="my-room-card">
+                  <div className="my-room-header">
+                    <span className="my-room-code">{myRoom.roomCode}</span>
+                    <span className="my-room-status">
+                      {myRoom.status === 'lobby'
+                        ? t('lobby.waitingToStart', 'Waiting to Start')
+                        : t('lobby.inProgress', 'In Progress')}
+                    </span>
+                  </div>
+                  <div className="my-room-info">
+                    <span className="my-room-players">
+                      {myRoom.playerCount}/{myRoom.maxPlayers} {t('lobby.players', 'Players')}
+                    </span>
+                    <span className="my-room-host">
+                      👑 {myRoom.hostNickname}
+                    </span>
+                  </div>
+                  <button
+                    className="my-room-rejoin-button"
+                    onClick={handleRejoinMyRoom}
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? t('lobby.rejoining', 'Rejoining...')
+                      : t('lobby.rejoinGame', 'Rejoin Game')}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="button-group">
               <button
                 className="primary-button create-button"
@@ -301,8 +475,53 @@ export function Lobby() {
                 className="secondary-button"
                 onClick={() => setMode('joining')}
               >
-                {t('lobby.joinRoom', 'Join Game')}
+                {t('lobby.joinRoom', 'Join with Room Code')}
               </button>
+            </div>
+
+            {/* Active Games List */}
+            <div className="active-games-section">
+              <h2 className="active-games-title">
+                {t('lobby.activeGames', 'Active Games')}
+              </h2>
+
+              {loadingRooms && activeRooms.length === 0 ? (
+                <div className="loading-rooms">
+                  <p>{t('lobby.loadingRooms', 'Loading available games...')}</p>
+                </div>
+              ) : activeRooms.length === 0 ? (
+                <div className="no-rooms">
+                  <p>{t('lobby.noActiveGames', 'No active games available. Create one!')}</p>
+                </div>
+              ) : (
+                <div className="rooms-list">
+                  {activeRooms.map((room) => (
+                    <div key={room.roomCode} className="room-card">
+                      <div className="room-card-header">
+                        <span className="room-card-code">{room.roomCode}</span>
+                        <span className="room-card-players">
+                          {room.playerCount}/{room.maxPlayers} {t('lobby.players', 'Players')}
+                        </span>
+                      </div>
+                      <div className="room-card-info">
+                        <span className="room-card-host">
+                          👑 {room.hostNickname}
+                        </span>
+                        <span className="room-card-status">
+                          {t('lobby.waitingInLobby', 'Waiting in Lobby')}
+                        </span>
+                      </div>
+                      <button
+                        className="room-card-join-button"
+                        onClick={() => handleQuickJoinRoom(room.roomCode)}
+                        disabled={isLoading}
+                      >
+                        {t('lobby.join', 'Join')}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -388,10 +607,60 @@ export function Lobby() {
                   )}
                 </div>
               </div>
-              {isHost && (
+              {isCurrentPlayerHost && (
                 <span className="host-indicator" data-testid="host-indicator">
                   👑 {t('lobby.youAreHost', 'You are the host')}
                 </span>
+              )}
+            </div>
+
+            {/* Debug Info */}
+            <div style={{ background: '#222', padding: '12px', marginBottom: '12px', fontSize: '12px', fontFamily: 'monospace' }}>
+              <div>DEBUG INFO:</div>
+              <div>isHost state: {isHost ? 'true' : 'false'}</div>
+              <div>currentPlayerId: {currentPlayerId || 'null'}</div>
+              <div>currentPlayer: {currentPlayer ? `${currentPlayer.nickname} (isHost: ${currentPlayer.isHost})` : 'null'}</div>
+              <div>isCurrentPlayerHost: {isCurrentPlayerHost ? 'true' : 'false'}</div>
+              <div>canStartGame: {canStartGame ? 'true' : 'false'}</div>
+              <div>players count: {players.length}</div>
+            </div>
+
+            {/* Start Game Section - Always visible at top */}
+            <div className="game-controls-section">
+              {isCurrentPlayerHost ? (
+                <div className="host-controls">
+                  <button
+                    className="primary-button start-button"
+                    onClick={handleStartGame}
+                    disabled={!canStartGame}
+                    style={{
+                      fontSize: '20px',
+                      padding: '16px 32px',
+                      minHeight: '60px',
+                      backgroundColor: canStartGame ? '#2ecc71' : '#555',
+                      cursor: canStartGame ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    🎮 {t('lobby.startGame', 'Start Game')}
+                  </button>
+
+                  {!canStartGame && (
+                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px' }}>
+                      ⏳ {t('lobby.waitingForPlayers', 'Waiting for at least 2 players...')}
+                    </p>
+                  )}
+                  {canStartGame && !allPlayersReady && (
+                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#2ecc71' }}>
+                      ✅ {t('lobby.readyToStart', 'Ready to start!')} {players.length} players in room
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="player-waiting">
+                  <p style={{ fontSize: '18px', padding: '20px', backgroundColor: '#333', borderRadius: '8px' }}>
+                    ⏳ {t('lobby.waitingForHost', 'Waiting for host to start the game...')}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -408,30 +677,6 @@ export function Lobby() {
                 />
               </div>
             </div>
-
-            {isHost && (
-              <div className="host-controls">
-                <button
-                  className="primary-button start-button"
-                  onClick={handleStartGame}
-                  disabled={!allPlayersReady}
-                >
-                  {t('lobby.startGame', 'Start Game')}
-                </button>
-
-                {!allPlayersReady && (
-                  <p className="start-hint">
-                    {t('lobby.waitingForPlayers', 'Waiting for all players to select characters...')}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!isHost && (
-              <div className="player-waiting">
-                <p>{t('lobby.waitingForHost', 'Waiting for host to start the game...')}</p>
-              </div>
-            )}
           </div>
         )}
 
@@ -461,6 +706,26 @@ export function Lobby() {
           margin: 0;
           font-size: 32px;
           font-weight: 700;
+        }
+
+        .welcome-message {
+          margin: 12px 0 0 0;
+          font-size: 18px;
+          color: #aaa;
+        }
+
+        .welcome-message strong {
+          color: #2ecc71;
+          font-weight: 600;
+        }
+
+        .game-controls-section {
+          margin-bottom: 32px;
+          padding: 24px;
+          background: rgba(46, 204, 113, 0.1);
+          border: 2px solid #2ecc71;
+          border-radius: 12px;
+          text-align: center;
         }
 
         .lobby-content {
@@ -691,6 +956,208 @@ export function Lobby() {
           border-radius: 8px;
         }
 
+        .my-room-section {
+          margin-bottom: 48px;
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .my-room-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin-bottom: 16px;
+          text-align: center;
+          color: #ffd700;
+        }
+
+        .my-room-card {
+          background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%);
+          border: 3px solid #ffd700;
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 8px 24px rgba(255, 215, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .my-room-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #3a3a3a;
+        }
+
+        .my-room-code {
+          font-size: 28px;
+          font-weight: 700;
+          letter-spacing: 0.15em;
+          color: #ffd700;
+        }
+
+        .my-room-status {
+          font-size: 14px;
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 6px 12px;
+          border-radius: 12px;
+          font-weight: 600;
+        }
+
+        .my-room-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: #ddd;
+        }
+
+        .my-room-players {
+          font-size: 16px;
+          background: #1a1a1a;
+          padding: 6px 12px;
+          border-radius: 8px;
+        }
+
+        .my-room-host {
+          font-size: 14px;
+        }
+
+        .my-room-rejoin-button {
+          width: 100%;
+          padding: 16px;
+          font-size: 18px;
+          font-weight: 700;
+          background: #ffd700;
+          color: #1a1a1a;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .my-room-rejoin-button:hover:not(:disabled) {
+          background: #ffed4e;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .my-room-rejoin-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .active-games-section {
+          margin-top: 48px;
+          max-width: 800px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .active-games-title {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 24px;
+          text-align: center;
+          color: #ffffff;
+        }
+
+        .loading-rooms,
+        .no-rooms {
+          padding: 48px 24px;
+          text-align: center;
+          color: #888;
+        }
+
+        .rooms-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 16px;
+        }
+
+        .room-card {
+          background: #2c2c2c;
+          border: 2px solid #3a3a3a;
+          border-radius: 12px;
+          padding: 20px;
+          transition: all 0.2s;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .room-card:hover {
+          border-color: #5a9fd4;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(90, 159, 212, 0.2);
+        }
+
+        .room-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .room-card-code {
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: #5a9fd4;
+        }
+
+        .room-card-players {
+          font-size: 14px;
+          color: #aaa;
+          background: #1a1a1a;
+          padding: 4px 12px;
+          border-radius: 12px;
+        }
+
+        .room-card-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .room-card-host {
+          font-size: 14px;
+          color: #ddd;
+        }
+
+        .room-card-status {
+          font-size: 12px;
+          color: #888;
+          font-style: italic;
+        }
+
+        .room-card-join-button {
+          width: 100%;
+          padding: 12px;
+          font-size: 16px;
+          font-weight: 600;
+          background: #5a9fd4;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .room-card-join-button:hover:not(:disabled) {
+          background: #4a8fc4;
+          transform: translateY(-1px);
+        }
+
+        .room-card-join-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
           .room-layout {
             grid-template-columns: 1fr;
@@ -698,6 +1165,10 @@ export function Lobby() {
 
           .start-button {
             min-width: 100%;
+          }
+
+          .rooms-list {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

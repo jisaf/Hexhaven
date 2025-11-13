@@ -6,8 +6,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import type { Monster } from '../../../shared/types/entities';
-import { Condition } from '../../../shared/types/entities';
+import type { Monster, Condition } from '../../../shared/types/entities';
 
 export class MonsterSprite extends PIXI.Container {
   private monster: Monster;
@@ -220,15 +219,15 @@ export class MonsterSprite extends PIXI.Container {
     const icon = new PIXI.Graphics();
 
     // Get condition color
-    const colors: Record<Condition, number> = {
-      [Condition.POISON]: 0x8e44ad,
-      [Condition.WOUND]: 0xe74c3c,
-      [Condition.STUN]: 0xf39c12,
-      [Condition.IMMOBILIZE]: 0x3498db,
-      [Condition.DISARM]: 0x95a5a6,
-      [Condition.MUDDLE]: 0x7f8c8d,
-      [Condition.STRENGTHEN]: 0x2ecc71,
-      [Condition.INVISIBLE]: 0xecf0f1,
+    const colors: Record<string, number> = {
+      'poison': 0x8e44ad,
+      'wound': 0xe74c3c,
+      'stun': 0xf39c12,
+      'immobilize': 0x3498db,
+      'disarm': 0x95a5a6,
+      'muddle': 0x7f8c8d,
+      'strengthen': 0x2ecc71,
+      'invisible': 0xecf0f1,
     };
 
     icon.beginFill(colors[condition] || 0xffffff);

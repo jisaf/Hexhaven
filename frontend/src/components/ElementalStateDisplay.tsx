@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import type { ElementalInfusion } from '../../../shared/types/entities';
-import { ElementType, ElementState } from '../../../shared/types/entities';
+import type { ElementalInfusion, ElementType, ElementState } from '../../../shared/types/entities';
 import './ElementalStateDisplay.css';
 
 interface ElementalStateDisplayProps {
@@ -29,37 +28,37 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
   const getElementInfo = (): ElementInfo[] => {
     return [
       {
-        type: ElementType.FIRE,
+        type: 'fire' as ElementType,
         icon: '🔥',
         color: '#e74c3c',
         state: elementalState.fire,
       },
       {
-        type: ElementType.ICE,
+        type: 'ice' as ElementType,
         icon: '❄️',
         color: '#3498db',
         state: elementalState.ice,
       },
       {
-        type: ElementType.AIR,
+        type: 'air' as ElementType,
         icon: '💨',
         color: '#95a5a6',
         state: elementalState.air,
       },
       {
-        type: ElementType.EARTH,
+        type: 'earth' as ElementType,
         icon: '🪨',
         color: '#7f6a3b',
         state: elementalState.earth,
       },
       {
-        type: ElementType.LIGHT,
+        type: 'light' as ElementType,
         icon: '☀️',
         color: '#f39c12',
         state: elementalState.light,
       },
       {
-        type: ElementType.DARK,
+        type: 'dark' as ElementType,
         icon: '🌙',
         color: '#34495e',
         state: elementalState.dark,
@@ -69,11 +68,11 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
 
   const getStateClass = (state: ElementState): string => {
     switch (state) {
-      case ElementState.STRONG:
+      case 'strong':
         return 'strong';
-      case ElementState.WANING:
+      case 'waning':
         return 'waning';
-      case ElementState.INERT:
+      case 'inert':
       default:
         return 'inert';
     }
@@ -81,11 +80,11 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
 
   const getStateLabel = (state: ElementState): string => {
     switch (state) {
-      case ElementState.STRONG:
+      case 'strong':
         return 'Strong';
-      case ElementState.WANING:
+      case 'waning':
         return 'Waning';
-      case ElementState.INERT:
+      case 'inert':
       default:
         return 'Inert';
     }
@@ -97,7 +96,7 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
     return (
       <div className="elemental-state-display compact">
         {elements.map((element) => {
-          const isActive = element.state !== ElementState.INERT;
+          const isActive = element.state !== 'inert';
           return (
             <div
               key={element.type}
@@ -125,7 +124,7 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
       <div className="elements-grid">
         {elements.map((element) => {
           const stateClass = getStateClass(element.state);
-          const isActive = element.state !== ElementState.INERT;
+          const isActive = element.state !== 'inert';
 
           return (
             <div
@@ -167,11 +166,11 @@ export const ElementalStateDisplay: React.FC<ElementalStateDisplayProps> = ({
 
               {/* State Description */}
               <div className="state-description">
-                {element.state === ElementState.STRONG &&
+                {element.state === 'strong' &&
                   'Can be consumed this round'}
-                {element.state === ElementState.WANING &&
+                {element.state === 'waning' &&
                   'Will become inert next round'}
-                {element.state === ElementState.INERT && 'Not available'}
+                {element.state === 'inert' && 'Not available'}
               </div>
 
               {/* Visual Effect for Active States */}

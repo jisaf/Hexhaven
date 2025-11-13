@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { CharacterClass } from '../../../shared/types/entities';
+import type { CharacterClass } from '../../../shared/types/entities';
 import './TurnOrderDisplay.css';
 
 export interface TurnEntity {
@@ -33,15 +33,15 @@ export const TurnOrderDisplay: React.FC<TurnOrderDisplayProps> = ({
 }) => {
   const getEntityIcon = (entity: TurnEntity): string => {
     if (entity.type === 'character') {
-      const classIcons: Record<CharacterClass, string> = {
-        [CharacterClass.BRUTE]: '🗡️',
-        [CharacterClass.TINKERER]: '🔧',
-        [CharacterClass.SPELLWEAVER]: '🔮',
-        [CharacterClass.SCOUNDREL]: '🗡️',
-        [CharacterClass.CRAGHEART]: '🪨',
-        [CharacterClass.MINDTHIEF]: '🧠',
+      const classIcons: Record<string, string> = {
+        'brute': '🗡️',
+        'tinkerer': '🔧',
+        'spellweaver': '🔮',
+        'scoundrel': '🗡️',
+        'cragheart': '🪨',
+        'mindthief': '🧠',
       };
-      return classIcons[entity.characterClass || CharacterClass.BRUTE];
+      return classIcons[entity.characterClass || 'brute'];
     } else {
       return entity.isElite ? '👹' : '👺';
     }
