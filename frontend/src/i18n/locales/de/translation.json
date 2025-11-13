@@ -14,6 +14,7 @@
   },
   "lobby": {
     "title": "Hexhaven Mehrspieler",
+    "welcome": "Willkommen",
     "createGame": "Spiel Erstellen",
     "createRoom": "Spiel Erstellen",
     "creating": "Wird erstellt...",

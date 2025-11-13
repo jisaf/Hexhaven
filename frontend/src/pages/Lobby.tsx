@@ -26,6 +26,7 @@ import { PlayerList, type Player } from '../components/PlayerList';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { DebugConsole } from '../components/DebugConsole';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
@@ -455,10 +456,13 @@ export function Lobby() {
     <div className="lobby-page">
       <DebugConsole />
       <header className="lobby-header">
-        <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+        <div className="header-top">
+          <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+          <LanguageSelector className="header-language-selector" />
+        </div>
         {localStorage.getItem('playerNickname') && (
           <p className="welcome-message">
-            Welcome, <strong>{localStorage.getItem('playerNickname')}</strong>
+            {t('lobby.welcome', 'Welcome')}, <strong>{localStorage.getItem('playerNickname')}</strong>
           </p>
         )}
       </header>

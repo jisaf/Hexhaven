@@ -334,10 +334,10 @@
 
 ### Tests for User Story 6
 
-- [ ] T182 [P] [US6] E2E test: Language changes to Spanish, all UI text updates in frontend/tests/e2e/us6-spanish.spec.ts
-- [ ] T183 [P] [US6] E2E test: Language changes to French, all UI text updates in frontend/tests/e2e/us6-french.spec.ts
-- [ ] T184 [P] [US6] E2E test: Language changes to German, text expansion doesn't break layout in frontend/tests/e2e/us6-german-layout.spec.ts
-- [ ] T185 [P] [US6] Unit test: Translation keys exist for all UI strings in frontend/tests/unit/i18n.test.ts
+- [X] T182 [P] [US6] E2E test: Language changes to Spanish, all UI text updates in frontend/tests/e2e/us6-spanish.spec.ts
+- [X] T183 [P] [US6] E2E test: Language changes to French, all UI text updates in frontend/tests/e2e/us6-french.spec.ts
+- [X] T184 [P] [US6] E2E test: Language changes to German, text expansion doesn't break layout in frontend/tests/e2e/us6-german-layout.spec.ts
+- [X] T185 [P] [US6] Unit test: Translation keys exist for all UI strings in frontend/tests/unit/i18n.test.ts
 
 ### Frontend Implementation for User Story 6
 
@@ -345,11 +345,11 @@
 - [X] T187 [P] [US6] Create French translation file in frontend/src/i18n/locales/fr/translation.json
 - [X] T188 [P] [US6] Create German translation file in frontend/src/i18n/locales/de/translation.json
 - [X] T189 [P] [US6] Create Chinese translation file in frontend/src/i18n/locales/zh/translation.json
-- [ ] T190 [US6] Extract all hardcoded UI strings to translation keys in all components
+- [X] T190 [US6] Extract all hardcoded UI strings to translation keys in all components
 - [X] T191 [US6] Implement language detection from device settings in frontend/src/i18n/index.ts
 - [X] T192 [US6] Create LanguageSelector component for manual language change in frontend/src/components/LanguageSelector.tsx
 - [ ] T193 [US6] Add namespace-based lazy loading (common.json, game.json, lobby.json) in frontend/src/i18n/index.ts
-- [ ] T194 [US6] Test layout with long German strings (30-50% longer than English) in frontend/tests/e2e/us6-german-layout.spec.ts
+- [X] T194 [US6] Test layout with long German strings (30-50% longer than English) in frontend/tests/e2e/us6-german-layout.spec.ts
 
 **Checkpoint**: Game is fully internationalized - players can play in their preferred language.
 
