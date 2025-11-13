@@ -132,7 +132,7 @@ export function Lobby() {
             status: data.room.status,
             playerCount: data.room.playerCount,
             maxPlayers: 4,
-            hostNickname: data.players.find((p: any) => p.isHost)?.nickname || 'Unknown',
+            hostNickname: data.players.find((p: { isHost: boolean; nickname: string }) => p.isHost)?.nickname || 'Unknown',
             createdAt: data.room.createdAt,
           });
         } else {

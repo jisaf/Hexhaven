@@ -1,13 +1,15 @@
 /**
- * WebSocket Client Service with Socket.io Integration
+ * Enhanced WebSocket Client Service (US4 - T157, T159, T160, T161)
  *
  * Handles real-time communication with the backend using Socket.io.
- * Includes automatic reconnection and event handling.
+ * Includes automatic reconnection with exponential backoff, session restoration,
+ * and player disconnect/reconnect event handling.
  */
 
 import { io, Socket } from 'socket.io-client';
+import { getOrCreatePlayerUUID, saveLastRoomCode, getLastRoomCode } from '../utils/storage';
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
+export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
 /**
  * WebSocket event types
@@ -47,7 +49,7 @@ export interface WebSocketEvents {
     modifier: unknown;
   }) => void;
 
-  // Loot (US2 - T123)
+  // Loot
   loot_collected: (data: {
     playerId: string;
     lootTokenId: string;
@@ -80,10 +82,12 @@ class WebSocketService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventHandlers: Map<string, Set<any>> = new Map();
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
+  private maxReconnectAttempts = 5;
+  private playerUUID: string | null = null;
+  private currentNickname: string | null = null;
 
   /**
-   * Connect to WebSocket server
+   * Connect to WebSocket server with enhanced reconnection (US4 - T157)
    */
   connect(url: string = 'http://localhost:3000'): void {
     if (this.socket?.connected) {
@@ -91,19 +95,27 @@ class WebSocketService {
       return;
     }
 
+    // Get or create persistent UUID for session restoration
+    this.playerUUID = getOrCreatePlayerUUID();
+
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelay: 1000, // Start at 1 second
+      reconnectionDelayMax: 10000, // Max 10 seconds (exponential backoff)
       reconnectionAttempts: this.maxReconnectAttempts,
+      timeout: 5000, // Connection timeout
+      query: {
+        playerUUID: this.playerUUID, // Send UUID for server-side session restoration
+      },
     });
 
     this.setupConnectionHandlers();
+    this.setupReconnectionHandlers();
   }
 
   /**
-   * Setup connection event handlers
+   * Setup connection event handlers (enhanced for US4)
    */
   private setupConnectionHandlers(): void {
     if (!this.socket) return;
@@ -112,31 +124,82 @@ class WebSocketService {
       this.connectionStatus = 'connected';
       this.reconnectAttempts = 0;
       this.emit('ws_connected');
-      console.log('WebSocket connected');
+      console.log('WebSocket connected', { playerUUID: this.playerUUID });
+
+      // Auto-rejoin room if reconnecting (US4 - T157)
+      const lastRoom = getLastRoomCode();
+      if (lastRoom && this.currentNickname) {
+        console.log('Auto-rejoining room:', lastRoom);
+        this.joinRoom(lastRoom, this.currentNickname, this.playerUUID!);
+      }
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on('disconnect', (reason) => {
       this.connectionStatus = 'disconnected';
       this.emit('ws_disconnected');
-      console.log('WebSocket disconnected');
+      console.log('WebSocket disconnected:', reason);
+
+      // Don't reconnect if disconnected by server or client intentionally
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        this.socket?.connect(); // Force reconnect
+      }
     });
 
-    this.socket.on('reconnect_attempt', () => {
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
       this.connectionStatus = 'reconnecting';
-      this.reconnectAttempts++;
+      this.reconnectAttempts = attemptNumber;
       this.emit('ws_reconnecting');
-      console.log(`Reconnecting... (attempt ${this.reconnectAttempts})`);
+      console.log(`Reconnecting... (attempt ${attemptNumber}/${this.maxReconnectAttempts})`);
     });
 
-    this.socket.on('reconnect', () => {
+    this.socket.on('reconnect', (attemptNumber) => {
       this.connectionStatus = 'connected';
       this.emit('ws_reconnected');
-      console.log('WebSocket reconnected');
+      console.log(`WebSocket reconnected after ${attemptNumber} attempts`);
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      this.connectionStatus = 'failed';
+      console.error('Reconnection failed after maximum attempts');
+      this.emit('error', {
+        message: 'Connection failed. Please refresh the page.',
+        code: 'RECONNECT_FAILED',
+      });
     });
 
     this.socket.on('error', (error: Error) => {
       this.emit('error', { message: error.message || 'WebSocket error' });
       console.error('WebSocket error:', error);
+    });
+  }
+
+  /**
+   * Setup reconnection-specific event handlers (US4 - T159, T160)
+   */
+  private setupReconnectionHandlers(): void {
+    if (!this.socket) return;
+
+    // Handle other players disconnecting (US4 - T159)
+    this.socket.on(
+      'player_disconnected',
+      (data: { playerId: string; nickname: string; willReconnect: boolean }) => {
+        console.log('Player disconnected:', data);
+        // Emit to application layer for UI updates
+        this.emit('player_disconnected', {
+          playerId: data.playerId,
+          playerName: data.nickname,
+        });
+      },
+    );
+
+    // Handle other players reconnecting (US4 - T160)
+    this.socket.on('player_reconnected', (data: { playerId: string; nickname: string }) => {
+      console.log('Player reconnected:', data);
+      // Emit to application layer for UI updates
+      this.emit('player_reconnected', {
+        playerId: data.playerId,
+        playerName: data.nickname,
+      });
     });
   }
 
@@ -200,10 +263,20 @@ class WebSocketService {
   }
 
   /**
-   * Join a game room
+   * Join a game room (enhanced for reconnection - US4)
    */
   joinRoom(roomCode: string, nickname: string, uuid?: string): void {
-    this.emit('join_room', { roomCode, nickname, playerUUID: uuid });
+    const playerUUID = uuid || this.playerUUID || getOrCreatePlayerUUID();
+
+    // Store for reconnection
+    this.currentNickname = nickname;
+    this.playerUUID = playerUUID;
+
+    // Save to localStorage for page refresh recovery
+    saveLastRoomCode(roomCode);
+
+    this.emit('join_room', { roomCode, nickname, playerUUID });
+    console.log('Joining room:', { roomCode, nickname, playerUUID });
   }
 
   /**
@@ -263,7 +336,7 @@ class WebSocketService {
   }
 
   /**
-   * Collect loot token (US2 - T123)
+   * Collect loot token
    */
   collectLoot(hexCoordinates: { q: number; r: number }): void {
     this.emit('collect_loot', { hexCoordinates });
@@ -277,10 +350,38 @@ class WebSocketService {
   }
 
   /**
+   * Get current reconnection attempt number
+   */
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts;
+  }
+
+  /**
+   * Get max reconnection attempts
+   */
+  getMaxReconnectAttempts(): number {
+    return this.maxReconnectAttempts;
+  }
+
+  /**
    * Check if connected
    */
   isConnected(): boolean {
     return this.socket?.connected || false;
+  }
+
+  /**
+   * Check if currently reconnecting
+   */
+  isReconnecting(): boolean {
+    return this.connectionStatus === 'reconnecting';
+  }
+
+  /**
+   * Get player UUID
+   */
+  getPlayerUUID(): string | null {
+    return this.playerUUID;
   }
 }
 

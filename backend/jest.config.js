@@ -72,7 +72,7 @@ module.exports = {
     '/coverage/',
     '/tests/fixtures/',
     '/tests/setup.ts',
-    '/tests/contract/'  // Contract tests require running WebSocket server
+    '/tests/contract/'  // Contract tests run separately (require full WebSocket server)
   ],
 
   // Transform node_modules for ESM packages

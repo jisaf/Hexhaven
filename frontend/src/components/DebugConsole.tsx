@@ -12,7 +12,7 @@ interface LogEntry {
   timestamp: string;
   level: 'log' | 'error' | 'warn' | 'info';
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 export function DebugConsole() {
@@ -31,22 +31,22 @@ export function DebugConsole() {
     const originalInfo = console.info;
 
     // Intercept console methods
-    console.log = (...args: any[]) => {
+    console.log = (...args: unknown[]) => {
       originalLog.apply(console, args);
       addLog('log', args);
     };
 
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       originalError.apply(console, args);
       addLog('error', args);
     };
 
-    console.warn = (...args: any[]) => {
+    console.warn = (...args: unknown[]) => {
       originalWarn.apply(console, args);
       addLog('warn', args);
     };
 
-    console.info = (...args: any[]) => {
+    console.info = (...args: unknown[]) => {
       originalInfo.apply(console, args);
       addLog('info', args);
     };
@@ -67,7 +67,7 @@ export function DebugConsole() {
     }
   }, [logs, isOpen, isMinimized]);
 
-  const addLog = (level: LogEntry['level'], args: any[]) => {
+  const addLog = (level: LogEntry['level'], args: unknown[]) => {
     const timestamp = new Date().toLocaleTimeString();
     const message = args
       .map(arg => {
