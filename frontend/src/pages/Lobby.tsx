@@ -127,12 +127,13 @@ export function Lobby() {
       if (response.ok) {
         const data = await response.json();
         if (data.room) {
+          const hostPlayer = (data.players as Player[]).find((p) => p.isHost);
           setMyRoom({
             roomCode: data.room.roomCode,
             status: data.room.status,
             playerCount: data.room.playerCount,
             maxPlayers: 4,
-            hostNickname: data.players.find((p: { isHost: boolean; nickname: string }) => p.isHost)?.nickname || 'Unknown',
+            hostNickname: hostPlayer?.nickname || 'Unknown',
             createdAt: data.room.createdAt,
           });
         } else {
