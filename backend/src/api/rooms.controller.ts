@@ -195,7 +195,9 @@ export class RoomsController {
    * Get the current room for a player by their UUID
    */
   @Get('my-room/:playerUuid')
-  getMyRoom(@Param('playerUuid') playerUuid: string): GetRoomResponse | { room: null } {
+  getMyRoom(
+    @Param('playerUuid') playerUuid: string,
+  ): GetRoomResponse | { room: null } {
     try {
       // Find room by player UUID
       const room = roomService.getRoomByPlayerId(playerUuid);
@@ -224,7 +226,7 @@ export class RoomsController {
           connectionStatus: player.connectionStatus,
         })),
       };
-    } catch (error: any) {
+    } catch {
       throw new HttpException(
         {
           error: 'INTERNAL_ERROR',
@@ -322,11 +324,7 @@ export class RoomsController {
 
       // Filter for joinable rooms (in lobby status and not full)
       const joinableRooms = allRooms
-        .filter(
-          (room) =>
-            room.status === RoomStatus.LOBBY &&
-            !room.isFull
-        )
+        .filter((room) => room.status === RoomStatus.LOBBY && !room.isFull)
         .map((room) => ({
           roomCode: room.roomCode,
           status: room.status,
@@ -335,14 +333,15 @@ export class RoomsController {
           hostNickname: room.hostPlayer?.nickname || 'Unknown',
           createdAt: room.createdAt.toISOString(),
         }))
-        .sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ); // Sort by newest first
 
       return {
         rooms: joinableRooms,
       };
-    } catch (error: any) {
+    } catch {
       throw new HttpException(
         {
           error: 'INTERNAL_ERROR',
