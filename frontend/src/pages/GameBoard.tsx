@@ -17,10 +17,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
+import type { HexTileData } from '../game/HexTile';
+import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard } from '../../../shared/types/entities';
+import type { AbilityCard, Monster } from '../../../shared/types/entities';
 
 export function GameBoard() {
   const { t } = useTranslation();
@@ -43,7 +45,7 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Event handlers - defined before useEffects that use them
-  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => {
+  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => {
     console.log('handleGameStarted called with data:', data);
 
     if (!hexGridRef.current) {
@@ -56,7 +58,7 @@ export function GameBoard() {
     console.log('My playerUUID:', playerUUID);
     console.log('Characters:', data.characters);
 
-    const myCharacter = data.characters.find((char: any) => char.playerId === playerUUID);
+    const myCharacter = data.characters.find((char: unknown) => (char as { playerId: string }).playerId === playerUUID) as { id: string; playerId: string; abilityDeck?: unknown[]; classType?: string } | undefined;
     console.log('My character:', myCharacter);
 
     if (myCharacter) {
@@ -67,7 +69,7 @@ export function GameBoard() {
       if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
         console.log('Loading ability deck for character:', myCharacter.classType);
         console.log('Ability deck:', myCharacter.abilityDeck);
-        setPlayerHand(myCharacter.abilityDeck);
+        setPlayerHand(myCharacter.abilityDeck as never[]);
 
         // Show card selection at start of first turn
         // In a real game, this would be triggered by turn_started event
@@ -81,9 +83,9 @@ export function GameBoard() {
 
     // Initialize board with the map layout and entities
     const boardData: GameBoardData = {
-      tiles: data.mapLayout,
-      characters: data.characters,
-      monsters: data.monsters,
+      tiles: data.mapLayout as HexTileData[],
+      characters: data.characters as CharacterData[],
+      monsters: data.monsters as Monster[],
     };
 
     console.log('Initializing board with:', boardData);

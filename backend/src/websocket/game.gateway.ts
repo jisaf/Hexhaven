@@ -20,6 +20,7 @@ import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { sessionService } from '../services/session.service';
+import { Player } from '../models/player.model';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
@@ -280,7 +281,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
               turnIndex: currentTurnIdx,
             };
             client.emit('turn_started', turnStartedPayload);
-            this.logger.log(`Sent current turn to reconnecting player ${nickname}`);
+            this.logger.log(
+              `Sent current turn to reconnecting player ${nickname}`,
+            );
           }
         }
 
@@ -326,9 +329,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Find which room this player is in
-      const room = roomService.findRoomByPlayer(playerUUID);
+      const room = roomService.getRoomByPlayerId(playerUUID);
       if (!room) {
-        this.logger.warn(`Player ${playerUUID} tried to leave but is not in any room`);
+        this.logger.warn(
+          `Player ${playerUUID} tried to leave but is not in any room`,
+        );
         return;
       }
 
@@ -336,8 +341,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
 
       // Remove player from room
-      const player = room.players.find((p) => p.uuid === playerUUID);
-      roomService.removePlayerFromRoom(roomCode, playerUUID);
+      const player = room.players.find((p: Player) => p.uuid === playerUUID);
+      roomService.leaveRoom(roomCode, playerUUID);
 
       // Leave socket room
       client.leave(roomCode);
@@ -354,14 +359,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // Clean up game state if needed
-      const updatedRoom = roomService.findRoomByCode(roomCode);
+      const updatedRoom = roomService.getRoom(roomCode);
       if (!updatedRoom || updatedRoom.players.length === 0) {
         // Room is empty, clean up all game state
         this.roomMaps.delete(roomCode);
         this.roomMonsters.delete(roomCode);
         this.roomTurnOrder.delete(roomCode);
         this.currentTurnIndex.delete(roomCode);
-        this.roomLoot.delete(roomCode);
+        this.roomLootTokens.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, cleaning up`);
 
         // Delete the room

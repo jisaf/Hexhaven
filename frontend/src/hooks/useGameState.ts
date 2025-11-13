@@ -114,7 +114,7 @@ export function useGameState() {
   /**
    * Handle game started event
    */
-  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => {
+  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => {
     setGameState((prev) => ({
       ...prev,
       room: prev.room ? { ...prev.room, status: 'active', scenarioId: data.scenarioId } : null,

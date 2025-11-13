@@ -671,7 +671,7 @@ export class HexGrid {
     }
 
     // Prevent double-destroy by nulling the app reference
-    // @ts-ignore - we're deliberately setting this to null for safety
+    // @ts-expect-error - we're deliberately setting this to null for safety
     this.app = null;
   }
 }
