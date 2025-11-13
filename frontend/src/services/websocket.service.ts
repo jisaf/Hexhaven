@@ -32,7 +32,7 @@ export interface WebSocketEvents {
   character_selected: (data: { playerId: string; characterClass: string }) => void;
 
   // Game start
-  game_started: (data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => void;
+  game_started: (data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;

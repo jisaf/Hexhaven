@@ -34,20 +34,24 @@ async function main() {
 
   for (const character of charactersData.characters) {
     // Resolve ability card IDs to full card objects
-    const abilityDeck = character.abilityCards.map((cardId: string) => {
-      const card = abilityCardMap.get(cardId);
-      if (!card) {
-        console.warn(`Warning: Ability card ${cardId} not found for ${character.classType}`);
-        return null;
-      }
-      return {
-        name: card.name,
-        level: card.level,
-        initiative: card.initiative,
-        topAction: card.topAction,
-        bottomAction: card.bottomAction,
-      };
-    }).filter(Boolean); // Remove any null entries
+    const abilityDeck = character.abilityCards
+      .map((cardId: string) => {
+        const card = abilityCardMap.get(cardId);
+        if (!card) {
+          console.warn(
+            `Warning: Ability card ${cardId} not found for ${character.classType}`,
+          );
+          return null;
+        }
+        return {
+          name: card.name,
+          level: card.level,
+          initiative: card.initiative,
+          topAction: card.topAction,
+          bottomAction: card.bottomAction,
+        };
+      })
+      .filter(Boolean); // Remove any null entries
 
     await prisma.characterClass.upsert({
       where: { className: character.classType },
@@ -61,7 +65,9 @@ async function main() {
     });
   }
 
-  console.log(`✓ Created ${charactersData.characters.length} character classes from JSON`);
+  console.log(
+    `✓ Created ${charactersData.characters.length} character classes from JSON`,
+  );
 
   // ========== SCENARIOS ==========
   console.log('Creating scenarios...');
@@ -93,7 +99,9 @@ async function main() {
     }
   }
 
-  console.log(`✓ Created ${scenariosData.scenarios.length} scenarios from JSON`);
+  console.log(
+    `✓ Created ${scenariosData.scenarios.length} scenarios from JSON`,
+  );
 
   console.log('✅ Database seeding complete!');
 }

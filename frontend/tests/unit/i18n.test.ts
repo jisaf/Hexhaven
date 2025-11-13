@@ -138,7 +138,7 @@ describe('i18n Translation Completeness', () => {
       'common.error',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const key of requiredCommonKeys) {
         const value = getNestedValue(translation, key);
         expect(value).toBeDefined();
@@ -157,7 +157,7 @@ describe('i18n Translation Completeness', () => {
       'characters.Mindthief',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const charClass of characterClasses) {
         const value = getNestedValue(translation, charClass);
         expect(value).toBeDefined();
@@ -178,7 +178,7 @@ describe('i18n Translation Completeness', () => {
       'lobby.players',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const key of requiredLobbyKeys) {
         const value = getNestedValue(translation, key);
         expect(value).toBeDefined();
@@ -197,7 +197,7 @@ describe('i18n Translation Completeness', () => {
       'game.health',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const key of requiredGameKeys) {
         const value = getNestedValue(translation, key);
         expect(value).toBeDefined();
@@ -214,7 +214,7 @@ describe('i18n Translation Completeness', () => {
       'errors.notYourTurn',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const key of requiredErrorKeys) {
         const value = getNestedValue(translation, key);
         expect(value).toBeDefined();
@@ -231,7 +231,7 @@ describe('i18n Translation Completeness', () => {
       'connection.reconnected',
     ];
 
-    for (const [langCode, translation] of Object.entries(languages)) {
+    for (const [, translation] of Object.entries(languages)) {
       for (const key of connectionKeys) {
         const value = getNestedValue(translation, key);
         expect(value).toBeDefined();

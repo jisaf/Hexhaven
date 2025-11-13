@@ -240,7 +240,8 @@ test.describe('User Story 5: Unique Scenario Map Layouts', () => {
 
     // Look for Bandit-type monsters
     const banditMonsters = page.locator('[data-testid*="monster"]').filter({ hasText: /Bandit/ });
-    const banditCount = await banditMonsters.count();
+    // Verify bandit monsters are present
+    await expect(banditMonsters.first()).toBeVisible();
 
     // Note: If monster names aren't displayed in test DOM, we check for monster sprites
     const allMonsters = page.locator('[data-testid*="monster-sprite"]');
