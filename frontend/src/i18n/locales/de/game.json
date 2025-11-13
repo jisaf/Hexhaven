@@ -1,0 +1,22 @@
+{
+  "title": "Hexhaven Schlacht",
+  "yourTurn": "Ihr Zug",
+  "opponentTurn": "Zug des Gegners",
+  "selectCards": "Wählen Sie 2 Karten",
+  "move": "Bewegen",
+  "attack": "Angreifen",
+  "endTurn": "Zug Beenden",
+  "round": "Runde {{number}}",
+  "health": "Gesundheit",
+  "initiative": "Initiative",
+  "turnOrder": "Zugreihenfolge",
+  "elements": "Elemente",
+  "leaveGame": "Spiel Verlassen",
+  "movementHint": "Tippen Sie auf ein hervorgehobenes Hexagon, um Ihren Charakter zu bewegen",
+  "reconnecting": "Verbindung wird wiederhergestellt...",
+  "connection": {
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "reconnecting": "Verbindung wird wiederhergestellt"
+  }
+}

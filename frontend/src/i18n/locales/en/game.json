@@ -1,0 +1,22 @@
+{
+  "title": "Hexhaven Battle",
+  "yourTurn": "Your Turn",
+  "opponentTurn": "Opponent's Turn",
+  "selectCards": "Select 2 Cards",
+  "move": "Move",
+  "attack": "Attack",
+  "endTurn": "End Turn",
+  "round": "Round {{number}}",
+  "health": "Health",
+  "initiative": "Initiative",
+  "turnOrder": "Turn Order",
+  "elements": "Elements",
+  "leaveGame": "Leave Game",
+  "movementHint": "Tap a highlighted hex to move your character",
+  "reconnecting": "Reconnecting...",
+  "connection": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting"
+  }
+}

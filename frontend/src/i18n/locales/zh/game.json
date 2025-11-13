@@ -1,0 +1,22 @@
+{
+  "title": "海文战斗",
+  "yourTurn": "您的回合",
+  "opponentTurn": "对手的回合",
+  "selectCards": "选择2张卡牌",
+  "move": "移动",
+  "attack": "攻击",
+  "endTurn": "结束回合",
+  "round": "第{{number}}轮",
+  "health": "生命值",
+  "initiative": "先攻",
+  "turnOrder": "回合顺序",
+  "elements": "元素",
+  "leaveGame": "离开游戏",
+  "movementHint": "点击高亮的六边形以移动您的角色",
+  "reconnecting": "重新连接中...",
+  "connection": {
+    "connected": "已连接",
+    "disconnected": "已断开",
+    "reconnecting": "重新连接中"
+  }
+}

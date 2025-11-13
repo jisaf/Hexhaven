@@ -348,7 +348,7 @@
 - [X] T190 [US6] Extract all hardcoded UI strings to translation keys in all components
 - [X] T191 [US6] Implement language detection from device settings in frontend/src/i18n/index.ts
 - [X] T192 [US6] Create LanguageSelector component for manual language change in frontend/src/components/LanguageSelector.tsx
-- [ ] T193 [US6] Add namespace-based lazy loading (common.json, game.json, lobby.json) in frontend/src/i18n/index.ts
+- [X] T193 [US6] Add namespace-based lazy loading (common.json, game.json, lobby.json) in frontend/src/i18n/index.ts
 - [X] T194 [US6] Test layout with long German strings (30-50% longer than English) in frontend/tests/e2e/us6-german-layout.spec.ts
 
 **Checkpoint**: Game is fully internationalized - players can play in their preferred language.

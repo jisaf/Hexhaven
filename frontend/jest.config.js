@@ -28,7 +28,8 @@ export default {
       tsconfig: {
         jsx: 'react',
         esModuleInterop: true,
-        allowSyntheticDefaultImports: true
+        allowSyntheticDefaultImports: true,
+        resolveJsonModule: true
       }
     }]
   },
