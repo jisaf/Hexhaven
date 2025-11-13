@@ -230,8 +230,8 @@ class WebSocketService {
   /**
    * Start game (host only)
    */
-  startGame(): void {
-    this.emit('start_game');
+  startGame(scenarioId: string = 'scenario-1'): void {
+    this.emit('start_game', { scenarioId });
   }
 
   /**

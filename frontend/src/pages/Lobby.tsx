@@ -361,7 +361,9 @@ export function Lobby() {
 
   // Game start (T070 - host only)
   const handleStartGame = () => {
-    if (!isCurrentPlayerHost) return;
+    if (!isCurrentPlayerHost) {
+      return;
+    }
 
     if (players.length < 2) {
       setError(t('lobby.needMorePlayers', 'Need at least 2 players to start'));
