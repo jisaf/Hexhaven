@@ -37,21 +37,21 @@ export interface GameBoardData {
 }
 
 export class HexGrid {
-  private app: PIXI.Application;
+  private app!: PIXI.Application;
   private container: HTMLElement;
 
   // Layers
-  private tilesLayer: PIXI.Container;
-  private highlightsLayer: PIXI.Container;
-  private entitiesLayer: PIXI.Container;
-  private lootLayer: PIXI.Container;
+  private tilesLayer!: PIXI.Container;
+  private highlightsLayer!: PIXI.Container;
+  private entitiesLayer!: PIXI.Container;
+  private lootLayer!: PIXI.Container;
 
   // Tiles and entities
-  private tiles: Map<string, HexTile>;
-  private characters: Map<string, CharacterSprite>;
-  private monsters: Map<string, MonsterSprite>;
-  private movementHighlight: MovementHighlight;
-  private lootTokenPool: LootTokenPool;
+  private tiles!: Map<string, HexTile>;
+  private characters!: Map<string, CharacterSprite>;
+  private monsters!: Map<string, MonsterSprite>;
+  private movementHighlight!: MovementHighlight;
+  private lootTokenPool!: LootTokenPool;
 
   // State
   private selectedCharacterId: string | null = null;
@@ -59,23 +59,29 @@ export class HexGrid {
   private options: HexGridOptions;
 
   // Viewport for pan/zoom (US3 - T133)
-  private viewport: Viewport;
+  private viewport!: Viewport;
 
   constructor(container: HTMLElement, options: HexGridOptions) {
     this.container = container;
     this.options = options;
+  }
 
-    // Initialize PixiJS application
-    this.app = new PIXI.Application({
-      width: options.width,
-      height: options.height,
+  /**
+   * Initialize the PixiJS application (async for PixiJS v8)
+   */
+  public async init(): Promise<void> {
+    // Initialize PixiJS application (PixiJS v8 async pattern)
+    this.app = new PIXI.Application();
+    await this.app.init({
+      width: this.options.width,
+      height: this.options.height,
       backgroundColor: 0x2C2C2C,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true
     });
 
-    container.appendChild(this.app.view as HTMLCanvasElement);
+    this.container.appendChild(this.app.canvas);
 
     // Create viewport with pan/zoom/pinch support (US3 - T133-T135)
     // World bounds: 2000x2000 provides enough space for typical scenarios
@@ -83,8 +89,8 @@ export class HexGrid {
     const worldHeight = 2000;
 
     this.viewport = new Viewport({
-      screenWidth: options.width,
-      screenHeight: options.height,
+      screenWidth: this.options.width,
+      screenHeight: this.options.height,
       worldWidth,
       worldHeight,
       events: this.app.renderer.events
@@ -159,7 +165,7 @@ export class HexGrid {
 
     // Setup background click handler
     this.app.stage.eventMode = 'static';
-    this.app.stage.hitArea = new PIXI.Rectangle(0, 0, options.width, options.height);
+    this.app.stage.hitArea = new PIXI.Rectangle(0, 0, this.options.width, this.options.height);
     this.app.stage.on('pointerdown', this.handleBackgroundClick.bind(this));
   }
 
@@ -475,32 +481,43 @@ export class HexGrid {
    * Clear the entire board (User Story 2 - T114)
    */
   public clearBoard(): void {
+    // Only clear if initialized
+    if (!this.tiles) return;
+
     // Clear tiles
     for (const tile of this.tiles.values()) {
-      this.tilesLayer.removeChild(tile);
+      this.tilesLayer?.removeChild(tile);
       tile.destroy();
     }
     this.tiles.clear();
 
     // Clear characters
-    for (const character of this.characters.values()) {
-      this.entitiesLayer.removeChild(character);
-      character.destroy();
+    if (this.characters) {
+      for (const character of this.characters.values()) {
+        this.entitiesLayer?.removeChild(character);
+        character.destroy();
+      }
+      this.characters.clear();
     }
-    this.characters.clear();
 
     // Clear monsters (User Story 2 - T114)
-    for (const monster of this.monsters.values()) {
-      this.entitiesLayer.removeChild(monster);
-      monster.destroy();
+    if (this.monsters) {
+      for (const monster of this.monsters.values()) {
+        this.entitiesLayer?.removeChild(monster);
+        monster.destroy();
+      }
+      this.monsters.clear();
     }
-    this.monsters.clear();
 
     // Clear loot tokens (User Story 2 - T123)
-    this.lootTokenPool.clear();
+    if (this.lootTokenPool) {
+      this.lootTokenPool.clear();
+    }
 
     // Clear highlights
-    this.movementHighlight.clear();
+    if (this.movementHighlight) {
+      this.movementHighlight.clear();
+    }
 
     this.selectedCharacterId = null;
     this.selectedMonsterId = null;
@@ -611,10 +628,50 @@ export class HexGrid {
    * Destroy and cleanup
    */
   public destroy(): void {
-    this.clearBoard();
-    this.movementHighlight.destroy();
-    this.lootTokenPool.destroy();
-    this.app.destroy(true, { children: true, texture: true });
-    this.container.removeChild(this.app.view as HTMLCanvasElement);
+    // Only destroy if app was initialized
+    if (!this.app) return;
+
+    try {
+      this.clearBoard();
+    } catch (error) {
+      console.error('Error clearing board:', error);
+    }
+
+    try {
+      if (this.movementHighlight) {
+        this.movementHighlight.destroy();
+      }
+    } catch (error) {
+      console.error('Error destroying movement highlight:', error);
+    }
+
+    try {
+      if (this.lootTokenPool) {
+        this.lootTokenPool.destroy();
+      }
+    } catch (error) {
+      console.error('Error destroying loot token pool:', error);
+    }
+
+    try {
+      // Safely remove canvas if it exists in the container
+      if (this.app && this.app.canvas && this.container && this.container.contains(this.app.canvas)) {
+        this.container.removeChild(this.app.canvas);
+      }
+    } catch (error) {
+      console.error('Error removing canvas:', error);
+    }
+
+    try {
+      if (this.app) {
+        this.app.destroy(true, { children: true, texture: true });
+      }
+    } catch (error) {
+      console.error('Error destroying PixiJS app:', error);
+    }
+
+    // Prevent double-destroy by nulling the app reference
+    // @ts-ignore - we're deliberately setting this to null for safety
+    this.app = null;
   }
 }

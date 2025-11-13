@@ -114,12 +114,11 @@ export function useGameState() {
   /**
    * Handle game started event
    */
-  const handleGameStarted = useCallback((data: { gameState: unknown }) => {
-    const gameState = data.gameState as { turnOrder?: string[] };
+  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => {
     setGameState((prev) => ({
       ...prev,
-      room: prev.room ? { ...prev.room, status: 'active' } : null,
-      turnOrder: gameState.turnOrder || [],
+      room: prev.room ? { ...prev.room, status: 'active', scenarioId: data.scenarioId } : null,
+      turnOrder: [],
       currentTurnIndex: 0,
       currentRound: 1,
     }));
@@ -137,13 +136,13 @@ export function useGameState() {
   }, []);
 
   /**
-   * Handle next turn started event
+   * Handle turn started event
    */
-  const handleNextTurnStarted = useCallback(
-    (data: { currentTurnIndex: number; entityId: string }) => {
+  const handleTurnStarted = useCallback(
+    (data: { entityId: string; entityType: 'character' | 'monster'; turnIndex: number }) => {
       setGameState((prev) => ({
         ...prev,
-        currentTurnIndex: data.currentTurnIndex,
+        currentTurnIndex: data.turnIndex,
       }));
     },
     []
@@ -177,7 +176,7 @@ export function useGameState() {
     websocketService.on('character_selected', handleCharacterSelected);
     websocketService.on('game_started', handleGameStarted);
     websocketService.on('turn_order_determined', handleTurnOrderDetermined);
-    websocketService.on('next_turn_started', handleNextTurnStarted);
+    websocketService.on('turn_started', handleTurnStarted);
     websocketService.on('game_state_update', handleGameStateUpdate);
     websocketService.on('error', handleError);
 
@@ -188,7 +187,7 @@ export function useGameState() {
       websocketService.off('character_selected', handleCharacterSelected);
       websocketService.off('game_started', handleGameStarted);
       websocketService.off('turn_order_determined', handleTurnOrderDetermined);
-      websocketService.off('next_turn_started', handleNextTurnStarted);
+      websocketService.off('turn_started', handleTurnStarted);
       websocketService.off('game_state_update', handleGameStateUpdate);
       websocketService.off('error', handleError);
     };
@@ -199,7 +198,7 @@ export function useGameState() {
     handleCharacterSelected,
     handleGameStarted,
     handleTurnOrderDetermined,
-    handleNextTurnStarted,
+    handleTurnStarted,
     handleGameStateUpdate,
     handleError,
   ]);

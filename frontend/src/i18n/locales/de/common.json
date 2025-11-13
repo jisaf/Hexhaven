@@ -1,0 +1,13 @@
+{
+  "create": "Erstellen",
+  "join": "Beitreten",
+  "start": "Starten",
+  "cancel": "Abbrechen",
+  "confirm": "Bestätigen",
+  "continue": "Fortfahren",
+  "back": "Zurück",
+  "next": "Weiter",
+  "loading": "Laden...",
+  "error": "Fehler",
+  "success": "Erfolg"
+}

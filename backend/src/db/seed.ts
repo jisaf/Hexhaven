@@ -1,9 +1,12 @@
 /**
  * Database seed script
  * Populates the database with 6 character classes and 5 scenarios
+ * US5 - T173: Updated to load character and scenario data from JSON files
  */
 
 import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -13,370 +16,62 @@ async function main() {
   // ========== CHARACTER CLASSES ==========
   console.log('Creating character classes...');
 
-  const characterClasses = [
-    {
-      className: 'Brute',
-      maxHealth: 10,
-      description:
-        'A powerful melee fighter who can take and deal massive damage.',
-      abilityDeck: [
-        // Simplified ability deck for MVP - full deck to be added later
-        {
-          name: 'Trample',
-          level: 1,
-          initiative: 72,
-          topAction: { type: 'attack', value: 3 },
-          bottomAction: { type: 'move', value: 3 },
-        },
-      ],
-    },
-    {
-      className: 'Tinkerer',
-      maxHealth: 8,
-      description: 'A versatile support class with healing and buff abilities.',
-      abilityDeck: [
-        {
-          name: 'Reviving Ether',
-          level: 1,
-          initiative: 79,
-          topAction: { type: 'heal', value: 3 },
-          bottomAction: { type: 'move', value: 2 },
-        },
-      ],
-    },
-    {
-      className: 'Spellweaver',
-      maxHealth: 6,
-      description:
-        'A powerful elemental mage who manipulates the elemental infusions.',
-      abilityDeck: [
-        {
-          name: 'Fire Orbs',
-          level: 1,
-          initiative: 64,
-          topAction: {
-            type: 'attack',
-            value: 4,
-            range: 3,
-            elementGenerate: 'fire',
-          },
-          bottomAction: { type: 'move', value: 3 },
-        },
-      ],
-    },
-    {
-      className: 'Scoundrel',
-      maxHealth: 8,
-      description: 'A fast melee attacker who excels at positioning.',
-      abilityDeck: [
-        {
-          name: 'Quick Hands',
-          level: 1,
-          initiative: 11,
-          topAction: { type: 'loot', value: 1 },
-          bottomAction: { type: 'move', value: 4 },
-        },
-      ],
-    },
-    {
-      className: 'Cragheart',
-      maxHealth: 10,
-      description: 'A ranged attacker who manipulates obstacles on the map.',
-      abilityDeck: [
-        {
-          name: 'Rumbling Advance',
-          level: 1,
-          initiative: 29,
-          topAction: { type: 'attack', value: 3, range: 3 },
-          bottomAction: { type: 'move', value: 3 },
-        },
-      ],
-    },
-    {
-      className: 'Mindthief',
-      maxHealth: 6,
-      description: 'An agile melee attacker with mind control abilities.',
-      abilityDeck: [
-        {
-          name: 'Into the Night',
-          level: 1,
-          initiative: 79,
-          topAction: { type: 'attack', value: 2 },
-          bottomAction: { type: 'move', value: 3 },
-        },
-      ],
-    },
-  ];
+  // Load characters from JSON file (US5 - T173)
+  const charactersPath = path.join(__dirname, '../data/characters.json');
+  const charactersRaw = fs.readFileSync(charactersPath, 'utf-8');
+  const charactersData = JSON.parse(charactersRaw);
 
-  for (const charClass of characterClasses) {
+  // Load ability cards from JSON file (US5 - T173)
+  const abilityCardsPath = path.join(__dirname, '../data/ability-cards.json');
+  const abilityCardsRaw = fs.readFileSync(abilityCardsPath, 'utf-8');
+  const abilityCardsData = JSON.parse(abilityCardsRaw);
+
+  // Create a map of ability cards by ID for quick lookup
+  const abilityCardMap = new Map();
+  abilityCardsData.abilityCards.forEach((card: any) => {
+    abilityCardMap.set(card.id, card);
+  });
+
+  for (const character of charactersData.characters) {
+    // Resolve ability card IDs to full card objects
+    const abilityDeck = character.abilityCards.map((cardId: string) => {
+      const card = abilityCardMap.get(cardId);
+      if (!card) {
+        console.warn(`Warning: Ability card ${cardId} not found for ${character.classType}`);
+        return null;
+      }
+      return {
+        name: card.name,
+        level: card.level,
+        initiative: card.initiative,
+        topAction: card.topAction,
+        bottomAction: card.bottomAction,
+      };
+    }).filter(Boolean); // Remove any null entries
+
     await prisma.characterClass.upsert({
-      where: { className: charClass.className },
+      where: { className: character.classType },
       update: {},
-      create: charClass,
+      create: {
+        className: character.classType,
+        maxHealth: character.maxHealth,
+        description: character.description,
+        abilityDeck: abilityDeck,
+      },
     });
   }
 
-  console.log(`✓ Created ${characterClasses.length} character classes`);
+  console.log(`✓ Created ${charactersData.characters.length} character classes from JSON`);
 
   // ========== SCENARIOS ==========
   console.log('Creating scenarios...');
 
-  const scenarios = [
-    {
-      name: 'Black Barrow',
-      difficulty: 1,
-      objectivePrimary: 'Kill all enemies',
-      objectiveSecondary: 'Collect treasure',
-      mapLayout: [
-        // Simple 5x5 hex grid for MVP
-        {
-          coordinates: { q: 0, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 0, r: 1 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 1 },
-          terrain: 'obstacle',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 1 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 0, r: 2 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: true,
-        },
-        {
-          coordinates: { q: 1, r: 2 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 2 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-      ],
-      monsterGroups: [
-        {
-          type: 'Bandit Guard',
-          count: 2,
-          spawnPoints: [
-            { q: 0, r: 0 },
-            { q: 2, r: 0 },
-          ],
-          isElite: false,
-        },
-      ],
-    },
-    {
-      name: 'Crypt of Blood',
-      difficulty: 2,
-      objectivePrimary: 'Defeat the boss',
-      mapLayout: [
-        {
-          coordinates: { q: 0, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 0 },
-          terrain: 'difficult',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 0, r: 1 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 1 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 1 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-      ],
-      monsterGroups: [
-        {
-          type: 'Living Bones',
-          count: 3,
-          spawnPoints: [
-            { q: 0, r: 0 },
-            { q: 1, r: 0 },
-            { q: 2, r: 0 },
-          ],
-          isElite: false,
-        },
-      ],
-    },
-    {
-      name: 'Ruinous Rift',
-      difficulty: 3,
-      objectivePrimary: 'Survive 5 rounds',
-      mapLayout: [
-        {
-          coordinates: { q: 0, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 0 },
-          terrain: 'hazardous',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-      ],
-      monsterGroups: [
-        {
-          type: 'Cultist',
-          count: 2,
-          spawnPoints: [
-            { q: 0, r: 0 },
-            { q: 2, r: 0 },
-          ],
-          isElite: true,
-        },
-      ],
-    },
-    {
-      name: 'Decaying Crypt',
-      difficulty: 1,
-      objectivePrimary: 'Kill all enemies',
-      mapLayout: [
-        {
-          coordinates: { q: 0, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-      ],
-      monsterGroups: [
-        {
-          type: 'Living Corpse',
-          count: 2,
-          spawnPoints: [
-            { q: 0, r: 0 },
-            { q: 1, r: 0 },
-          ],
-          isElite: false,
-        },
-      ],
-    },
-    {
-      name: 'Mountain Hammer',
-      difficulty: 2,
-      objectivePrimary: 'Reach the exit',
-      objectiveSecondary: 'Defeat the elite guard',
-      mapLayout: [
-        {
-          coordinates: { q: 0, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 1, r: 0 },
-          terrain: 'obstacle',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-        {
-          coordinates: { q: 2, r: 0 },
-          terrain: 'normal',
-          occupiedBy: null,
-          hasLoot: false,
-          hasTreasure: false,
-        },
-      ],
-      monsterGroups: [
-        {
-          type: 'Stone Golem',
-          count: 1,
-          spawnPoints: [{ q: 1, r: 0 }],
-          isElite: true,
-        },
-      ],
-    },
-  ];
+  // Load scenarios from JSON file (US5 - T173)
+  const scenariosPath = path.join(__dirname, '../data/scenarios.json');
+  const scenariosRaw = fs.readFileSync(scenariosPath, 'utf-8');
+  const scenariosData = JSON.parse(scenariosRaw);
 
-  for (const scenario of scenarios) {
+  for (const scenario of scenariosData.scenarios) {
     // Check if scenario already exists by name
     const existing = await prisma.scenario.findFirst({
       where: { name: scenario.name },
@@ -388,15 +83,17 @@ async function main() {
           name: scenario.name,
           difficulty: scenario.difficulty,
           objectivePrimary: scenario.objectivePrimary,
-          objectiveSecondary: scenario.objectiveSecondary,
+          objectiveSecondary: scenario.objectiveSecondary || null,
           mapLayout: scenario.mapLayout,
           monsterGroups: scenario.monsterGroups,
+          treasures: scenario.treasures || [],
+          playerStartPositions: scenario.playerStartPositions,
         },
       });
     }
   }
 
-  console.log(`✓ Created ${scenarios.length} scenarios`);
+  console.log(`✓ Created ${scenariosData.scenarios.length} scenarios from JSON`);
 
   console.log('✅ Database seeding complete!');
 }

@@ -1,0 +1,144 @@
+{
+  "common": {
+    "create": "Erstellen",
+    "join": "Beitreten",
+    "start": "Starten",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "continue": "Fortfahren",
+    "back": "Zurück",
+    "next": "Weiter",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg"
+  },
+  "lobby": {
+    "title": "Hexhaven Mehrspieler",
+    "welcome": "Willkommen",
+    "createGame": "Spiel Erstellen",
+    "createRoom": "Spiel Erstellen",
+    "creating": "Wird erstellt...",
+    "joinGame": "Spiel Beitreten",
+    "joinRoom": "Spiel Beitreten",
+    "joinGameTitle": "Einem Spiel Beitreten",
+    "joining": "Tritt bei...",
+    "join": "Beitreten",
+    "or": "oder",
+    "back": "Zurück",
+    "roomCode": "Raumcode",
+    "roomCodeLabel": "Raumcode",
+    "enterRoomCode": "Raumcode Eingeben",
+    "enterRoomCodeInstruction": "Geben Sie den 6-stelligen Raumcode ein",
+    "invalidRoomCode": "Ungültiger Raumcode (6 Zeichen erforderlich)",
+    "nickname": "Spitzname",
+    "nicknameLabel": "Spitzname",
+    "enterNickname": "Geben Sie Ihren Spitznamen ein",
+    "enterNicknameTitle": "Geben Sie Ihren Spitznamen Ein",
+    "nicknameInstruction": "Wählen Sie einen Spitznamen für dieses Spiel",
+    "invalidNickname": "Spitzname muss 1-50 Zeichen lang sein",
+    "enterJoinDetails": "Geben Sie den Raumcode und Ihren Spitznamen ein",
+    "copyRoomCode": "Raumcode kopieren",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "waitingForPlayers": "Warte darauf, dass alle Spieler Charaktere auswählen...",
+    "waitingForPlayer": "Warte auf Spieler...",
+    "waitingForHost": "Warte darauf, dass der Gastgeber das Spiel startet...",
+    "players": "Spieler",
+    "playersInLobby": "Spieler in der Lobby",
+    "selectCharacter": "Wählen Sie Ihren Charakter",
+    "selectScenario": "Szenario Auswählen",
+    "allPlayersReady": "Alle Spieler bereit!",
+    "startGame": "Spiel Starten",
+    "hostWillStart": "Der Gastgeber wird das Spiel starten",
+    "you": "(Sie)",
+    "youAreHost": "Sie sind der Gastgeber",
+    "host": "Gastgeber",
+    "ready": "Bereit",
+    "taken": "Belegt",
+    "notAllReady": "Alle Spieler müssen einen Charakter auswählen",
+    "needMorePlayers": "Mindestens 2 Spieler erforderlich zum Starten",
+    "connectionStatus": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt",
+      "reconnecting": "Verbindung wird wiederhergestellt"
+    }
+  },
+  "characters": {
+    "Brute": {
+      "name": "Schläger",
+      "description": "Mächtiger Nahkampfkämpfer mit hoher Gesundheit"
+    },
+    "Tinkerer": {
+      "name": "Tüftler",
+      "description": "Unterstützungsklasse mit Heilung und Erholung"
+    },
+    "Spellweaver": {
+      "name": "Zauberweber",
+      "description": "Elementarmagie mit Flächenangriffen"
+    },
+    "Scoundrel": {
+      "name": "Schurke",
+      "description": "Schneller Angreifer mit Nachbarschaftsboni"
+    },
+    "Cragheart": {
+      "name": "Felsherz",
+      "description": "Fernkampfangreifer mit Hindernis-Manipulation"
+    },
+    "Mindthief": {
+      "name": "Gedankendieb",
+      "description": "Gedankenkontrolle und Nahkampfverstärkung"
+    }
+  },
+  "game": {
+    "title": "Hexhaven Schlacht",
+    "yourTurn": "Ihr Zug",
+    "opponentTurn": "Zug des Gegners",
+    "selectCards": "Wählen Sie 2 Karten",
+    "move": "Bewegen",
+    "attack": "Angreifen",
+    "endTurn": "Zug Beenden",
+    "round": "Runde {{number}}",
+    "health": "Gesundheit",
+    "initiative": "Initiative",
+    "turnOrder": "Zugreihenfolge",
+    "elements": "Elemente",
+    "leaveGame": "Spiel Verlassen",
+    "movementHint": "Tippen Sie auf ein hervorgehobenes Hexagon, um Ihren Charakter zu bewegen",
+    "reconnecting": "Verbindung wird wiederhergestellt...",
+    "connection": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt",
+      "reconnecting": "Verbindung wird wiederhergestellt"
+    }
+  },
+  "cards": {
+    "topAction": "Obere Aktion",
+    "bottomAction": "Untere Aktion",
+    "initiative": "Initiative: {{value}}",
+    "selectTopCard": "Obere Karte auswählen",
+    "selectBottomCard": "Untere Karte auswählen"
+  },
+  "scenarios": {
+    "selectScenario": "Wählen Sie ein Szenario",
+    "difficulty": "Schwierigkeit: {{level}}",
+    "objective": "Ziel",
+    "monsters": "Monster"
+  },
+  "connection": {
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "reconnecting": "Verbindung wird wiederhergestellt...",
+    "reconnected": "Wieder verbunden",
+    "playerDisconnected": "{{playerName}} hat die Verbindung getrennt",
+    "playerReconnected": "{{playerName}} hat die Verbindung wiederhergestellt"
+  },
+  "errors": {
+    "roomNotFound": "Raum nicht gefunden",
+    "roomFull": "Raum ist voll",
+    "gameAlreadyStarted": "Spiel hat bereits begonnen",
+    "invalidMove": "Ungültige Bewegung",
+    "invalidAttack": "Ungültiger Angriff",
+    "notYourTurn": "Nicht Ihr Zug",
+    "connectionError": "Verbindungsfehler - bitte versuchen Sie es erneut"
+  }
+}

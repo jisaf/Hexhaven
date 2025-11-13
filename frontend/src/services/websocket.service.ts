@@ -22,7 +22,7 @@ export interface WebSocketEvents {
   ws_reconnected: () => void;
 
   // Room events
-  room_joined: (data: { roomCode: string; players: unknown[]; playerId: string; isHost: boolean }) => void;
+  room_joined: (data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => void;
   player_joined: (data: { player: unknown }) => void;
   player_left: (data: { playerId: string }) => void;
   player_disconnected: (data: { playerId: string; playerName: string }) => void;
@@ -32,14 +32,14 @@ export interface WebSocketEvents {
   character_selected: (data: { playerId: string; characterClass: string }) => void;
 
   // Game start
-  game_started: (data: { gameState: { board: unknown; currentPlayerId: string } }) => void;
+  game_started: (data: { scenarioId: string; scenarioName: string; mapLayout: any[]; monsters: any[]; characters: any[] }) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;
-  next_turn_started: (data: { currentTurnIndex: number; entityId: string }) => void;
+  turn_started: (data: { entityId: string; entityType: 'character' | 'monster'; turnIndex: number }) => void;
 
   // Movement
-  character_moved: (data: { characterId: string; targetHex: { q: number; r: number } }) => void;
+  character_moved: (data: { characterId: string; fromHex: { q: number; r: number }; toHex: { q: number; r: number }; movementPath: { q: number; r: number }[] }) => void;
 
   // Attack
   attack_resolved: (data: {

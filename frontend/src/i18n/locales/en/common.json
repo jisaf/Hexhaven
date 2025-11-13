@@ -1,0 +1,13 @@
+{
+  "create": "Create",
+  "join": "Join",
+  "start": "Start",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "continue": "Continue",
+  "back": "Back",
+  "next": "Next",
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success"
+}

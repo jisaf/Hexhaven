@@ -14,6 +14,7 @@
   },
   "lobby": {
     "title": "Hexhaven Multiplayer",
+    "welcome": "Welcome",
     "createGame": "Create Game",
     "createRoom": "Create Game",
     "creating": "Creating...",

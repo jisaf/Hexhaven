@@ -11,6 +11,7 @@ import { GameBoard } from './pages/GameBoard';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
+import { DebugConsole } from './components/DebugConsole';
 import './App.css';
 
 /**
@@ -80,6 +81,7 @@ function App() {
           <Route path="/game" element={<GameBoard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <DebugConsole />
       </BrowserRouter>
     </WebSocketConnectionProvider>
   );

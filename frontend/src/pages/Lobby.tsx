@@ -26,12 +26,13 @@ import { PlayerList, type Player } from '../components/PlayerList';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { DebugConsole } from '../components/DebugConsole';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
 interface GameRoom {
   roomCode: string;
-  status: 'lobby' | 'playing' | 'completed';
+  status: 'lobby' | 'active' | 'completed' | 'abandoned';
 }
 
 interface ActiveRoom {
@@ -63,10 +64,24 @@ export function Lobby() {
   const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
 
   // Event handlers - defined before useEffect that uses them
-  const handleRoomJoined = useCallback((data: { roomCode: string; players: unknown[]; playerId?: string; isHost?: boolean }) => {
+  const handleRoomJoined = useCallback((data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => {
     console.log('Room joined event received:', data);
-    setRoom({ roomCode: data.roomCode, status: 'lobby' });
-    setPlayers(data.players as Player[]);
+
+    setRoom({ roomCode: data.roomCode, status: data.roomStatus });
+
+    // Transform server players to include required Player interface fields
+    const transformedPlayers = (data.players as Array<{
+      id: string;
+      nickname: string;
+      isHost: boolean;
+      characterClass?: string;
+    }>).map(p => ({
+      ...p,
+      connectionStatus: 'connected' as const,
+      isReady: !!p.characterClass, // Ready if they have selected a character
+    }));
+
+    setPlayers(transformedPlayers);
 
     // Get current player ID from localStorage UUID
     const uuid = localStorage.getItem('playerUUID');
@@ -74,19 +89,31 @@ export function Lobby() {
       setCurrentPlayerId(uuid);
 
       // Find if this player is the host
-      const currentPlayer = (data.players as Player[]).find(p => p.id === uuid);
+      const currentPlayer = transformedPlayers.find(p => p.id === uuid);
       if (currentPlayer) {
         setIsHost(currentPlayer.isHost);
       }
     }
 
-    setMode('in-room');
+    // If rejoining an active game, navigate to game board
+    if (data.roomStatus === 'active') {
+      console.log('Rejoined active game, navigating to game board...');
+      navigate('/game');
+    } else {
+      setMode('in-room');
+    }
+
     setIsLoading(false);
     setError(null);
-  }, []);
+  }, [navigate]);
 
   const handlePlayerJoined = useCallback((data: { player: unknown }) => {
-    setPlayers((prev) => [...prev, data.player as Player]);
+    const player = data.player as { id: string; nickname: string; isHost: boolean; characterClass?: string };
+    setPlayers((prev) => [...prev, {
+      ...player,
+      connectionStatus: 'connected' as const,
+      isReady: !!player.characterClass,
+    }]);
   }, []);
 
   const handlePlayerLeft = useCallback((data: { playerId: string }) => {
@@ -181,6 +208,15 @@ export function Lobby() {
     loadMyRoom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
+
+  // Auto-rejoin active game if player is in one
+  useEffect(() => {
+    if (myRoom && myRoom.status === 'active' && mode === 'initial') {
+      console.log('Player is in an active game, auto-rejoining room...');
+      handleRejoinMyRoom();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myRoom]);
 
   // Fetch active rooms on mount and periodically
   useEffect(() => {
@@ -420,10 +456,13 @@ export function Lobby() {
     <div className="lobby-page">
       <DebugConsole />
       <header className="lobby-header">
-        <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+        <div className="header-top">
+          <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+          <LanguageSelector className="header-language-selector" />
+        </div>
         {localStorage.getItem('playerNickname') && (
           <p className="welcome-message">
-            Welcome, <strong>{localStorage.getItem('playerNickname')}</strong>
+            {t('lobby.welcome', 'Welcome')}, <strong>{localStorage.getItem('playerNickname')}</strong>
           </p>
         )}
       </header>
@@ -443,7 +482,11 @@ export function Lobby() {
                     <span className="my-room-status">
                       {myRoom.status === 'lobby'
                         ? t('lobby.waitingToStart', 'Waiting to Start')
-                        : t('lobby.inProgress', 'In Progress')}
+                        : myRoom.status === 'active'
+                        ? t('lobby.inProgress', 'In Progress')
+                        : myRoom.status === 'completed'
+                        ? t('lobby.completed', 'Completed')
+                        : t('lobby.abandoned', 'Abandoned')}
                     </span>
                   </div>
                   <div className="my-room-info">
@@ -640,6 +683,23 @@ export function Lobby() {
             <div className="game-controls-section">
               {isCurrentPlayerHost ? (
                 <div className="host-controls">
+                  {/* Error banner near the button for visibility */}
+                  {error && (
+                    <div className="error-banner-inline" role="alert" style={{
+                      marginBottom: '16px',
+                      padding: '16px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                      border: '2px solid #ef4444',
+                      borderRadius: '8px',
+                      color: '#ef4444',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      textAlign: 'center'
+                    }}>
+                      ⚠️ {error}
+                    </div>
+                  )}
+
                   <button
                     className="primary-button start-button"
                     onClick={handleStartGame}
@@ -661,8 +721,13 @@ export function Lobby() {
                     </p>
                   )}
                   {canStartGame && !allPlayersReady && (
+                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#f39c12' }}>
+                      ⚠️ {t('lobby.playersNeedToSelect', 'Some players need to select characters')}
+                    </p>
+                  )}
+                  {canStartGame && allPlayersReady && (
                     <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#2ecc71' }}>
-                      ✅ {t('lobby.readyToStart', 'Ready to start!')} {players.length} players in room
+                      ✅ {t('lobby.readyToStart', 'All players ready! Click Start Game')}
                     </p>
                   )}
                 </div>

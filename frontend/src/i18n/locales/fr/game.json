@@ -1,0 +1,22 @@
+{
+  "title": "Bataille d'Hexhaven",
+  "yourTurn": "Votre Tour",
+  "opponentTurn": "Tour de l'Adversaire",
+  "selectCards": "Sélectionnez 2 Cartes",
+  "move": "Déplacer",
+  "attack": "Attaquer",
+  "endTurn": "Terminer le Tour",
+  "round": "Manche {{number}}",
+  "health": "Santé",
+  "initiative": "Initiative",
+  "turnOrder": "Ordre des Tours",
+  "elements": "Éléments",
+  "leaveGame": "Quitter la Partie",
+  "movementHint": "Appuyez sur un hexagone en surbrillance pour déplacer votre personnage",
+  "reconnecting": "Reconnexion...",
+  "connection": {
+    "connected": "Connecté",
+    "disconnected": "Déconnecté",
+    "reconnecting": "Reconnexion"
+  }
+}
