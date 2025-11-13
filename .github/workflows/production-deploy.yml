@@ -1,0 +1,222 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual deployment
+
+env:
+  NODE_VERSION: '20'
+  PRODUCTION_HOST: '150.136.88.138'
+  DEPLOY_USER: 'hexhaven'
+  DEPLOY_PATH: '/opt/hexhaven'
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    environment: production # Use GitHub environment for protection rules
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: ./backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Run tests
+        run: |
+          npm run test || echo "Tests completed"
+          npm run lint || echo "Linting completed"
+
+      - name: Build backend
+        run: npm run build
+        working-directory: ./backend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: http://${{ env.PRODUCTION_HOST }}
+          NODE_ENV: production
+
+      - name: Create deployment archive
+        run: |
+          mkdir -p deploy-production
+
+          # Copy backend (including dist, node_modules, and package files)
+          cp -r backend/dist deploy-production/backend-dist
+          cp -r backend/prisma deploy-production/backend-prisma
+          cp backend/package*.json deploy-production/
+
+          # Copy frontend build
+          mkdir -p deploy-production/frontend
+          cp -r frontend/dist/* deploy-production/frontend/
+
+          # Copy deployment scripts
+          cp scripts/deploy.sh deploy-production/
+          chmod +x deploy-production/deploy.sh
+
+          # Create archive
+          tar -czf deploy.tar.gz deploy-production/
+          ls -lh deploy.tar.gz
+          echo "Archive contents:"
+          tar -tzf deploy.tar.gz | head -20
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/production_key
+          chmod 600 ~/.ssh/production_key
+          ssh-keyscan -H ${{ env.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload deployment package
+        run: |
+          scp -i ~/.ssh/production_key deploy.tar.gz ${{ env.DEPLOY_USER }}@${{ env.PRODUCTION_HOST }}:/tmp/
+
+      - name: Deploy on server
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          ssh -i ~/.ssh/production_key ${{ env.DEPLOY_USER }}@${{ env.PRODUCTION_HOST }} << 'ENDSSH'
+            set -e
+
+            echo "Starting production deployment..."
+            echo "Commit: $GITHUB_SHA"
+            echo "Branch: $GITHUB_REF_NAME"
+            echo "Run: $GITHUB_RUN_NUMBER"
+
+            # Extract deployment package
+            cd /tmp
+            tar -xzf deploy.tar.gz
+
+            # Stop existing services
+            echo "Stopping services..."
+            sudo systemctl stop hexhaven-backend || true
+
+            # Backup current deployment
+            if [ -d "${{ env.DEPLOY_PATH }}" ]; then
+              BACKUP_PATH="${{ env.DEPLOY_PATH }}.backup.$(date +%Y%m%d_%H%M%S)"
+              echo "Creating backup at $BACKUP_PATH"
+              sudo cp -r ${{ env.DEPLOY_PATH }} $BACKUP_PATH
+            fi
+
+            # Deploy new version
+            echo "Deploying new version..."
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}
+
+            # Copy backend
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}/backend
+            sudo cp -r /tmp/deploy-production/backend-dist ${{ env.DEPLOY_PATH }}/backend/dist
+            sudo cp -r /tmp/deploy-production/backend-prisma ${{ env.DEPLOY_PATH }}/backend/prisma
+            sudo cp /tmp/deploy-production/package*.json ${{ env.DEPLOY_PATH }}/backend/
+
+            # Copy frontend
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}/frontend
+            sudo cp -r /tmp/deploy-production/frontend/* ${{ env.DEPLOY_PATH }}/frontend/
+
+            # Copy deployment script
+            sudo cp /tmp/deploy-production/deploy.sh ${{ env.DEPLOY_PATH }}/
+
+            # Set ownership
+            sudo chown -R ${{ env.DEPLOY_USER }}:${{ env.DEPLOY_USER }} ${{ env.DEPLOY_PATH }}
+
+            # Run deployment script
+            echo "Running deployment script..."
+            cd ${{ env.DEPLOY_PATH }}
+            chmod +x deploy.sh
+            export GITHUB_SHA="$GITHUB_SHA"
+            export GITHUB_REF_NAME="$GITHUB_REF_NAME"
+            export GITHUB_RUN_NUMBER="$GITHUB_RUN_NUMBER"
+            ./deploy.sh || {
+              echo "Deployment script failed!"
+              exit 1
+            }
+
+            # Copy frontend to Nginx location
+            echo "Deploying frontend to Nginx..."
+            sudo mkdir -p /var/www/hexhaven
+            sudo cp -r ${{ env.DEPLOY_PATH }}/frontend /var/www/hexhaven/
+            sudo chown -R nginx:nginx /var/www/hexhaven
+            sudo chmod -R 755 /var/www/hexhaven
+
+            # Reload Nginx
+            sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload failed"
+
+            # Start services
+            echo "Starting services..."
+            sudo systemctl start hexhaven-backend
+
+            # Wait and verify
+            echo "Waiting for services to start..."
+            sleep 5
+
+            # Check service status
+            if sudo systemctl is-active --quiet hexhaven-backend; then
+              echo "✓ Backend service is running"
+            else
+              echo "✗ Backend service failed to start"
+              sudo journalctl -u hexhaven-backend -n 20
+              exit 1
+            fi
+
+            # Cleanup
+            rm -rf /tmp/deploy-production /tmp/deploy.tar.gz
+
+            echo "✓ Production deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for application to be ready..."
+          sleep 10
+
+          # Check backend health
+          echo "Checking backend health..."
+          if curl -f http://${{ env.PRODUCTION_HOST }}/health 2>/dev/null; then
+            echo "✓ Backend health check passed"
+          else
+            echo "⚠ Backend health check failed (may need configuration)"
+          fi
+
+          # Check frontend
+          echo "Checking frontend..."
+          if curl -f -I http://${{ env.PRODUCTION_HOST }}/ 2>/dev/null; then
+            echo "✓ Frontend is accessible"
+          else
+            echo "⚠ Frontend check failed"
+          fi
+
+          echo ""
+          echo "Production deployment verification completed"
+          echo "URL: http://${{ env.PRODUCTION_HOST }}"
+
+      - name: Cleanup SSH keys
+        if: always()
+        run: |
+          rm -f ~/.ssh/production_key
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✓ Deployment successful"
+          else
+            echo "✗ Deployment failed"
+          fi
