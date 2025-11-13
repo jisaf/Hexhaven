@@ -70,6 +70,7 @@ export const ReconnectingModal: React.FC<ReconnectingModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="reconnecting-title"
+      data-testid="reconnecting-modal"
     >
       <div className="reconnecting-modal">
         {getStatusIcon()}

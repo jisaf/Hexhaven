@@ -101,6 +101,11 @@ export const PlayerDisconnectedBanner: React.FC<
       role="alert"
       aria-live="polite"
       aria-atomic="true"
+      data-testid={
+        status === 'disconnected'
+          ? 'player-disconnected-banner'
+          : 'player-reconnected-banner'
+      }
     >
       <div className="banner-content">
         {getStatusIcon()}
@@ -110,6 +115,7 @@ export const PlayerDisconnectedBanner: React.FC<
         className="banner-dismiss"
         onClick={handleDismiss}
         aria-label="Dismiss notification"
+        data-testid="banner-dismiss"
       >
         ✕
       </button>
