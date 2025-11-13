@@ -8,8 +8,8 @@
     "tsConfigPath": "tsconfig.json",
     "assets": [
       {
-        "include": "data/**/*.json",
-        "outDir": "dist"
+        "include": "data/**/*",
+        "watchAssets": true
       }
     ]
   }
