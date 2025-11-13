@@ -1,0 +1,40 @@
+# Multi-architecture Dockerfile for E2E Testing
+# Supports: amd64 (x86_64) and arm64 (Apple Silicon, ARM servers)
+
+# Use Playwright's official image with browser support
+# This image includes Chromium, Firefox, WebKit with necessary dependencies
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+
+# Set working directory
+WORKDIR /app
+
+# Install Node.js 20 (if not already in base image)
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files for dependency installation
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY frontend/package*.json ./frontend/
+
+# Install all dependencies (including dev dependencies for testing)
+# Use ci instead of install for faster, reproducible builds
+RUN npm ci
+
+# Copy application source code
+COPY . .
+
+# Build backend for production
+RUN npm run build:backend
+
+# Set environment variables for testing
+ENV NODE_ENV=test
+ENV CI=true
+
+# Expose ports for services (optional, for debugging)
+EXPOSE 3000 5173
+
+# Default command runs e2e tests
+CMD ["npm", "run", "test:e2e"]
