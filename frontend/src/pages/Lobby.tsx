@@ -24,6 +24,7 @@ import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import { PlayerList, type Player } from '../components/PlayerList';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
+import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { DebugConsole } from '../components/DebugConsole';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
@@ -53,6 +54,7 @@ export function Lobby() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
+  const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
@@ -360,6 +362,12 @@ export function Lobby() {
     websocketService.selectCharacter(characterClass);
   };
 
+  // Scenario selection (US5 - T179)
+  const handleSelectScenario = (scenarioId: string) => {
+    setSelectedScenario(scenarioId);
+    websocketService.selectScenario(scenarioId);
+  };
+
   // Game start (T070 - host only)
   const handleStartGame = () => {
     if (!isCurrentPlayerHost) {
@@ -371,7 +379,7 @@ export function Lobby() {
       return;
     }
 
-    websocketService.startGame();
+    websocketService.startGame(selectedScenario);
   };
 
   // Copy room code to clipboard
@@ -680,6 +688,16 @@ export function Lobby() {
                 />
               </div>
             </div>
+
+            {/* Scenario Selection (US5 - Host Only) */}
+            {isCurrentPlayerHost && (
+              <div className="scenario-section">
+                <ScenarioSelectionPanel
+                  selectedScenarioId={selectedScenario}
+                  onSelectScenario={handleSelectScenario}
+                />
+              </div>
+            )}
           </div>
         )}
 

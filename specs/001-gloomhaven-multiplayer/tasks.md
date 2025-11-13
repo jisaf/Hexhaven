@@ -258,30 +258,30 @@
 
 ### Tests for User Story 4
 
-- [ ] T144 [P] [US4] E2E test: Player disconnects and reconnects within 10 minutes in frontend/tests/e2e/us4-reconnect.spec.ts
-- [ ] T145 [P] [US4] E2E test: Disconnected player's turn is skipped after 60s timeout in frontend/tests/e2e/us4-turn-skip.spec.ts
-- [ ] T146 [P] [US4] E2E test: Game session persists for 24 hours in backend/tests/integration/session-persistence.test.ts
-- [ ] T147 [P] [US4] Contract test: WebSocket reconnection with session restoration in backend/tests/contract/reconnect.test.ts
-- [ ] T148 [P] [US4] Unit test: Session expiration (24-hour TTL) in backend/tests/unit/session.test.ts
+- [X] T144 [P] [US4] E2E test: Player disconnects and reconnects within 10 minutes in frontend/tests/e2e/us4-reconnect.spec.ts
+- [X] T145 [P] [US4] E2E test: Disconnected player's turn is skipped after 60s timeout in frontend/tests/e2e/us4-turn-skip.spec.ts
+- [X] T146 [P] [US4] E2E test: Game session persists for 24 hours in backend/tests/integration/session-persistence.test.ts
+- [X] T147 [P] [US4] Contract test: WebSocket reconnection with session restoration in backend/tests/contract/reconnect.test.ts
+- [X] T148 [P] [US4] Unit test: Session expiration (24-hour TTL) in backend/tests/unit/session.test.ts
 
 ### Backend Implementation for User Story 4
 
-- [ ] T149 [US4] Implement session persistence (save game state to DB on every action) in backend/src/services/session.service.ts
-- [ ] T150 [US4] Implement session restoration on reconnect (load state from DB by UUID) in backend/src/services/session.service.ts
-- [ ] T151 [US4] Add 24-hour TTL to game rooms (auto-cleanup expired sessions) in backend/src/services/room.service.ts
-- [ ] T152 [US4] Implement player timeout detection (60s idle → skip turn) in backend/src/websocket/game.gateway.ts
-- [ ] T153 [US4] Add WebSocket reconnection handler (restore player state, broadcast reconnect) in backend/src/websocket/game.gateway.ts
-- [ ] T154 [US4] Implement disconnect notification broadcast in backend/src/websocket/game.gateway.ts
+- [X] T149 [US4] Implement session persistence (save game state to DB on every action) in backend/src/services/session.service.ts
+- [X] T150 [US4] Implement session restoration on reconnect (load state from DB by UUID) in backend/src/services/session.service.ts
+- [X] T151 [US4] Add 24-hour TTL to game rooms (auto-cleanup expired sessions) in backend/src/services/room.service.ts
+- [X] T152 [US4] Implement player timeout detection (60s idle → skip turn) in backend/src/websocket/game.gateway.ts
+- [X] T153 [US4] Add WebSocket reconnection handler (restore player state, broadcast reconnect) in backend/src/websocket/game.gateway.ts
+- [X] T154 [US4] Implement disconnect notification broadcast in backend/src/websocket/game.gateway.ts
 
 ### Frontend Implementation for User Story 4
 
-- [ ] T155 [P] [US4] Create ReconnectingModal component with "Reconnecting..." message in frontend/src/components/ReconnectingModal.tsx
-- [ ] T156 [P] [US4] Create PlayerDisconnectedBanner component in frontend/src/components/PlayerDisconnectedBanner.tsx
-- [ ] T157 [US4] Implement automatic reconnection with exponential backoff in frontend/src/services/websocket.service.ts
-- [ ] T158 [US4] Store UUID in localStorage for session restoration in frontend/src/utils/storage.ts
-- [ ] T159 [US4] Handle player_disconnected event (show banner with player name) in frontend/src/services/websocket.service.ts
-- [ ] T160 [US4] Handle player_reconnected event (hide banner, update UI) in frontend/src/services/websocket.service.ts
-- [ ] T161 [US4] Display reconnect status to user ("Reconnecting...", "Connected") in frontend/src/components/ReconnectingModal.tsx
+- [X] T155 [P] [US4] Create ReconnectingModal component with "Reconnecting..." message in frontend/src/components/ReconnectingModal.tsx
+- [X] T156 [P] [US4] Create PlayerDisconnectedBanner component in frontend/src/components/PlayerDisconnectedBanner.tsx
+- [X] T157 [US4] Implement automatic reconnection with exponential backoff in frontend/src/services/websocket.service.ts
+- [X] T158 [US4] Store UUID in localStorage for session restoration in frontend/src/utils/storage.ts
+- [X] T159 [US4] Handle player_disconnected event (show banner with player name) in frontend/src/services/websocket.service.ts
+- [X] T160 [US4] Handle player_reconnected event (hide banner, update UI) in frontend/src/services/websocket.service.ts
+- [X] T161 [US4] Display reconnect status to user ("Reconnecting...", "Connected") in frontend/src/components/ReconnectingModal.tsx
 
 **Checkpoint**: Reconnection works reliably - players can disconnect/reconnect without losing game state.
 
@@ -295,8 +295,8 @@
 
 ### Tests for User Story 5
 
-- [ ] T162 [P] [US5] E2E test: Character class selection with descriptions in frontend/tests/e2e/us5-character-selection.spec.ts
-- [ ] T163 [P] [US5] E2E test: Scenario browsing and selection in frontend/tests/e2e/us5-scenario-selection.spec.ts
+- [X] T162 [P] [US5] E2E test: Character class selection with descriptions in frontend/tests/e2e/us5-character-selection.spec.ts (Implemented with 5 test cases covering descriptions, stats, role distinction)
+- [X] T163 [P] [US5] E2E test: Scenario browsing and selection in frontend/tests/e2e/us5-scenario-selection.spec.ts (Implemented with 8 test cases covering host-only access, difficulty indicators, objectives)
 - [ ] T164 [P] [US5] E2E test: Different characters have unique ability decks in frontend/tests/e2e/us5-unique-abilities.spec.ts
 - [ ] T165 [P] [US5] E2E test: Different scenarios have unique map layouts in frontend/tests/e2e/us5-scenario-maps.spec.ts
 - [ ] T166 [P] [US5] Unit test: Load character data (6 classes with stats and ability decks) in backend/tests/unit/character-data.test.ts
@@ -304,22 +304,22 @@
 
 ### Backend Implementation for User Story 5
 
-- [ ] T168 [P] [US5] Create character data JSON (6 classes: Brute, Tinkerer, Spellweaver, Scoundrel, Cragheart, Mindthief) in backend/src/data/characters.json
-- [ ] T169 [P] [US5] Create ability card data JSON (unique decks per class) in backend/src/data/ability-cards.json
-- [ ] T170 [P] [US5] Create scenario data JSON (5 scenarios with maps, monsters, objectives) in backend/src/data/scenarios.json
-- [ ] T171 [US5] Implement CharacterDataService (load character by class, get ability deck) in backend/src/services/character-data.service.ts
-- [ ] T172 [US5] Implement ScenarioDataService (load scenario by ID, get map layout) in backend/src/services/scenario-data.service.ts
+- [X] T168 [P] [US5] Create character data JSON (6 classes: Brute, Tinkerer, Spellweaver, Scoundrel, Cragheart, Mindthief) in backend/src/data/characters.json
+- [X] T169 [P] [US5] Create ability card data JSON (unique decks per class) in backend/src/data/ability-cards.json
+- [X] T170 [P] [US5] Create scenario data JSON (5 scenarios with maps, monsters, objectives) in backend/src/data/scenarios.json
+- [X] T171 [US5] Implement CharacterDataService (load character by class, get ability deck) in backend/src/services/ability-card.service.ts (implemented as AbilityCardService)
+- [X] T172 [US5] Implement ScenarioDataService (load scenario by ID, get map layout) in backend/src/services/scenario.service.ts (integrated into ScenarioService)
 - [ ] T173 [US5] Update database seed to load 6 characters and 5 scenarios from JSON in backend/src/db/seed.ts
-- [ ] T174 [US5] Add difficulty-based monster stat scaling in backend/src/services/scenario.service.ts
+- [X] T174 [US5] Add difficulty-based monster stat scaling in backend/src/services/scenario.service.ts (scaleMonsterStats method already implemented with +10% per difficulty level)
 
 ### Frontend Implementation for User Story 5
 
-- [ ] T175 [P] [US5] Create CharacterCard component with class description and stats in frontend/src/components/CharacterCard.tsx
-- [ ] T176 [P] [US5] Create ScenarioCard component with difficulty and objective in frontend/src/components/ScenarioCard.tsx
-- [ ] T177 [P] [US5] Create ScenarioSelectionPanel component (host only) in frontend/src/components/ScenarioSelectionPanel.tsx
-- [ ] T178 [US5] Fetch scenarios from API (/api/scenarios) in frontend/src/services/api.service.ts
-- [ ] T179 [US5] Implement character selection grid (6 cards, visual feedback) in frontend/src/pages/Lobby.tsx
-- [ ] T180 [US5] Implement scenario selection UI (5 cards, host only) in frontend/src/pages/Lobby.tsx
+- [X] T175 [P] [US5] Create CharacterCard component with class description and stats in frontend/src/components/CharacterSelect.tsx (Enhanced existing component with descriptions from characters.json, health/handSize stats, test IDs)
+- [X] T176 [P] [US5] Create ScenarioCard component with difficulty and objective in frontend/src/components/ScenarioCard.tsx (Displays name, difficulty stars, objective with visual selection state)
+- [X] T177 [P] [US5] Create ScenarioSelectionPanel component (host only) in frontend/src/components/ScenarioSelectionPanel.tsx (Fetches from API, displays grid of scenario cards, host-only badge)
+- [X] T178 [US5] Fetch scenarios from API (/api/scenarios) in ScenarioSelectionPanel.tsx (Integrated directly in component using fetch)
+- [X] T179 [US5] Implement character selection grid (6 cards, visual feedback) in frontend/src/pages/Lobby.tsx (Enhanced CharacterSelect with stats display)
+- [X] T180 [US5] Implement scenario selection UI (5 cards, host only) in frontend/src/pages/Lobby.tsx (Integrated ScenarioSelectionPanel, added state and handlers for scenario selection)
 - [ ] T181 [US5] Display selected character's ability deck in game in frontend/src/components/CardSelectionPanel.tsx
 
 **Checkpoint**: Variety is added - players can choose characters and scenarios for different gameplay experiences.

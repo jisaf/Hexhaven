@@ -30,12 +30,21 @@ const characterColors: Record<CharacterClass, string> = {
 };
 
 const characterDescriptions: Record<CharacterClass, string> = {
-  Brute: 'Powerful melee fighter with high health',
-  Tinkerer: 'Support class with healing and recovery',
-  Spellweaver: 'Elemental magic with area attacks',
-  Scoundrel: 'Fast striker with adjacency bonuses',
-  Cragheart: 'Ranged attacker with obstacle manipulation',
-  Mindthief: 'Mind control and melee augmentation',
+  Brute: 'A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies.',
+  Tinkerer: 'A support specialist who heals allies and summons mechanical contraptions to aid the party.',
+  Spellweaver: 'A powerful mage who controls elemental forces to devastate enemies from range.',
+  Scoundrel: 'An agile rogue who strikes from advantage and uses cunning to outmaneuver foes.',
+  Cragheart: 'A versatile earth elemental who can manipulate terrain and deals area damage.',
+  Mindthief: 'A psionic assassin who augments melee attacks with mind control and illusions.',
+};
+
+const characterStats: Record<CharacterClass, { health: number; handSize: number }> = {
+  Brute: { health: 10, handSize: 10 },
+  Tinkerer: { health: 8, handSize: 12 },
+  Spellweaver: { health: 6, handSize: 8 },
+  Scoundrel: { health: 8, handSize: 9 },
+  Cragheart: { health: 10, handSize: 11 },
+  Mindthief: { health: 6, handSize: 10 },
 };
 
 export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect }: CharacterSelectProps) {
@@ -57,7 +66,7 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
   };
 
   return (
-    <div className="character-select">
+    <div className="character-select" data-testid="character-select">
       <h3 className="character-select-title">
         {t('lobby.selectCharacter', 'Select Your Character')}
       </h3>
@@ -67,6 +76,7 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
           const isSelected = selectedClass === characterClass;
           const isDisabled = disabledClasses.includes(characterClass);
           const color = characterColors[characterClass];
+          const stats = characterStats[characterClass];
 
           return (
             <button
@@ -79,6 +89,7 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
               } as React.CSSProperties}
               aria-label={`${t(`characters.${characterClass}.name`, characterClass)}`}
               aria-pressed={isSelected}
+              data-testid={`character-card-${characterClass}`}
             >
               <div className="character-icon" style={{ backgroundColor: color }}>
                 {characterClass.charAt(0)}
@@ -88,11 +99,21 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
                 <div className="character-name">
                   {t(`characters.${characterClass}.name`, characterClass)}
                 </div>
-                <div className="character-description">
+                <div className="character-description" data-testid="character-description">
                   {t(
                     `characters.${characterClass}.description`,
                     characterDescriptions[characterClass]
                   )}
+                </div>
+                <div className="character-stats">
+                  <div className="stat-item">
+                    <span className="stat-label">❤️ HP:</span>
+                    <span className="stat-value" data-testid="character-health">{stats.health}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">🃏 Hand:</span>
+                    <span className="stat-value" data-testid="character-hand-size">{stats.handSize}</span>
+                  </div>
                 </div>
               </div>
 
@@ -187,6 +208,31 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
           font-size: 13px;
           color: #aaa;
           line-height: 1.4;
+          margin-bottom: 12px;
+        }
+
+        .character-stats {
+          display: flex;
+          gap: 16px;
+          justify-content: center;
+          margin-top: 8px;
+        }
+
+        .stat-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 14px;
+        }
+
+        .stat-label {
+          color: #999;
+          font-weight: 500;
+        }
+
+        .stat-value {
+          color: #ffffff;
+          font-weight: 600;
         }
 
         .selected-indicator {
