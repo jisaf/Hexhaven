@@ -16,8 +16,10 @@ test.describe('User Story 1: Character Movement', () => {
   // Helper function to setup game with 2 players
   async function setupGame(page, context) {
     // Host creates room
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
 
     // Fill in nickname for host
     await page.locator('[data-testid="nickname-input"]').fill('Host');
@@ -27,8 +29,10 @@ test.describe('User Story 1: Character Movement', () => {
 
     // Player 2 joins
     const player2Page = await context.newPage();
-    await player2Page.goto('/');
-    await player2Page.locator('button:has-text("Join Game")').click();
+    await player2Page.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = player2Page.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await player2Page.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await player2Page.locator('[data-testid="nickname-input"]').fill('Player 2');
     await player2Page.locator('button:has-text("Join")').click();

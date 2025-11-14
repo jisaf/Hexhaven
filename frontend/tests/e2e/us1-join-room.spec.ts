@@ -15,7 +15,8 @@ import { test, expect } from '@playwright/test';
 test.describe('User Story 1: Join Game Room', () => {
   test('should join an existing room with valid code', async ({ page, context }) => {
     // Host creates a room
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.locator('button:has-text("Create Game")').first().waitFor({ state: 'visible', timeout: 20000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname for host
@@ -26,7 +27,7 @@ test.describe('User Story 1: Join Game Room', () => {
 
     // Second player joins
     const player2Page = await context.newPage();
-    await player2Page.goto('/');
+    await player2Page.goto('/', { waitUntil: 'networkidle' });
 
     // Clear localStorage for player2 to ensure independent nickname
     await player2Page.evaluate(() => {
@@ -34,9 +35,9 @@ test.describe('User Story 1: Join Game Room', () => {
       localStorage.removeItem('playerUUID');
     });
 
-    // Click "Join Game" button
+    // Click "Join Game" button (wait for it to be visible after i18n loads)
     const joinButton = player2Page.locator('button:has-text("Join Game")');
-    await expect(joinButton).toBeVisible();
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
     await joinButton.click();
 
     // Enter room code and nickname
@@ -66,8 +67,10 @@ test.describe('User Story 1: Join Game Room', () => {
   });
 
   test('should show error for invalid room code', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Join Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = page.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
 
     // Enter invalid room code
     const roomCodeInput = page.locator('[data-testid="room-code-input"]');

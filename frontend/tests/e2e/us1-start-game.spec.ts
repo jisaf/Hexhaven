@@ -14,8 +14,10 @@ import { test, expect } from '@playwright/test';
 test.describe('User Story 1: Character Selection and Game Start', () => {
   test('should allow character selection and game start', async ({ page, context }) => {
     // Host creates room
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
 
     // Fill in nickname for host
     await page.locator('[data-testid="nickname-input"]').fill('Host');
@@ -25,8 +27,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
 
     // Player 2 joins
     const player2Page = await context.newPage();
-    await player2Page.goto('/');
-    await player2Page.locator('button:has-text("Join Game")').click();
+    await player2Page.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = player2Page.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await player2Page.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await player2Page.locator('[data-testid="nickname-input"]').fill('Player 2');
     await player2Page.locator('button:has-text("Join")').click();
@@ -88,8 +92,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
 
   test('should disable start button until all players select characters', async ({ page, context }) => {
     // Host creates room
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
 
     // Fill in nickname for host
     await page.locator('[data-testid="nickname-input"]').fill('Host');
@@ -99,8 +105,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
 
     // Player 2 joins
     const player2Page = await context.newPage();
-    await player2Page.goto('/');
-    await player2Page.locator('button:has-text("Join Game")').click();
+    await player2Page.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = player2Page.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await player2Page.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await player2Page.locator('[data-testid="nickname-input"]').fill('Player 2');
     await player2Page.locator('button:has-text("Join")').click();
@@ -125,8 +133,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
 
   test('should prevent selecting same character twice', async ({ page, context }) => {
     // Host creates room
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
 
     // Fill in nickname for host
     await page.locator('[data-testid="nickname-input"]').fill('Host');
@@ -136,8 +146,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
 
     // Player 2 joins
     const player2Page = await context.newPage();
-    await player2Page.goto('/');
-    await player2Page.locator('button:has-text("Join Game")').click();
+    await player2Page.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = player2Page.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await player2Page.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await player2Page.locator('[data-testid="nickname-input"]').fill('Player 2');
     await player2Page.locator('button:has-text("Join")').click();
@@ -156,8 +168,10 @@ test.describe('User Story 1: Character Selection and Game Start', () => {
   });
 
   test('should show all 6 character classes', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
 
     // Fill in nickname for host
     await page.locator('[data-testid="nickname-input"]').fill('Host');
