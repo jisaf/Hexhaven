@@ -22,8 +22,14 @@ export interface WebSocketEvents {
   ws_reconnected: () => void;
 
   // Room events
-  room_joined: (data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => void;
-  player_joined: (data: { player: unknown }) => void;
+  room_joined: (data: {
+    roomCode: string;
+    roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
+    players: { id: string; nickname: string; isHost: boolean; characterClass?: string }[];
+    playerId?: string;
+    isHost?: boolean
+  }) => void;
+  player_joined: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
   player_left: (data: { playerId: string }) => void;
   player_disconnected: (data: { playerId: string; playerName: string }) => void;
   player_reconnected: (data: { playerId: string; playerName: string }) => void;
@@ -32,7 +38,13 @@ export interface WebSocketEvents {
   character_selected: (data: { playerId: string; characterClass: string }) => void;
 
   // Game start
-  game_started: (data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => void;
+  game_started: (data: {
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean }[]
+  }) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;
@@ -46,7 +58,7 @@ export interface WebSocketEvents {
     attackerId: string;
     targetId: string;
     damage: number;
-    modifier: unknown;
+    modifier: number | 'null' | 'x2';
   }) => void;
 
   // Loot
@@ -58,16 +70,16 @@ export interface WebSocketEvents {
   }) => void;
 
   // Monster AI
-  monster_activated: (data: { monsterId: string; actions: unknown[] }) => void;
+  monster_activated: (data: { monsterId: string; actions: { type: string; target?: string }[] }) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
 
   // Scenario
-  scenario_completed: (data: { victory: boolean; rewards: unknown }) => void;
+  scenario_completed: (data: { victory: boolean; rewards: { experience: number; loot: string[] } }) => void;
 
   // State updates
-  game_state_update: (data: { gameState: unknown }) => void;
+  game_state_update: (data: { gameState: Record<string, unknown> }) => void;
 
   // Errors
   error: (data: { message: string; code?: string }) => void;
