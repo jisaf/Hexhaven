@@ -13,8 +13,10 @@ import { test, expect } from '@playwright/test';
 test.describe('User Story 2: Card Selection and Initiative', () => {
   test('should allow card selection and determine turn order by initiative', async ({ page, context }) => {
     // Player 1: Create game and start
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
 
     // Select character (Brute - has clear initiative values)
@@ -23,8 +25,10 @@ test.describe('User Story 2: Card Selection and Initiative', () => {
 
     // Player 2: Join game in new tab
     const page2 = await context.newPage();
-    await page2.goto('/');
-    await page2.locator('button:has-text("Join Game")').click();
+    await page2.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = page2.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await page2.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await page2.locator('button:has-text("Join")').click();
 
@@ -83,8 +87,10 @@ test.describe('User Story 2: Card Selection and Initiative', () => {
 
   test('should show selected cards to player during their turn', async ({ page }) => {
     // Setup: Create game, select character, start game
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
     await page.locator('[data-testid="character-select"]').click();
     await page.locator('[data-testid="character-brute"]').click();
     await page.locator('[data-testid="start-game-button"]').click();
@@ -105,8 +111,10 @@ test.describe('User Story 2: Card Selection and Initiative', () => {
   });
 
   test('should enforce card selection limits (exactly 2 cards)', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
     await page.locator('[data-testid="character-select"]').click();
     await page.locator('[data-testid="character-brute"]').click();
     await page.locator('[data-testid="start-game-button"]').click();
@@ -133,16 +141,20 @@ test.describe('User Story 2: Card Selection and Initiative', () => {
 
   test('should show waiting state while other players select cards', async ({ page, context }) => {
     // Player 1: Create and select cards quickly
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
     const roomCode = await page.locator('[data-testid="room-code"]').textContent();
     await page.locator('[data-testid="character-select"]').click();
     await page.locator('[data-testid="character-brute"]').click();
 
     // Player 2: Join
     const page2 = await context.newPage();
-    await page2.goto('/');
-    await page2.locator('button:has-text("Join Game")').click();
+    await page2.goto('/', { waitUntil: 'networkidle' });
+    const joinButton = page2.locator('button:has-text("Join Game")');
+    await joinButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await joinButton.click();
     await page2.locator('[data-testid="room-code-input"]').fill(roomCode!);
     await page2.locator('button:has-text("Join")').click();
     await page2.locator('[data-testid="character-select"]').click();
@@ -173,8 +185,10 @@ test.describe('User Story 2: Card Selection and Initiative', () => {
   });
 
   test('should handle long rest action during card selection', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const createButton = page.locator('button:has-text("Create Game")');
+    await createButton.first().waitFor({ state: 'visible', timeout: 20000 });
+    await createButton.click();
     await page.locator('[data-testid="character-select"]').click();
     await page.locator('[data-testid="character-brute"]').click();
     await page.locator('[data-testid="start-game-button"]').click();

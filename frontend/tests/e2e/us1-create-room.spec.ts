@@ -13,11 +13,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('User Story 1: Create Game Room', () => {
   test('should create a game room and display room code', async ({ page }) => {
-    // Navigate to the app
-    await page.goto('/');
+    // Navigate to the app - wait for networkidle to ensure async content loads
+    await page.goto('/', { waitUntil: 'networkidle' });
 
-    // Verify landing page elements
-    await expect(page.locator('h1')).toContainText('Hexhaven');
+    // Wait for h1 to have text content (i18n translations load asynchronously)
+    // The h1 element exists in DOM but is initially empty, so we need to wait for its text
+    const h1 = page.locator('h1').first();
+    await expect(h1).toContainText('Hexhaven', { timeout: 20000 });
 
     // Click "Create Game" button
     const createButton = page.locator('button:has-text("Create Game")');
@@ -57,7 +59,9 @@ test.describe('User Story 1: Create Game Room', () => {
 
   test('should generate unique room codes for multiple games', async ({ page, context }) => {
     // Create first game
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    // Wait for buttons to be loaded (they appear after i18n translations load)
+    await page.locator('button:has-text("Create Game")').first().waitFor({ state: 'visible', timeout: 20000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname for first game
@@ -68,7 +72,8 @@ test.describe('User Story 1: Create Game Room', () => {
 
     // Open second tab and create another game
     const page2 = await context.newPage();
-    await page2.goto('/');
+    await page2.goto('/', { waitUntil: 'networkidle' });
+    await page2.locator('button:has-text("Create Game")').first().waitFor({ state: 'visible', timeout: 20000 });
     await page2.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname for second game
@@ -90,7 +95,8 @@ test.describe('User Story 1: Create Game Room', () => {
       });
     });
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.locator('button:has-text("Create Game")').first().waitFor({ state: 'visible', timeout: 20000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname
@@ -107,7 +113,8 @@ test.describe('User Story 1: Create Game Room', () => {
     // Grant clipboard permissions
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.locator('button:has-text("Create Game")').first().waitFor({ state: 'visible', timeout: 20000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname
