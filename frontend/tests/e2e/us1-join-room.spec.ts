@@ -79,8 +79,8 @@ test.describe('User Story 1: Join Game Room', () => {
     const nicknameInput = page.locator('[data-testid="nickname-input"]');
     await nicknameInput.fill('Test Player');
 
-    const joinButton = page.locator('button:has-text("Join")');
-    await joinButton.click();
+    const confirmJoinButton = page.locator('button:has-text("Join")');
+    await confirmJoinButton.click();
 
     // Verify error message
     const errorMessage = page.locator('[data-testid="error-message"]');
