@@ -45,7 +45,9 @@ export class AccountsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createAccount(@Body(ValidationPipe) createAccountDto: CreateAccountDto) {
+  async createAccount(
+    @Body(ValidationPipe) createAccountDto: CreateAccountDto,
+  ) {
     const account = await this.accountService.createAccount(createAccountDto);
     return {
       uuid: account.uuid,
@@ -60,25 +62,19 @@ export class AccountsController {
    */
   @Get(':uuid/progression')
   async getProgression(@Param('uuid') uuid: string) {
-    try {
-      const progression = await this.progressionService.getProgression(uuid);
-      return {
-        uuid: progression.accountUuid,
-        scenariosCompleted: progression.scenariosCompleted,
-        totalExperience: progression.totalExperience,
-        charactersPlayed: progression.charactersPlayed,
-        characterExperience: progression.characterExperience,
-        perksUnlocked: progression.perksUnlocked,
-        completedScenarioIds: progression.completedScenarioIds,
-        scenarioCharacterHistory: progression.scenarioCharacterHistory,
-        createdAt: progression.createdAt,
-        updatedAt: progression.updatedAt,
-      };
-    } catch (error) {
-      // If progression not found, might be that account doesn't exist
-      // Return 404
-      throw error;
-    }
+    const progression = await this.progressionService.getProgression(uuid);
+    return {
+      uuid: progression.accountUuid,
+      scenariosCompleted: progression.scenariosCompleted,
+      totalExperience: progression.totalExperience,
+      charactersPlayed: progression.charactersPlayed,
+      characterExperience: progression.characterExperience,
+      perksUnlocked: progression.perksUnlocked,
+      completedScenarioIds: progression.completedScenarioIds,
+      scenarioCharacterHistory: progression.scenarioCharacterHistory,
+      createdAt: progression.createdAt,
+      updatedAt: progression.updatedAt,
+    };
   }
 
   /**
@@ -107,7 +103,10 @@ export class AccountsController {
     @Param('uuid') uuid: string,
     @Body(ValidationPipe) update: ProgressionUpdate,
   ) {
-    const progression = await this.progressionService.updateProgression(uuid, update);
+    const progression = await this.progressionService.updateProgression(
+      uuid,
+      update,
+    );
     return {
       uuid: progression.accountUuid,
       scenariosCompleted: progression.scenariosCompleted,
@@ -132,7 +131,8 @@ export class AccountsController {
   @Post(':uuid/progression/scenario')
   async trackScenarioCompletion(
     @Param('uuid') uuid: string,
-    @Body(ValidationPipe) body: {
+    @Body(ValidationPipe)
+    body: {
       scenarioId: string;
       characterClass: string;
       difficulty: number;
@@ -166,7 +166,8 @@ export class AccountsController {
   @Post(':uuid/progression/perk')
   async unlockPerk(
     @Param('uuid') uuid: string,
-    @Body(ValidationPipe) body: {
+    @Body(ValidationPipe)
+    body: {
       characterClass: string;
       perkName: string;
     },
