@@ -252,9 +252,7 @@ export class ProgressionService {
     accountUuid: string,
     update: ProgressionUpdate,
   ): Promise<Progression> {
-    const progression = await this.getProgression(accountUuid);
-
-    const updatedProgression = { ...progression };
+    await this.getProgression(accountUuid);
 
     // Apply scenario completion if provided
     if (update.scenarioCompleted && update.characterClass) {
@@ -285,7 +283,8 @@ export class ProgressionService {
       );
     }
 
-    return progression;
+    // No specific update provided, return current progression
+    return this.getProgression(accountUuid);
   }
 
   /**

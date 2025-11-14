@@ -9,7 +9,6 @@ import {
   CreateAccountDto,
   AnonymousProgress,
 } from '../models/account.model';
-import { ProgressionModel } from '../models/progression.model';
 
 /**
  * T201 [US7] Implement AccountService (createAccount, upgradeAnonymousAccount)
