@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { ProgressionModel, Progression, ProgressionUpdate } from '../models/progression.model';
+import {
+  ProgressionModel,
+  Progression,
+  ProgressionUpdate,
+} from '../models/progression.model';
 
 /**
  * T202 [US7] Implement ProgressionService (trackScenarioCompletion, addExperience, unlockPerk)
@@ -25,7 +33,9 @@ export class ProgressionService {
     });
 
     if (!progression) {
-      throw new NotFoundException(`Progression not found for account ${accountUuid}`);
+      throw new NotFoundException(
+        `Progression not found for account ${accountUuid}`,
+      );
     }
 
     return ProgressionModel.fromDatabase(progression);
@@ -39,7 +49,7 @@ export class ProgressionService {
     accountUuid: string,
     scenarioId: string,
     characterClass: string,
-    difficulty: number
+    difficulty: number,
   ): Promise<Progression> {
     const progression = await this.getProgression(accountUuid);
 
@@ -49,23 +59,27 @@ export class ProgressionService {
     }
 
     // Calculate experience for this scenario
-    const experienceGained = ProgressionModel.calculateScenarioExperience(difficulty);
+    const experienceGained =
+      ProgressionModel.calculateScenarioExperience(difficulty);
 
     // Add character if not already tracked
-    let updatedProgression = ProgressionModel.addCharacter(progression, characterClass);
+    let updatedProgression = ProgressionModel.addCharacter(
+      progression,
+      characterClass,
+    );
 
     // Complete the scenario
     updatedProgression = ProgressionModel.completeScenario(
       updatedProgression,
       scenarioId,
-      characterClass
+      characterClass,
     );
 
     // Add experience to character
     updatedProgression = ProgressionModel.addExperience(
       updatedProgression,
       characterClass,
-      experienceGained
+      experienceGained,
     );
 
     // Save to database
@@ -77,7 +91,8 @@ export class ProgressionService {
         charactersPlayed: updatedProgression.charactersPlayed,
         characterExperience: updatedProgression.characterExperience as any,
         completedScenarioIds: updatedProgression.completedScenarioIds,
-        scenarioCharacterHistory: updatedProgression.scenarioCharacterHistory as any,
+        scenarioCharacterHistory:
+          updatedProgression.scenarioCharacterHistory as any,
         updatedAt: new Date(),
       },
     });
@@ -91,18 +106,21 @@ export class ProgressionService {
   async addExperience(
     accountUuid: string,
     characterClass: string,
-    experienceGained: number
+    experienceGained: number,
   ): Promise<Progression> {
     const progression = await this.getProgression(accountUuid);
 
     // Add character if not already tracked
-    let updatedProgression = ProgressionModel.addCharacter(progression, characterClass);
+    let updatedProgression = ProgressionModel.addCharacter(
+      progression,
+      characterClass,
+    );
 
     // Add experience
     updatedProgression = ProgressionModel.addExperience(
       updatedProgression,
       characterClass,
-      experienceGained
+      experienceGained,
     );
 
     // Save to database
@@ -126,25 +144,32 @@ export class ProgressionService {
     accountUuid: string,
     characterClass: string,
     perkName: string,
-    options?: { currentLevel?: number; perksAlreadyUnlocked?: number }
+    options?: { currentLevel?: number; perksAlreadyUnlocked?: number },
   ): Promise<Progression> {
     const progression = await this.getProgression(accountUuid);
 
     const characterExp = progression.characterExperience[characterClass];
     if (!characterExp) {
-      throw new BadRequestException(`Character ${characterClass} not found in progression`);
+      throw new BadRequestException(
+        `Character ${characterClass} not found in progression`,
+      );
     }
 
     // Validate perk can be unlocked
     const currentLevel = options?.currentLevel ?? characterExp.level;
-    const perksUnlocked = options?.perksAlreadyUnlocked ?? characterExp.perksUnlocked.length;
+    const perksUnlocked =
+      options?.perksAlreadyUnlocked ?? characterExp.perksUnlocked.length;
 
     if (!ProgressionModel.canUnlockPerk(currentLevel, perksUnlocked)) {
       throw new BadRequestException('No available perk slots');
     }
 
     // Unlock the perk
-    const updatedProgression = ProgressionModel.unlockPerk(progression, characterClass, perkName);
+    const updatedProgression = ProgressionModel.unlockPerk(
+      progression,
+      characterClass,
+      perkName,
+    );
 
     // Save to database
     const updated = await this.prisma.progression.update({
@@ -162,8 +187,14 @@ export class ProgressionService {
   /**
    * Get scenarios played with a specific character
    */
-  getScenariosPlayedWithCharacter(progression: Progression, characterClass: string): string[] {
-    return ProgressionModel.getScenariosPlayedWithCharacter(progression, characterClass);
+  getScenariosPlayedWithCharacter(
+    progression: Progression,
+    characterClass: string,
+  ): string[] {
+    return ProgressionModel.getScenariosPlayedWithCharacter(
+      progression,
+      characterClass,
+    );
   }
 
   /**
@@ -217,10 +248,13 @@ export class ProgressionService {
   /**
    * Update progression with multiple changes (batch update)
    */
-  async updateProgression(accountUuid: string, update: ProgressionUpdate): Promise<Progression> {
+  async updateProgression(
+    accountUuid: string,
+    update: ProgressionUpdate,
+  ): Promise<Progression> {
     const progression = await this.getProgression(accountUuid);
 
-    let updatedProgression = { ...progression };
+    const updatedProgression = { ...progression };
 
     // Apply scenario completion if provided
     if (update.scenarioCompleted && update.characterClass) {
@@ -229,18 +263,26 @@ export class ProgressionService {
         accountUuid,
         update.scenarioCompleted,
         update.characterClass,
-        difficulty
+        difficulty,
       );
     }
 
     // Apply experience gain if provided
     if (update.experienceGained && update.characterClass) {
-      return this.addExperience(accountUuid, update.characterClass, update.experienceGained);
+      return this.addExperience(
+        accountUuid,
+        update.characterClass,
+        update.experienceGained,
+      );
     }
 
     // Apply perk unlock if provided
     if (update.perkUnlocked && update.characterClass) {
-      return this.unlockPerk(accountUuid, update.characterClass, update.perkUnlocked);
+      return this.unlockPerk(
+        accountUuid,
+        update.characterClass,
+        update.perkUnlocked,
+      );
     }
 
     return progression;
@@ -270,10 +312,17 @@ export class ProgressionService {
     level: number;
     xp: number;
   } | null {
-    let highest: { characterClass: string; level: number; xp: number } | null = null;
+    let highest: { characterClass: string; level: number; xp: number } | null =
+      null;
 
-    for (const [characterClass, exp] of Object.entries(progression.characterExperience)) {
-      if (!highest || exp.level > highest.level || (exp.level === highest.level && exp.xp > highest.xp)) {
+    for (const [characterClass, exp] of Object.entries(
+      progression.characterExperience,
+    )) {
+      if (
+        !highest ||
+        exp.level > highest.level ||
+        (exp.level === highest.level && exp.xp > highest.xp)
+      ) {
         highest = {
           characterClass,
           level: exp.level,

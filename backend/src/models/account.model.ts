@@ -8,8 +8,8 @@
 
 export interface Account {
   id: string;
-  uuid: string;              // Unique identifier for anonymous or registered accounts
-  email: string | null;      // Nullable in MVP, required in production
+  uuid: string; // Unique identifier for anonymous or registered accounts
+  email: string | null; // Nullable in MVP, required in production
   createdAt: Date;
 }
 
@@ -38,7 +38,8 @@ export class AccountModel {
    * Validates UUID format
    */
   static isValidUuid(uuid: string): boolean {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
   }
 

@@ -1,6 +1,14 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { AccountModel, CreateAccountDto, AnonymousProgress } from '../models/account.model';
+import {
+  AccountModel,
+  CreateAccountDto,
+  AnonymousProgress,
+} from '../models/account.model';
 import { ProgressionModel } from '../models/progression.model';
 
 /**
@@ -45,7 +53,7 @@ export class AccountService {
     if (validatedDto.anonymousProgress) {
       await this.createProgressionFromAnonymous(
         account.uuid,
-        validatedDto.anonymousProgress
+        validatedDto.anonymousProgress,
       );
     } else {
       // Create empty progression
@@ -58,7 +66,10 @@ export class AccountService {
   /**
    * Upgrade anonymous account (alias for createAccount with progress migration)
    */
-  async upgradeAnonymousAccount(uuid: string, anonymousProgress: AnonymousProgress) {
+  async upgradeAnonymousAccount(
+    uuid: string,
+    anonymousProgress: AnonymousProgress,
+  ) {
     return this.createAccount({
       uuid,
       anonymousProgress,
@@ -98,7 +109,7 @@ export class AccountService {
    */
   private async createProgressionFromAnonymous(
     accountUuid: string,
-    anonymousProgress: AnonymousProgress
+    anonymousProgress: AnonymousProgress,
   ) {
     const characterExperience = anonymousProgress.characterExperience || {};
 
@@ -106,7 +117,8 @@ export class AccountService {
     const formattedCharacterExperience: Record<string, any> = {};
     for (const character of anonymousProgress.charactersPlayed) {
       if (characterExperience[character]) {
-        formattedCharacterExperience[character] = characterExperience[character];
+        formattedCharacterExperience[character] =
+          characterExperience[character];
       } else {
         // If no character experience data, initialize with defaults
         formattedCharacterExperience[character] = {

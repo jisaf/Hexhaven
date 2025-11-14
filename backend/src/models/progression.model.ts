@@ -54,15 +54,15 @@ export interface XPProgress {
 export class ProgressionModel {
   // Gloomhaven level thresholds (XP required to reach each level)
   private static readonly LEVEL_THRESHOLDS: number[] = [
-    0,    // Level 1: 0 XP
-    45,   // Level 2: 45 XP
-    95,   // Level 3: 95 XP
-    150,  // Level 4: 150 XP
-    210,  // Level 5: 210 XP
-    275,  // Level 6: 275 XP
-    345,  // Level 7: 345 XP
-    420,  // Level 8: 420 XP
-    500,  // Level 9: 500 XP
+    0, // Level 1: 0 XP
+    45, // Level 2: 45 XP
+    95, // Level 3: 95 XP
+    150, // Level 4: 150 XP
+    210, // Level 5: 210 XP
+    275, // Level 6: 275 XP
+    345, // Level 7: 345 XP
+    420, // Level 8: 420 XP
+    500, // Level 9: 500 XP
   ];
 
   private static readonly MAX_LEVEL = 9;
@@ -72,7 +72,7 @@ export class ProgressionModel {
    * Formula: base 30 XP + (difficulty * 5)
    */
   static calculateScenarioExperience(difficulty: number): number {
-    return 30 + (difficulty * 5);
+    return 30 + difficulty * 5;
   }
 
   /**
@@ -92,7 +92,9 @@ export class ProgressionModel {
    */
   static getXPForLevel(level: number): number {
     if (level < 1 || level > this.MAX_LEVEL) {
-      throw new Error(`Invalid level: ${level}. Must be between 1 and ${this.MAX_LEVEL}`);
+      throw new Error(
+        `Invalid level: ${level}. Must be between 1 and ${this.MAX_LEVEL}`,
+      );
     }
     return this.LEVEL_THRESHOLDS[level - 1];
   }
@@ -116,7 +118,8 @@ export class ProgressionModel {
     const xpNeeded = xpForNextLevel - currentXP;
     const levelRange = xpForNextLevel - xpForCurrentLevel;
     const levelProgress = currentXP - xpForCurrentLevel;
-    const progressPercentage = levelRange > 0 ? (levelProgress / levelRange) * 100 : 100;
+    const progressPercentage =
+      levelRange > 0 ? (levelProgress / levelRange) * 100 : 100;
 
     return {
       currentLevel,
@@ -173,7 +176,7 @@ export class ProgressionModel {
    */
   static addCharacter(
     progression: Progression,
-    characterClass: string
+    characterClass: string,
   ): Progression {
     if (!progression.charactersPlayed.includes(characterClass)) {
       return {
@@ -198,7 +201,7 @@ export class ProgressionModel {
   static addExperience(
     progression: Progression,
     characterClass: string,
-    experienceGained: number
+    experienceGained: number,
   ): Progression {
     const characterExp = progression.characterExperience[characterClass] || {
       level: 1,
@@ -229,7 +232,7 @@ export class ProgressionModel {
   static completeScenario(
     progression: Progression,
     scenarioId: string,
-    characterClass: string
+    characterClass: string,
   ): Progression {
     if (progression.completedScenarioIds.includes(scenarioId)) {
       throw new Error('Scenario already completed');
@@ -256,7 +259,7 @@ export class ProgressionModel {
   static unlockPerk(
     progression: Progression,
     characterClass: string,
-    perkName: string
+    perkName: string,
   ): Progression {
     const characterExp = progression.characterExperience[characterClass];
     if (!characterExp) {
@@ -286,7 +289,7 @@ export class ProgressionModel {
    */
   static getScenariosPlayedWithCharacter(
     progression: Progression,
-    characterClass: string
+    characterClass: string,
   ): string[] {
     return progression.scenarioCharacterHistory
       .filter((entry) => entry.characterClass === characterClass)
@@ -315,10 +318,12 @@ export class ProgressionModel {
         ? dbProgression.completedScenarioIds
         : JSON.parse(dbProgression.completedScenarioIds as string),
       scenarioCharacterHistory: Array.isArray(
-        dbProgression.scenarioCharacterHistory
+        dbProgression.scenarioCharacterHistory,
       )
         ? dbProgression.scenarioCharacterHistory
-        : JSON.parse(dbProgression.scenarioCharacterHistory as string || '[]'),
+        : JSON.parse(
+            (dbProgression.scenarioCharacterHistory as string) || '[]',
+          ),
       createdAt: new Date(dbProgression.createdAt),
       updatedAt: new Date(dbProgression.updatedAt),
     };

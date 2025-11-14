@@ -12,7 +12,19 @@ import { PrismaService } from './services/prisma.service';
 
 @Module({
   imports: [],
-  controllers: [AppController, RoomsController, ScenariosController, AccountsController],
-  providers: [AppService, GameGateway, ScenarioService, AccountService, ProgressionService, PrismaService],
+  controllers: [
+    AppController,
+    RoomsController,
+    ScenariosController,
+    AccountsController,
+  ],
+  providers: [
+    AppService,
+    GameGateway,
+    ScenarioService,
+    AccountService,
+    ProgressionService,
+    PrismaService,
+  ],
 })
 export class AppModule {}
