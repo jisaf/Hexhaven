@@ -114,7 +114,13 @@ export function useGameState() {
   /**
    * Handle game started event
    */
-  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => {
+  const handleGameStarted = useCallback((data: {
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean }[]
+  }) => {
     setGameState((prev) => ({
       ...prev,
       room: prev.room ? { ...prev.room, status: 'active', scenarioId: data.scenarioId } : null,

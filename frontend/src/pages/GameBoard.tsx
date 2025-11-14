@@ -45,7 +45,13 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Event handlers - defined before useEffects that use them
-  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => {
+  const handleGameStarted = useCallback((data: {
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
+  }) => {
     console.log('handleGameStarted called with data:', data);
 
     if (!hexGridRef.current) {
@@ -58,7 +64,7 @@ export function GameBoard() {
     console.log('My playerUUID:', playerUUID);
     console.log('Characters:', data.characters);
 
-    const myCharacter = data.characters.find((char: unknown) => (char as { playerId: string }).playerId === playerUUID) as { id: string; playerId: string; abilityDeck?: unknown[]; classType?: string } | undefined;
+    const myCharacter = data.characters.find((char) => char.playerId === playerUUID);
     console.log('My character:', myCharacter);
 
     if (myCharacter) {
