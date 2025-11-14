@@ -91,31 +91,28 @@ export default defineConfig({
   ],
 
   // Run local dev servers (backend and frontend) before starting the tests
-  webServer: [
-    {
-      command: 'cd ../backend && npm run start:prod',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000, // 2 minutes
-      stdout: 'pipe',
-      stderr: 'pipe'
-    },
-    {
-      command: 'npm run dev',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000, // 2 minutes
-      stdout: 'pipe',
-      stderr: 'pipe'
-    }
-  ],
+  // NOTE: Servers should be started manually before running tests
+  // webServer: [
+  //   {
+  //     command: 'cd ../backend && npm run dev',
+  //     url: 'http://localhost:3000/api/health',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 180 * 1000, // 3 minutes
+  //   },
+  //   {
+  //     command: 'npm run dev',
+  //     url: 'http://localhost:5173/',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 180 * 1000, // 3 minutes
+  //   }
+  // ],
 
-  // Test timeout - reduced for faster failures during development
-  timeout: 10 * 1000, // 10 seconds (reduced from 30s)
+  // Test timeout - increased for server startup and navigation
+  timeout: 30 * 1000, // 30 seconds
 
-  // Expect timeout - reduced for faster failures
+  // Expect timeout
   expect: {
-    timeout: 3 * 1000 // 3 seconds (reduced from 5s)
+    timeout: 10 * 1000 // 10 seconds
   },
 
   // Max failures - stop after 5 failures to save CI time

@@ -14,10 +14,11 @@ import { test, expect } from '@playwright/test';
 test.describe('User Story 1: Create Game Room', () => {
   test('should create a game room and display room code', async ({ page }) => {
     // Navigate to the app
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Verify landing page elements
-    await expect(page.locator('h1')).toContainText('Hexhaven');
+    // Verify landing page elements - wait for h1 to be visible with the expected text
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1')).toContainText('Hexhaven', { timeout: 10000 });
 
     // Click "Create Game" button
     const createButton = page.locator('button:has-text("Create Game")');
@@ -57,7 +58,8 @@ test.describe('User Story 1: Create Game Room', () => {
 
   test('should generate unique room codes for multiple games', async ({ page, context }) => {
     // Create first game
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('button:has-text("Create Game")').toBeVisible({ timeout: 10000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname for first game
@@ -68,7 +70,8 @@ test.describe('User Story 1: Create Game Room', () => {
 
     // Open second tab and create another game
     const page2 = await context.newPage();
-    await page2.goto('/');
+    await page2.goto('/', { waitUntil: 'domcontentloaded' });
+    await page2.locator('button:has-text("Create Game")').toBeVisible({ timeout: 10000 });
     await page2.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname for second game
@@ -90,7 +93,8 @@ test.describe('User Story 1: Create Game Room', () => {
       });
     });
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('button:has-text("Create Game")').toBeVisible({ timeout: 10000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname
@@ -107,7 +111,8 @@ test.describe('User Story 1: Create Game Room', () => {
     // Grant clipboard permissions
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('button:has-text("Create Game")').toBeVisible({ timeout: 10000 });
     await page.locator('button:has-text("Create Game")').click();
 
     // Fill in nickname
