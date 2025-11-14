@@ -109,8 +109,8 @@ test.describe('US7: Progress Persistence After Account Creation', () => {
     await expect(page.locator('[data-testid="character-Spellweaver-level"]')).toContainText('2');
   });
 
-  test('should handle offline-then-online scenario completion sync', async ({ page, context }) => {
-    let serverProgress = {
+  test('should handle offline-then-online scenario completion sync', async ({ page }) => {
+    const serverProgress = {
       uuid: mockUuid,
       scenariosCompleted: 5,
       totalExperience: 150,

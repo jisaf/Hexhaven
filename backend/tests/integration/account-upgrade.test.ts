@@ -4,6 +4,7 @@ import request from 'supertest';
 import { PrismaService } from '../../src/services/prisma.service';
 import { AccountService } from '../../src/services/account.service';
 import { ProgressionService } from '../../src/services/progression.service';
+import { AccountsController } from '../../src/api/accounts.controller';
 
 /**
  * T197 [US7] Integration test: Anonymous UUID converts to account
@@ -25,6 +26,7 @@ describe('Account Upgrade Integration (T197)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       // Import actual modules for integration test
+      controllers: [AccountsController],
       providers: [PrismaService, AccountService, ProgressionService],
     }).compile();
 
@@ -96,7 +98,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should handle upgrade request with no previous progress', async () => {
-      const anonymousUuid = 'new-user-uuid';
+      const anonymousUuid = '99999999-9999-9999-9999-999999999999';
 
       const response = await request(app.getHttpServer())
         .post('/api/accounts')
@@ -126,7 +128,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should prevent duplicate account creation for same UUID', async () => {
-      const uuid = 'existing-uuid';
+      const uuid = '11111111-1111-1111-1111-111111111111';
 
       // Create account first time
       await request(app.getHttpServer())
@@ -142,7 +144,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should migrate character-specific progression data', async () => {
-      const anonymousUuid = 'character-progress-uuid';
+      const anonymousUuid = '88888888-8888-8888-8888-888888888888';
 
       const anonymousProgress = {
         scenariosCompleted: 8,
@@ -177,7 +179,7 @@ describe('Account Upgrade Integration (T197)', () => {
 
   describe('Account Service: upgradeAnonymousAccount', () => {
     it('should successfully upgrade anonymous account via service method', async () => {
-      const uuid = 'service-test-uuid';
+      const uuid = '22222222-2222-2222-2222-222222222222';
       const progress = {
         scenariosCompleted: 3,
         totalExperience: 90,
@@ -196,7 +198,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should create progression record when upgrading', async () => {
-      const uuid = 'progression-test-uuid';
+      const uuid = '33333333-3333-3333-3333-333333333333';
       const progress = {
         scenariosCompleted: 5,
         totalExperience: 150,
@@ -221,7 +223,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should handle very large progression data', async () => {
-      const uuid = 'large-data-uuid';
+      const uuid = '44444444-4444-4444-4444-444444444444';
       const progress = {
         scenariosCompleted: 100,
         totalExperience: 3000,
@@ -248,7 +250,7 @@ describe('Account Upgrade Integration (T197)', () => {
 
   describe('GET /api/accounts/:uuid/progression', () => {
     it('should retrieve progression for existing account', async () => {
-      const uuid = 'get-progression-uuid';
+      const uuid = '55555555-5555-5555-5555-555555555555';
 
       // Create account with progression
       await accountService.upgradeAnonymousAccount(uuid, {
@@ -278,7 +280,7 @@ describe('Account Upgrade Integration (T197)', () => {
     });
 
     it('should return empty progression for account with no games played', async () => {
-      const uuid = 'no-games-uuid';
+      const uuid = '66666666-6666-6666-6666-666666666666';
 
       await accountService.upgradeAnonymousAccount(uuid, {
         scenariosCompleted: 0,

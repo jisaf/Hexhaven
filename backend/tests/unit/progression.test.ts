@@ -144,12 +144,30 @@ describe('ProgressionService (T198)', () => {
     it('should prevent unlocking more perks than available for level', async () => {
       const accountUuid = 'test-uuid';
 
-      // Level 2 character (1 perk available) trying to unlock 2 perks
+      // Mock the progression data for Level 2 character with 1 perk already unlocked
+      // Note: Prisma returns JSON columns as strings, not parsed objects
+      mockPrisma.progression.findUnique.mockResolvedValue({
+        accountUuid: accountUuid,
+        totalExperience: 60,
+        scenariosCompleted: 2,
+        charactersPlayed: JSON.stringify(['Brute']),
+        characterExperience: JSON.stringify({
+          'Brute': {
+            level: 2,
+            xp: 60,
+            perksUnlocked: ['Remove two -1 cards']
+          }
+        }),
+        perksUnlocked: JSON.stringify(['Remove two -1 cards']),
+        completedScenarioIds: JSON.stringify(['scenario-1', 'scenario-2']),
+        scenarioCharacterHistory: JSON.stringify({}),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Level 2 character (1 perk available) trying to unlock 2nd perk should fail
       await expect(
-        service.unlockPerk(accountUuid, 'Brute', 'Second Perk', {
-          currentLevel: 2,
-          perksAlreadyUnlocked: 1
-        })
+        service.unlockPerk(accountUuid, 'Brute', 'Second Perk')
       ).rejects.toThrow('No available perk slots');
     });
 

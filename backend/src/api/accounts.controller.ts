@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { AccountService } from '../services/account.service';
 import { ProgressionService } from '../services/progression.service';
-import { CreateAccountDto } from '../models/account.model';
-import { ProgressionUpdate } from '../models/progression.model';
+import type { CreateAccountDto } from '../models/account.model';
+import type { ProgressionUpdate } from '../models/progression.model';
 
 /**
  * T203 [US7] Add REST POST /api/accounts endpoint for account creation

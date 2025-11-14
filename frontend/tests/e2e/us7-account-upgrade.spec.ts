@@ -129,7 +129,7 @@ test.describe('US7: Account Upgrade from Anonymous Play', () => {
     await expect(page.locator('[data-testid="characters-played"]')).toContainText('3');
   });
 
-  test('should maintain progress after logout and login (device-only MVP)', async ({ page, context }) => {
+  test('should maintain progress after logout and login (device-only MVP)', async ({ page }) => {
     await page.goto('/');
 
     // Create account
@@ -175,7 +175,7 @@ test.describe('US7: Account Upgrade from Anonymous Play', () => {
     });
 
     // Mock progression endpoint
-    let progressionData = {
+    const progressionData = {
       uuid: uuid,
       scenariosCompleted: 5,
       totalExperience: 150,
