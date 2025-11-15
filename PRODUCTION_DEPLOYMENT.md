@@ -18,8 +18,15 @@ Hexhaven uses GitHub Actions for automated deployments. The system supports:
 
 - **Automatic deployment** when code is merged to the `main` branch
 - **Manual deployment** via GitHub Actions workflow dispatch
+- **Secrets-based configuration** - Environment variables managed through GitHub Secrets
 - **Zero-downtime deployments** with automatic backups
 - **Health checks** to verify successful deployment
+
+### Key Features
+
+- **No manual `.env` file management** - Environment configuration is automatically created from GitHub Secrets during each deployment
+- **Secure secret storage** - All sensitive data stored in GitHub's encrypted secrets vault
+- **Easy secret rotation** - Update secrets in GitHub, then redeploy to apply changes
 
 ### Architecture
 
@@ -107,35 +114,20 @@ sudo mkdir -p /opt/hexhaven
 sudo chown hexhaven:hexhaven /opt/hexhaven
 ```
 
-### Step 3: Configure Environment
+### Step 3: Configure Environment Variables (via GitHub Secrets)
 
-Create the production environment file on the server:
+**Important:** Environment configuration is now managed through GitHub Secrets and automatically deployed. You do NOT need to manually create a `.env` file on the server.
 
-```bash
-# Switch to deployment user
-sudo su - hexhaven
+The deployment workflow will automatically create the `.env` file from GitHub Secrets during each deployment. See [GitHub Secrets Configuration](#github-secrets-configuration) section below for details.
 
-# Create environment file
-cd /opt/hexhaven
-nano .env
-```
-
-Copy from `.env.production.template` and update:
-
-```env
-NODE_ENV=production
-PORT=3000
-HOST=0.0.0.0
-DATABASE_URL="postgresql://hexhaven_user:YOUR_PASSWORD@localhost:5432/hexhaven_production?schema=public"
-CORS_ORIGIN=http://150.136.88.138
-SESSION_SECRET=your_secure_random_string_here
-FRONTEND_URL=http://150.136.88.138
-```
-
-**Security:** Generate a secure session secret:
+**Security Note:** Generate secure values for secrets:
 
 ```bash
+# Generate session secret
 openssl rand -base64 32
+
+# Generate database password (if needed)
+openssl rand -base64 24
 ```
 
 ### Step 4: Setup Systemd Service
@@ -348,13 +340,63 @@ ssh -i ~/.ssh/hexhaven_production hexhaven@150.136.88.138
 
 5. Click **Add secret**
 
-### Step 5: Optional - Add Environment Secrets
+### Step 5: Add Environment Configuration Secrets
 
-For additional security, you can add environment-specific secrets:
+**Required:** Add these secrets to configure your production environment. The deployment workflow will automatically create the `.env` file from these secrets.
 
-- `PRODUCTION_DB_URL` - Database connection string
-- `PRODUCTION_SESSION_SECRET` - Session secret
-- `PRODUCTION_CORS_ORIGIN` - CORS origin
+Navigate to **Settings** → **Secrets and variables** → **Actions** and add:
+
+#### Required Secrets:
+
+1. **`PRODUCTION_DATABASE_URL`** (Required)
+   - Database connection string
+   - Example: `postgresql://hexhaven_user:PASSWORD@localhost:5432/hexhaven_production?schema=public`
+   - Replace PASSWORD with your actual database password
+
+2. **`PRODUCTION_SESSION_SECRET`** (Required)
+   - Secure random string for session encryption
+   - Generate with: `openssl rand -base64 32`
+   - Example: `a3K8mN2pQ7rS9tU4vW1xY6zB5cD8eF0gH`
+
+#### Optional Secrets (with defaults):
+
+3. **`PRODUCTION_PORT`**
+   - Backend server port (default: `3000`)
+   - Only set if you need a different port
+
+4. **`PRODUCTION_CORS_ORIGIN`**
+   - CORS allowed origin (default: `http://150.136.88.138`)
+   - Set if using a custom domain: `https://yourdomain.com`
+
+5. **`PRODUCTION_FRONTEND_URL`**
+   - Frontend URL (default: `http://150.136.88.138`)
+   - Set if using a custom domain: `https://yourdomain.com`
+
+6. **`PRODUCTION_LOG_LEVEL`**
+   - Logging level (default: `info`)
+   - Options: `debug`, `info`, `warn`, `error`
+
+7. **`PRODUCTION_REDIS_URL`** (Optional)
+   - Redis connection string if using Redis
+   - Example: `redis://localhost:6379`
+
+8. **`PRODUCTION_SENTRY_DSN`** (Optional)
+   - Sentry error tracking DSN
+   - Example: `https://key@sentry.io/project`
+
+#### How to Add Secrets:
+
+For each secret:
+1. Click **New repository secret**
+2. Enter the **Name** (e.g., `PRODUCTION_DATABASE_URL`)
+3. Enter the **Value** (e.g., your database connection string)
+4. Click **Add secret**
+
+**Security Best Practices:**
+- Never commit secrets to the repository
+- Use strong, randomly generated values
+- Rotate secrets periodically (every 3-6 months)
+- Use different values for staging and production
 
 ## Deployment Methods
 
@@ -426,15 +468,19 @@ For on-demand deployments:
      - Built frontend files
      - Database migration files
      - Deployment scripts
+   - **Create `.env` file from GitHub Secrets**
+   - Upload `.env` file securely to server
 
 3. **Transfer Phase:**
    - Establish SSH connection
-   - Upload package to `/tmp/` on server
+   - Upload deployment package to `/tmp/` on server
+   - Upload environment configuration to `/tmp/` on server
 
 4. **Deploy Phase:**
    - Stop backend service
    - Create backup of current deployment
    - Extract new deployment
+   - **Copy `.env` file to deployment directory**
    - Install backend dependencies
    - Run database migrations
    - Deploy frontend to Nginx directory
@@ -595,6 +641,80 @@ For on-demand deployments:
    sudo nginx -t
    sudo tail -f /var/log/nginx/error.log
    ```
+
+### Environment Variable / Configuration Issues
+
+**Symptoms:** Backend fails to start, database connection errors, missing configuration
+
+**Common Causes:**
+- Missing required GitHub Secrets
+- Incorrect secret values
+- Database URL formatting issues
+
+**Solutions:**
+
+1. Verify all required secrets are set in GitHub:
+   ```bash
+   # Go to: https://github.com/jisaf/Hexhaven/settings/secrets/actions
+   # Verify these secrets exist:
+   # - PRODUCTION_SSH_KEY
+   # - PRODUCTION_DATABASE_URL
+   # - PRODUCTION_SESSION_SECRET
+   ```
+
+2. Check `.env` file on server:
+   ```bash
+   ssh hexhaven@150.136.88.138
+   cat /opt/hexhaven/.env
+
+   # Verify it contains:
+   # - DATABASE_URL
+   # - SESSION_SECRET
+   # - NODE_ENV=production
+   ```
+
+3. Test database connection:
+   ```bash
+   # On server
+   cd /opt/hexhaven/backend
+   node -e "console.log(process.env.DATABASE_URL)"
+
+   # Try connecting
+   psql "$(grep DATABASE_URL /opt/hexhaven/.env | cut -d= -f2-)"
+   ```
+
+4. Update secrets and redeploy:
+   - Update secret values in GitHub
+   - Trigger manual deployment
+   - New `.env` file will be created automatically
+
+### Rotating Secrets
+
+To update environment variables or rotate secrets:
+
+1. **Update GitHub Secrets:**
+   - Go to: https://github.com/jisaf/Hexhaven/settings/secrets/actions
+   - Click on the secret to update
+   - Click "Update secret"
+   - Enter new value
+   - Save
+
+2. **Trigger Deployment:**
+   - Go to Actions tab
+   - Run "Deploy to Production" workflow
+   - The new `.env` file will be created from updated secrets
+
+3. **Verify:**
+   ```bash
+   ssh hexhaven@150.136.88.138
+   cat /opt/hexhaven/.env | grep -i "SECRET\|PASSWORD\|URL"
+   # Verify new values are present (be careful not to expose secrets in logs)
+   ```
+
+**Security Note:** After rotating secrets:
+- The old `.env` file is backed up to `/opt/hexhaven.backup.TIMESTAMP/.env`
+- Consider cleaning up old backups periodically
+- Never commit secrets to the repository
 
 ### Rollback to Previous Version
 
@@ -900,6 +1020,42 @@ curl http://150.136.88.138/health
 # Database
 psql -U hexhaven_user -d hexhaven_production
 ```
+
+### GitHub Secrets Quick Reference
+
+All environment configuration is managed through GitHub Secrets. Here's the complete list:
+
+#### Required Secrets
+
+| Secret Name | Description | Example |
+|------------|-------------|---------|
+| `PRODUCTION_SSH_KEY` | SSH private key for deployment | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `PRODUCTION_DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/hexhaven_production?schema=public` |
+| `PRODUCTION_SESSION_SECRET` | Session encryption key | Generated via `openssl rand -base64 32` |
+
+#### Optional Secrets (with defaults)
+
+| Secret Name | Default Value | Purpose |
+|------------|---------------|---------|
+| `PRODUCTION_PORT` | `3000` | Backend server port |
+| `PRODUCTION_CORS_ORIGIN` | `http://150.136.88.138` | CORS allowed origin |
+| `PRODUCTION_FRONTEND_URL` | `http://150.136.88.138` | Frontend URL |
+| `PRODUCTION_LOG_LEVEL` | `info` | Logging verbosity |
+| `PRODUCTION_REDIS_URL` | - | Redis connection (optional) |
+| `PRODUCTION_SENTRY_DSN` | - | Sentry error tracking (optional) |
+
+**To Add/Update Secrets:**
+1. Go to: https://github.com/jisaf/Hexhaven/settings/secrets/actions
+2. Click "New repository secret" or click existing secret to update
+3. Enter name and value
+4. Click "Add secret" or "Update secret"
+5. Trigger deployment to apply changes
+
+**Security Reminder:**
+- Secrets are encrypted by GitHub
+- Never log or expose secret values
+- Rotate secrets every 3-6 months
+- Each deployment creates a fresh `.env` file from current secret values
 
 ### Getting Help
 

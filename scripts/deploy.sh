@@ -64,17 +64,26 @@ check_directory() {
 setup_environment() {
     log_step "Setting up environment variables..."
 
-    # Copy environment template if .env doesn't exist
+    # Check if .env exists (created from GitHub secrets during deployment)
     if [ ! -f "${ENV_FILE}" ]; then
+        # Fallback: Copy environment template if available
         if [ -f "${ENV_TEMPLATE}" ]; then
-            log_info "Creating .env from template..."
+            log_warn "No .env file found, creating from template..."
+            log_warn "For production deployments, .env should be created from GitHub secrets"
             cp "${ENV_TEMPLATE}" "${ENV_FILE}"
         else
-            log_error "No .env or .env.template found!"
+            log_error "No .env file found!"
+            log_error "Expected .env to be created from GitHub secrets during deployment"
             exit 1
         fi
     else
-        log_info "Using existing .env file"
+        log_info "Using .env file (created from GitHub secrets)"
+    fi
+
+    # Verify .env has required variables
+    if ! grep -q "DATABASE_URL" "${ENV_FILE}"; then
+        log_error ".env file is missing required DATABASE_URL variable"
+        exit 1
     fi
 
     # Load environment variables
