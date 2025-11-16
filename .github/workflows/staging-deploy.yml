@@ -55,9 +55,31 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging_key
+          # Write SSH key with proper newline handling
+          printf '%s\n' "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/staging_key
           chmod 600 ~/.ssh/staging_key
+
+          # Validate SSH key format
+          if ! ssh-keygen -l -f ~/.ssh/staging_key > /dev/null 2>&1; then
+            echo "Error: Invalid SSH key format!"
+            echo "Please ensure STAGING_SSH_KEY secret contains a valid private key with proper newlines."
+            echo "Key should start with '-----BEGIN' and contain actual newlines (not \\n literals)"
+            exit 1
+          fi
+
+          # Add host to known_hosts
           ssh-keyscan -H ${{ env.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+          # Test SSH connection (without executing commands)
+          ssh -i ~/.ssh/staging_key -o BatchMode=yes -o ConnectTimeout=10 ${{ env.DEPLOY_USER }}@${{ env.STAGING_HOST }} exit || {
+            echo "Error: SSH connection test failed!"
+            echo "Please verify:"
+            echo "1. STAGING_SSH_KEY secret is set correctly (with actual newlines, not \\n)"
+            echo "2. The corresponding public key is in ~/.ssh/authorized_keys on the server"
+            echo "3. The hexhaven user exists on the staging server"
+            echo "4. SSH is enabled and accessible on the staging server"
+            exit 1
+          }
 
       - name: Upload deployment package
         run: |
