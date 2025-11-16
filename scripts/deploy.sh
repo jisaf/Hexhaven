@@ -242,7 +242,7 @@ cleanup_old_backups() {
 
     # Keep only last 5 backups
     cd /opt
-    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf || true
+    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf || true
 
     log_info "Old backups cleaned up"
 }
