@@ -68,6 +68,9 @@ jobs:
           chmod +x deploy-production/deploy.sh
           chmod +x deploy-production/server-config.sh
 
+          # Copy PM2 ecosystem configuration
+          cp ecosystem.config.js deploy-production/
+
           # Copy Nginx configuration
           cp infrastructure/nginx-hexhaven.conf deploy-production/
 
@@ -214,9 +217,13 @@ jobs:
             sudo mkdir -p ${{ env.DEPLOY_PATH }}/frontend
             sudo cp -r /tmp/deploy-production/frontend/* ${{ env.DEPLOY_PATH }}/frontend/
 
-            # Copy deployment scripts
+            # Copy deployment scripts and PM2 config
             sudo cp /tmp/deploy-production/deploy.sh ${{ env.DEPLOY_PATH }}/
             sudo cp /tmp/deploy-production/server-config.sh ${{ env.DEPLOY_PATH }}/
+            sudo cp /tmp/deploy-production/ecosystem.config.js ${{ env.DEPLOY_PATH }}/
+
+            # Create logs directory for PM2
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}/logs
 
             # Set ownership
             sudo chown -R ${{ env.DEPLOY_USER }}:${{ env.DEPLOY_USER }} ${{ env.DEPLOY_PATH }}
@@ -299,13 +306,8 @@ jobs:
             echo "Starting backend with PM2..."
             cd ${{ env.DEPLOY_PATH }}
 
-            # Start the backend using PM2
-            pm2 start backend/dist/backend/src/main.js \
-              --name hexhaven-backend \
-              --cwd ${{ env.DEPLOY_PATH }} \
-              --env production \
-              --max-memory-restart 500M \
-              --time
+            # Start the backend using PM2 ecosystem file
+            pm2 start ecosystem.config.js --env production
 
             # Save PM2 configuration
             pm2 save
