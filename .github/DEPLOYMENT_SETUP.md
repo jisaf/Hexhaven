@@ -23,7 +23,7 @@ Copy the public key to the production server:
 
 ```bash
 # Method 1: Using ssh-copy-id (easiest)
-ssh-copy-id -i ~/.ssh/hexhaven_deploy.pub hexhaven@YOUR_SERVER_IP
+ssh-copy-id -i ~/.ssh/hexhaven_deploy.pub ubuntu@YOUR_SERVER_IP
 
 # Method 2: Manual copy
 cat ~/.ssh/hexhaven_deploy.pub
@@ -34,7 +34,7 @@ Or manually on the server:
 
 ```bash
 # SSH into the server
-ssh hexhaven@YOUR_SERVER_IP
+ssh ubuntu@YOUR_SERVER_IP
 
 # Add the public key to authorized_keys
 mkdir -p ~/.ssh
@@ -94,7 +94,7 @@ Before running the deployment, test the SSH connection manually:
 
 ```bash
 # Test with the same key
-ssh -i ~/.ssh/hexhaven_deploy hexhaven@YOUR_SERVER_IP
+ssh -i ~/.ssh/hexhaven_deploy ubuntu@YOUR_SERVER_IP
 
 # If this works, the GitHub Actions deployment should work too
 ```
@@ -117,7 +117,7 @@ ssh -i ~/.ssh/hexhaven_deploy hexhaven@YOUR_SERVER_IP
 **Solutions**:
 1. Verify the public key is in `~/.ssh/authorized_keys` on the server
 2. Check the private key is correctly stored in GitHub Secrets (with newlines preserved)
-3. Ensure the `hexhaven` user exists on the server
+3. Ensure the `ubuntu` user exists on the server
 4. Verify SSH service is running on the server
 5. Check server firewall allows SSH connections
 

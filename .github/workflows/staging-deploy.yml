@@ -8,7 +8,7 @@ on:
 env:
   NODE_VERSION: '20'
   STAGING_HOST: '150.136.88.138'
-  DEPLOY_USER: 'hexhaven'
+  DEPLOY_USER: 'ubuntu'
   DEPLOY_PATH: '/opt/hexhaven'
 
 jobs:
@@ -76,7 +76,7 @@ jobs:
             echo "Please verify:"
             echo "1. STAGING_SSH_KEY secret is set correctly (with actual newlines, not \\n)"
             echo "2. The corresponding public key is in ~/.ssh/authorized_keys on the server"
-            echo "3. The hexhaven user exists on the staging server"
+            echo "3. The ubuntu user exists on the staging server"
             echo "4. SSH is enabled and accessible on the staging server"
             exit 1
           }
