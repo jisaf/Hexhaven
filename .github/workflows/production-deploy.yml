@@ -235,7 +235,7 @@ jobs:
             echo "Deploying frontend to Nginx..."
             sudo mkdir -p /var/www/hexhaven
             sudo cp -r ${{ env.DEPLOY_PATH }}/frontend /var/www/hexhaven/
-            sudo chown -R nginx:nginx /var/www/hexhaven
+            sudo chown -R www-data:www-data /var/www/hexhaven
             sudo chmod -R 755 /var/www/hexhaven
 
             # Reload Nginx
