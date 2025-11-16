@@ -132,6 +132,16 @@ jobs:
               echo "Node.js already installed: $(node --version)"
             fi
 
+            # Ensure PM2 is installed
+            echo "Checking PM2 installation..."
+            if ! command -v pm2 &> /dev/null; then
+              echo "PM2 not found, installing globally..."
+              sudo npm install -g pm2
+              echo "PM2 installed: $(pm2 --version)"
+            else
+              echo "PM2 already installed: $(pm2 --version)"
+            fi
+
             # TODO: PostgreSQL setup currently disabled
             # The application doesn't use the database yet - it loads data from JSON files
             # Uncomment this section when database integration is ready
@@ -171,9 +181,10 @@ jobs:
             cd /tmp
             tar -xzf deploy.tar.gz
 
-            # Stop existing services
-            echo "Stopping services..."
-            sudo systemctl stop hexhaven-backend || true
+            # Stop existing backend process
+            echo "Stopping existing backend..."
+            pm2 stop hexhaven-backend || echo "No existing backend process to stop"
+            pm2 delete hexhaven-backend || echo "No existing backend process to delete"
 
             # Backup current deployment
             if [ -d "${{ env.DEPLOY_PATH }}" ]; then
@@ -238,23 +249,47 @@ jobs:
             sudo chown -R www-data:www-data /var/www/hexhaven
             sudo chmod -R 755 /var/www/hexhaven
 
-            # Reload Nginx
-            sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload failed"
+            # Install Nginx if not present
+            if ! command -v nginx &> /dev/null; then
+              echo "Installing Nginx..."
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+            fi
 
-            # Start services
-            echo "Starting services..."
-            sudo systemctl start hexhaven-backend
+            # Reload Nginx
+            sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload failed (will configure later)"
+
+            # Start backend with PM2
+            echo "Starting backend with PM2..."
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Start the backend using PM2
+            pm2 start backend/dist/backend/src/main.js \
+              --name hexhaven-backend \
+              --cwd ${{ env.DEPLOY_PATH }} \
+              --env production \
+              --max-memory-restart 500M \
+              --time
+
+            # Save PM2 configuration
+            pm2 save
+
+            # Configure PM2 to start on system boot (only needs to be done once)
+            sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ${{ env.DEPLOY_USER }} --hp /home/${{ env.DEPLOY_USER }} || echo "PM2 startup already configured"
 
             # Wait and verify
-            echo "Waiting for services to start..."
+            echo "Waiting for backend to start..."
             sleep 5
 
-            # Check service status
-            if sudo systemctl is-active --quiet hexhaven-backend; then
-              echo "✓ Backend service is running"
+            # Check PM2 status
+            if pm2 show hexhaven-backend > /dev/null 2>&1; then
+              echo "✓ Backend is running under PM2"
+              pm2 show hexhaven-backend
             else
-              echo "✗ Backend service failed to start"
-              sudo journalctl -u hexhaven-backend -n 20
+              echo "✗ Backend failed to start"
+              pm2 logs hexhaven-backend --lines 50 --nostream
               exit 1
             fi
 
