@@ -27,16 +27,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install root dependencies
+      - name: Install dependencies (monorepo)
         run: npm ci
-
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: ./backend
-
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: ./frontend
 
       - name: Run tests
         run: |
@@ -44,12 +36,10 @@ jobs:
           npm run lint || echo "Linting completed"
 
       - name: Build backend
-        run: npm run build
-        working-directory: ./backend
+        run: npm run build -w backend
 
       - name: Build frontend
-        run: npm run build
-        working-directory: ./frontend
+        run: npm run build -w frontend
         env:
           VITE_API_URL: http://${{ env.PRODUCTION_HOST }}
           NODE_ENV: production
