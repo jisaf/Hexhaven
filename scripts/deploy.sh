@@ -242,12 +242,15 @@ cleanup_old_backups() {
 
     # Keep only last 5 backups
     cd /opt
-    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf || true
+    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf || true
 
     log_info "Old backups cleaned up"
 }
 
 print_deployment_summary() {
+    # Detect server IP from environment or auto-detect
+    local server_ip="${SERVER_IP:-$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "localhost")}"
+
     log_info "==============================================="
     log_info "Deployment Summary"
     log_info "==============================================="
@@ -266,9 +269,9 @@ print_deployment_summary() {
     echo "  - Logs: tail -f /var/log/nginx/error.log"
     echo ""
     log_info "Access:"
-    echo "  - Frontend: http://150.136.88.138"
-    echo "  - Backend API: http://150.136.88.138/api/"
-    echo "  - Health: http://150.136.88.138/health"
+    echo "  - Frontend: http://${server_ip}"
+    echo "  - Backend API: http://${server_ip}/api/"
+    echo "  - Health: http://${server_ip}/health"
     echo ""
     log_info "Deployment info: ${DEPLOY_PATH}/DEPLOYMENT_INFO.txt"
     echo ""

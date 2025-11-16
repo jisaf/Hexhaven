@@ -57,6 +57,13 @@ init_config() {
             log_warn "Update $CONFIG_FILE with a secure DATABASE_URL password."
         fi
 
+        # Get server IP from environment or use default
+        local server_ip="${SERVER_IP:-}"
+        if [ -z "$server_ip" ]; then
+            # Try to auto-detect the primary IP
+            server_ip=$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "localhost")
+        fi
+
         # Create config file
         sudo bash -c "cat > $CONFIG_FILE" << EOF
 # Hexhaven Server Configuration
@@ -70,9 +77,9 @@ DATABASE_URL="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_
 HOST=0.0.0.0
 PORT=3000
 
-# CORS and Frontend
-CORS_ORIGIN=http://150.136.88.138
-FRONTEND_URL=http://150.136.88.138
+# CORS and Frontend (auto-detected server IP: ${server_ip})
+CORS_ORIGIN=http://${server_ip}
+FRONTEND_URL=http://${server_ip}
 
 # Logging
 LOG_LEVEL=info
@@ -116,11 +123,14 @@ generate_env() {
         exit 1
     fi
 
+    # Detect server IP for fallback
+    local server_ip="${SERVER_IP:-$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "localhost")}"
+
     # Read other values from config with defaults
     local host=$(grep "^HOST=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "0.0.0.0")
     local port=$(grep "^PORT=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "3000")
-    local cors_origin=$(grep "^CORS_ORIGIN=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://150.136.88.138")
-    local frontend_url=$(grep "^FRONTEND_URL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://150.136.88.138")
+    local cors_origin=$(grep "^CORS_ORIGIN=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://${server_ip}")
+    local frontend_url=$(grep "^FRONTEND_URL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://${server_ip}")
     local log_level=$(grep "^LOG_LEVEL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "info")
     local redis_url=$(grep "^REDIS_URL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "")
     local sentry_dsn=$(grep "^SENTRY_DSN=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "")
