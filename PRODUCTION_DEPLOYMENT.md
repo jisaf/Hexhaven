@@ -356,28 +356,33 @@ ssh -i ~/.ssh/hexhaven_production hexhaven@150.136.88.138
 
 5. Click **Add secret**
 
-### Step 5: Verify SSH Key Secret
+### Step 5: Configure GitHub Secrets
 
-**Required:** Only one GitHub Secret is needed for deployment: the SSH private key.
-
-Navigate to **Settings** → **Secrets and variables** → **Actions** and verify:
+Navigate to **Settings** → **Secrets and variables** → **Actions**
 
 #### Required Secret:
 
 **`PRODUCTION_SSH_KEY`** - SSH private key for deployment access
-- This is the only secret needed in GitHub
-- Contains the private key generated in Step 2
 - Used to securely connect to the server during deployment
+- Contains the private key generated in Step 2
+
+#### Optional Secrets:
+
+**`PRODUCTION_HOST`** - Production server IP address or hostname
+- Default: `150.136.88.138`
+- Set this if your server IP changes or you want to deploy to a different server
+- Example: `150.136.88.138` or `production.yourdomain.com`
 
 **That's it!** All other configuration (database URL, CORS settings, etc.) is managed on the server via `/opt/hexhaven/.server-config`.
 
-#### Benefits of Server-Side Configuration:
+#### Benefits of This Approach:
 
 ✅ **Security** - Database credentials never leave the server
-✅ **Simplicity** - Only one GitHub Secret to manage
-✅ **Flexibility** - Update server config without touching GitHub
+✅ **Simplicity** - Only one required GitHub Secret
+✅ **Flexibility** - Update server config without touching GitHub, or change server IP via secret
 ✅ **Audit Trail** - Configuration changes are logged on the server
 ✅ **Auto-Generated Secrets** - Session secrets created fresh each deployment
+✅ **Easy Server Migration** - Change PRODUCTION_HOST secret to deploy to a new server
 
 ## Deployment Methods
 
@@ -1056,7 +1061,7 @@ psql -U hexhaven_user -d hexhaven_production
 
 ### GitHub Secrets Quick Reference
 
-Minimal GitHub Secrets required for deployment:
+GitHub Secrets for deployment configuration:
 
 #### Required Secret
 
@@ -1064,13 +1069,22 @@ Minimal GitHub Secrets required for deployment:
 |------------|-------------|-----------------|
 | `PRODUCTION_SSH_KEY` | SSH private key for deployment | `ssh-keygen -t ed25519 -C "hexhaven-production"` |
 
-**That's it!** Only one secret needed in GitHub.
+#### Optional Secrets
+
+| Secret Name | Default Value | Description |
+|------------|---------------|-------------|
+| `PRODUCTION_HOST` | `150.136.88.138` | Server IP address or hostname |
 
 **To Add/Update:**
 1. Go to: https://github.com/jisaf/Hexhaven/settings/secrets/actions
 2. Click "New repository secret" or click existing secret to update
 3. Enter name and value
 4. Click "Add secret" or "Update secret"
+
+**Common Use Cases:**
+- Change server IP: Update `PRODUCTION_HOST` secret with new IP address
+- Migrate to new server: Update `PRODUCTION_HOST`, then deploy
+- Use hostname: Set `PRODUCTION_HOST` to `production.yourdomain.com`
 
 ### Server Configuration Quick Reference
 
