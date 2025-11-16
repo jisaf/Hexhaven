@@ -7,7 +7,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  STAGING_HOST: ${{ secrets.STAGING_HOST || secrets.PRODUCTION_HOST }}
+  STAGING_HOST: ${{ secrets.STAGING_HOST || '150.136.88.138' }}
   DEPLOY_USER: 'ubuntu'
   DEPLOY_PATH: '/opt/hexhaven'
 
