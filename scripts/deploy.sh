@@ -97,18 +97,20 @@ setup_environment() {
 install_backend_dependencies() {
     log_step "Installing backend dependencies..."
 
-    check_directory "${BACKEND_DIR}"
-    cd "${BACKEND_DIR}"
+    # This is a monorepo, so install from root using workspaces
+    check_directory "${DEPLOY_PATH}"
+    cd "${DEPLOY_PATH}"
 
-    # Check if node_modules exists and is recent
-    if [ -d "node_modules" ]; then
-        log_info "node_modules exists, checking if update needed..."
-        # Always run npm ci in production to ensure exact versions
-        npm ci --production=false
-    else
-        log_info "Installing fresh dependencies..."
-        npm ci --production=false
+    # Check if root package.json and package-lock.json exist
+    if [ ! -f "package.json" ] || [ ! -f "package-lock.json" ]; then
+        log_error "Missing package.json or package-lock.json in ${DEPLOY_PATH}"
+        log_error "Monorepo deployment requires root package files"
+        exit 1
     fi
+
+    # Install dependencies for the backend workspace
+    log_info "Installing workspace dependencies..."
+    npm ci --workspace=backend
 
     log_info "Backend dependencies installed"
 }
@@ -117,25 +119,27 @@ run_database_migrations() {
     log_step "Running database migrations..."
 
     check_directory "${BACKEND_DIR}"
-    cd "${BACKEND_DIR}"
 
     # Check if Prisma is configured
-    if [ ! -f "prisma/schema.prisma" ]; then
+    if [ ! -f "${BACKEND_DIR}/prisma/schema.prisma" ]; then
         log_warn "No Prisma schema found, skipping migrations"
         return 0
     fi
 
+    # Run from monorepo root using workspace
+    cd "${DEPLOY_PATH}"
+
     # Generate Prisma client
     log_info "Generating Prisma client..."
-    npx prisma generate
+    npm run prisma:generate --workspace=backend
 
     # Run migrations
     log_info "Applying database migrations..."
-    npx prisma migrate deploy
+    npm run prisma:migrate:deploy --workspace=backend
 
     # Optional: Seed database (uncomment if needed)
     # log_info "Seeding database..."
-    # npm run db:seed || log_warn "Database seeding failed or not configured"
+    # npm run db:seed --workspace=backend || log_warn "Database seeding failed or not configured"
 
     log_info "Database migrations completed"
 }

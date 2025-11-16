@@ -48,10 +48,15 @@ jobs:
         run: |
           mkdir -p deploy-production
 
-          # Copy backend (including dist, node_modules, and package files)
-          cp -r backend/dist deploy-production/backend-dist
-          cp -r backend/prisma deploy-production/backend-prisma
-          cp backend/package*.json deploy-production/
+          # Copy monorepo root files (for npm workspaces)
+          cp package.json deploy-production/
+          cp package-lock.json deploy-production/
+
+          # Copy backend workspace (including dist and package files)
+          mkdir -p deploy-production/backend
+          cp -r backend/dist deploy-production/backend/
+          cp -r backend/prisma deploy-production/backend/
+          cp backend/package.json deploy-production/backend/
 
           # Copy frontend build
           mkdir -p deploy-production/frontend
@@ -146,13 +151,17 @@ jobs:
             echo "Deploying new version..."
             sudo mkdir -p ${{ env.DEPLOY_PATH }}
 
-            # Copy backend
-            sudo mkdir -p ${{ env.DEPLOY_PATH }}/backend
-            sudo cp -r /tmp/deploy-production/backend-dist ${{ env.DEPLOY_PATH }}/backend/dist
-            sudo cp -r /tmp/deploy-production/backend-prisma ${{ env.DEPLOY_PATH }}/backend/prisma
-            sudo cp /tmp/deploy-production/package*.json ${{ env.DEPLOY_PATH }}/backend/
+            # Copy monorepo root files (for npm workspaces)
+            sudo cp /tmp/deploy-production/package.json ${{ env.DEPLOY_PATH }}/
+            sudo cp /tmp/deploy-production/package-lock.json ${{ env.DEPLOY_PATH }}/
 
-            # Copy frontend
+            # Copy backend workspace
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}/backend
+            sudo cp -r /tmp/deploy-production/backend/dist ${{ env.DEPLOY_PATH }}/backend/
+            sudo cp -r /tmp/deploy-production/backend/prisma ${{ env.DEPLOY_PATH }}/backend/
+            sudo cp /tmp/deploy-production/backend/package.json ${{ env.DEPLOY_PATH }}/backend/
+
+            # Copy frontend build
             sudo mkdir -p ${{ env.DEPLOY_PATH }}/frontend
             sudo cp -r /tmp/deploy-production/frontend/* ${{ env.DEPLOY_PATH }}/frontend/
 
