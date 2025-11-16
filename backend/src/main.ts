@@ -8,11 +8,26 @@ import * as path from 'path';
 // In production, this loads from /opt/hexhaven/.env
 // In development, this loads from project root
 const envPath = path.resolve(process.cwd(), '.env');
-dotenv.config({ path: envPath });
+const dotenvResult = dotenv.config({ path: envPath });
+
+// Log environment loading status for debugging
+if (dotenvResult.error) {
+  console.error(`[Bootstrap] Warning: Could not load .env from ${envPath}`);
+  console.error(`[Bootstrap] Error: ${dotenvResult.error.message}`);
+  console.log(
+    `[Bootstrap] Continuing with system environment variables only`,
+  );
+} else {
+  console.log(`[Bootstrap] Loaded environment from ${envPath}`);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
+
+  // Log startup environment info
+  logger.log(`Node environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.log(`Working directory: ${process.cwd()}`);
 
   // Enable CORS for frontend
   // Support both CORS_ORIGINS (plural, comma-separated) and CORS_ORIGIN (singular)
