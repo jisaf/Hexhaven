@@ -302,9 +302,33 @@ jobs:
               echo "✓ Port 80 opened"
             fi
 
+            # Verify deployment prerequisites before starting PM2
+            echo "Verifying deployment prerequisites..."
+            cd ${{ env.DEPLOY_PATH }}
+
+            if [ ! -f .env ]; then
+              echo "✗ ERROR: .env file not found at ${{ env.DEPLOY_PATH }}/.env"
+              exit 1
+            else
+              echo "✓ .env file exists"
+            fi
+
+            if [ ! -d node_modules ]; then
+              echo "✗ ERROR: node_modules not found"
+              exit 1
+            else
+              echo "✓ node_modules exists"
+            fi
+
+            if [ ! -f backend/dist/backend/src/main.js ]; then
+              echo "✗ ERROR: Backend entry point not found"
+              exit 1
+            else
+              echo "✓ Backend build exists"
+            fi
+
             # Start backend with PM2
             echo "Starting backend with PM2..."
-            cd ${{ env.DEPLOY_PATH }}
 
             # Start the backend using PM2 ecosystem file
             pm2 start ecosystem.config.js --env production
