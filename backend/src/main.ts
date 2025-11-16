@@ -7,12 +7,23 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // Enable CORS for frontend
-  const corsOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-    : [
-        'http://localhost:5173', // Vite dev server
-        'http://localhost:4173', // Vite preview
-      ];
+  // Support both CORS_ORIGINS (plural, comma-separated) and CORS_ORIGIN (singular)
+  let corsOrigins: string[];
+  if (process.env.CORS_ORIGINS) {
+    // Multiple origins, comma-separated
+    corsOrigins = process.env.CORS_ORIGINS.split(',').map((o) => o.trim());
+  } else if (process.env.CORS_ORIGIN) {
+    // Single origin
+    corsOrigins = [process.env.CORS_ORIGIN.trim()];
+  } else {
+    // Default to localhost for development
+    corsOrigins = [
+      'http://localhost:5173', // Vite dev server
+      'http://localhost:4173', // Vite preview
+    ];
+  }
+
+  logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
 
   app.enableCors({
     origin: corsOrigins,
