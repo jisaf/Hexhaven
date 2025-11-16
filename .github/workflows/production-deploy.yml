@@ -302,9 +302,33 @@ jobs:
               echo "✓ Port 80 opened"
             fi
 
+            # Verify deployment prerequisites before starting PM2
+            echo "Verifying deployment prerequisites..."
+            cd ${{ env.DEPLOY_PATH }}
+
+            if [ ! -f .env ]; then
+              echo "✗ ERROR: .env file not found at ${{ env.DEPLOY_PATH }}/.env"
+              exit 1
+            else
+              echo "✓ .env file exists"
+            fi
+
+            if [ ! -d node_modules ]; then
+              echo "✗ ERROR: node_modules not found"
+              exit 1
+            else
+              echo "✓ node_modules exists"
+            fi
+
+            if [ ! -f backend/dist/backend/src/main.js ]; then
+              echo "✗ ERROR: Backend entry point not found"
+              exit 1
+            else
+              echo "✓ Backend build exists"
+            fi
+
             # Start backend with PM2
             echo "Starting backend with PM2..."
-            cd ${{ env.DEPLOY_PATH }}
 
             # Start the backend using PM2 ecosystem file
             pm2 start ecosystem.config.js --env production
@@ -319,10 +343,32 @@ jobs:
             echo "Waiting for backend to start..."
             sleep 5
 
-            # Check PM2 status
+            # Check PM2 status and look for crash-looping
             if pm2 show hexhaven-backend > /dev/null 2>&1; then
-              echo "✓ Backend is running under PM2"
+              echo "✓ Backend process exists in PM2"
+
+              # Check if the app is crash-looping (high restart count)
+              RESTART_COUNT=$(pm2 jlist | jq '.[0].pm2_env.restart_time' 2>/dev/null || echo "0")
+              UPTIME=$(pm2 jlist | jq '.[0].pm2_env.pm_uptime' 2>/dev/null || echo "0")
+
+              if [ "$RESTART_COUNT" -gt 5 ]; then
+                echo "✗ Backend is crash-looping! Restart count: $RESTART_COUNT"
+                echo "Showing last 100 lines of logs:"
+                pm2 logs hexhaven-backend --lines 100 --nostream
+                echo ""
+                echo "Checking .env file:"
+                if [ -f /opt/hexhaven/.env ]; then
+                  echo "✓ .env file exists"
+                  echo "Environment variables (secrets redacted):"
+                  grep -v "SECRET\|PASSWORD\|KEY" /opt/hexhaven/.env || echo "No non-secret variables found"
+                else
+                  echo "✗ .env file missing!"
+                fi
+                exit 1
+              fi
+
               pm2 show hexhaven-backend
+              echo "✓ Backend is running successfully"
             else
               echo "✗ Backend failed to start"
               pm2 logs hexhaven-backend --lines 50 --nostream
