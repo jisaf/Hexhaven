@@ -144,12 +144,9 @@ jobs:
 
               # Create database and user for hexhaven
               echo "Setting up database..."
-              sudo -u postgres psql << 'EOSQL'
-CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';
-CREATE DATABASE hexhaven_production OWNER hexhaven_user;
-GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;
-EOSQL
-
+              sudo -u postgres psql -c "CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';" || true
+              sudo -u postgres psql -c "CREATE DATABASE hexhaven_production OWNER hexhaven_user;"
+              sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;"
               echo "Database created. IMPORTANT: Update password in /opt/hexhaven/.server-config"
             else
               echo "PostgreSQL already installed: $(psql --version)"
@@ -157,11 +154,9 @@ EOSQL
               # Check if database exists
               if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw hexhaven_production; then
                 echo "Creating hexhaven_production database..."
-                sudo -u postgres psql << 'EOSQL'
-CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';
-CREATE DATABASE hexhaven_production OWNER hexhaven_user;
-GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;
-EOSQL
+                sudo -u postgres psql -c "CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';" || true
+                sudo -u postgres psql -c "CREATE DATABASE hexhaven_production OWNER hexhaven_user;"
+                sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;"
                 echo "Database created. IMPORTANT: Update password in /opt/hexhaven/.server-config"
               else
                 echo "Database hexhaven_production already exists"
