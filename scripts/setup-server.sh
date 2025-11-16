@@ -10,10 +10,11 @@
 # Prerequisites:
 # - Ubuntu 20.04+ or Debian 11+
 # - Root or sudo access
-# - Server IP: 150.136.88.138
 #
 # Usage:
 #   sudo ./setup-server.sh
+#   # Or with custom server IP:
+#   sudo SERVER_IP=your.server.ip ./setup-server.sh
 #
 # What this script does:
 # 1. Installs Node.js 20.x, npm, PostgreSQL, Nginx
@@ -34,6 +35,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
+# Server IP - can be set via environment variable or auto-detected
+SERVER_IP="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
 DEPLOY_USER="hexhaven"
 DEPLOY_PATH="/opt/hexhaven"
 DB_NAME="hexhaven_staging"
@@ -146,13 +149,13 @@ upstream backend {
 # Redirect HTTP to HTTPS (uncomment when SSL is configured)
 # server {
 #     listen 80;
-#     server_name 150.136.88.138;
-#     return 301 https://$server_name$request_uri;
+#     server_name ${SERVER_IP};
+#     return 301 https://\$server_name\$request_uri;
 # }
 
 server {
     listen 80;
-    server_name 150.136.88.138;
+    server_name ${SERVER_IP};
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -360,13 +363,13 @@ PORT=${BACKEND_PORT}
 HOST=0.0.0.0
 
 # Frontend Configuration (build time)
-VITE_API_URL=http://150.136.88.138:${BACKEND_PORT}
+VITE_API_URL=http://${SERVER_IP}:${BACKEND_PORT}
 
 # Session Configuration (generate secure secret in production)
 SESSION_SECRET=$(openssl rand -base64 32)
 
 # CORS Configuration
-CORS_ORIGIN=http://150.136.88.138
+CORS_ORIGIN=http://${SERVER_IP}
 
 # Logging
 LOG_LEVEL=info
@@ -395,7 +398,7 @@ print_summary() {
     echo ""
     log_info "Next Steps:"
     echo "  1. Add GitHub Actions secret 'STAGING_SSH_KEY' with SSH private key"
-    echo "  2. Add the corresponding public key to ${DEPLOY_USER}@150.136.88.138:~/.ssh/authorized_keys"
+    echo "  2. Add the corresponding public key to ${DEPLOY_USER}@${SERVER_IP}:~/.ssh/authorized_keys"
     echo "  3. Push to main/master branch to trigger deployment"
     echo ""
     log_info "Services:"
@@ -403,9 +406,9 @@ print_summary() {
     echo "  - Nginx: systemctl status nginx"
     echo ""
     log_info "Access:"
-    echo "  - Frontend: http://150.136.88.138"
-    echo "  - Backend API: http://150.136.88.138/api/"
-    echo "  - Health Check: http://150.136.88.138/health"
+    echo "  - Frontend: http://${SERVER_IP}"
+    echo "  - Backend API: http://${SERVER_IP}/api/"
+    echo "  - Health Check: http://${SERVER_IP}/health"
     echo ""
 }
 
