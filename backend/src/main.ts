@@ -1,6 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables from .env file
+// In production, this loads from /opt/hexhaven/.env
+// In development, this loads from project root
+const envPath = path.resolve(process.cwd(), '.env');
+dotenv.config({ path: envPath });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
