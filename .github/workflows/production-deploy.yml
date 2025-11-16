@@ -132,6 +132,42 @@ jobs:
               echo "Node.js already installed: $(node --version)"
             fi
 
+            # Ensure PostgreSQL is installed
+            echo "Checking PostgreSQL installation..."
+            if ! command -v psql &> /dev/null; then
+              echo "PostgreSQL not found, installing..."
+              sudo apt-get update
+              sudo apt-get install -y postgresql postgresql-contrib
+              sudo systemctl start postgresql
+              sudo systemctl enable postgresql
+              echo "PostgreSQL installed: $(psql --version)"
+
+              # Create database and user for hexhaven
+              echo "Setting up database..."
+              sudo -u postgres psql << 'EOSQL'
+CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';
+CREATE DATABASE hexhaven_production OWNER hexhaven_user;
+GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;
+EOSQL
+
+              echo "Database created. IMPORTANT: Update password in /opt/hexhaven/.server-config"
+            else
+              echo "PostgreSQL already installed: $(psql --version)"
+
+              # Check if database exists
+              if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw hexhaven_production; then
+                echo "Creating hexhaven_production database..."
+                sudo -u postgres psql << 'EOSQL'
+CREATE USER hexhaven_user WITH PASSWORD 'hexhaven_production_password_CHANGE_ME';
+CREATE DATABASE hexhaven_production OWNER hexhaven_user;
+GRANT ALL PRIVILEGES ON DATABASE hexhaven_production TO hexhaven_user;
+EOSQL
+                echo "Database created. IMPORTANT: Update password in /opt/hexhaven/.server-config"
+              else
+                echo "Database hexhaven_production already exists"
+              fi
+            fi
+
             # Extract deployment package
             cd /tmp
             tar -xzf deploy.tar.gz
