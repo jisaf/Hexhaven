@@ -227,11 +227,12 @@ jobs:
             chmod +x server-config.sh
 
             # Initialize server config (creates /opt/hexhaven/.server-config if not exists)
-            sudo -u ${{ env.DEPLOY_USER }} ./server-config.sh init
+            # Pass PRODUCTION_HOST as SERVER_IP for consistency
+            sudo -u ${{ env.DEPLOY_USER }} env SERVER_IP=${{ env.PRODUCTION_HOST }} ./server-config.sh init
 
             # Generate .env file from server configuration
             echo "Generating environment configuration..."
-            sudo -u ${{ env.DEPLOY_USER }} ./server-config.sh generate
+            sudo -u ${{ env.DEPLOY_USER }} env SERVER_IP=${{ env.PRODUCTION_HOST }} ./server-config.sh generate
 
             # Run deployment script
             echo "Running deployment script..."
@@ -240,6 +241,7 @@ jobs:
             export GITHUB_SHA="$GITHUB_SHA"
             export GITHUB_REF_NAME="$GITHUB_REF_NAME"
             export GITHUB_RUN_NUMBER="$GITHUB_RUN_NUMBER"
+            export SERVER_IP="${{ env.PRODUCTION_HOST }}"
             ./deploy.sh || {
               echo "Deployment script failed!"
               exit 1
