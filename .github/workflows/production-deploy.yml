@@ -347,16 +347,16 @@ jobs:
             if pm2 show hexhaven-backend > /dev/null 2>&1; then
               echo "✓ Backend process exists in PM2"
 
-              # Get restart count by parsing pm2 show output (more reliable than jq)
-              RESTART_COUNT=$(pm2 show hexhaven-backend | grep -E "restarts\s+│" | head -1 | awk '{print $3}')
+              # Get restart count by parsing pm2 show table output
+              # The table format is: │ restarts          │ 15                                             │
+              # Split by │ and get the 3rd field (the value), then trim whitespace
+              RESTART_COUNT=$(pm2 show hexhaven-backend | grep "│ restarts" | grep -v "unstable" | awk -F'│' '{print $3}' | tr -d ' ')
 
-              # If we couldn't parse it, try the unstable restarts line
-              if [ -z "$RESTART_COUNT" ] || [ "$RESTART_COUNT" = "│" ]; then
-                RESTART_COUNT=$(pm2 show hexhaven-backend | grep "unstable restarts" | awk '{print $4}')
+              # Validate it's a number, otherwise default to 0
+              if ! [[ "$RESTART_COUNT" =~ ^[0-9]+$ ]]; then
+                echo "Warning: Could not parse restart count, defaulting to 0"
+                RESTART_COUNT=0
               fi
-
-              # Default to 0 if still not found
-              RESTART_COUNT=${RESTART_COUNT:-0}
 
               echo "Backend restart count: $RESTART_COUNT"
 
