@@ -341,29 +341,55 @@ jobs:
 
             # Wait and verify
             echo "Waiting for backend to start..."
-            sleep 5
+            sleep 10
 
             # Check PM2 status and look for crash-looping
             if pm2 show hexhaven-backend > /dev/null 2>&1; then
               echo "✓ Backend process exists in PM2"
 
-              # Check if the app is crash-looping (high restart count)
-              RESTART_COUNT=$(pm2 jlist | jq '.[0].pm2_env.restart_time' 2>/dev/null || echo "0")
-              UPTIME=$(pm2 jlist | jq '.[0].pm2_env.pm_uptime' 2>/dev/null || echo "0")
+              # Get restart count by parsing pm2 show output (more reliable than jq)
+              RESTART_COUNT=$(pm2 show hexhaven-backend | grep -E "restarts\s+│" | head -1 | awk '{print $3}')
+
+              # If we couldn't parse it, try the unstable restarts line
+              if [ -z "$RESTART_COUNT" ] || [ "$RESTART_COUNT" = "│" ]; then
+                RESTART_COUNT=$(pm2 show hexhaven-backend | grep "unstable restarts" | awk '{print $4}')
+              fi
+
+              # Default to 0 if still not found
+              RESTART_COUNT=${RESTART_COUNT:-0}
+
+              echo "Backend restart count: $RESTART_COUNT"
 
               if [ "$RESTART_COUNT" -gt 5 ]; then
-                echo "✗ Backend is crash-looping! Restart count: $RESTART_COUNT"
-                echo "Showing last 100 lines of logs:"
-                pm2 logs hexhaven-backend --lines 100 --nostream
                 echo ""
-                echo "Checking .env file:"
+                echo "=========================================="
+                echo "✗ DEPLOYMENT FAILED: Backend is crash-looping!"
+                echo "=========================================="
+                echo "Restart count: $RESTART_COUNT"
+                echo ""
+                echo "--- PM2 Process Status ---"
+                pm2 show hexhaven-backend
+                echo ""
+                echo "--- Last 100 lines of logs ---"
+                pm2 logs hexhaven-backend --lines 100 --nostream || cat /opt/hexhaven/logs/pm2-error.log
+                echo ""
+                echo "--- Environment Check ---"
                 if [ -f /opt/hexhaven/.env ]; then
                   echo "✓ .env file exists"
-                  echo "Environment variables (secrets redacted):"
-                  grep -v "SECRET\|PASSWORD\|KEY" /opt/hexhaven/.env || echo "No non-secret variables found"
+                  echo "Non-secret environment variables:"
+                  grep -v "SECRET\|PASSWORD\|KEY" /opt/hexhaven/.env || echo "  (all variables contain secrets)"
                 else
                   echo "✗ .env file missing!"
                 fi
+                echo ""
+                echo "--- File System Check ---"
+                echo "Backend entry point:"
+                ls -lh /opt/hexhaven/backend/dist/backend/src/main.js
+                echo ""
+                echo "Node modules:"
+                ls -ld /opt/hexhaven/node_modules
+                echo ""
+                echo "=========================================="
                 exit 1
               fi
 
