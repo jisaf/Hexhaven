@@ -131,11 +131,27 @@ run_database_migrations() {
 
     # Generate Prisma client
     log_info "Generating Prisma client..."
-    npm run prisma:generate --workspace=backend
+    if ! npm run prisma:generate --workspace=backend; then
+        log_error "Failed to generate Prisma client"
+        log_error "Check DATABASE_URL in ${DEPLOY_PATH}/.env or ${DEPLOY_PATH}/.server-config"
+        exit 1
+    fi
 
     # Run migrations
     log_info "Applying database migrations..."
-    npm run prisma:migrate:deploy --workspace=backend
+    if ! npm run prisma:migrate:deploy --workspace=backend; then
+        log_error "Database migration failed!"
+        log_error "Possible issues:"
+        log_error "  1. Database server is not running"
+        log_error "  2. Database credentials are incorrect"
+        log_error "  3. Database '${DATABASE_URL}' is not accessible"
+        log_error ""
+        log_error "Please check:"
+        log_error "  - PostgreSQL is running: sudo systemctl status postgresql"
+        log_error "  - Database config: cat ${DEPLOY_PATH}/.server-config"
+        log_error "  - Update password: ${DEPLOY_PATH}/server-config.sh update DATABASE_URL 'postgresql://user:pass@host:port/db'"
+        exit 1
+    fi
 
     # Optional: Seed database (uncomment if needed)
     # log_info "Seeding database..."

@@ -48,13 +48,13 @@ init_config() {
         local db_port="${DB_PORT:-5432}"
         local db_name="${DB_NAME:-hexhaven_production}"
         local db_user="${DB_USER:-hexhaven_user}"
-        local db_password="${DB_PASSWORD:-}"
+        local db_password="${DB_PASSWORD:-hexhaven_production_password_CHANGE_ME}"
 
-        # If no password provided, try to detect from PostgreSQL
-        if [ -z "$db_password" ]; then
-            log_warn "No database password provided. Using placeholder."
-            log_warn "Update $CONFIG_FILE with correct DATABASE_URL after setup."
-            db_password="CHANGE_ME_AFTER_SETUP"
+        # Warn if using default password
+        if [ "$db_password" = "hexhaven_production_password_CHANGE_ME" ]; then
+            log_warn "Using default database password."
+            log_warn "IMPORTANT: Change the password in production!"
+            log_warn "Update $CONFIG_FILE with a secure DATABASE_URL password."
         fi
 
         # Create config file
