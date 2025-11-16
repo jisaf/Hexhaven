@@ -7,7 +7,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST || '150.136.88.138' }}
+  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST || '129.213.88.197' }}
   DEPLOY_USER: 'ubuntu'
   DEPLOY_PATH: '/opt/hexhaven'
 
@@ -67,6 +67,9 @@ jobs:
           cp scripts/server-config.sh deploy-production/
           chmod +x deploy-production/deploy.sh
           chmod +x deploy-production/server-config.sh
+
+          # Copy Nginx configuration
+          cp infrastructure/nginx-hexhaven.conf deploy-production/
 
           # Create archive
           tar -czf deploy.tar.gz deploy-production/
@@ -249,7 +252,7 @@ jobs:
             sudo chown -R www-data:www-data /var/www/hexhaven
             sudo chmod -R 755 /var/www/hexhaven
 
-            # Install Nginx if not present
+            # Install and configure Nginx
             if ! command -v nginx &> /dev/null; then
               echo "Installing Nginx..."
               sudo apt-get update
@@ -258,8 +261,37 @@ jobs:
               sudo systemctl start nginx
             fi
 
-            # Reload Nginx
-            sudo nginx -t && sudo systemctl reload nginx || echo "Nginx reload failed (will configure later)"
+            # Install Nginx site configuration
+            echo "Configuring Nginx..."
+            # Replace placeholder with actual server IP
+            sed "s/__SERVER_IP__/${{ env.PRODUCTION_HOST }}/g" ${{ env.DEPLOY_PATH }}/nginx-hexhaven.conf | sudo tee /etc/nginx/sites-available/hexhaven > /dev/null
+            sudo ln -sf /etc/nginx/sites-available/hexhaven /etc/nginx/sites-enabled/hexhaven
+
+            # Disable default site if it exists
+            if [ -f /etc/nginx/sites-enabled/default ]; then
+              sudo rm /etc/nginx/sites-enabled/default
+            fi
+
+            # Test and reload Nginx
+            if sudo nginx -t; then
+              sudo systemctl reload nginx
+              echo "✓ Nginx configured and reloaded successfully"
+            else
+              echo "✗ Nginx configuration test failed"
+              sudo nginx -t
+              exit 1
+            fi
+
+            # Ensure firewall allows HTTP traffic (Oracle Cloud)
+            echo "Configuring firewall..."
+            if sudo iptables -L -n | grep -q "dpt:80.*ACCEPT"; then
+              echo "✓ Port 80 already allowed"
+            else
+              echo "Opening port 80..."
+              sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+              sudo netfilter-persistent save || sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
+              echo "✓ Port 80 opened"
+            fi
 
             # Start backend with PM2
             echo "Starting backend with PM2..."
