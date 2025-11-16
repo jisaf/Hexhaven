@@ -108,11 +108,31 @@ install_backend_dependencies() {
         exit 1
     fi
 
-    # Install dependencies for the backend workspace
+    # Install backend workspace dependencies
+    # Use --workspaces --if-present to handle missing frontend workspace gracefully
     log_info "Installing workspace dependencies..."
-    npm ci --workspace=backend
+    if ! npm ci --workspaces --if-present; then
+        log_error "npm ci failed!"
+        log_info "Trying alternative: npm ci --workspace=backend"
+        npm ci --workspace=backend || {
+            log_error "Backend dependency installation failed!"
+            exit 1
+        }
+    fi
 
-    log_info "Backend dependencies installed"
+    # Verify critical dependency is installed
+    if [ ! -d "node_modules/@nestjs/platform-express" ]; then
+        log_error "@nestjs/platform-express not found in node_modules!"
+        log_error "Attempting to install it directly..."
+        cd "${BACKEND_DIR}"
+        npm install @nestjs/platform-express || {
+            log_error "Failed to install @nestjs/platform-express"
+            exit 1
+        }
+        cd "${DEPLOY_PATH}"
+    fi
+
+    log_info "Backend dependencies installed successfully"
 }
 
 run_database_migrations() {
