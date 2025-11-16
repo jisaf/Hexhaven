@@ -83,7 +83,7 @@ LOG_LEVEL=info
 EOF
 
         sudo chmod 600 "$CONFIG_FILE"
-        sudo chown hexhaven:hexhaven "$CONFIG_FILE"
+        sudo chown ubuntu:ubuntu "$CONFIG_FILE"
 
         log_info "Server configuration created at: $CONFIG_FILE"
         log_warn "IMPORTANT: Update DATABASE_URL in $CONFIG_FILE with correct credentials!"
