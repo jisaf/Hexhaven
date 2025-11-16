@@ -213,12 +213,13 @@ Git Commit: ${GITHUB_SHA:-"N/A"}
 Git Branch: ${GITHUB_REF_NAME:-"N/A"}
 Workflow Run: ${GITHUB_RUN_NUMBER:-"N/A"}
 
-Backend Status: $(systemctl is-active hexhaven-backend || echo "not running")
-Frontend Status: $(systemctl is-active nginx || echo "not running")
+Process Manager: PM2 (backend will be started by deployment workflow)
+Nginx Status: $(systemctl is-active nginx 2>/dev/null || echo "not configured yet")
 
-Environment: production/staging
-Node Version: $(node --version)
-NPM Version: $(npm --version)
+Environment: production
+Node Version: $(node --version 2>/dev/null || echo "N/A")
+NPM Version: $(npm --version 2>/dev/null || echo "N/A")
+PM2 Version: $(pm2 --version 2>/dev/null || echo "not installed yet")
 EOF
 
     log_info "Deployment marker created"
@@ -227,30 +228,11 @@ EOF
 check_health() {
     log_step "Performing health checks..."
 
-    # Wait for backend to start
-    log_info "Waiting for backend to start..."
-    sleep 5
+    # Note: Backend is started by the GitHub Actions workflow using PM2
+    # This script focuses on preparing the deployment files
 
-    # Check if backend service is running
-    if systemctl is-active --quiet hexhaven-backend; then
-        log_info "Backend service is active"
-    else
-        log_warn "Backend service is not active yet"
-    fi
-
-    # Check backend port
-    if netstat -tuln | grep -q ":3000"; then
-        log_info "Backend is listening on port 3000"
-    else
-        log_warn "Backend is not listening on port 3000"
-    fi
-
-    # Check Nginx
-    if systemctl is-active --quiet nginx; then
-        log_info "Nginx service is active"
-    else
-        log_warn "Nginx service is not active"
-    fi
+    log_info "Backend will be started by PM2 in the deployment workflow"
+    log_info "Health checks will be performed after PM2 starts the service"
 
     log_info "Health checks completed"
 }
@@ -272,13 +254,16 @@ print_deployment_summary() {
     echo ""
     log_info "Deployment completed successfully!"
     echo ""
-    log_info "Services:"
-    echo "  - Backend: systemctl status hexhaven-backend"
-    echo "  - Nginx: systemctl status nginx"
+    log_info "PM2 Process Management:"
+    echo "  - Status: pm2 status"
+    echo "  - Backend: pm2 show hexhaven-backend"
+    echo "  - Logs: pm2 logs hexhaven-backend"
+    echo "  - Restart: pm2 restart hexhaven-backend"
+    echo "  - Stop: pm2 stop hexhaven-backend"
     echo ""
-    log_info "Logs:"
-    echo "  - Backend: journalctl -u hexhaven-backend -f"
-    echo "  - Nginx: tail -f /var/log/nginx/error.log"
+    log_info "Nginx:"
+    echo "  - Status: systemctl status nginx"
+    echo "  - Logs: tail -f /var/log/nginx/error.log"
     echo ""
     log_info "Access:"
     echo "  - Frontend: http://150.136.88.138"
