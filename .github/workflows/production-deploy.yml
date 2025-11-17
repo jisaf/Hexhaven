@@ -65,8 +65,10 @@ jobs:
           # Copy deployment scripts
           cp scripts/deploy.sh deploy-production/
           cp scripts/server-config.sh deploy-production/
+          cp scripts/network-diagnostics.sh deploy-production/
           chmod +x deploy-production/deploy.sh
           chmod +x deploy-production/server-config.sh
+          chmod +x deploy-production/network-diagnostics.sh
 
           # Copy PM2 ecosystem configuration
           cp ecosystem.config.js deploy-production/
@@ -217,9 +219,13 @@ jobs:
             sudo mkdir -p ${{ env.DEPLOY_PATH }}/frontend
             sudo cp -r /tmp/deploy-production/frontend/* ${{ env.DEPLOY_PATH }}/frontend/
 
+            # Create scripts directory if it doesn't exist
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}/scripts
+
             # Copy deployment scripts and PM2 config
             sudo cp /tmp/deploy-production/deploy.sh ${{ env.DEPLOY_PATH }}/
             sudo cp /tmp/deploy-production/server-config.sh ${{ env.DEPLOY_PATH }}/
+            sudo cp /tmp/deploy-production/network-diagnostics.sh ${{ env.DEPLOY_PATH }}/scripts/
             sudo cp /tmp/deploy-production/ecosystem.config.js ${{ env.DEPLOY_PATH }}/
             sudo cp /tmp/deploy-production/nginx-hexhaven.conf ${{ env.DEPLOY_PATH }}/
 
@@ -441,14 +447,37 @@ jobs:
             fi
 
             echo ""
-            echo "Testing from public IP (129.213.88.197):"
-            if curl -f --max-time 5 http://129.213.88.197/health 2>/dev/null; then
+            echo "Testing from public IP (${{ env.PRODUCTION_HOST }}):"
+            if curl -f --max-time 5 http://${{ env.PRODUCTION_HOST }}/health 2>/dev/null; then
               echo "✓ Backend accessible from public IP"
             else
-              echo "✗ Backend NOT accessible from public IP (this is the problem!)"
+              echo "✗ Backend NOT accessible from public IP"
               echo ""
-              echo "Nginx listen directives:"
-              sudo grep -r "listen" /etc/nginx/sites-enabled/
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              echo "⚠  ORACLE CLOUD SECURITY LIST CONFIGURATION REQUIRED"
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              echo ""
+              echo "Your application is deployed and running, but the Oracle Cloud"
+              echo "Security List is blocking public access on port 80."
+              echo ""
+              echo "TO FIX THIS (one-time setup):"
+              echo "1. Go to: https://cloud.oracle.com"
+              echo "2. Navigate to: Networking → Virtual Cloud Networks"
+              echo "3. Select your VCN → Security Lists → Default Security List"
+              echo "4. Click 'Add Ingress Rules'"
+              echo "5. Configure:"
+              echo "   - Source CIDR: 0.0.0.0/0"
+              echo "   - IP Protocol: TCP"
+              echo "   - Destination Port Range: 80"
+              echo "6. Click 'Add Ingress Rules'"
+              echo ""
+              echo "For detailed instructions, see: docs/OCI_NETWORK_SETUP.md"
+              echo ""
+              echo "To run full diagnostics on the server:"
+              echo "  ssh ubuntu@${{ env.PRODUCTION_HOST }}"
+              echo "  cd /opt/hexhaven && ./scripts/network-diagnostics.sh"
+              echo ""
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             fi
 
             # Cleanup
@@ -504,11 +533,29 @@ jobs:
           echo "=== Deployment Summary ==="
           echo "URL: http://${{ env.PRODUCTION_HOST }}"
           echo ""
-          echo "⚠ IMPORTANT: If health checks failed due to connection timeout/refused:"
-          echo "   You need to configure Oracle Cloud Security List to allow inbound traffic on port 80"
-          echo "   1. Go to OCI Console → Networking → Virtual Cloud Networks"
-          echo "   2. Select your VCN → Security Lists → Default Security List"
-          echo "   3. Add Ingress Rule: Source 0.0.0.0/0, Protocol TCP, Port 80"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "⚠  IMPORTANT: Oracle Cloud Network Configuration Required"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "If health checks failed with 'Connection timed out', you need to"
+          echo "configure the Oracle Cloud Security List (one-time setup):"
+          echo ""
+          echo "QUICK SETUP:"
+          echo "1. Go to: https://cloud.oracle.com"
+          echo "2. Navigate to: Networking → Virtual Cloud Networks"
+          echo "3. Select your VCN → Security Lists → Default Security List"
+          echo "4. Add Ingress Rule:"
+          echo "   • Source CIDR: 0.0.0.0/0"
+          echo "   • Protocol: TCP"
+          echo "   • Port: 80"
+          echo ""
+          echo "DETAILED GUIDE: See docs/OCI_NETWORK_SETUP.md"
+          echo ""
+          echo "DIAGNOSTICS:"
+          echo "  ssh ubuntu@${{ env.PRODUCTION_HOST }}"
+          echo "  cd /opt/hexhaven && ./scripts/network-diagnostics.sh"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
 
       - name: Cleanup SSH keys
