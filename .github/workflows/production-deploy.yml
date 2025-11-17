@@ -402,9 +402,43 @@ jobs:
               exit 1
             fi
 
+            # Verify Nginx configuration
+            echo ""
+            echo "Verifying Nginx configuration..."
+            if sudo systemctl is-active nginx > /dev/null 2>&1; then
+              echo "✓ Nginx is running"
+            else
+              echo "✗ Nginx is not running"
+              sudo systemctl status nginx
+            fi
+
+            # Test endpoints from server
+            echo ""
+            echo "Testing endpoints from server..."
+            echo "Backend direct (localhost:3000):"
+            if curl -f --max-time 5 http://localhost:3000/health 2>/dev/null; then
+              echo "✓ Backend responds on localhost:3000"
+            else
+              echo "✗ Backend not accessible on localhost:3000"
+            fi
+
+            echo ""
+            echo "Backend through Nginx (localhost:80):"
+            if curl -f --max-time 5 http://localhost/health 2>/dev/null; then
+              echo "✓ Backend accessible through Nginx"
+            else
+              echo "✗ Backend not accessible through Nginx"
+              echo "Nginx site config check:"
+              ls -la /etc/nginx/sites-enabled/
+              echo ""
+              echo "Nginx error log:"
+              sudo tail -20 /var/log/nginx/error.log
+            fi
+
             # Cleanup
             rm -rf /tmp/deploy-production /tmp/deploy.tar.gz
 
+            echo ""
             echo "✓ Production deployment completed successfully!"
           ENDSSH
 
@@ -413,25 +447,53 @@ jobs:
           echo "Waiting for application to be ready..."
           sleep 10
 
-          # Check backend health
+          echo "=== Deployment Verification ==="
+          echo ""
+
+          # Check backend health with detailed output
           echo "Checking backend health..."
-          if curl -f http://${{ env.PRODUCTION_HOST }}/health 2>/dev/null; then
+          if curl -v -f --max-time 10 http://${{ env.PRODUCTION_HOST }}/health 2>&1 | tee /tmp/health-check.log; then
             echo "✓ Backend health check passed"
           else
-            echo "⚠ Backend health check failed (may need configuration)"
-          fi
-
-          # Check frontend
-          echo "Checking frontend..."
-          if curl -f -I http://${{ env.PRODUCTION_HOST }}/ 2>/dev/null; then
-            echo "✓ Frontend is accessible"
-          else
-            echo "⚠ Frontend check failed"
+            echo "✗ Backend health check failed"
+            echo "Error details:"
+            cat /tmp/health-check.log
+            echo ""
+            echo "This could be due to:"
+            echo "  1. Oracle Cloud Security List not allowing port 80 ingress"
+            echo "  2. Nginx not properly configured"
+            echo "  3. Backend not listening on port 3000"
+            echo ""
+            echo "To diagnose on the server, SSH in and run:"
+            echo "  curl http://localhost:3000/health  # Test backend directly"
+            echo "  curl http://localhost/health       # Test through Nginx"
+            echo "  sudo systemctl status nginx        # Check Nginx status"
+            echo "  sudo nginx -t                      # Test Nginx config"
+            echo "  pm2 logs hexhaven-backend         # Check backend logs"
           fi
 
           echo ""
-          echo "Production deployment verification completed"
+
+          # Check frontend
+          echo "Checking frontend..."
+          if curl -v -f -I --max-time 10 http://${{ env.PRODUCTION_HOST }}/ 2>&1 | tee /tmp/frontend-check.log; then
+            echo "✓ Frontend is accessible"
+          else
+            echo "✗ Frontend check failed"
+            echo "Error details:"
+            cat /tmp/frontend-check.log
+          fi
+
+          echo ""
+          echo "=== Deployment Summary ==="
           echo "URL: http://${{ env.PRODUCTION_HOST }}"
+          echo ""
+          echo "⚠ IMPORTANT: If health checks failed due to connection timeout/refused:"
+          echo "   You need to configure Oracle Cloud Security List to allow inbound traffic on port 80"
+          echo "   1. Go to OCI Console → Networking → Virtual Cloud Networks"
+          echo "   2. Select your VCN → Security Lists → Default Security List"
+          echo "   3. Add Ingress Rule: Source 0.0.0.0/0, Protocol TCP, Port 80"
+          echo ""
 
       - name: Cleanup SSH keys
         if: always()
