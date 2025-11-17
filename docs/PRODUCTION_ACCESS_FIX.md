@@ -53,6 +53,19 @@ curl http://YOUR_SERVER_IP/health
 # {"status":"ok","timestamp":"2025-11-17T...","version":"1.0.0"}
 ```
 
+## Security List Already Configured?
+
+If you've already added the Security List rule but still can't access the server, see:
+
+**[Advanced Network Troubleshooting Guide](TROUBLESHOOTING_NETWORK.md)**
+
+This covers:
+- ✅ Network Security Groups (NSGs) - separate from Security Lists!
+- ✅ iptables rule ordering issues
+- ✅ Public IP assignment problems
+- ✅ Subnet routing configuration
+- ✅ Internet Gateway setup
+
 ## Still Not Working?
 
 ### Run Network Diagnostics

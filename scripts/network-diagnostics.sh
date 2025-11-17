@@ -40,35 +40,60 @@ log_info() {
 }
 
 ###############################################################################
-# Check 1: Detect Server IP
+# Check 1: Detect Server IP and Network Configuration
 ###############################################################################
 check_server_ip() {
     log_header "1. Server IP Detection"
 
-    # Get primary IP
+    # Get primary private IP
     PRIMARY_IP=$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "")
 
     if [ -n "$PRIMARY_IP" ]; then
-        log_success "Primary IP detected: $PRIMARY_IP"
+        log_success "Private IP detected: $PRIMARY_IP"
     else
         log_error "Could not detect primary IP address"
         return 1
     fi
 
-    # Get public IP (Oracle Cloud metadata service)
     echo ""
-    log_info "Attempting to get public IP from Oracle Cloud metadata..."
-    PUBLIC_IP=$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ 2>/dev/null | grep -o '"publicIp":"[^"]*"' | cut -d'"' -f4 || echo "")
+    log_info "Checking Oracle Cloud instance metadata..."
 
-    if [ -n "$PUBLIC_IP" ]; then
-        log_success "Public IP from OCI metadata: $PUBLIC_IP"
+    # Get instance metadata using Oracle Cloud IMDS v2
+    METADATA=$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ 2>/dev/null)
+
+    if [ -n "$METADATA" ]; then
+        log_success "Successfully retrieved OCI instance metadata"
+
+        # Extract public IP
+        PUBLIC_IP=$(echo "$METADATA" | grep -o '"publicIp":"[^"]*"' | cut -d'"' -f4 || echo "")
+
+        # Extract instance details
+        INSTANCE_NAME=$(echo "$METADATA" | grep -o '"displayName":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+        REGION=$(echo "$METADATA" | grep -o '"region":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+
+        log_info "Instance Name: $INSTANCE_NAME"
+        log_info "Region: $REGION"
+
+        if [ -n "$PUBLIC_IP" ]; then
+            log_success "Public IP assigned: $PUBLIC_IP"
+            export SERVER_IP="$PUBLIC_IP"
+        else
+            log_error "No public IP assigned to this instance!"
+            log_warn "This instance only has a private IP: $PRIMARY_IP"
+            log_warn "You need to assign a public IP or use a NAT Gateway"
+            log_info "To assign a public IP:"
+            log_info "1. Go to OCI Console → Compute → Instances"
+            log_info "2. Click your instance → Attached VNICs"
+            log_info "3. Click your VNIC → IPv4 Addresses"
+            log_info "4. Click 'Reserved Public IP' or 'Ephemeral Public IP'"
+            export SERVER_IP="$PRIMARY_IP"
+            return 1
+        fi
     else
-        log_warn "Could not retrieve public IP from OCI metadata"
-        log_info "Using primary IP: $PRIMARY_IP"
-        PUBLIC_IP="$PRIMARY_IP"
+        log_warn "Could not retrieve OCI metadata (not an Oracle Cloud instance?)"
+        log_info "Using detected IP: $PRIMARY_IP"
+        export SERVER_IP="$PRIMARY_IP"
     fi
-
-    export SERVER_IP="$PUBLIC_IP"
 }
 
 ###############################################################################
@@ -127,31 +152,106 @@ check_local_connectivity() {
 }
 
 ###############################################################################
-# Check 4: Instance Firewall (iptables)
+# Check 4: Instance Firewall (iptables) - DETAILED
 ###############################################################################
 check_instance_firewall() {
-    log_header "4. Instance Firewall (iptables)"
+    log_header "4. Instance Firewall (iptables) - Detailed Analysis"
 
-    # Check if port 80 is allowed
-    if sudo iptables -L INPUT -n -v | grep -q "dpt:80"; then
-        log_success "Port 80 is allowed in iptables INPUT chain"
-        sudo iptables -L INPUT -n -v | grep "dpt:80" | head -1 | sed 's/^/  /'
+    # Check for port 80 ACCEPT rule
+    echo "Checking for port 80 ACCEPT rules..."
+    ACCEPT_RULE=$(sudo iptables -L INPUT -n -v --line-numbers | grep "dpt:80" | grep "ACCEPT")
+
+    if [ -n "$ACCEPT_RULE" ]; then
+        log_success "Port 80 ACCEPT rule found:"
+        echo "$ACCEPT_RULE" | sed 's/^/  /'
+        ACCEPT_LINE=$(echo "$ACCEPT_RULE" | awk '{print $1}')
+        log_info "Rule position: line $ACCEPT_LINE"
     else
-        log_error "Port 80 is NOT allowed in iptables"
-        log_warn "Run: sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT"
-        log_warn "Then save: sudo netfilter-persistent save"
+        log_error "No ACCEPT rule for port 80 found"
+        log_warn "Add rule: sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT"
     fi
 
     echo ""
-    log_info "Full iptables INPUT chain:"
-    sudo iptables -L INPUT -n --line-numbers | sed 's/^/  /'
+
+    # Check for DROP/REJECT rules that might come BEFORE the ACCEPT rule
+    echo "Checking for DROP/REJECT rules that might block port 80..."
+    DROP_RULES=$(sudo iptables -L INPUT -n -v --line-numbers | grep -E "DROP|REJECT" | head -10)
+
+    if [ -n "$DROP_RULES" ]; then
+        log_warn "Found DROP/REJECT rules in INPUT chain:"
+        echo "$DROP_RULES" | sed 's/^/  /'
+
+        # Check if there's a DROP/REJECT before our ACCEPT
+        if [ -n "$ACCEPT_LINE" ]; then
+            BLOCKING_RULES=$(sudo iptables -L INPUT -n --line-numbers | head -n $ACCEPT_LINE | grep -E "DROP|REJECT" | grep -v "invalid\|RELATED")
+            if [ -n "$BLOCKING_RULES" ]; then
+                log_error "Found DROP/REJECT rules BEFORE the port 80 ACCEPT rule!"
+                echo "$BLOCKING_RULES" | sed 's/^/  /'
+                log_warn "These rules may be blocking traffic before it reaches the ACCEPT rule"
+                log_warn "Consider reordering rules or adding a more specific ACCEPT rule earlier"
+            fi
+        fi
+    else
+        log_info "No DROP/REJECT rules found in INPUT chain"
+    fi
+
+    echo ""
+    log_info "Full iptables INPUT chain (first 15 rules):"
+    sudo iptables -L INPUT -n -v --line-numbers | head -20 | sed 's/^/  /'
+
+    echo ""
+    log_info "iptables policy for INPUT chain:"
+    POLICY=$(sudo iptables -L INPUT | head -1 | grep -o "policy [A-Z]*" || echo "unknown")
+    if echo "$POLICY" | grep -q "DROP\|REJECT"; then
+        log_warn "Default policy is DROP/REJECT - ACCEPT rules must come before DROP"
+        echo "  $POLICY"
+    else
+        log_success "Default policy: $POLICY"
+    fi
 }
 
 ###############################################################################
-# Check 5: Public IP Connectivity
+# Check 5: Oracle Cloud Network Security Groups (NSGs)
+###############################################################################
+check_network_security_groups() {
+    log_header "5. Network Security Groups (NSGs) Check"
+
+    log_info "Checking if this VNIC has Network Security Groups attached..."
+    echo ""
+
+    # Try to get VNIC info from metadata
+    VNIC_DATA=$(curl -s -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/vnics/ 2>/dev/null)
+
+    if [ -n "$VNIC_DATA" ]; then
+        # Check if NSGs are mentioned (this is a simplified check)
+        if echo "$VNIC_DATA" | grep -q "nsgIds"; then
+            log_warn "Network Security Groups (NSGs) may be attached to this instance"
+            log_info "NSGs can block traffic even if Security Lists allow it"
+            echo ""
+            log_info "To check NSGs:"
+            log_info "1. Go to OCI Console → Compute → Instances"
+            log_info "2. Click your instance → Attached VNICs"
+            log_info "3. Click your VNIC → Network Security Groups"
+            log_info "4. If NSGs are attached, check their rules"
+            log_info "5. Add ingress rule for TCP port 80 from 0.0.0.0/0"
+            echo ""
+            log_warn "NSGs take precedence over Security Lists!"
+        else
+            log_success "No Network Security Groups detected"
+            log_info "Using Security Lists only (expected configuration)"
+        fi
+    else
+        log_warn "Could not retrieve VNIC metadata"
+        log_info "Cannot determine if NSGs are attached"
+        log_info "Manually check in OCI Console: Instance → Attached VNICs → NSGs"
+    fi
+}
+
+###############################################################################
+# Check 6: Public IP Connectivity
 ###############################################################################
 check_public_connectivity() {
-    log_header "5. Public IP Connectivity Test"
+    log_header "6. Public IP Connectivity Test"
 
     echo "Testing public IP access (${SERVER_IP}:80)..."
 
@@ -161,30 +261,33 @@ check_public_connectivity() {
     else
         log_error "Server is NOT accessible from public IP: http://${SERVER_IP}"
         echo ""
-        log_warn "This indicates the Oracle Cloud Security List is blocking traffic"
+        log_warn "Possible causes (in order of likelihood):"
         echo ""
-        log_info "To fix this, configure the OCI Security List:"
-        log_info "1. Go to: https://cloud.oracle.com"
-        log_info "2. Navigate to: Networking → Virtual Cloud Networks"
-        log_info "3. Select your VCN → Security Lists → Default Security List"
-        log_info "4. Click 'Add Ingress Rules'"
-        log_info "5. Configure:"
-        log_info "   - Source Type: CIDR"
-        log_info "   - Source CIDR: 0.0.0.0/0"
-        log_info "   - IP Protocol: TCP"
-        log_info "   - Destination Port Range: 80"
-        log_info "   - Description: HTTP access for Hexhaven"
-        log_info "6. Click 'Add Ingress Rules'"
+        log_info "1. Network Security Groups (NSGs) blocking port 80"
+        log_info "   → Check: OCI Console → Instance → Attached VNICs → NSGs"
+        log_info "   → Add ingress rule for TCP port 80 from 0.0.0.0/0"
         echo ""
-        log_info "After adding the rule, test again: curl http://${SERVER_IP}/health"
+        log_info "2. Security List not configured correctly"
+        log_info "   → Check: OCI Console → Networking → VCN → Security Lists"
+        log_info "   → Verify ingress rule exists for TCP port 80 from 0.0.0.0/0"
+        echo ""
+        log_info "3. iptables blocking (check section 4 above)"
+        log_info "   → Verify ACCEPT rule comes before any DROP rules"
+        echo ""
+        log_info "4. Subnet routing issue"
+        log_info "   → Check: OCI Console → Networking → VCN → Route Tables"
+        log_info "   → Verify route to 0.0.0.0/0 via Internet Gateway exists"
+        echo ""
+        log_info "5. No public IP assigned (check section 1 above)"
+        log_info "   → Assign public IP to instance VNIC"
     fi
 }
 
 ###############################################################################
-# Check 6: Service Status
+# Check 7: Service Status
 ###############################################################################
 check_service_status() {
-    log_header "6. Service Status"
+    log_header "7. Service Status"
 
     # Check Nginx
     echo "Nginx status:"
@@ -209,10 +312,10 @@ check_service_status() {
 }
 
 ###############################################################################
-# Check 7: Configuration Files
+# Check 8: Configuration Files
 ###############################################################################
 check_configuration() {
-    log_header "7. Configuration Files"
+    log_header "8. Configuration Files"
 
     # Check .env file
     if [ -f /opt/hexhaven/.env ]; then
@@ -250,10 +353,10 @@ check_configuration() {
 }
 
 ###############################################################################
-# Check 8: Recent Logs
+# Check 9: Recent Logs
 ###############################################################################
 check_logs() {
-    log_header "8. Recent Logs"
+    log_header "9. Recent Logs"
 
     # PM2 logs
     echo "PM2 backend logs (last 20 lines):"
@@ -328,6 +431,7 @@ main() {
     check_listening_ports
     check_local_connectivity
     check_instance_firewall
+    check_network_security_groups
     check_public_connectivity
     check_service_status
     check_configuration
