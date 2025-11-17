@@ -415,6 +415,11 @@ jobs:
             # Test endpoints from server
             echo ""
             echo "Testing endpoints from server..."
+
+            echo "Checking what's listening on port 80..."
+            sudo ss -tlnp | grep :80 || echo "Nothing listening on port 80"
+
+            echo ""
             echo "Backend direct (localhost:3000):"
             if curl -f --max-time 5 http://localhost:3000/health 2>/dev/null; then
               echo "✓ Backend responds on localhost:3000"
@@ -425,7 +430,7 @@ jobs:
             echo ""
             echo "Backend through Nginx (localhost:80):"
             if curl -f --max-time 5 http://localhost/health 2>/dev/null; then
-              echo "✓ Backend accessible through Nginx"
+              echo "✓ Backend accessible through Nginx on localhost"
             else
               echo "✗ Backend not accessible through Nginx"
               echo "Nginx site config check:"
@@ -433,6 +438,17 @@ jobs:
               echo ""
               echo "Nginx error log:"
               sudo tail -20 /var/log/nginx/error.log
+            fi
+
+            echo ""
+            echo "Testing from public IP (129.213.88.197):"
+            if curl -f --max-time 5 http://129.213.88.197/health 2>/dev/null; then
+              echo "✓ Backend accessible from public IP"
+            else
+              echo "✗ Backend NOT accessible from public IP (this is the problem!)"
+              echo ""
+              echo "Nginx listen directives:"
+              sudo grep -r "listen" /etc/nginx/sites-enabled/
             fi
 
             # Cleanup
