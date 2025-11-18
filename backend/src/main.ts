@@ -28,7 +28,24 @@ async function bootstrap() {
   const server = await app.listen(port, '0.0.0.0');
   logger.log(`Application is listening on port ${port}`);
 
-  // Manually initialize WebSocket after server starts
+  // TODO: Investigate why NestJS @WebSocketGateway decorators don't work in this setup
+  // See commit 71b3194 for context on the decorator issue.
+  // The decorators should automatically:
+  //   1. Initialize Socket.IO server
+  //   2. Register @SubscribeMessage handlers
+  //   3. Call lifecycle hooks (afterInit, handleConnection, etc.)
+  //
+  // Potential causes to investigate:
+  //   - Monorepo structure affecting decorator metadata
+  //   - Missing or misconfigured Socket.IO adapter
+  //   - TypeScript compilation settings (tsconfig.json)
+  //   - NestJS version compatibility
+  //   - Execution order issues with app.listen()
+  //
+  // If decorators can be fixed, remove all manual wiring below and simplify to:
+  //   await app.listen(port, '0.0.0.0');
+  //
+  // Manual WebSocket initialization (temporary workaround):
   // Note: NestJS @WebSocketGateway decorators don't work reliably in this setup
   const { Server: SocketIOServer } = await import('socket.io');
   const io = new SocketIOServer(server, {
