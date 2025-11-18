@@ -9,5 +9,38 @@
   "next": "下一步",
   "loading": "加载中...",
   "error": "错误",
-  "success": "成功"
+  "success": "成功",
+  "characters": {
+    "Brute": {
+      "name": "蛮力者",
+      "description": "一个坦克型近战战士，擅长吸收伤害并对相邻敌人造成重击。"
+    },
+    "Tinkerer": {
+      "name": "工匠",
+      "description": "一个支援专家，治疗盟友并召唤机械装置来协助队伍。"
+    },
+    "Spellweaver": {
+      "name": "织法者",
+      "description": "一个强大的法师，控制元素力量远距离摧毁敌人。"
+    },
+    "Scoundrel": {
+      "name": "无赖",
+      "description": "一个敏捷的盗贼，利用优势攻击并用狡猾智取敌人。"
+    },
+    "Cragheart": {
+      "name": "岩心",
+      "description": "一个多用途土元素，可以操纵地形并造成范围伤害。"
+    },
+    "Mindthief": {
+      "name": "窃心者",
+      "description": "一个灵能刺客，用精神控制和幻象增强近战攻击。"
+    }
+  },
+  "scenario": {
+    "loading": "正在加载场景...",
+    "selectScenario": "选择场景",
+    "difficulty": "难度",
+    "objective": "目标",
+    "selected": "已选择"
+  }
 }

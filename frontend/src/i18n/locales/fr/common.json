@@ -9,5 +9,38 @@
   "next": "Suivant",
   "loading": "Chargement...",
   "error": "Erreur",
-  "success": "Succès"
+  "success": "Succès",
+  "characters": {
+    "Brute": {
+      "name": "Brute",
+      "description": "Un combattant de mêlée robuste qui excelle à absorber les dégâts et à infliger de lourds coups aux ennemis adjacents."
+    },
+    "Tinkerer": {
+      "name": "Bricoleur",
+      "description": "Un spécialiste de soutien qui soigne les alliés et invoque des mécanismes pour aider le groupe."
+    },
+    "Spellweaver": {
+      "name": "Tisseuse de Sorts",
+      "description": "Une puissante mage qui contrôle les forces élémentaires pour dévaster les ennemis à distance."
+    },
+    "Scoundrel": {
+      "name": "Canaille",
+      "description": "Un escroc agile qui frappe en profitant d'un avantage et utilise la ruse pour déjouer les ennemis."
+    },
+    "Cragheart": {
+      "name": "Cragheart",
+      "description": "Un élémentaire de terre polyvalent qui peut manipuler le terrain et infliger des dégâts de zone."
+    },
+    "Mindthief": {
+      "name": "Voleur d'Esprit",
+      "description": "Un assassin psionique qui augmente les attaques de mêlée avec le contrôle mental et les illusions."
+    }
+  },
+  "scenario": {
+    "loading": "Chargement des scénarios...",
+    "selectScenario": "Sélectionner un Scénario",
+    "difficulty": "Difficulté",
+    "objective": "Objectif",
+    "selected": "Sélectionné"
+  }
 }

@@ -9,5 +9,38 @@
   "next": "Weiter",
   "loading": "Laden...",
   "error": "Fehler",
-  "success": "Erfolg"
+  "success": "Erfolg",
+  "characters": {
+    "Brute": {
+      "name": "Brute",
+      "description": "Ein tanker Nahkämpfer, der Schaden absorbiert und schwere Schläge gegen benachbarte Feinde austeilt."
+    },
+    "Tinkerer": {
+      "name": "Tüftler",
+      "description": "Ein Unterstützungsspezialist, der Verbündete heilt und mechanische Konstruktionen zur Unterstützung beschwört."
+    },
+    "Spellweaver": {
+      "name": "Zauberweberin",
+      "description": "Eine mächtige Magierin, die elementare Kräfte kontrolliert, um Feinde aus der Ferne zu verwüsten."
+    },
+    "Scoundrel": {
+      "name": "Schurke",
+      "description": "Ein agiler Schurke, der aus dem Vorteil zuschlägt und List nutzt, um Feinde zu überlisten."
+    },
+    "Cragheart": {
+      "name": "Cragheart",
+      "description": "Ein vielseitiger Erdelementar, der Terrain manipulieren und Flächenschaden verursachen kann."
+    },
+    "Mindthief": {
+      "name": "Gedankendieb",
+      "description": "Ein psionischer Assassine, der Nahkampfangriffe mit Gedankenkontrolle und Illusionen verstärkt."
+    }
+  },
+  "scenario": {
+    "loading": "Szenarien werden geladen...",
+    "selectScenario": "Szenario Auswählen",
+    "difficulty": "Schwierigkeit",
+    "objective": "Ziel",
+    "selected": "Ausgewählt"
+  }
 }

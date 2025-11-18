@@ -95,7 +95,7 @@ export class GameRoom {
 
   get isStartable(): boolean {
     if (this._status !== RoomStatus.LOBBY) return false;
-    if (this._players.size < 2) return false;
+    if (this._players.size < 1) return false;
 
     // All players must have selected characters
     return this.players.every((p) => p.isReady && p.characterClass !== null);

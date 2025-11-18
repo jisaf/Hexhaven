@@ -9,5 +9,38 @@
   "next": "Siguiente",
   "loading": "Cargando...",
   "error": "Error",
-  "success": "Éxito"
+  "success": "Éxito",
+  "characters": {
+    "Brute": {
+      "name": "Bruto",
+      "description": "Un luchador cuerpo a cuerpo resistente que sobresale absorbiendo daño y dando golpes pesados a enemigos adyacentes."
+    },
+    "Tinkerer": {
+      "name": "Inventor",
+      "description": "Un especialista de apoyo que cura aliados y convoca artilugios mecánicos para ayudar al grupo."
+    },
+    "Spellweaver": {
+      "name": "Tejedora de Hechizos",
+      "description": "Una poderosa maga que controla fuerzas elementales para devastar enemigos a distancia."
+    },
+    "Scoundrel": {
+      "name": "Bribón",
+      "description": "Un pícaro ágil que ataca desde ventaja y usa astucia para superar a los enemigos."
+    },
+    "Cragheart": {
+      "name": "Cragheart",
+      "description": "Un elemental de tierra versátil que puede manipular el terreno y causar daño de área."
+    },
+    "Mindthief": {
+      "name": "Ladrón de Mentes",
+      "description": "Un asesino psiónico que aumenta los ataques cuerpo a cuerpo con control mental e ilusiones."
+    }
+  },
+  "scenario": {
+    "loading": "Cargando escenarios...",
+    "selectScenario": "Seleccionar Escenario",
+    "difficulty": "Dificultad",
+    "objective": "Objetivo",
+    "selected": "Seleccionado"
+  }
 }
