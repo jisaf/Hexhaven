@@ -13,6 +13,7 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
@@ -58,15 +59,32 @@ import {
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // Configure based on environment
+    origin: process.env.NODE_ENV === 'production'
+      ? (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
+          'http://localhost:5173',
+          'http://localhost:4173',
+          'http://150.136.173.159',
+          'http://10.1.1.80:5173',
+        ])
+      : '*',
     credentials: true,
   },
+  transports: ['websocket', 'polling'],
 })
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
   private readonly logger = new Logger(GameGateway.name);
+
+  constructor() {
+    this.logger.log('GameGateway constructor called');
+  }
+
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialized successfully');
+    this.logger.log(`Socket.IO server is running`);
+  }
   private readonly scenarioService = new ScenarioService();
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
