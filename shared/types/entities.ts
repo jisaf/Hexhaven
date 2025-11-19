@@ -165,6 +165,8 @@ export interface Scenario {
   difficulty: number;
   mapLayout: HexTile[];
   monsterGroups: MonsterGroup[];
+  // TODO: Simplify to AxialCoordinates[] and allow players to select their starting hex
+  // See game.gateway.ts:538 for implementation details
   playerStartPositions: Record<number, AxialCoordinates[]>; // Keyed by player count (2, 3, 4)
   objectivePrimary: string;
   objectiveSecondary?: string;

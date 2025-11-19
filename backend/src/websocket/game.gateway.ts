@@ -16,7 +16,7 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, Injectable } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
@@ -57,22 +57,11 @@ import {
   type CharacterClass,
 } from '../../../shared/types/entities';
 
-@WebSocketGateway({
-  cors: {
-    origin: process.env.NODE_ENV === 'production'
-      ? (process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
-          'http://localhost:5173',
-          'http://localhost:4173',
-          'http://150.136.173.159',
-          'http://10.1.1.80:5173',
-        ])
-      : '*',
-    credentials: true,
-  },
-  transports: ['websocket', 'polling'],
-})
+// @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
+// See main.ts lines 48-113 for manual wiring
+@Injectable()
 export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
+  // Server is injected manually in main.ts instead of using @WebSocketServer decorator
   server!: Server;
 
   private readonly logger = new Logger(GameGateway.name);
@@ -545,6 +534,16 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
       // Start the game
       roomService.startGame(room.roomCode, payload.scenarioId, playerUUID);
+
+      // TODO: Simplify playerStartPositions structure and allow player selection
+      // Current implementation uses Record<number, AxialCoordinates[]> keyed by player count,
+      // which is complex and inflexible. Consider:
+      // 1. Change to simple array of valid starting hex coordinates in scenario data
+      // 2. Add a "select_starting_position" event before game start
+      // 3. Let each player click on an available starting hex to claim it
+      // 4. Validate selections (hex must be in scenario's starting zones, not already taken)
+      // 5. Auto-assign any remaining positions when game starts
+      // This would improve UX and remove the need for player-count-specific position arrays
 
       // Get player starting positions from scenario
       const playerCount = room.players.filter((p) => p.characterClass).length;

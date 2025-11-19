@@ -35,6 +35,15 @@ export function GameBoard() {
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
 
+  // Store game data until HexGrid is ready (fixes race condition)
+  const [pendingGameData, setPendingGameData] = useState<{
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
+  } | null>(null);
+
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
   const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
@@ -53,13 +62,10 @@ export function GameBoard() {
     characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
   }) => {
     console.log('handleGameStarted called with data:', data);
-
-    console.log('handleGameStarted: hexGridRef.current is', hexGridRef.current ? 'initialized' : 'NULL');
-    if (!hexGridRef.current) {
-      console.error('CRITICAL: hexGridRef.current is null! Cannot render map.');
-      return;
-    }
     console.log('handleGameStarted: Received mapLayout with', data.mapLayout?.length || 0, 'tiles');
+
+    // Store the game data - it will be rendered when HexGrid is ready
+    setPendingGameData(data);
 
     // Find my character from the characters array using playerUUID from localStorage
     const playerUUID = websocketService.getPlayerUUID();
@@ -88,16 +94,6 @@ export function GameBoard() {
     } else {
       console.error('Could not find my character in the characters array!');
     }
-
-    // Initialize board with the map layout and entities
-    const boardData: GameBoardData = {
-      tiles: data.mapLayout as HexTileData[],
-      characters: data.characters as CharacterData[],
-      monsters: data.monsters as Monster[],
-    };
-
-    console.log('Initializing board with:', boardData);
-    hexGridRef.current.initializeBoard(boardData);
   }, []);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
@@ -181,10 +177,18 @@ export function GameBoard() {
 
   // Initialize hex grid
   useEffect(() => {
-    if (!containerRef.current || hexGridRef.current) return;
+    console.log('=== HEX GRID INITIALIZATION EFFECT ===');
+    console.log('containerRef.current:', containerRef.current ? 'EXISTS' : 'NULL');
+    console.log('hexGridRef.current:', hexGridRef.current ? 'ALREADY INITIALIZED' : 'NULL');
+
+    if (!containerRef.current || hexGridRef.current) {
+      console.log('Skipping HexGrid init - already initialized or no container');
+      return;
+    }
 
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
+    console.log('🎨 Container dimensions:', { width, height });
 
     const hexGrid = new HexGrid(containerRef.current, {
       width,
@@ -193,19 +197,24 @@ export function GameBoard() {
       onCharacterSelect: handleCharacterSelect,
       onMonsterSelect: handleMonsterSelect,
     });
+    console.log('🎨 HexGrid instance created, starting async initialization...');
 
     // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
     let mounted = true;
     let initCompleted = false;
 
     hexGrid.init().then(() => {
+      console.log('✅ HexGrid.init() promise resolved!');
       initCompleted = true;
       if (mounted) {
         hexGridRef.current = hexGrid;
+        console.log('✅ HexGrid reference set! Ready to render game data.');
+      } else {
+        console.log('⚠️ Component unmounted before init completed');
       }
       // Note: Don't destroy here if unmounted - the cleanup function will handle it
     }).catch((error) => {
-      console.error('Failed to initialize HexGrid:', error);
+      console.error('❌ Failed to initialize HexGrid:', error);
       initCompleted = true; // Mark as completed even on error
     });
 
@@ -236,6 +245,49 @@ export function GameBoard() {
       hexGridRef.current = null;
     };
   }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
+
+  // Render game data when HexGrid is ready (fixes race condition)
+  useEffect(() => {
+    console.log('=== RENDER GAME DATA EFFECT TRIGGERED ===');
+    console.log('hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
+    console.log('pendingGameData:', pendingGameData ? 'EXISTS' : 'NULL');
+
+    if (!hexGridRef.current) {
+      console.log('⏳ HexGrid not ready yet - waiting for initialization');
+      return;
+    }
+
+    if (!pendingGameData) {
+      console.log('⏳ No pending game data yet');
+      return;
+    }
+
+    console.log('✅ HexGrid is ready and game data is available - initializing board');
+    console.log('📦 pendingGameData:', JSON.stringify(pendingGameData, null, 2));
+
+    // Initialize board with the map layout and entities
+    const boardData: GameBoardData = {
+      tiles: pendingGameData.mapLayout as HexTileData[],
+      characters: pendingGameData.characters as CharacterData[],
+      monsters: pendingGameData.monsters as Monster[],
+    };
+
+    console.log('🎮 Calling hexGridRef.current.initializeBoard with boardData containing:');
+    console.log('  - Tiles:', boardData.tiles.length);
+    console.log('  - Characters:', boardData.characters.length);
+    console.log('  - Monsters:', boardData.monsters.length);
+
+    try {
+      hexGridRef.current.initializeBoard(boardData);
+      console.log('✅ Board initialized successfully!');
+
+      // Clear pending data after rendering
+      setPendingGameData(null);
+      console.log('✅ Cleared pending game data');
+    } catch (error) {
+      console.error('❌ ERROR initializing board:', error);
+    }
+  }, [pendingGameData]); // Only depend on pendingGameData, not hexGridRef
 
   // Auto-rejoin room when GameBoard mounts to get game state
   useEffect(() => {
