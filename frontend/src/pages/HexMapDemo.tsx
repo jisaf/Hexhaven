@@ -12,12 +12,13 @@ import type { Monster } from '../../../shared/types/entities';
 export function HexMapDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
   const hexGridRef = useRef<HexGrid | null>(null);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current || hexGridRef.current) {
-      console.log('HexMapDemo: Skipping init - container or grid already exists');
+    if (!containerRef.current || isInitialized.current) {
       return;
     }
+    isInitialized.current = true;
 
     console.log('HexMapDemo: Starting initialization');
     const width = containerRef.current.clientWidth;
@@ -43,20 +44,20 @@ export function HexMapDemo() {
           tiles: [
             { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: -1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: -1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 1, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 1 }, terrain: 'obstacle', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 0 }, terrain: 'obstacle', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 0, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 1, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 0, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
             { coordinates: { q: 1, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: true },
+            { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: true },
           ] as HexTileData[],
           characters: [
             {
@@ -75,7 +76,7 @@ export function HexMapDemo() {
               id: 'demo-monster-1',
               monsterType: 'Bandit Guard',
               isElite: false,
-              currentHex: { q: 2, r: 0 },
+              currentHex: { q: 2, r: -1 },
               health: 5,
               maxHealth: 5,
               conditions: [],
@@ -84,7 +85,7 @@ export function HexMapDemo() {
               id: 'demo-monster-2',
               monsterType: 'Bandit Archer',
               isElite: false,
-              currentHex: { q: 3, r: 0 },
+              currentHex: { q: 3, r: -1 },
               health: 4,
               maxHealth: 4,
               conditions: [],
