@@ -275,21 +275,23 @@ export function GameBoard() {
     const boardData: GameBoardData = {
       tiles: pendingGameData.mapLayout as HexTileData[],
       characters: pendingGameData.characters as CharacterData[],
-      monsters: pendingGameData.monsters as Monster[],
+      monsters: (pendingGameData.monsters as Monster[]) || [],
     };
 
     console.log('🎮 Calling hexGridRef.current.initializeBoard with boardData containing:');
     console.log('  - Tiles:', boardData.tiles.length);
     console.log('  - Characters:', boardData.characters.length);
-    console.log('  - Monsters:', boardData.monsters.length);
+    console.log('  - Monsters:', boardData.monsters?.length || 0);
 
     try {
       hexGridRef.current.initializeBoard(boardData);
       console.log('✅ Board initialized successfully!');
 
-      // Clear pending data after rendering
-      setPendingGameData(null);
-      console.log('✅ Cleared pending game data');
+      // Clear pending data after current render cycle to avoid cascading renders
+      queueMicrotask(() => {
+        setPendingGameData(null);
+        console.log('✅ Cleared pending game data');
+      });
     } catch (error) {
       console.error('❌ ERROR initializing board:', error);
     }

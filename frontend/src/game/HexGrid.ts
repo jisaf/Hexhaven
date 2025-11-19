@@ -204,7 +204,9 @@ export class HexGrid {
 
     // Center and zoom the map
     const bounds = this.tilesLayer.getBounds();
-    const zoom = this.getOptimalZoom(bounds);
+    // Convert Bounds to Rectangle for getOptimalZoom
+    const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+    const zoom = this.getOptimalZoom(boundsRect);
 
     if (bounds.width > 0 && bounds.height > 0) {
       this.viewport.moveCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
