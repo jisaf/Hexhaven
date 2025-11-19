@@ -20,6 +20,12 @@ export function DebugConsole() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>('');
+  const [filters, setFilters] = useState({
+    log: true,
+    error: true,
+    warn: true,
+    info: true,
+  });
   const logIdCounter = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,12 +66,12 @@ export function DebugConsole() {
     };
   }, []);
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new logs are added
-    if (isOpen && !isMinimized) {
-      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [logs, isOpen, isMinimized]);
+  // Auto-scroll disabled - user can manually scroll to see new logs
+  // useEffect(() => {
+  //   if (isOpen && !isMinimized) {
+  //     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  //   }
+  // }, [logs, isOpen, isMinimized]);
 
   const addLog = (level: LogEntry['level'], args: unknown[]) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -82,16 +88,19 @@ export function DebugConsole() {
       })
       .join(' ');
 
-    setLogs(prev => [
-      ...prev,
-      {
-        id: logIdCounter.current++,
-        timestamp,
-        level,
-        message,
-        data: args.length === 1 && typeof args[0] === 'object' ? args[0] : null,
-      },
-    ]);
+    // Use queueMicrotask to avoid setState during render
+    queueMicrotask(() => {
+      setLogs(prev => [
+        ...prev,
+        {
+          id: logIdCounter.current++,
+          timestamp,
+          level,
+          message,
+          data: args.length === 1 && typeof args[0] === 'object' ? args[0] : null,
+        },
+      ]);
+    });
   };
 
   const clearLogs = () => {
@@ -124,8 +133,15 @@ export function DebugConsole() {
     }
   };
 
+  const toggleFilter = (level: LogEntry['level']) => {
+    setFilters(prev => ({ ...prev, [level]: !prev[level] }));
+  };
+
+  const filteredLogs = logs.filter(log => filters[log.level]);
+
   const copyAllLogs = () => {
-    const allLogsText = logs
+    // Only copy visible (filtered) logs
+    const allLogsText = filteredLogs
       .map(log => `[${log.timestamp}] ${log.level.toUpperCase()}: ${log.message}`)
       .join('\n\n');
 
@@ -193,7 +209,7 @@ export function DebugConsole() {
           <div className="debug-header">
             <div className="debug-title">
               <span>Debug Console</span>
-              <span className="log-count">({logs.length} logs)</span>
+              <span className="log-count">({filteredLogs.length}/{logs.length})</span>
             </div>
             <div className="debug-controls">
               <button
@@ -207,9 +223,9 @@ export function DebugConsole() {
               <button
                 onClick={copyAllLogs}
                 className="debug-control-btn"
-                aria-label="Copy all logs"
-                title="Copy all logs"
-                disabled={logs.length === 0}
+                aria-label="Copy visible logs"
+                title="Copy visible logs"
+                disabled={filteredLogs.length === 0}
               >
                 {copyStatus || 'Copy'}
               </button>
@@ -233,11 +249,51 @@ export function DebugConsole() {
           </div>
 
           {!isMinimized && (
+            <div className="debug-filters">
+              <div className="filter-label">Filters:</div>
+              <button
+                onClick={() => toggleFilter('log')}
+                className={`filter-btn ${filters.log ? 'active' : ''}`}
+                aria-label="Toggle log messages"
+                title="Toggle log messages"
+              >
+                LOG
+              </button>
+              <button
+                onClick={() => toggleFilter('error')}
+                className={`filter-btn ${filters.error ? 'active' : ''}`}
+                aria-label="Toggle error messages"
+                title="Toggle error messages"
+              >
+                ERR
+              </button>
+              <button
+                onClick={() => toggleFilter('warn')}
+                className={`filter-btn ${filters.warn ? 'active' : ''}`}
+                aria-label="Toggle warning messages"
+                title="Toggle warning messages"
+              >
+                WRN
+              </button>
+              <button
+                onClick={() => toggleFilter('info')}
+                className={`filter-btn ${filters.info ? 'active' : ''}`}
+                aria-label="Toggle info messages"
+                title="Toggle info messages"
+              >
+                INF
+              </button>
+            </div>
+          )}
+
+          {!isMinimized && (
             <div className="debug-logs">
               {logs.length === 0 ? (
                 <div className="no-logs">No logs yet...</div>
+              ) : filteredLogs.length === 0 ? (
+                <div className="no-logs">No logs match current filters...</div>
               ) : (
-                logs.map(log => (
+                filteredLogs.map(log => (
                   <div key={log.id} className="log-entry" data-level={log.level}>
                     <div className="log-header">
                       <span className="log-icon">{getLevelIcon(log.level)}</span>
@@ -376,6 +432,55 @@ export function DebugConsole() {
 
         .debug-control-btn:active:not(:disabled) {
           background: #4b5563;
+          transform: scale(0.95);
+        }
+
+        .debug-filters {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          background: #111827;
+          border-bottom: 1px solid #374151;
+          flex-wrap: wrap;
+        }
+
+        .filter-label {
+          font-size: 12px;
+          color: #9ca3af;
+          font-weight: 600;
+          margin-right: 4px;
+        }
+
+        .filter-btn {
+          background: #1f2937;
+          border: 2px solid #4b5563;
+          color: #6b7280;
+          min-width: 48px;
+          height: 28px;
+          padding: 0 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 10px;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+          border-color: #6b7280;
+        }
+
+        .filter-btn.active {
+          background: #3b82f6;
+          border-color: #3b82f6;
+          color: white;
+        }
+
+        .filter-btn:active {
           transform: scale(0.95);
         }
 

@@ -241,9 +241,17 @@ class WebSocketService {
     }
     this.eventHandlers.get(event)!.add(handler);
 
-    // Register with socket.io
+    // Wrap handler to add logging for game_started
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.socket.on(event, handler as any);
+    const wrappedHandler = ((...args: any[]) => {
+      if (event === 'game_started') {
+        console.log(`WebSocket: game_started event received from backend`, args[0]);
+      }
+      (handler as any)(...args);
+    }) as any;
+
+    // Register with socket.io
+    this.socket.on(event, wrappedHandler);
   }
 
   /**

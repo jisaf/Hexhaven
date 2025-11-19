@@ -50,11 +50,11 @@ export function RoomCodeInput({ onSubmit, isLoading, error }: RoomCodeInputProps
           value={roomCode}
           onChange={handleChange}
           onBlur={() => setTouched(true)}
-          placeholder={t('lobby.enterRoomCode', 'Enter Room Code')}
+          placeholder={t('lobby:enterRoomCode', 'Enter Room Code')}
           maxLength={6}
           disabled={isLoading}
           className={`room-code-field ${hasError ? 'error' : ''} ${isValid ? 'valid' : ''}`}
-          aria-label={t('lobby.roomCodeLabel', 'Room code')}
+          aria-label={t('lobby:roomCodeLabel', 'Room code')}
           aria-invalid={hasError ? 'true' : 'false'}
           aria-describedby={hasError ? 'room-code-error' : undefined}
           autoComplete="off"
@@ -64,16 +64,16 @@ export function RoomCodeInput({ onSubmit, isLoading, error }: RoomCodeInputProps
           type="submit"
           disabled={!isValid || isLoading}
           className="join-button"
-          aria-label={t('lobby.joinRoom', 'Join Room')}
+          aria-label={t('lobby:joinRoom', 'Join Room')}
           data-testid="join-room-button"
         >
-          {isLoading ? t('lobby.joining', 'Joining...') : t('lobby.join', 'Join')}
+          {isLoading ? t('lobby:joining', 'Joining...') : t('lobby:join', 'Join')}
         </button>
       </div>
 
       {hasError && (
         <div id="room-code-error" className="error-message" role="alert">
-          {error || t('lobby.invalidRoomCode', 'Invalid room code (6 characters required)')}
+          {error || t('lobby:invalidRoomCode', 'Invalid room code (6 characters required)')}
         </div>
       )}
 

@@ -68,7 +68,7 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
   return (
     <div className="character-select" data-testid="character-select">
       <h3 className="character-select-title">
-        {t('lobby.selectCharacter', 'Select Your Character')}
+        {t('lobby:selectCharacter', 'Select Your Character')}
       </h3>
 
       <div className="character-grid">
@@ -120,7 +120,7 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
               {isSelected && <div className="selected-indicator">✓</div>}
               {isDisabled && (
                 <div className="disabled-overlay">
-                  <span>{t('lobby.taken', 'Taken')}</span>
+                  <span>{t('lobby:taken', 'Taken')}</span>
                 </div>
               )}
             </button>

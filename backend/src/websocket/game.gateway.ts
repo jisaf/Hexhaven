@@ -238,26 +238,35 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           nickname: player.nickname,
         });
         this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
+      }
 
-        // If game is active, send current game state to reconnecting player
-        if (room.status === RoomStatus.ACTIVE) {
-          // Get current scenario and game state
-          const monsters = this.roomMonsters.get(roomCode) || [];
-          const characters = room.players
-            .map((p) => characterService.getCharacterByPlayerId(p.uuid))
-            .filter((c) => c !== null);
+      // If game is active, send current game state to player (whether reconnecting or just navigating)
+      this.logger.log(`Checking room status for ${roomCode}: ${room.status} (ACTIVE=${RoomStatus.ACTIVE})`);
+      if (room.status === RoomStatus.ACTIVE && isAlreadyInRoom) {
+          try {
+            this.logger.log(`Entered ACTIVE block for ${nickname}`);
 
-          // Get map from room state
-          const hexMap = this.roomMaps.get(roomCode);
-          const mapLayout: any[] = [];
-          if (hexMap) {
-            hexMap.forEach((tile: any) => {
-              mapLayout.push(tile);
-            });
-          }
+            // Get current scenario and game state
+            const monsters = this.roomMonsters.get(roomCode) || [];
+            this.logger.log(`Found ${monsters.length} monsters for ${roomCode}`);
 
-          // Send game_started event to reconnecting player with current state
-          const gameStartedPayload: GameStartedPayload = {
+            const characters = room.players
+              .map((p) => characterService.getCharacterByPlayerId(p.uuid))
+              .filter((c) => c !== null);
+            this.logger.log(`Found ${characters.length} characters for ${roomCode}`);
+
+            // Get map from room state
+            const hexMap = this.roomMaps.get(roomCode);
+            const mapLayout: any[] = [];
+            if (hexMap) {
+              hexMap.forEach((tile: any) => {
+                mapLayout.push(tile);
+              });
+            }
+            this.logger.log(`Built mapLayout with ${mapLayout.length} tiles`);
+
+            // Send game_started event to reconnecting player with current state
+            const gameStartedPayload: GameStartedPayload = {
             scenarioId: room.scenarioId || 'scenario-1',
             scenarioName: 'Black Barrow', // TODO: Get from scenario
             mapLayout,
@@ -285,6 +294,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
             }),
           };
 
+          this.logger.log(`Sending game_started to ${nickname} with ${mapLayout.length} tiles`);
           client.emit('game_started', gameStartedPayload);
           this.logger.log(`Sent game state to reconnecting player ${nickname}`);
 
@@ -303,11 +313,17 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
               `Sent current turn to reconnecting player ${nickname}`,
             );
           }
+        } catch (activeGameError) {
+          this.logger.error(`Error sending game state to reconnecting player ${nickname}:`, activeGameError);
         }
+      }
 
-        // Save session with updated connection status
+      // Save session with updated connection status
+      if (isReconnecting) {
         sessionService.saveSession(room);
-      } else if (!isAlreadyInRoom) {
+      }
+
+      if (!isAlreadyInRoom) {
         // Only broadcast new join to other players
         const playerJoinedPayload: PlayerJoinedPayload = {
           playerId: player.uuid,
@@ -577,6 +593,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       // Initialize empty loot tokens array for this room
       this.roomLootTokens.set(room.roomCode, []);
 
+      // Note: Game is already started by roomService.startGame() on line 533
+      this.logger.log(`Room ${room.roomCode} game started, status set to ACTIVE`);
+
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
@@ -606,6 +625,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         }),
       };
 
+      this.logger.log(`Broadcasting game_started to room ${room.roomCode} with ${scenario.mapLayout.length} tiles`);
       this.server.to(room.roomCode).emit('game_started', gameStartedPayload);
 
       this.logger.log(`Game started in room ${room.roomCode}`);

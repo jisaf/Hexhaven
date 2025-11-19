@@ -54,10 +54,12 @@ export function GameBoard() {
   }) => {
     console.log('handleGameStarted called with data:', data);
 
+    console.log('handleGameStarted: hexGridRef.current is', hexGridRef.current ? 'initialized' : 'NULL');
     if (!hexGridRef.current) {
-      console.error('hexGridRef.current is null!');
+      console.error('CRITICAL: hexGridRef.current is null! Cannot render map.');
       return;
     }
+    console.log('handleGameStarted: Received mapLayout with', data.mapLayout?.length || 0, 'tiles');
 
     // Find my character from the characters array using playerUUID from localStorage
     const playerUUID = websocketService.getPlayerUUID();
@@ -235,6 +237,32 @@ export function GameBoard() {
     };
   }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
 
+  // Auto-rejoin room when GameBoard mounts to get game state
+  useEffect(() => {
+    const roomCode = localStorage.getItem('currentRoomCode');
+    const playerUUID = localStorage.getItem('playerUUID');
+    const nickname = localStorage.getItem('playerNickname');
+
+    if (roomCode && playerUUID && nickname) {
+      console.log(`GameBoard mounted - rejoining room ${roomCode} to get game state`);
+      // Wait for WebSocket to be connected before rejoining
+      if (websocketService.isConnected()) {
+        websocketService.joinRoom(roomCode, nickname, playerUUID);
+      } else {
+        // Wait for connection then rejoin
+        const handleConnected = () => {
+          console.log('WebSocket connected, now joining room');
+          websocketService.joinRoom(roomCode, nickname, playerUUID);
+          websocketService.off('ws_connected', handleConnected);
+        };
+        websocketService.on('ws_connected', handleConnected);
+      }
+    } else {
+      console.error('Cannot rejoin room - missing roomCode, playerUUID, or nickname');
+      navigate('/');
+    }
+  }, [navigate]);
+
   // Setup WebSocket event listeners
   useEffect(() => {
     // Connection status
@@ -243,7 +271,9 @@ export function GameBoard() {
     websocketService.on('ws_reconnecting', () => setConnectionStatus('reconnecting'));
 
     // Game events
+    console.log('Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
+    console.log('game_started listener registered');
     websocketService.on('character_moved', handleCharacterMoved);
     websocketService.on('turn_started', handleNextTurn);
     websocketService.on('game_state_update', handleGameStateUpdate);
@@ -268,12 +298,12 @@ export function GameBoard() {
     <div className="game-board-page">
       <header className="game-header">
         <div className="game-info">
-          <h2>{t('game.title', 'Hexhaven Battle')}</h2>
+          <h2>{t('game:title', 'Hexhaven Battle')}</h2>
           <div className="turn-indicator">
             {isMyTurn ? (
-              <span className="your-turn">{t('game.yourTurn', 'Your Turn')}</span>
+              <span className="your-turn">{t('game:yourTurn', 'Your Turn')}</span>
             ) : (
-              <span className="waiting">{t('game.opponentTurn', "Opponent's Turn")}</span>
+              <span className="waiting">{t('game:opponentTurn', "Opponent's Turn")}</span>
             )}
           </div>
         </div>
@@ -282,12 +312,12 @@ export function GameBoard() {
           <div className={`connection-status ${connectionStatus}`}>
             <span className="status-dot" />
             <span className="status-text">
-              {t(`game.connection.${connectionStatus}`, connectionStatus)}
+              {t(`game:connection.${connectionStatus}`, connectionStatus)}
             </span>
           </div>
 
           <button className="leave-button" onClick={handleLeaveGame}>
-            {t('game.leaveGame', 'Leave Game')}
+            {t('game:leaveGame', 'Leave Game')}
           </button>
         </div>
       </header>
@@ -309,13 +339,13 @@ export function GameBoard() {
       {/* T115: Attack Mode Indicator */}
       {attackMode && (
         <div className="attack-mode-hint">
-          {t('game.attackHint', 'Select an enemy to attack')}
+          {t('game:attackHint', 'Select an enemy to attack')}
         </div>
       )}
 
       {selectedCharacterId && isMyTurn && !attackMode && (
         <div className="movement-hint">
-          {t('game.movementHint', 'Tap a highlighted hex to move your character')}
+          {t('game:movementHint', 'Tap a highlighted hex to move your character')}
         </div>
       )}
 
@@ -323,7 +353,7 @@ export function GameBoard() {
         <div className="reconnecting-overlay">
           <div className="reconnecting-message">
             <div className="spinner" />
-            <p>{t('game.reconnecting', 'Reconnecting...')}</p>
+            <p>{t('game:reconnecting', 'Reconnecting...')}</p>
           </div>
         </div>
       )}

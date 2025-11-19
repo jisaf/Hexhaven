@@ -68,6 +68,9 @@ export function Lobby() {
   const handleRoomJoined = useCallback((data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => {
     console.log('Room joined event received:', data);
 
+    // Save room code to localStorage for GameBoard to use
+    localStorage.setItem('currentRoomCode', data.roomCode);
+
     setRoom({ roomCode: data.roomCode, status: data.roomStatus });
 
     // Transform server players to include required Player interface fields
@@ -137,7 +140,9 @@ export function Lobby() {
   }, [currentPlayerId]);
 
   const handleGameStarted = useCallback(() => {
+    console.log('Lobby: game_started event received, navigating to /game');
     navigate('/game');
+    console.log('Lobby: navigate() called');
   }, [navigate]);
 
   const handleError = useCallback((data: { message: string }) => {
@@ -241,7 +246,9 @@ export function Lobby() {
     websocketService.on('player_joined', handlePlayerJoined);
     websocketService.on('player_left', handlePlayerLeft);
     websocketService.on('character_selected', handleCharacterSelected);
+    console.log('Lobby: Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
+    console.log('Lobby: game_started listener registered');
     websocketService.on('error', handleError);
 
     return () => {

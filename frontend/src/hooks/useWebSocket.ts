@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { websocketService, type ConnectionStatus } from '../services/websocket.service';
+import { getWebSocketUrl } from '../config/api';
 
 export function useWebSocket(url?: string) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -38,7 +39,7 @@ export function useWebSocket(url?: string) {
    * Connect to WebSocket on mount
    */
   useEffect(() => {
-    const wsUrl = url || import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    const wsUrl = url || getWebSocketUrl();
     websocketService.connect(wsUrl);
 
     // Setup connection event listeners
@@ -67,7 +68,7 @@ export function useWebSocket(url?: string) {
    * Manually reconnect
    */
   const reconnect = useCallback(() => {
-    const wsUrl = url || import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    const wsUrl = url || getWebSocketUrl();
     websocketService.disconnect();
     websocketService.connect(wsUrl);
   }, [url]);

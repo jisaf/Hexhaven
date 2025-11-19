@@ -61,7 +61,7 @@ export const AccountUpgradeModal: React.FC<AccountUpgradeModalProps> = ({
           <button
             className="modal-close"
             onClick={onClose}
-            aria-label={t('common.close', 'Close')}
+            aria-label={t('close', 'Close')}
           >
             ×
           </button>
@@ -134,7 +134,7 @@ export const AccountUpgradeModal: React.FC<AccountUpgradeModalProps> = ({
             onClick={onClose}
             disabled={isConfirming}
           >
-            {t('common.cancel', 'Cancel')}
+            {t('cancel', 'Cancel')}
           </button>
           <button
             className="button button-primary"
@@ -143,7 +143,7 @@ export const AccountUpgradeModal: React.FC<AccountUpgradeModalProps> = ({
           >
             {isConfirming
               ? t('account.upgrade.creating', 'Creating Account...')
-              : t('common.confirm', 'Confirm')
+              : t('confirm', 'Confirm')
             }
           </button>
         </div>
