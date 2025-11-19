@@ -239,10 +239,10 @@ export class HexTile extends PIXI.Container {
   }
 
   /**
-   * Draw a flat-top hexagon at given position
+   * Draw a pointy-top hexagon at given position
    */
   private drawHexagon(graphic: PIXI.Graphics, x: number, y: number, size: number): void {
-    const angles = [0, 60, 120, 180, 240, 300];
+    const angles = [30, 90, 150, 210, 270, 330];
     const points: Array<{ x: number; y: number }> = [];
 
     for (const angle of angles) {

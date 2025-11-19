@@ -198,6 +198,18 @@ export class HexGrid {
         this.addMonster(monsterData);
       }
     }
+
+    // Force a synchronous render to update transforms
+    this.app.renderer.render(this.app.stage);
+
+    // Center and zoom the map
+    const bounds = this.tilesLayer.getBounds();
+    const zoom = this.getOptimalZoom(bounds);
+
+    if (bounds.width > 0 && bounds.height > 0) {
+      this.viewport.moveCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      this.viewport.setZoom(zoom, true);
+    }
   }
 
   /**
@@ -576,6 +588,24 @@ export class HexGrid {
     if (!animate) {
       this.viewport.emit('moved-end', this.viewport);
     }
+  }
+
+  /**
+   * Calculate optimal zoom to fit the grid in the viewport
+   */
+  private getOptimalZoom(gridBounds: PIXI.Rectangle): number {
+    if (gridBounds.width === 0 || gridBounds.height === 0) {
+      return 1;
+    }
+
+    const screenWidth = this.options.width;
+    const screenHeight = this.options.height;
+    const margin = 0.9; // 10% margin
+
+    const scaleX = (screenWidth / gridBounds.width) * margin;
+    const scaleY = (screenHeight / gridBounds.height) * margin;
+
+    return Math.min(scaleX, scaleY);
   }
 
   /**

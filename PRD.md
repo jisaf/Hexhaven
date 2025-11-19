@@ -489,7 +489,7 @@ gloomhaven-hex-game/
 
 #### Hex Grid System
 - Display scenario maps with PNG/JPG backgrounds
-- Flat-top hexagon orientation
+- Pointy-top hexagon orientation
 - Cube coordinate system (q, r, s)
 - Click-to-hex detection
 - Drag-and-drop placement

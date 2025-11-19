@@ -63,7 +63,7 @@ export function hexDistance(a: Axial, b: Axial): number {
 
 /**
  * Convert axial hex coordinates to screen pixel coordinates
- * Uses flat-top hex orientation
+ * Uses pointy-top hex orientation
  */
 export function axialToScreen(hex: Axial): Point {
   const x = HEX_SIZE * (Math.sqrt(3) * hex.q + Math.sqrt(3) / 2 * hex.r);
@@ -73,7 +73,7 @@ export function axialToScreen(hex: Axial): Point {
 
 /**
  * Convert screen pixel coordinates to axial hex coordinates
- * Uses flat-top hex orientation
+ * Uses pointy-top hex orientation
  * Returns the nearest hex (rounded)
  */
 export function screenToAxial(point: Point): Axial {
