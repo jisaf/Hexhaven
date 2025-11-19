@@ -27,6 +27,7 @@ import { CharacterSelect, type CharacterClass } from '../components/CharacterSel
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { DebugConsole } from '../components/DebugConsole';
 import { LanguageSelector } from '../components/LanguageSelector';
+import { getApiUrl, getWebSocketUrl, logApiConfig } from '../config/api';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
@@ -45,7 +46,7 @@ interface ActiveRoom {
 }
 
 export function Lobby() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
   const navigate = useNavigate();
 
   // State
@@ -66,6 +67,9 @@ export function Lobby() {
   // Event handlers - defined before useEffect that uses them
   const handleRoomJoined = useCallback((data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => {
     console.log('Room joined event received:', data);
+
+    // Save room code to localStorage for GameBoard to use
+    localStorage.setItem('currentRoomCode', data.roomCode);
 
     setRoom({ roomCode: data.roomCode, status: data.roomStatus });
 
@@ -136,7 +140,9 @@ export function Lobby() {
   }, [currentPlayerId]);
 
   const handleGameStarted = useCallback(() => {
+    console.log('Lobby: game_started event received, navigating to /game');
     navigate('/game');
+    console.log('Lobby: navigate() called');
   }, [navigate]);
 
   const handleError = useCallback((data: { message: string }) => {
@@ -150,7 +156,7 @@ export function Lobby() {
     if (!uuid) return;
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/rooms/my-room/${uuid}`);
 
       if (response.ok) {
@@ -181,7 +187,7 @@ export function Lobby() {
 
     try {
       setLoadingRooms(true);
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/rooms`);
 
       if (response.ok) {
@@ -229,7 +235,10 @@ export function Lobby() {
 
   // Connect to WebSocket on mount
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
+    // Log the API configuration for debugging
+    logApiConfig();
+
+    const wsUrl = getWebSocketUrl();
     websocketService.connect(wsUrl);
 
     // Setup event listeners
@@ -237,7 +246,9 @@ export function Lobby() {
     websocketService.on('player_joined', handlePlayerJoined);
     websocketService.on('player_left', handlePlayerLeft);
     websocketService.on('character_selected', handleCharacterSelected);
+    console.log('Lobby: Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
+    console.log('Lobby: game_started listener registered');
     websocketService.on('error', handleError);
 
     return () => {
@@ -284,7 +295,7 @@ export function Lobby() {
       console.log('Creating room for:', { uuid, nickname: playerNickname });
 
       // Call REST API to create room
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const apiUrl = getApiUrl();
       console.log('API URL:', apiUrl);
 
       // Add timeout to fetch
@@ -316,8 +327,33 @@ export function Lobby() {
         const data = await response.json();
         console.log('Room created:', data);
 
-        // Check WebSocket connection status
-        console.log('WebSocket connected:', websocketService.isConnected());
+        // Wait for WebSocket connection before joining room
+        const waitForConnection = () => {
+          return new Promise<void>((resolve) => {
+            if (websocketService.isConnected()) {
+              console.log('WebSocket already connected');
+              resolve();
+            } else {
+              console.log('Waiting for WebSocket connection...');
+              const checkConnection = setInterval(() => {
+                if (websocketService.isConnected()) {
+                  console.log('WebSocket connected');
+                  clearInterval(checkConnection);
+                  resolve();
+                }
+              }, 100); // Check every 100ms
+
+              // Timeout after 5 seconds
+              setTimeout(() => {
+                clearInterval(checkConnection);
+                console.error('WebSocket connection timeout');
+                resolve(); // Resolve anyway to prevent hanging
+              }, 5000);
+            }
+          });
+        };
+
+        await waitForConnection();
 
         // Join the room via WebSocket
         console.log('Joining room via WebSocket:', data.room.roomCode);
@@ -347,7 +383,7 @@ export function Lobby() {
   };
 
   // Room join flow (T068)
-  const handleJoinRoom = (roomCode: string, playerNickname: string) => {
+  const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -360,6 +396,34 @@ export function Lobby() {
 
     // Store nickname
     localStorage.setItem('playerNickname', playerNickname);
+
+    // Wait for WebSocket connection before joining room
+    const waitForConnection = () => {
+      return new Promise<void>((resolve) => {
+        if (websocketService.isConnected()) {
+          console.log('WebSocket already connected');
+          resolve();
+        } else {
+          console.log('Waiting for WebSocket connection...');
+          const checkConnection = setInterval(() => {
+            if (websocketService.isConnected()) {
+              console.log('WebSocket connected');
+              clearInterval(checkConnection);
+              resolve();
+            }
+          }, 100); // Check every 100ms
+
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            clearInterval(checkConnection);
+            console.error('WebSocket connection timeout');
+            resolve(); // Resolve anyway to prevent hanging
+          }, 5000);
+        }
+      });
+    };
+
+    await waitForConnection();
 
     websocketService.joinRoom(roomCode, playerNickname, uuid);
     setMode('joining');
@@ -378,7 +442,7 @@ export function Lobby() {
   };
 
   // Rejoin player's existing room
-  const handleRejoinMyRoom = () => {
+  const handleRejoinMyRoom = async () => {
     if (!myRoom) return;
 
     const storedNickname = localStorage.getItem('playerNickname');
@@ -387,6 +451,35 @@ export function Lobby() {
     if (storedNickname && uuid) {
       setIsLoading(true);
       setError(null);
+
+      // Wait for WebSocket connection before joining room
+      const waitForConnection = () => {
+        return new Promise<void>((resolve) => {
+          if (websocketService.isConnected()) {
+            console.log('WebSocket already connected');
+            resolve();
+          } else {
+            console.log('Waiting for WebSocket connection...');
+            const checkConnection = setInterval(() => {
+              if (websocketService.isConnected()) {
+                console.log('WebSocket connected');
+                clearInterval(checkConnection);
+                resolve();
+              }
+            }, 100); // Check every 100ms
+
+            // Timeout after 5 seconds
+            setTimeout(() => {
+              clearInterval(checkConnection);
+              console.error('WebSocket connection timeout');
+              resolve(); // Resolve anyway to prevent hanging
+            }, 5000);
+          }
+        });
+      };
+
+      await waitForConnection();
+
       websocketService.joinRoom(myRoom.roomCode, storedNickname, uuid);
       setMode('joining');
     }
@@ -410,8 +503,8 @@ export function Lobby() {
       return;
     }
 
-    if (players.length < 2) {
-      setError(t('lobby.needMorePlayers', 'Need at least 2 players to start'));
+    if (players.length < 1) {
+      setError(t('needAtLeastOnePlayer', 'Need at least 1 player to start'));
       return;
     }
 
@@ -449,20 +542,20 @@ export function Lobby() {
     players: players.map(p => ({ id: p.id, nickname: p.nickname, isHost: p.isHost }))
   });
 
-  const canStartGame = players.length >= 2;
   const allPlayersReady = players.every((p) => p.characterClass);
+  const canStartGame = players.length >= 1 && allPlayersReady;
 
   return (
     <div className="lobby-page">
       <DebugConsole />
       <header className="lobby-header">
         <div className="header-top">
-          <h1>{t('lobby.title', 'Hexhaven Multiplayer')}</h1>
+          <h1>{t('title', 'Hexhaven Multiplayer')}</h1>
           <LanguageSelector className="header-language-selector" />
         </div>
         {localStorage.getItem('playerNickname') && (
           <p className="welcome-message">
-            {t('lobby.welcome', 'Welcome')}, <strong>{localStorage.getItem('playerNickname')}</strong>
+            {t('welcome', 'Welcome')}, <strong>{localStorage.getItem('playerNickname')}</strong>
           </p>
         )}
       </header>
@@ -474,24 +567,24 @@ export function Lobby() {
             {myRoom && myRoom.roomCode && (
               <div className="my-room-section">
                 <h2 className="my-room-title">
-                  {t('lobby.yourActiveGame', 'Your Active Game')}
+                  {t('yourActiveGame', 'Your Active Game')}
                 </h2>
                 <div className="my-room-card">
                   <div className="my-room-header">
                     <span className="my-room-code">{myRoom.roomCode}</span>
                     <span className="my-room-status">
                       {myRoom.status === 'lobby'
-                        ? t('lobby.waitingToStart', 'Waiting to Start')
+                        ? t('waitingToStart', 'Waiting to Start')
                         : myRoom.status === 'active'
-                        ? t('lobby.inProgress', 'In Progress')
+                        ? t('inProgress', 'In Progress')
                         : myRoom.status === 'completed'
-                        ? t('lobby.completed', 'Completed')
-                        : t('lobby.abandoned', 'Abandoned')}
+                        ? t('completed', 'Completed')
+                        : t('abandoned', 'Abandoned')}
                     </span>
                   </div>
                   <div className="my-room-info">
                     <span className="my-room-players">
-                      {myRoom.playerCount}/{myRoom.maxPlayers} {t('lobby.players', 'Players')}
+                      {myRoom.playerCount}/{myRoom.maxPlayers} {t('players', 'Players')}
                     </span>
                     <span className="my-room-host">
                       👑 {myRoom.hostNickname}
@@ -503,8 +596,8 @@ export function Lobby() {
                     disabled={isLoading}
                   >
                     {isLoading
-                      ? t('lobby.rejoining', 'Rejoining...')
-                      : t('lobby.rejoinGame', 'Rejoin Game')}
+                      ? t('rejoining', 'Rejoining...')
+                      : t('rejoinGame', 'Rejoin Game')}
                   </button>
                 </div>
               </div>
@@ -517,35 +610,35 @@ export function Lobby() {
                 disabled={isLoading}
               >
                 {isLoading
-                  ? t('lobby.creating', 'Creating...')
-                  : t('lobby.createRoom', 'Create Game')}
+                  ? t('creating', 'Creating...')
+                  : t('createRoom', 'Create Game')}
               </button>
 
               <div className="divider">
-                <span>{t('lobby.or', 'or')}</span>
+                <span>{t('or', 'or')}</span>
               </div>
 
               <button
                 className="secondary-button"
                 onClick={() => setMode('joining')}
               >
-                {t('lobby.joinRoom', 'Join with Room Code')}
+                {t('joinRoom', 'Join with Room Code')}
               </button>
             </div>
 
             {/* Active Games List */}
             <div className="active-games-section">
               <h2 className="active-games-title">
-                {t('lobby.activeGames', 'Active Games')}
+                {t('activeGames', 'Active Games')}
               </h2>
 
               {loadingRooms && activeRooms.length === 0 ? (
                 <div className="loading-rooms">
-                  <p>{t('lobby.loadingRooms', 'Loading available games...')}</p>
+                  <p>{t('loadingRooms', 'Loading available games...')}</p>
                 </div>
               ) : activeRooms.length === 0 ? (
                 <div className="no-rooms">
-                  <p>{t('lobby.noActiveGames', 'No active games available. Create one!')}</p>
+                  <p>{t('noActiveGames', 'No active games available. Create one!')}</p>
                 </div>
               ) : (
                 <div className="rooms-list">
@@ -554,7 +647,7 @@ export function Lobby() {
                       <div className="room-card-header">
                         <span className="room-card-code">{room.roomCode}</span>
                         <span className="room-card-players">
-                          {room.playerCount}/{room.maxPlayers} {t('lobby.players', 'Players')}
+                          {room.playerCount}/{room.maxPlayers} {t('players', 'Players')}
                         </span>
                       </div>
                       <div className="room-card-info">
@@ -562,7 +655,7 @@ export function Lobby() {
                           👑 {room.hostNickname}
                         </span>
                         <span className="room-card-status">
-                          {t('lobby.waitingInLobby', 'Waiting in Lobby')}
+                          {t('waitingInLobby', 'Waiting in Lobby')}
                         </span>
                       </div>
                       <button
@@ -570,7 +663,7 @@ export function Lobby() {
                         onClick={() => handleQuickJoinRoom(room.roomCode)}
                         disabled={isLoading}
                       >
-                        {t('lobby.join', 'Join')}
+                        {t('join', 'Join')}
                       </button>
                     </div>
                   ))}
@@ -589,13 +682,13 @@ export function Lobby() {
                 setError(null);
               }}
             >
-              ← {t('lobby.back', 'Back')}
+              ← {t('back', 'Back')}
             </button>
 
             <div className="nickname-content">
-              <h2>{t('lobby.enterNicknameTitle', 'Enter Your Nickname')}</h2>
+              <h2>{t('enterNicknameTitle', 'Enter Your Nickname')}</h2>
               <p className="nickname-instruction">
-                {t('lobby.nicknameInstruction', 'Choose a nickname for this game')}
+                {t('nicknameInstruction', 'Choose a nickname for this game')}
               </p>
 
               <NicknameInput
@@ -619,13 +712,13 @@ export function Lobby() {
                 setError(null);
               }}
             >
-              ← {t('lobby.back', 'Back')}
+              ← {t('back', 'Back')}
             </button>
 
             <div className="join-content">
-              <h2>{t('lobby.joinGameTitle', 'Join a Game')}</h2>
+              <h2>{t('joinGameTitle', 'Join a Game')}</h2>
               <p className="join-instruction">
-                {t('lobby.enterJoinDetails', 'Enter the room code and your nickname')}
+                {t('enterJoinDetails', 'Enter the room code and your nickname')}
               </p>
 
               <JoinRoomForm
@@ -643,27 +736,27 @@ export function Lobby() {
             <div className="room-header">
               <div className="room-code-section">
                 <h2>
-                  {t('lobby.roomCode', 'Room Code')}: <span className="room-code" data-testid="room-code">{room.roomCode}</span>
+                  {t('roomCode', 'Room Code')}: <span className="room-code" data-testid="room-code">{room.roomCode}</span>
                 </h2>
                 <div className="copy-area">
                   <button
                     className="copy-button"
                     onClick={handleCopyRoomCode}
                     data-testid="copy-room-code"
-                    aria-label={t('lobby.copyRoomCode', 'Copy room code')}
+                    aria-label={t('copyRoomCode', 'Copy room code')}
                   >
-                    📋 {t('lobby.copy', 'Copy')}
+                    📋 {t('copy', 'Copy')}
                   </button>
                   {showCopied && (
                     <span className="copied-message">
-                      {t('lobby.copied', 'Copied!')}
+                      {t('copied', 'Copied!')}
                     </span>
                   )}
                 </div>
               </div>
               {isCurrentPlayerHost && (
                 <span className="host-indicator" data-testid="host-indicator">
-                  👑 {t('lobby.youAreHost', 'You are the host')}
+                  👑 {t('youAreHost', 'You are the host')}
                 </span>
               )}
             </div>
@@ -712,29 +805,29 @@ export function Lobby() {
                       cursor: canStartGame ? 'pointer' : 'not-allowed'
                     }}
                   >
-                    🎮 {t('lobby.startGame', 'Start Game')}
+                    🎮 {t('startGame', 'Start Game')}
                   </button>
 
                   {!canStartGame && (
                     <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px' }}>
-                      ⏳ {t('lobby.waitingForPlayers', 'Waiting for at least 2 players...')}
+                      ⏳ {t('waitingForCharacterSelection', 'Please select a character to start...')}
                     </p>
                   )}
                   {canStartGame && !allPlayersReady && (
                     <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#f39c12' }}>
-                      ⚠️ {t('lobby.playersNeedToSelect', 'Some players need to select characters')}
+                      ⚠️ {t('playersNeedToSelect', 'Some players need to select characters')}
                     </p>
                   )}
                   {canStartGame && allPlayersReady && (
                     <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#2ecc71' }}>
-                      ✅ {t('lobby.readyToStart', 'All players ready! Click Start Game')}
+                      ✅ {t('readyToStart', 'All players ready! Click Start Game')}
                     </p>
                   )}
                 </div>
               ) : (
                 <div className="player-waiting">
                   <p style={{ fontSize: '18px', padding: '20px', backgroundColor: '#333', borderRadius: '8px' }}>
-                    ⏳ {t('lobby.waitingForHost', 'Waiting for host to start the game...')}
+                    ⏳ {t('waitingForHost', 'Waiting for host to start the game...')}
                   </p>
                 </div>
               )}

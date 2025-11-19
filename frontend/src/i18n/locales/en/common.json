@@ -9,5 +9,38 @@
   "next": "Next",
   "loading": "Loading...",
   "error": "Error",
-  "success": "Success"
+  "success": "Success",
+  "characters": {
+    "Brute": {
+      "name": "Brute",
+      "description": "A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies."
+    },
+    "Tinkerer": {
+      "name": "Tinkerer",
+      "description": "A support specialist who heals allies and summons mechanical contraptions to aid the party."
+    },
+    "Spellweaver": {
+      "name": "Spellweaver",
+      "description": "A powerful mage who controls elemental forces to devastate enemies from range."
+    },
+    "Scoundrel": {
+      "name": "Scoundrel",
+      "description": "An agile rogue who strikes from advantage and uses cunning to outmaneuver foes."
+    },
+    "Cragheart": {
+      "name": "Cragheart",
+      "description": "A versatile earth elemental who can manipulate terrain and deals area damage."
+    },
+    "Mindthief": {
+      "name": "Mindthief",
+      "description": "A psionic assassin who augments melee attacks with mind control and illusions."
+    }
+  },
+  "scenario": {
+    "loading": "Loading scenarios...",
+    "selectScenario": "Select Scenario",
+    "difficulty": "Difficulty",
+    "objective": "Objective",
+    "selected": "Selected"
+  }
 }

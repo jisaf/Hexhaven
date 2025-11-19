@@ -23,17 +23,29 @@ import { websocketService } from '../services/websocket.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
+import { getWebSocketUrl } from '../config/api';
 
 export function GameBoard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const hexGridRef = useRef<HexGrid | null>(null);
+  const hasJoinedRoom = useRef(false);
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
+  const [hexGridReady, setHexGridReady] = useState(false);
+
+  // Store game data until HexGrid is ready (fixes race condition)
+  const [pendingGameData, setPendingGameData] = useState<{
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
+  } | null>(null);
 
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -45,20 +57,25 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Event handlers - defined before useEffects that use them
-  const handleGameStarted = useCallback((data: { scenarioId: string; scenarioName: string; mapLayout: unknown[]; monsters: unknown[]; characters: unknown[] }) => {
+  const handleGameStarted = useCallback((data: {
+    scenarioId: string;
+    scenarioName: string;
+    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
+    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
+    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
+  }) => {
     console.log('handleGameStarted called with data:', data);
+    console.log('handleGameStarted: Received mapLayout with', data.mapLayout?.length || 0, 'tiles');
 
-    if (!hexGridRef.current) {
-      console.error('hexGridRef.current is null!');
-      return;
-    }
+    // Store the game data - it will be rendered when HexGrid is ready
+    setPendingGameData(data);
 
     // Find my character from the characters array using playerUUID from localStorage
     const playerUUID = websocketService.getPlayerUUID();
     console.log('My playerUUID:', playerUUID);
     console.log('Characters:', data.characters);
 
-    const myCharacter = data.characters.find((char: unknown) => (char as { playerId: string }).playerId === playerUUID) as { id: string; playerId: string; abilityDeck?: unknown[]; classType?: string } | undefined;
+    const myCharacter = data.characters.find((char) => char.playerId === playerUUID);
     console.log('My character:', myCharacter);
 
     if (myCharacter) {
@@ -80,16 +97,6 @@ export function GameBoard() {
     } else {
       console.error('Could not find my character in the characters array!');
     }
-
-    // Initialize board with the map layout and entities
-    const boardData: GameBoardData = {
-      tiles: data.mapLayout as HexTileData[],
-      characters: data.characters as CharacterData[],
-      monsters: data.monsters as Monster[],
-    };
-
-    console.log('Initializing board with:', boardData);
-    hexGridRef.current.initializeBoard(boardData);
   }, []);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
@@ -173,10 +180,18 @@ export function GameBoard() {
 
   // Initialize hex grid
   useEffect(() => {
-    if (!containerRef.current || hexGridRef.current) return;
+    console.log('=== HEX GRID INITIALIZATION EFFECT ===');
+    console.log('containerRef.current:', containerRef.current ? 'EXISTS' : 'NULL');
+    console.log('hexGridRef.current:', hexGridRef.current ? 'ALREADY INITIALIZED' : 'NULL');
+
+    if (!containerRef.current || hexGridRef.current) {
+      console.log('Skipping HexGrid init - already initialized or no container');
+      return;
+    }
 
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
+    console.log('🎨 Container dimensions:', { width, height });
 
     const hexGrid = new HexGrid(containerRef.current, {
       width,
@@ -185,19 +200,25 @@ export function GameBoard() {
       onCharacterSelect: handleCharacterSelect,
       onMonsterSelect: handleMonsterSelect,
     });
+    console.log('🎨 HexGrid instance created, starting async initialization...');
 
     // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
     let mounted = true;
     let initCompleted = false;
 
     hexGrid.init().then(() => {
+      console.log('✅ HexGrid.init() promise resolved!');
       initCompleted = true;
       if (mounted) {
         hexGridRef.current = hexGrid;
+        setHexGridReady(true); // Signal that HexGrid is ready
+        console.log('✅ HexGrid reference set! Ready to render game data.');
+      } else {
+        console.log('⚠️ Component unmounted before init completed');
       }
       // Note: Don't destroy here if unmounted - the cleanup function will handle it
     }).catch((error) => {
-      console.error('Failed to initialize HexGrid:', error);
+      console.error('❌ Failed to initialize HexGrid:', error);
       initCompleted = true; // Mark as completed even on error
     });
 
@@ -224,34 +245,139 @@ export function GameBoard() {
         }
       }
 
-      // Clear the ref
+      // Clear the ref and state
       hexGridRef.current = null;
+      setHexGridReady(false);
     };
   }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
 
-  // Setup WebSocket event listeners
+  // Render game data when HexGrid is ready (fixes race condition)
   useEffect(() => {
+    console.log('=== RENDER GAME DATA EFFECT TRIGGERED ===');
+    console.log('hexGridReady:', hexGridReady);
+    console.log('hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
+    console.log('pendingGameData:', pendingGameData ? 'EXISTS' : 'NULL');
+
+    if (!hexGridReady || !hexGridRef.current) {
+      console.log('⏳ HexGrid not ready yet - waiting for initialization');
+      return;
+    }
+
+    if (!pendingGameData) {
+      console.log('⏳ No pending game data yet');
+      return;
+    }
+
+    console.log('✅ HexGrid is ready and game data is available - initializing board');
+    console.log('📦 pendingGameData:', JSON.stringify(pendingGameData, null, 2));
+
+    // Initialize board with the map layout and entities
+    const boardData: GameBoardData = {
+      tiles: pendingGameData.mapLayout as HexTileData[],
+      characters: pendingGameData.characters as CharacterData[],
+      monsters: (pendingGameData.monsters as Monster[]) || [],
+    };
+
+    console.log('🎮 Calling hexGridRef.current.initializeBoard with boardData containing:');
+    console.log('  - Tiles:', boardData.tiles.length);
+    console.log('  - Characters:', boardData.characters.length);
+    console.log('  - Monsters:', boardData.monsters?.length || 0);
+
+    try {
+      hexGridRef.current.initializeBoard(boardData);
+      console.log('✅ Board initialized successfully!');
+
+      // Clear pending data after current render cycle to avoid cascading renders
+      queueMicrotask(() => {
+        setPendingGameData(null);
+        console.log('✅ Cleared pending game data');
+      });
+    } catch (error) {
+      console.error('❌ ERROR initializing board:', error);
+    }
+  }, [hexGridReady, pendingGameData]); // Depend on BOTH hexGridReady and pendingGameData
+
+  // Setup WebSocket event listeners AND auto-rejoin room
+  // IMPORTANT: Listeners MUST be registered BEFORE rejoining to catch game_started event
+  useEffect(() => {
+    console.log('🔧 Setting up WebSocket listeners and room rejoin');
+
+    // Step 1: Register all event listeners FIRST
+    console.log('📡 Registering WebSocket event listeners...');
+
     // Connection status
     websocketService.on('ws_connected', () => setConnectionStatus('connected'));
     websocketService.on('ws_disconnected', () => setConnectionStatus('disconnected'));
     websocketService.on('ws_reconnecting', () => setConnectionStatus('reconnecting'));
 
     // Game events
+    console.log('✅ Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
     websocketService.on('character_moved', handleCharacterMoved);
     websocketService.on('turn_started', handleNextTurn);
     websocketService.on('game_state_update', handleGameStateUpdate);
+    console.log('✅ All event listeners registered');
 
+    // Step 2: Get room info and setup connection handler
+    const roomCode = localStorage.getItem('currentRoomCode');
+    const playerUUID = localStorage.getItem('playerUUID');
+    const nickname = localStorage.getItem('playerNickname');
+
+    if (!roomCode || !playerUUID || !nickname) {
+      console.error('❌ Cannot rejoin room - missing roomCode, playerUUID, or nickname');
+      navigate('/');
+      return;
+    }
+
+    // Prevent multiple joins - check if we've already joined this session
+    if (hasJoinedRoom.current) {
+      console.log('⏭️  Already joined room, skipping duplicate join');
+      return;
+    }
+
+    // Mark as joined IMMEDIATELY to prevent race conditions
+    hasJoinedRoom.current = true;
+
+    console.log(`🔄 GameBoard mounted - rejoining room ${roomCode} to get game state`);
+
+    // Setup connection handler BEFORE connecting to avoid race condition
+    const handleConnected = () => {
+      console.log('✅ WebSocket connected, now joining room');
+      websocketService.joinRoom(roomCode, nickname, playerUUID);
+      websocketService.off('ws_connected', handleConnected);
+    };
+
+    // Step 3: Connect if needed, then join room
+    if (websocketService.isConnected()) {
+      console.log('✅ WebSocket already connected, joining room now');
+      websocketService.joinRoom(roomCode, nickname, playerUUID);
+    } else {
+      console.log('⏳ WebSocket not connected yet, waiting for connection...');
+      // Register handler FIRST to avoid race condition
+      websocketService.on('ws_connected', handleConnected);
+
+      // THEN connect
+      const wsUrl = getWebSocketUrl();
+      console.log('🔌 Connecting to WebSocket URL:', wsUrl);
+      websocketService.connect(wsUrl);
+    }
+
+    // Cleanup
     return () => {
-      websocketService.off('ws_connected');
+      console.log('🧹 Cleaning up WebSocket listeners');
+      // Note: Don't remove 'ws_connected' here - it's removed by handleConnected after it fires
+      // Removing it here causes a race condition where it gets removed before executing
       websocketService.off('ws_disconnected');
       websocketService.off('ws_reconnecting');
       websocketService.off('game_started');
       websocketService.off('character_moved');
       websocketService.off('turn_started');
       websocketService.off('game_state_update');
+
+      // Reset the join flag so component can rejoin if remounted
+      hasJoinedRoom.current = false;
     };
-  }, [handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);
+  }, [navigate, handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);
 
   const handleLeaveGame = () => {
     websocketService.leaveRoom();
@@ -262,12 +388,12 @@ export function GameBoard() {
     <div className="game-board-page">
       <header className="game-header">
         <div className="game-info">
-          <h2>{t('game.title', 'Hexhaven Battle')}</h2>
+          <h2>{t('game:title', 'Hexhaven Battle')}</h2>
           <div className="turn-indicator">
             {isMyTurn ? (
-              <span className="your-turn">{t('game.yourTurn', 'Your Turn')}</span>
+              <span className="your-turn">{t('game:yourTurn', 'Your Turn')}</span>
             ) : (
-              <span className="waiting">{t('game.opponentTurn', "Opponent's Turn")}</span>
+              <span className="waiting">{t('game:opponentTurn', "Opponent's Turn")}</span>
             )}
           </div>
         </div>
@@ -276,12 +402,12 @@ export function GameBoard() {
           <div className={`connection-status ${connectionStatus}`}>
             <span className="status-dot" />
             <span className="status-text">
-              {t(`game.connection.${connectionStatus}`, connectionStatus)}
+              {t(`game:connection.${connectionStatus}`, connectionStatus)}
             </span>
           </div>
 
           <button className="leave-button" onClick={handleLeaveGame}>
-            {t('game.leaveGame', 'Leave Game')}
+            {t('game:leaveGame', 'Leave Game')}
           </button>
         </div>
       </header>
@@ -303,13 +429,13 @@ export function GameBoard() {
       {/* T115: Attack Mode Indicator */}
       {attackMode && (
         <div className="attack-mode-hint">
-          {t('game.attackHint', 'Select an enemy to attack')}
+          {t('game:attackHint', 'Select an enemy to attack')}
         </div>
       )}
 
       {selectedCharacterId && isMyTurn && !attackMode && (
         <div className="movement-hint">
-          {t('game.movementHint', 'Tap a highlighted hex to move your character')}
+          {t('game:movementHint', 'Tap a highlighted hex to move your character')}
         </div>
       )}
 
@@ -317,7 +443,7 @@ export function GameBoard() {
         <div className="reconnecting-overlay">
           <div className="reconnecting-message">
             <div className="spinner" />
-            <p>{t('game.reconnecting', 'Reconnecting...')}</p>
+            <p>{t('game:reconnecting', 'Reconnecting...')}</p>
           </div>
         </div>
       )}

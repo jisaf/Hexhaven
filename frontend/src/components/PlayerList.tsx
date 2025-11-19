@@ -54,7 +54,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
   return (
     <div className="player-list" data-testid="player-list">
       <h3 className="player-list-title">
-        {t('lobby.players', 'Players')} ({players.length}/4)
+        {t('lobby:players', 'Players')} ({players.length}/4)
       </h3>
 
       <ul className="players" role="list">
@@ -68,7 +68,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
               <span
                 className="connection-status"
                 style={{ color: getConnectionColor(player.connectionStatus) }}
-                aria-label={t(`lobby.connectionStatus.${player.connectionStatus}`, player.connectionStatus)}
+                aria-label={t(`lobby:connectionStatus.${player.connectionStatus}`, player.connectionStatus)}
               >
                 {getConnectionIcon(player.connectionStatus)}
               </span>
@@ -76,12 +76,12 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
               <span className="player-nickname">
                 {player.nickname}
                 {player.id === currentPlayerId && (
-                  <span className="you-badge">{t('lobby.you', '(You)')}</span>
+                  <span className="you-badge">{t('lobby:you', '(You)')}</span>
                 )}
               </span>
 
               {player.isHost && (
-                <span className="host-badge" title={t('lobby.host', 'Host')}>
+                <span className="host-badge" title={t('lobby:host', 'Host')}>
                   👑
                 </span>
               )}
@@ -93,7 +93,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
               )}
 
               {player.characterClass && player.isReady && (
-                <span className="ready-badge">{t('lobby.ready', 'Ready')}</span>
+                <span className="ready-badge">{t('lobby:ready', 'Ready')}</span>
               )}
             </div>
           </li>
@@ -104,7 +104,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
           Array.from({ length: 4 - players.length }).map((_, index) => (
             <li key={`empty-${index}`} className="player-item empty-slot">
               <span className="empty-slot-text">
-                {t('lobby.waitingForPlayer', 'Waiting for player...')}
+                {t('lobby:waitingForPlayer', 'Waiting for player...')}
               </span>
             </li>
           ))}

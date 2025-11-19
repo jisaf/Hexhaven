@@ -1,0 +1,621 @@
+# Hexhaven Multiplayer - System Architecture
+
+**Version**: 1.0
+**Last Updated**: 2025-11-14
+**Status**: Production-Ready (MVP)
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [System Architecture](#system-architecture)
+3. [Technology Stack](#technology-stack)
+4. [Data Flow](#data-flow)
+5. [Component Architecture](#component-architecture)
+6. [Database Schema](#database-schema)
+7. [API Design](#api-design)
+8. [Real-Time Communication](#real-time-communication)
+9. [Security](#security)
+10. [Performance Considerations](#performance-considerations)
+11. [Deployment](#deployment)
+
+---
+
+## Overview
+
+Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhaven rules. The system enables 2-4 players to join game rooms via shareable codes and play turn-based hex grid battles with real-time synchronization.
+
+**Key Features**:
+- Real-time multiplayer gameplay (WebSocket-based)
+- Mobile-first PWA (offline-capable)
+- 6 character classes, 5 scenarios
+- Turn-based tactical combat with monster AI
+- Multi-lingual support (5 languages)
+- Optional account system with progression tracking
+
+---
+
+## System Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                         │
+├─────────────────────────────────────────────────────────────┤
+│  React PWA (Vite)                                           │
+│  ├── UI Components (React)                                  │
+│  ├── Game Rendering (PixiJS)                                │
+│  ├── State Management (React Hooks)                         │
+│  ├── WebSocket Client (Socket.io)                           │
+│  └── Service Worker (Workbox)                               │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ HTTP/WebSocket
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                        SERVER LAYER                         │
+├─────────────────────────────────────────────────────────────┤
+│  NestJS Backend (Node.js + TypeScript)                      │
+│  ├── REST API Controllers                                   │
+│  ├── WebSocket Gateway (Socket.io)                          │
+│  ├── Game Logic Services                                    │
+│  │   ├── Monster AI                                         │
+│  │   ├── Turn Order                                         │
+│  │   ├── Damage Calculation                                 │
+│  │   ├── Pathfinding (A*)                                   │
+│  │   └── Progression Tracking                               │
+│  └── Validation & Security                                  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ Prisma ORM
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                      PERSISTENCE LAYER                      │
+├─────────────────────────────────────────────────────────────┤
+│  PostgreSQL Database                                        │
+│  ├── Normalized Tables (Players, Rooms, Scenarios)         │
+│  ├── JSONB State (Full game state)                         │
+│  └── Account & Progression Data                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Architecture Decisions
+
+**Hybrid Database Schema**:
+- **Normalized tables** for queryable data (active rooms, player lookup)
+- **JSONB columns** for full game state (fast serialization for reconnection)
+- **Rationale**: Balance between query performance and state restoration speed
+
+**Server-Authoritative Design**:
+- All game logic runs on server
+- Client sends actions, server validates and broadcasts results
+- **Rationale**: Prevents cheating, ensures game rule consistency
+
+**Monorepo Structure**:
+- Single repository with `backend/`, `frontend/`, `shared/` workspaces
+- Shared TypeScript types between frontend and backend
+- **Rationale**: Type-safe WebSocket communication, easier refactoring
+
+---
+
+## Technology Stack
+
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18+ | UI framework |
+| **Vite** | 5+ | Build tool & dev server |
+| **PixiJS** | 7+ | Canvas/WebGL rendering (60 FPS hex grid) |
+| **Socket.io Client** | 4+ | WebSocket communication |
+| **react-i18next** | Latest | Internationalization |
+| **TypeScript** | 5+ | Type safety |
+| **Playwright** | Latest | E2E testing |
+| **Jest** | Latest | Unit testing |
+
+### Backend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **NestJS** | 10+ | Enterprise Node.js framework |
+| **Socket.io** | 4+ | WebSocket server |
+| **Prisma** | 5+ | ORM with type-safe queries |
+| **PostgreSQL** | 14+ | Primary database |
+| **TypeScript** | 5+ | Type safety |
+| **Jest** | Latest | Unit & integration testing |
+
+### Shared
+
+| Technology | Purpose |
+|------------|---------|
+| **TypeScript** | Shared type definitions |
+| **ESLint** | Code linting |
+| **Prettier** | Code formatting |
+
+---
+
+## Data Flow
+
+### Game Room Creation Flow
+
+```
+Client                    Server                  Database
+  │                         │                        │
+  │─── POST /api/rooms ───>│                        │
+  │                         │──── Create Room ─────>│
+  │                         │<──── Return Room ─────│
+  │<─── Room Code ─────────│                        │
+  │                         │                        │
+  │─── join_room (WS) ────>│                        │
+  │                         │──── Save Player ─────>│
+  │<─── room_joined ───────│                        │
+```
+
+### Turn-Based Combat Flow
+
+```
+Player 1                  Server                  Player 2
+  │                         │                        │
+  │─── select_cards ──────>│                        │
+  │                         │<─── select_cards ─────│
+  │                         │                        │
+  │                         │──[ Calculate Turn Order ]
+  │                         │                        │
+  │<─ turn_order_determined─│─ turn_order_determined─>│
+  │                         │                        │
+  │─── move_character ────>│                        │
+  │                         │──[ Validate Move ]    │
+  │<─ character_moved ──────│─ character_moved ─────>│
+  │                         │                        │
+  │                         │──[ Monster AI Turn ]  │
+  │<─ monster_activated ────│─ monster_activated ───>│
+```
+
+### Reconnection Flow
+
+```
+Client                    Server                  Database
+  │                         │                        │
+  │ [Disconnect]            │                        │
+  │                         │──[ Store State ]─────>│
+  │                         │                        │
+  │ [Reconnect]             │                        │
+  │─── reconnect (UUID) ──>│                        │
+  │                         │──[ Load State ]──────>│
+  │                         │<──[ Game State ]──────│
+  │<─── state_restored ────│                        │
+```
+
+---
+
+## Component Architecture
+
+### Frontend Architecture
+
+```
+frontend/src/
+├── components/           # Reusable UI components
+│   ├── HexGrid.tsx      # Hex grid container
+│   ├── CharacterSelect.tsx
+│   ├── TurnOrderDisplay.tsx
+│   ├── AccountUpgradeModal.tsx
+│   └── ...
+├── game/                # PixiJS rendering layer
+│   ├── PixiApp.tsx      # PixiJS application wrapper
+│   ├── HexGrid.ts       # Hex grid renderer
+│   ├── HexTile.ts       # Tile sprite
+│   ├── CharacterSprite.ts
+│   ├── MonsterSprite.ts
+│   └── hex-utils.ts     # Coordinate conversion
+├── pages/               # Page-level components
+│   ├── Lobby.tsx        # Room creation/join
+│   ├── GameBoard.tsx    # Main game view
+│   └── Profile.tsx      # Account & progression
+├── services/            # External communication
+│   ├── websocket.service.ts  # Socket.io client
+│   └── api.service.ts        # REST API client
+├── hooks/               # React hooks
+│   ├── useGameState.ts       # Game state management
+│   ├── useWebSocket.ts       # WebSocket connection
+│   └── useOrientation.ts     # Orientation handling
+└── i18n/                # Internationalization
+    ├── index.ts
+    └── locales/         # Translation files (en, es, fr, de, zh)
+```
+
+### Backend Architecture
+
+```
+backend/src/
+├── api/                 # REST endpoints
+│   ├── rooms.controller.ts
+│   ├── scenarios.controller.ts
+│   └── accounts.controller.ts
+├── websocket/           # Real-time communication
+│   └── game.gateway.ts  # Socket.io event handlers
+├── services/            # Business logic
+│   ├── room.service.ts
+│   ├── monster-ai.service.ts
+│   ├── turn-order.service.ts
+│   ├── damage-calculation.service.ts
+│   ├── pathfinding.service.ts
+│   ├── account.service.ts
+│   ├── progression.service.ts
+│   └── scenario.service.ts
+├── models/              # Domain models
+│   ├── player.model.ts
+│   ├── game-room.model.ts
+│   ├── character.model.ts
+│   ├── monster.model.ts
+│   ├── account.model.ts
+│   └── progression.model.ts
+├── db/                  # Database
+│   ├── schema.prisma    # Prisma schema
+│   ├── migrations/      # DB migrations
+│   └── seed.ts          # Initial data
+└── utils/               # Utilities
+    ├── hex-utils.ts     # Hex coordinate math
+    ├── validation.ts    # Server-side validation
+    └── logger.ts        # Structured logging
+```
+
+---
+
+## Database Schema
+
+### Core Tables
+
+```sql
+-- Game Rooms (normalized for queries)
+CREATE TABLE game_rooms (
+  id UUID PRIMARY KEY,
+  room_code VARCHAR(6) UNIQUE,
+  status VARCHAR(20),      -- 'lobby', 'active', 'completed'
+  scenario_id UUID,
+  created_at TIMESTAMP,
+  expires_at TIMESTAMP     -- 24-hour TTL
+);
+
+-- Players
+CREATE TABLE players (
+  id UUID PRIMARY KEY,
+  uuid VARCHAR(36) UNIQUE, -- Anonymous UUID
+  nickname VARCHAR(50),
+  room_id UUID REFERENCES game_rooms(id),
+  is_host BOOLEAN,
+  connection_status VARCHAR(20),
+  last_seen_at TIMESTAMP
+);
+
+-- Game State (JSONB for fast serialization)
+CREATE TABLE game_states (
+  room_id UUID PRIMARY KEY REFERENCES game_rooms(id),
+  state JSONB,             -- Full game state
+  updated_at TIMESTAMP
+);
+
+-- Scenarios (static data)
+CREATE TABLE scenarios (
+  id UUID PRIMARY KEY,
+  name VARCHAR(100),
+  difficulty INTEGER,
+  map_layout JSONB,
+  monster_groups JSONB,
+  objective_primary VARCHAR(500)
+);
+
+-- Accounts (User Story 7)
+CREATE TABLE accounts (
+  id UUID PRIMARY KEY,
+  uuid VARCHAR(36) UNIQUE,
+  email VARCHAR(255) UNIQUE NULLABLE,
+  created_at TIMESTAMP
+);
+
+-- Progression (User Story 7)
+CREATE TABLE progressions (
+  account_uuid VARCHAR(36) PRIMARY KEY,
+  scenarios_completed INTEGER,
+  total_experience INTEGER,
+  characters_played JSONB,
+  character_experience JSONB,
+  perks_unlocked JSONB,
+  completed_scenario_ids JSONB
+);
+```
+
+### Game State JSONB Structure
+
+```typescript
+{
+  roomCode: string;
+  currentRound: number;
+  currentTurnIndex: number;
+  turnOrder: UUID[];  // Player and monster UUIDs
+
+  characters: {
+    [uuid: string]: {
+      id: UUID;
+      playerId: UUID;
+      classType: "Brute" | "Tinkerer" | ...;
+      health: number;
+      currentHex: { q: number, r: number };
+      hand: UUID[];        // Ability card IDs
+      activeCards: { top: UUID, bottom: UUID };
+      conditions: string[];
+    }
+  };
+
+  monsters: {
+    [uuid: string]: {
+      id: UUID;
+      type: string;
+      isElite: boolean;
+      health: number;
+      currentHex: { q: number, r: number };
+      conditions: string[];
+    }
+  };
+
+  elementalState: {
+    fire: "inert" | "waning" | "strong";
+    ice: "inert" | "waning" | "strong";
+    // ... (6 elements)
+  };
+
+  lootTokens: Array<{ hex: { q, r }, gold: number }>;
+}
+```
+
+---
+
+## API Design
+
+### REST Endpoints
+
+```
+GET  /api/health              # Health check
+GET  /api                     # API info
+
+# Rooms
+POST /api/rooms               # Create new room
+GET  /api/rooms               # List active rooms
+GET  /api/rooms/:code         # Get room details
+GET  /api/rooms/my-room/:uuid # Get player's room
+
+# Scenarios
+GET  /api/scenarios           # List scenarios
+GET  /api/scenarios/:id       # Get scenario details
+
+# Accounts (User Story 7)
+POST /api/accounts            # Create/upgrade account
+GET  /api/accounts/:uuid      # Get account details
+GET  /api/accounts/:uuid/progression     # Get progression
+POST /api/accounts/:uuid/progression     # Update progression
+POST /api/accounts/:uuid/progression/scenario  # Track completion
+POST /api/accounts/:uuid/progression/perk      # Unlock perk
+```
+
+### WebSocket Events
+
+**Client → Server**:
+```typescript
+join_room        { roomCode, nickname }
+leave_room       { roomCode }
+select_character { roomCode, characterClass }
+start_game       { roomCode, scenarioId }
+move_character   { roomCode, characterId, targetHex }
+select_cards     { roomCode, cards: { top, bottom } }
+attack_target    { roomCode, targetId }
+collect_loot     { roomCode, lootId }
+end_turn         { roomCode }
+```
+
+**Server → Client**:
+```typescript
+room_joined         { roomCode, players }
+player_joined       { player }
+player_left         { playerId }
+character_selected  { playerId, characterClass }
+game_started        { scenario, initialState }
+character_moved     { characterId, newHex }
+turn_order_determined { turnOrder }
+next_turn_started   { entityId }
+monster_activated   { monsterId, actions }
+attack_resolved     { attackerId, targetId, damage }
+scenario_completed  { victory, reason }
+player_disconnected { playerId }
+player_reconnected  { playerId }
+```
+
+---
+
+## Real-Time Communication
+
+### Socket.io Configuration
+
+```typescript
+// Server
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+});
+
+// Client
+const socket = io(serverUrl, {
+  autoConnect: true,
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5,
+});
+```
+
+### Room Management
+
+- Each game room is a Socket.io room
+- Players join/leave rooms dynamically
+- Server broadcasts state updates to room members
+- Disconnect handling with 10-minute grace period
+
+### State Synchronization
+
+**Optimistic Updates**: Client predicts movement, server validates
+**Authoritative Server**: Server is source of truth for all game state
+**Delta Updates**: Only changed state broadcast (not full state)
+
+---
+
+## Security
+
+### Input Validation
+
+- **All WebSocket events validated** using class-validator
+- **Room codes sanitized** (6-char alphanumeric only)
+- **Nickname validation** (1-50 chars, no special characters)
+- **Move validation** (server checks range, obstacles, occupancy)
+- **Attack validation** (range, target alive, not disarmed)
+
+### Authentication
+
+**MVP**: UUID-based anonymous authentication
+- UUID stored in localStorage
+- No sensitive data in MVP
+- Ready for production email auth
+
+**Production**: Email + magic link authentication (planned)
+
+### CORS
+
+- Configured for specific frontend origin
+- No wildcard CORS in production
+
+### Rate Limiting
+
+- Connection rate limiting (future enhancement)
+- Action rate limiting per player (future enhancement)
+
+---
+
+## Performance Considerations
+
+### Frontend Performance
+
+**Target**: 60 FPS on mid-range mobile (iPhone 12, Galaxy S21+)
+
+**Optimizations**:
+- PixiJS sprite batching (hundreds of hex tiles)
+- Texture atlases for reduced draw calls
+- Sprite pooling for damage numbers
+- Viewport culling (don't render off-screen)
+- Service worker caching (app shell, assets)
+
+**Bundle Size**:
+- Code splitting by route
+- Lazy-loaded translations
+- Tree-shaking enabled
+
+### Backend Performance
+
+**Target**: <200ms API response, <500ms monster AI
+
+**Optimizations**:
+- Indexed database queries (room_code, uuid, status)
+- JSONB for fast state serialization
+- A* pathfinding cached per turn
+- Connection pooling (Prisma)
+
+**Scalability**:
+- **Current**: Single server, 100 concurrent sessions
+- **Future**: Redis for session storage, horizontal scaling
+
+---
+
+## Deployment
+
+### Development
+
+```bash
+# Start all services
+npm run dev
+
+# Backend: http://localhost:3000
+# Frontend: http://localhost:5173
+```
+
+### Production
+
+**Backend**:
+```bash
+npm run build
+npm run start:prod
+```
+
+**Frontend**:
+```bash
+npm run build
+# Serve dist/ with static file server
+```
+
+**Database**:
+```bash
+npx prisma migrate deploy
+npm run db:seed
+```
+
+### Environment Variables
+
+```env
+# Backend
+DATABASE_URL=postgresql://user:pass@localhost:5432/hexhaven
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+
+# Frontend
+VITE_API_URL=http://localhost:3000
+VITE_WS_URL=ws://localhost:3000
+```
+
+---
+
+## Future Enhancements
+
+### Performance
+- Redis for session storage
+- Horizontal scaling with load balancer
+- CDN for static assets
+
+### Features
+- Email authentication
+- Campaign mode
+- Item shop
+- Achievements
+- Spectator mode
+
+### Infrastructure
+- Docker containers
+- Kubernetes orchestration
+- CI/CD pipeline (GitHub Actions)
+- Automated E2E testing
+- Monitoring & alerting (Prometheus, Grafana)
+
+---
+
+## References
+
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Socket.io Documentation](https://socket.io/docs)
+- [PixiJS Documentation](https://pixijs.com/guides)
+- [Red Blob Games - Hexagonal Grids](https://www.redblobgames.com/grids/hexagons/)
+- [Gloomhaven Rules](https://online.flippingbook.com/view/598058/)
+
+---
+
+**Document Status**: ✅ Complete
+**Maintainer**: Hexhaven Development Team
+**Last Review**: 2025-11-14

@@ -98,9 +98,32 @@ export interface CharacterSelectedPayload {
 export interface GameStartedPayload {
   scenarioId: string;
   scenarioName: string;
-  mapLayout: any[]; // HexTile[] from entities
-  monsters: any[]; // Monster[] from entities
-  characters: any[]; // Character[] from entities
+  mapLayout: {
+    coordinates: AxialCoordinates;
+    terrain: string;
+    occupiedBy: string | null;
+    hasLoot: boolean;
+    hasTreasure: boolean;
+  }[];
+  monsters: {
+    id: string;
+    monsterType: string;
+    isElite: boolean;
+    currentHex: AxialCoordinates;
+    health: number;
+    maxHealth: number;
+    conditions: string[];
+  }[];
+  characters: {
+    id: string;
+    playerId: string;
+    classType: string;
+    health: number;
+    maxHealth: number;
+    currentHex: AxialCoordinates;
+    conditions: string[];
+    isExhausted: boolean;
+  }[];
 }
 
 export interface CardsSelectedPayload {

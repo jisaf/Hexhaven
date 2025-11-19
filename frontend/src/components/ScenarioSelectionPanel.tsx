@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScenarioCard } from './ScenarioCard';
+import { getApiUrl } from '../config/api';
 
 interface Scenario {
   id: string;
@@ -38,7 +39,7 @@ export function ScenarioSelectionPanel({
     const fetchScenarios = async () => {
       try {
         setLoading(true);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const apiUrl = getApiUrl();
         const response = await fetch(`${apiUrl}/scenarios`);
 
         if (!response.ok) {
@@ -94,7 +95,7 @@ export function ScenarioSelectionPanel({
     <div className="scenario-panel" data-testid="scenario-selection-panel">
       <h3 className="panel-title">
         {t('scenario.selectScenario', 'Select Scenario')}
-        <span className="host-badge">{t('lobby.hostOnly', 'Host Only')}</span>
+        <span className="host-badge">{t('lobby:hostOnly', 'Host Only')}</span>
       </h3>
 
       <div className="scenario-grid">

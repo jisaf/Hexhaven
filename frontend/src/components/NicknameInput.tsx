@@ -59,11 +59,11 @@ export function NicknameInput({
           value={nickname}
           onChange={handleChange}
           onBlur={() => setTouched(true)}
-          placeholder={t('lobby.enterNickname', 'Enter your nickname')}
+          placeholder={t('lobby:enterNickname', 'Enter your nickname')}
           maxLength={50}
           disabled={isLoading}
           className={`nickname-field ${hasError ? 'error' : ''} ${isValid ? 'valid' : ''}`}
-          aria-label={t('lobby.nicknameLabel', 'Nickname')}
+          aria-label={t('lobby:nicknameLabel', 'Nickname')}
           aria-invalid={hasError ? 'true' : 'false'}
           aria-describedby={hasError ? 'nickname-error' : undefined}
           autoComplete="off"
@@ -77,26 +77,26 @@ export function NicknameInput({
               onClick={onCancel}
               disabled={isLoading}
               className="cancel-button"
-              aria-label={t('common.cancel', 'Cancel')}
+              aria-label={t('cancel', 'Cancel')}
             >
-              {t('common.cancel', 'Cancel')}
+              {t('cancel', 'Cancel')}
             </button>
           )}
           <button
             type="submit"
             disabled={!isValid || isLoading}
             className="submit-button"
-            aria-label={t('common.continue', 'Continue')}
+            aria-label={t('continue', 'Continue')}
             data-testid="nickname-submit"
           >
-            {isLoading ? t('common.loading', 'Loading...') : t('common.continue', 'Continue')}
+            {isLoading ? t('loading', 'Loading...') : t('continue', 'Continue')}
           </button>
         </div>
       </div>
 
       {hasError && (
         <div id="nickname-error" className="error-message" role="alert">
-          {error || t('lobby.invalidNickname', 'Nickname must be 1-50 characters')}
+          {error || t('lobby:invalidNickname', 'Nickname must be 1-50 characters')}
         </div>
       )}
 

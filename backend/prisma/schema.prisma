@@ -60,16 +60,17 @@ model GameState {
 }
 
 model Scenario {
-  id                String   @id @default(uuid()) @db.Uuid
-  name              String   @db.VarChar(100)
-  difficulty        Int      @db.SmallInt
-  mapLayout         Json     // Array of HexTile objects
-  monsterGroups     Json     // Array of MonsterGroup objects
-  objectivePrimary  String   @db.VarChar(500)
-  objectiveSecondary String? @db.VarChar(500)
-  treasures         Json?    // Array of TreasureLocation objects
+  id                    String   @id @default(uuid()) @db.Uuid
+  name                  String   @db.VarChar(100)
+  difficulty            Int      @db.SmallInt
+  mapLayout             Json     // Array of HexTile objects
+  monsterGroups         Json     // Array of MonsterGroup objects
+  objectivePrimary      String   @db.VarChar(500)
+  objectiveSecondary    String?  @db.VarChar(500)
+  treasures             Json?    // Array of TreasureLocation objects
+  playerStartPositions  Json?    // Array of hex coordinates for player starting positions
 
-  rooms             GameRoom[]
+  rooms                 GameRoom[]
 
   @@index([difficulty])
   @@map("scenarios")
@@ -96,7 +97,7 @@ model Account {
   email     String?  @unique @db.VarChar(255)
   createdAt DateTime @default(now())
 
-  progressions Progression[]
+  progression Progression?
 
   @@index([uuid])
   @@index([email])
@@ -104,19 +105,20 @@ model Account {
 }
 
 model Progression {
-  id                  String   @id @default(uuid()) @db.Uuid
-  accountId           String   @db.Uuid
-  characterClass      String   @db.VarChar(50)
-  experience          Int      @default(0)
-  level               Int      @default(1) @db.SmallInt
-  unlockedPerks       Json     // Array of perk IDs
-  completedScenarios  Json     // Array of scenario IDs
-  updatedAt           DateTime @updatedAt
+  accountUuid               String   @id @db.VarChar(36)
+  scenariosCompleted        Int      @default(0)
+  totalExperience           Int      @default(0)
+  charactersPlayed          Json     // Array of character class names
+  characterExperience       Json     // Object mapping character class to { level, xp, perksUnlocked[] }
+  perksUnlocked             Json     // Array of all perk names unlocked across characters
+  completedScenarioIds      Json     // Array of scenario IDs completed
+  scenarioCharacterHistory  Json?    // Array of { scenarioId, characterClass } objects
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
-  account             Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account                   Account @relation(fields: [accountUuid], references: [uuid], onDelete: Cascade)
 
-  @@unique([accountId, characterClass])
-  @@index([accountId])
+  @@index([accountUuid])
   @@map("progressions")
 }
 

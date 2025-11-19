@@ -176,17 +176,27 @@ describe('Scenario Data Loading (US5 - T167)', () => {
 
     scenarios.forEach((scenario: any) => {
       expect(scenario.playerStartPositions).toBeDefined();
-      expect(Array.isArray(scenario.playerStartPositions)).toBe(true);
-      expect(scenario.playerStartPositions.length).toBeGreaterThanOrEqual(2); // At least 2 players
-      expect(scenario.playerStartPositions.length).toBeLessThanOrEqual(4); // Max 4 players
+      expect(typeof scenario.playerStartPositions).toBe('object');
+
+      // playerStartPositions is a Record<number, AxialCoordinates[]>
+      // Should support player counts from 1-4
+      const playerCounts = Object.keys(scenario.playerStartPositions);
+      expect(playerCounts.length).toBeGreaterThanOrEqual(2); // At least support 2 player counts
 
       const validCoordinates = new Set(
         scenario.mapLayout.map((tile: any) => `${tile.coordinates.q},${tile.coordinates.r}`)
       );
 
-      scenario.playerStartPositions.forEach((pos: any) => {
-        const posKey = `${pos.q},${pos.r}`;
-        expect(validCoordinates.has(posKey)).toBe(true);
+      // Check each player count's start positions
+      playerCounts.forEach((count: string) => {
+        const positions = scenario.playerStartPositions[count];
+        expect(Array.isArray(positions)).toBe(true);
+        expect(positions.length).toBe(parseInt(count)); // Should have positions for all players
+
+        positions.forEach((pos: any) => {
+          const posKey = `${pos.q},${pos.r}`;
+          expect(validCoordinates.has(posKey)).toBe(true);
+        });
       });
     });
   });
