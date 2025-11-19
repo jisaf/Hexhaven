@@ -6,9 +6,10 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // TODO: Re-enable StrictMode after fixing WebSocket event listener handling to work with double-mounting
+  // <StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </StrictMode>,
+  // </StrictMode>,
 )

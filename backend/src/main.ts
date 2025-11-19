@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { GameGateway } from './websocket/game.gateway';
 
 // Load environment variables from .env file
 // In production, this loads from /opt/hexhaven/.env
@@ -22,8 +24,11 @@ if (dotenvResult.error) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
+  logger.log('Creating NestJS application...');
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  logger.log('NestJS application created successfully');
 
   // Log startup environment info
   logger.log(`Node environment: ${process.env.NODE_ENV || 'development'}`);
@@ -94,7 +99,7 @@ async function bootstrap() {
   logger.log(`Socket.IO server initialized on port ${port}`);
 
   // Get GameGateway instance and wire it up to the Socket.IO server
-  const gameGateway = app.get(require('./websocket/game.gateway').GameGateway);
+  const gameGateway = app.get(GameGateway);
   gameGateway.server = io;
 
   // Call afterInit manually since decorators aren't working

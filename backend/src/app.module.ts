@@ -18,15 +18,16 @@ import { PrismaService } from './services/prisma.service';
     AppController,
     RoomsController,
     ScenariosController,
-    AccountsController,
+    // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
     AppService,
     GameGateway,
     ScenarioService,
-    AccountService,
-    ProgressionService,
-    PrismaService,
+    // TODO: Re-enable once Prisma connection issue is resolved
+    // AccountService,
+    // ProgressionService,
+    // PrismaService,
   ],
 })
 export class AppModule {}
