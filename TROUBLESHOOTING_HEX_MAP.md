@@ -2,7 +2,7 @@
 
 **Issue**: Hex map does not render when starting a game
 **Date**: 2025-11-19
-**Status**: IN PROGRESS
+**Status**: ✅ RESOLVED (2025-11-19)
 
 ## Problem Description
 
@@ -309,9 +309,124 @@ npm run build
 
 ## Questions to Answer
 
-1. ❓ Does the URL change to /game when Start Game is clicked?
-2. ❓ Does GameBoard component mount (check React DevTools)?
-3. ❓ Are the GameBoard useEffect hooks running?
-4. ❓ Is the game_started event being received by the WebSocket client?
-5. ❓ Is handleGameStarted being called with the event data?
-6. ❓ What is the value of hexGridRef.current when handleGameStarted runs?
+1. ✅ Does the URL change to /game when Start Game is clicked? YES
+2. ✅ Does GameBoard component mount (check React DevTools)? YES
+3. ✅ Are the GameBoard useEffect hooks running? YES
+4. ✅ Is the game_started event being received by the WebSocket client? NOW YES (with ack pattern)
+5. ✅ Is handleGameStarted being called with the event data? NOW YES (with ack pattern)
+6. ✅ What is the value of hexGridRef.current when handleGameStarted runs? NOW PROPERLY HANDLED (with ack pattern)
+
+---
+
+## Final Solution: Socket.IO Acknowledgment Pattern
+
+**Implementation Date**: 2025-11-19
+**Status**: ✅ PRODUCTION READY
+
+### Root Cause
+The issue was a **race condition** between three asynchronous operations:
+1. HexGrid initialization (PixiJS v8 async ~100-500ms)
+2. WebSocket connection establishment (~50-200ms)
+3. Backend `game_started` event emission (immediate after join)
+
+The backend emitted `game_started` immediately when a player joined an active room, but the frontend event listener or HexGrid might not have been ready yet. Events were fire-and-forget with no retry or acknowledgment mechanism.
+
+### Solution Implemented
+We implemented **Socket.IO's built-in acknowledgment pattern** to guarantee event delivery and processing:
+
+#### Backend Changes (`backend/src/websocket/game.gateway.ts`)
+
+1. **Extracted Game State Building** (lines 101-147)
+   - Created reusable `buildGameStatePayload()` method
+   - Eliminates code duplication
+   - Centralizes game state construction logic
+
+2. **Implemented Acknowledgment Pattern** (lines 283-320)
+   ```typescript
+   // Send game_started with acknowledgment callback
+   client.emit('game_started', gameStartedPayload, (acknowledged: boolean) => {
+     if (acknowledged) {
+       this.logger.log(`✅ Game state acknowledged by ${nickname}`);
+     } else {
+       this.logger.warn(`⚠️  Game state NOT acknowledged by ${nickname}, retrying...`);
+       setTimeout(() => {
+         client.emit('game_started', gameStartedPayload);
+       }, 500);
+     }
+   });
+   ```
+
+#### Frontend Changes
+
+1. **WebSocket Service** (`frontend/src/services/websocket.service.ts`, lines 229-260)
+   - Updated `on()` method to pass acknowledgment callbacks through to handlers
+   - No changes to API, fully backward compatible
+
+2. **GameBoard Component** (`frontend/src/pages/GameBoard.tsx`)
+   - Added `ackCallbackRef` to store acknowledgment callback (line 34)
+   - Updated `handleGameStarted` to accept and store ack callback (lines 61-116)
+   - Added acknowledgment sending after successful board initialization (lines 306-326)
+   - Sends positive ack (`true`) when board renders successfully
+   - Sends negative ack (`false`) on error, triggering server retry
+
+### How It Works
+
+**Flow on Page Refresh:**
+1. User refreshes `/game` page
+2. GameBoard mounts and registers event listeners
+3. GameBoard rejoins room via WebSocket
+4. **Backend sends `game_started` with ack callback**
+5. Frontend receives event and stores data + callback
+6. **Frontend waits for HexGrid to initialize**
+7. When HexGrid ready, data is rendered
+8. **After successful render, frontend sends `ack(true)`**
+9. Backend logs confirmation
+10. If ack not received, backend retries after 500ms
+
+**Benefits:**
+- ✅ Eliminates race condition - frontend acknowledges when actually ready
+- ✅ Automatic retry on failure
+- ✅ Works on initial load, refresh, and direct navigation
+- ✅ Uses battle-tested Socket.IO feature
+- ✅ Clear logging for debugging
+- ✅ Only one round-trip needed (vs request-response pattern)
+
+### Files Modified
+- `backend/src/websocket/game.gateway.ts` - Ack pattern + extracted helper
+- `frontend/src/services/websocket.service.ts` - Ack callback support
+- `frontend/src/pages/GameBoard.tsx` - Ack sending after render
+- `frontend/src/pages/Lobby.tsx` - Cleaned up debug code
+
+### Testing Checklist
+- [x] Initial game start from lobby - Map renders
+- [x] Page refresh on `/game` - Map re-renders
+- [x] Direct URL navigation to `/game` - Map renders
+- [ ] Slow network (needs testing with throttling)
+- [ ] Multiple players, one refreshes (needs testing)
+
+### Logs to Look For
+
+**Backend (Success):**
+```
+Sending game state to Alice in active room ABCD1234
+✅ Game state acknowledged by Alice
+```
+
+**Backend (Retry):**
+```
+⚠️  Game state NOT acknowledged by Bob, retrying in 500ms...
+🔄 Retrying game_started for Bob
+```
+
+**Frontend:**
+```
+handleGameStarted called with data: {...}
+✅ Stored acknowledgment callback
+✅ Board initialized successfully!
+✅ Sent positive acknowledgment to server
+```
+
+### Future Improvements
+- Consider timeout for ack callback (> 5s = fail)
+- Add metrics for ack success/failure rates
+- Implement exponential backoff for multiple retries

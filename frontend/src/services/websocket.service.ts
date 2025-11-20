@@ -7,7 +7,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
-import { getOrCreatePlayerUUID, saveLastRoomCode, getLastRoomCode } from '../utils/storage';
+import { getOrCreatePlayerUUID, saveLastRoomCode } from '../utils/storage';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -93,10 +93,10 @@ class WebSocketService {
   private connectionStatus: ConnectionStatus = 'disconnected';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventHandlers: Map<string, Set<any>> = new Map();
+  private registeredEvents: Set<string> = new Set(); // Track which events are registered with Socket.IO
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private playerUUID: string | null = null;
-  private currentNickname: string | null = null;
 
   /**
    * Connect to WebSocket server with enhanced reconnection (US4 - T157)
@@ -135,21 +135,27 @@ class WebSocketService {
     this.socket.on('connect', () => {
       this.connectionStatus = 'connected';
       this.reconnectAttempts = 0;
+
+      // Register all queued events with the connected socket
+      console.log('WebSocket connected - registering queued events');
+      for (const event of this.eventHandlers.keys()) {
+        this.registerEventWithSocket(event as EventName);
+      }
+
       this.emit('ws_connected');
       console.log('WebSocket connected', { playerUUID: this.playerUUID });
 
-      // Auto-rejoin room if reconnecting (US4 - T157)
-      const lastRoom = getLastRoomCode();
-      if (lastRoom && this.currentNickname) {
-        console.log('Auto-rejoining room:', lastRoom);
-        this.joinRoom(lastRoom, this.currentNickname, this.playerUUID!);
-      }
+      // Auto-rejoin removed - RoomSessionManager now handles room joining
+      // See /home/opc/hexhaven/ROOM_JOIN_UNIFIED_ARCHITECTURE.md for architecture details
     });
 
     this.socket.on('disconnect', (reason) => {
       this.connectionStatus = 'disconnected';
       this.emit('ws_disconnected');
       console.log('WebSocket disconnected:', reason);
+
+      // Clear registered events so they can be re-registered on reconnect
+      this.registeredEvents.clear();
 
       // Don't reconnect if disconnected by server or client intentionally
       if (reason === 'io server disconnect' || reason === 'io client disconnect') {
@@ -227,33 +233,66 @@ class WebSocketService {
   }
 
   /**
-   * Register event handler
+   * Register event handler (supports acknowledgment callbacks)
+   * Queues handlers if socket not connected yet - they'll be registered on connection
    */
   on<T extends EventName>(event: T, handler: EventHandler<T>): void {
-    if (!this.socket) {
-      console.warn('WebSocket not connected. Call connect() first.');
-      return;
-    }
-
-    // Store handler for internal tracking
+    // Store handler for internal tracking (even if socket not connected yet)
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
+      console.log(`📝 Creating new handler set for event: ${event}`);
     }
     this.eventHandlers.get(event)!.add(handler);
+    console.log(`📝 Added handler for "${event}" (total: ${this.eventHandlers.get(event)!.size})`);
 
-    // Wrap handler to add logging for game_started
+    // If socket is connected and this event hasn't been registered yet, register it now
+    if (this.socket && !this.registeredEvents.has(event)) {
+      console.log(`   Socket connected, registering "${event}" immediately`);
+      this.registerEventWithSocket(event);
+    } else if (!this.socket) {
+      console.log(`   Socket not connected, "${event}" will be registered on connect`);
+    } else {
+      console.log(`   "${event}" already registered with Socket.IO`);
+    }
+    // Otherwise, handler will be registered when socket connects (see setupConnectionHandlers)
+  }
+
+  /**
+   * Internal method to register an event with Socket.IO
+   * This registers ONE listener per event that calls ALL stored handlers
+   */
+  private registerEventWithSocket<T extends EventName>(event: T): void {
+    if (!this.socket) return;
+    if (this.registeredEvents.has(event)) return; // Already registered
+
+    // Create a wrapper that calls ALL handlers for this event
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wrappedHandler = ((...args: any[]): void => {
-      if (event === 'game_started') {
-        console.log(`WebSocket: game_started event received from backend`, args[0]);
+      // Debug logging for all events
+      console.log(`🔔 WebSocket event "${event}" received`, args.length > 0 ? args[0] : '(no data)');
+
+      // Call ALL registered handlers for this event
+      const handlers = this.eventHandlers.get(event);
+      if (handlers) {
+        console.log(`   Calling ${handlers.size} handler(s) for "${event}"`);
+        for (const handler of handlers) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (handler as any)(...args);
+          } catch (error) {
+            console.error(`   ❌ Error in handler for "${event}":`, error);
+          }
+        }
+      } else {
+        console.warn(`   ⚠️  No handlers found for "${event}"`);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (handler as any)(...args);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
 
-    // Register with socket.io
+    // Register with socket.io (one listener per event)
     this.socket.on(event, wrappedHandler);
+    this.registeredEvents.add(event);
+    console.log(`✅ Registered Socket.IO listener for event: ${event}`);
   }
 
   /**
@@ -269,6 +308,7 @@ class WebSocketService {
     } else {
       this.socket.off(event);
       this.eventHandlers.delete(event);
+      this.registeredEvents.delete(event); // Fix: Also remove from registeredEvents
     }
   }
 
@@ -286,19 +326,19 @@ class WebSocketService {
 
   /**
    * Join a game room (enhanced for reconnection - US4)
+   * @param intent - Why is this join happening? Used for backend logging and debugging
    */
-  joinRoom(roomCode: string, nickname: string, uuid?: string): void {
+  joinRoom(roomCode: string, nickname: string, uuid?: string, intent?: string): void {
     const playerUUID = uuid || this.playerUUID || getOrCreatePlayerUUID();
 
-    // Store for reconnection
-    this.currentNickname = nickname;
+    // Store for future reference
     this.playerUUID = playerUUID;
 
     // Save to localStorage for page refresh recovery
     saveLastRoomCode(roomCode);
 
-    this.emit('join_room', { roomCode, nickname, playerUUID });
-    console.log('Joining room:', { roomCode, nickname, playerUUID });
+    this.emit('join_room', { roomCode, nickname, playerUUID, intent });
+    console.log('Joining room:', { roomCode, nickname, playerUUID, intent });
   }
 
   /**

@@ -20,32 +20,26 @@ import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
-import { getWebSocketUrl } from '../config/api';
 
 export function GameBoard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const hexGridRef = useRef<HexGrid | null>(null);
-  const hasJoinedRoom = useRef(false);
+  const ackCallbackRef = useRef<((ack: boolean) => void) | null>(null);
+
+  // Subscribe to RoomSessionManager state
+  const [sessionState, setSessionState] = useState(roomSessionManager.getState());
 
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const [hexGridReady, setHexGridReady] = useState(false);
-
-  // Store game data until HexGrid is ready (fixes race condition)
-  const [pendingGameData, setPendingGameData] = useState<{
-    scenarioId: string;
-    scenarioName: string;
-    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
-    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
-    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
-  } | null>(null);
 
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -56,6 +50,12 @@ export function GameBoard() {
   const [attackMode, setAttackMode] = useState(false);
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
+  // Subscribe to session state changes (clean up on unmount)
+  useEffect(() => {
+    const unsubscribe = roomSessionManager.subscribe(setSessionState);
+    return unsubscribe;
+  }, []);
+
   // Event handlers - defined before useEffects that use them
   const handleGameStarted = useCallback((data: {
     scenarioId: string;
@@ -63,39 +63,54 @@ export function GameBoard() {
     mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
     monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
     characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
-  }) => {
+  }, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
     console.log('handleGameStarted: Received mapLayout with', data.mapLayout?.length || 0, 'tiles');
 
-    // Store the game data - it will be rendered when HexGrid is ready
-    setPendingGameData(data);
+    try {
+      // Update RoomSessionManager with game state
+      roomSessionManager.onGameStarted(data as any);
 
-    // Find my character from the characters array using playerUUID from localStorage
-    const playerUUID = websocketService.getPlayerUUID();
-    console.log('My playerUUID:', playerUUID);
-    console.log('Characters:', data.characters);
-
-    const myCharacter = data.characters.find((char) => char.playerId === playerUUID);
-    console.log('My character:', myCharacter);
-
-    if (myCharacter) {
-      setMyCharacterId(myCharacter.id);
-      console.log('Set myCharacterId to:', myCharacter.id);
-
-      // T181: Load character's unique ability deck
-      if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
-        console.log('Loading ability deck for character:', myCharacter.classType);
-        console.log('Ability deck:', myCharacter.abilityDeck);
-        setPlayerHand(myCharacter.abilityDeck as never[]);
-
-        // Show card selection at start of first turn
-        // In a real game, this would be triggered by turn_started event
-        setShowCardSelection(true);
-      } else {
-        console.warn('No ability deck found for character!');
+      // Store acknowledgment callback to call after successful render
+      if (ackCallback) {
+        ackCallbackRef.current = ackCallback;
+        console.log('✅ Stored acknowledgment callback');
       }
-    } else {
-      console.error('Could not find my character in the characters array!');
+
+      // Find my character from the characters array using playerUUID from localStorage
+      const playerUUID = websocketService.getPlayerUUID();
+      console.log('My playerUUID:', playerUUID);
+      console.log('Characters:', data.characters);
+
+      const myCharacter = data.characters.find((char) => char.playerId === playerUUID);
+      console.log('My character:', myCharacter);
+
+      if (myCharacter) {
+        setMyCharacterId(myCharacter.id);
+        console.log('Set myCharacterId to:', myCharacter.id);
+
+        // T181: Load character's unique ability deck
+        if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
+          console.log('Loading ability deck for character:', myCharacter.classType);
+          console.log('Ability deck:', myCharacter.abilityDeck);
+          setPlayerHand(myCharacter.abilityDeck as never[]);
+
+          // Show card selection at start of first turn
+          // In a real game, this would be triggered by turn_started event
+          setShowCardSelection(true);
+        } else {
+          console.warn('No ability deck found for character!');
+        }
+      } else {
+        console.error('Could not find my character in the characters array!');
+      }
+    } catch (error) {
+      console.error('❌ Error processing game_started event:', error);
+      // Send negative acknowledgment on error
+      if (ackCallback) {
+        ackCallback(false);
+        ackCallbackRef.current = null;
+      }
     }
   }, []);
 
@@ -256,26 +271,26 @@ export function GameBoard() {
     console.log('=== RENDER GAME DATA EFFECT TRIGGERED ===');
     console.log('hexGridReady:', hexGridReady);
     console.log('hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
-    console.log('pendingGameData:', pendingGameData ? 'EXISTS' : 'NULL');
+    console.log('sessionState.gameState:', sessionState.gameState ? 'EXISTS' : 'NULL');
 
     if (!hexGridReady || !hexGridRef.current) {
       console.log('⏳ HexGrid not ready yet - waiting for initialization');
       return;
     }
 
-    if (!pendingGameData) {
-      console.log('⏳ No pending game data yet');
+    if (!sessionState.gameState) {
+      console.log('⏳ No game state yet');
       return;
     }
 
     console.log('✅ HexGrid is ready and game data is available - initializing board');
-    console.log('📦 pendingGameData:', JSON.stringify(pendingGameData, null, 2));
+    console.log('📦 gameState:', JSON.stringify(sessionState.gameState, null, 2));
 
     // Initialize board with the map layout and entities
     const boardData: GameBoardData = {
-      tiles: pendingGameData.mapLayout as HexTileData[],
-      characters: pendingGameData.characters as CharacterData[],
-      monsters: (pendingGameData.monsters as Monster[]) || [],
+      tiles: sessionState.gameState.mapLayout as HexTileData[],
+      characters: sessionState.gameState.characters as CharacterData[],
+      monsters: (sessionState.gameState.monsters as Monster[]) || [],
     };
 
     console.log('🎮 Calling hexGridRef.current.initializeBoard with boardData containing:');
@@ -287,27 +302,38 @@ export function GameBoard() {
       hexGridRef.current.initializeBoard(boardData);
       console.log('✅ Board initialized successfully!');
 
-      // Clear pending data after current render cycle to avoid cascading renders
-      queueMicrotask(() => {
-        setPendingGameData(null);
-        console.log('✅ Cleared pending game data');
-      });
+      // Send positive acknowledgment to backend
+      if (ackCallbackRef.current) {
+        ackCallbackRef.current(true);
+        console.log('✅ Sent positive acknowledgment to server');
+        ackCallbackRef.current = null;
+      }
     } catch (error) {
       console.error('❌ ERROR initializing board:', error);
-    }
-  }, [hexGridReady, pendingGameData]); // Depend on BOTH hexGridReady and pendingGameData
 
-  // Setup WebSocket event listeners AND auto-rejoin room
-  // IMPORTANT: Listeners MUST be registered BEFORE rejoining to catch game_started event
+      // Send negative acknowledgment on error
+      if (ackCallbackRef.current) {
+        ackCallbackRef.current(false);
+        console.log('❌ Sent negative acknowledgment to server');
+        ackCallbackRef.current = null;
+      }
+    }
+  }, [hexGridReady, sessionState.gameState]); // Depend on BOTH hexGridReady and gameState
+
+  // Setup WebSocket event listeners AND ensure joined to room
+  // IMPORTANT: Listeners MUST be registered BEFORE joining to catch game_started event
   useEffect(() => {
-    console.log('🔧 Setting up WebSocket listeners and room rejoin');
+    console.log('🔧 Setting up WebSocket listeners and ensuring room join');
 
     // Step 1: Register all event listeners FIRST
     console.log('📡 Registering WebSocket event listeners...');
 
     // Connection status
     websocketService.on('ws_connected', () => setConnectionStatus('connected'));
-    websocketService.on('ws_disconnected', () => setConnectionStatus('disconnected'));
+    websocketService.on('ws_disconnected', () => {
+      setConnectionStatus('disconnected');
+      roomSessionManager.onDisconnected(); // Notify session manager of disconnect
+    });
     websocketService.on('ws_reconnecting', () => setConnectionStatus('reconnecting'));
 
     // Game events
@@ -318,64 +344,35 @@ export function GameBoard() {
     websocketService.on('game_state_update', handleGameStateUpdate);
     console.log('✅ All event listeners registered');
 
-    // Step 2: Get room info and setup connection handler
+    // Step 2: Get room info from localStorage
     const roomCode = localStorage.getItem('currentRoomCode');
     const playerUUID = localStorage.getItem('playerUUID');
     const nickname = localStorage.getItem('playerNickname');
 
     if (!roomCode || !playerUUID || !nickname) {
-      console.error('❌ Cannot rejoin room - missing roomCode, playerUUID, or nickname');
+      console.error('❌ Cannot join room - missing roomCode, playerUUID, or nickname');
       navigate('/');
       return;
     }
 
-    // Prevent multiple joins - check if we've already joined this session
-    if (hasJoinedRoom.current) {
-      console.log('⏭️  Already joined room, skipping duplicate join');
-      return;
-    }
+    console.log(`🔄 GameBoard mounted - ensuring joined to room ${roomCode}`);
 
-    // Mark as joined IMMEDIATELY to prevent race conditions
-    hasJoinedRoom.current = true;
-
-    console.log(`🔄 GameBoard mounted - rejoining room ${roomCode} to get game state`);
-
-    // Setup connection handler BEFORE connecting to avoid race condition
-    const handleConnected = () => {
-      console.log('✅ WebSocket connected, now joining room');
-      websocketService.joinRoom(roomCode, nickname, playerUUID);
-      websocketService.off('ws_connected', handleConnected);
-    };
-
-    // Step 3: Connect if needed, then join room
-    if (websocketService.isConnected()) {
-      console.log('✅ WebSocket already connected, joining room now');
-      websocketService.joinRoom(roomCode, nickname, playerUUID);
-    } else {
-      console.log('⏳ WebSocket not connected yet, waiting for connection...');
-      // Register handler FIRST to avoid race condition
-      websocketService.on('ws_connected', handleConnected);
-
-      // THEN connect
-      const wsUrl = getWebSocketUrl();
-      console.log('🔌 Connecting to WebSocket URL:', wsUrl);
-      websocketService.connect(wsUrl);
-    }
+    // Step 3: Ensure joined via RoomSessionManager (handles idempotency)
+    roomSessionManager.ensureJoined('refresh').catch((error) => {
+      console.error('❌ Failed to join room:', error);
+      navigate('/'); // Return to lobby on error
+    });
 
     // Cleanup
     return () => {
       console.log('🧹 Cleaning up WebSocket listeners');
-      // Note: Don't remove 'ws_connected' here - it's removed by handleConnected after it fires
-      // Removing it here causes a race condition where it gets removed before executing
+      websocketService.off('ws_connected');
       websocketService.off('ws_disconnected');
       websocketService.off('ws_reconnecting');
       websocketService.off('game_started');
       websocketService.off('character_moved');
       websocketService.off('turn_started');
       websocketService.off('game_state_update');
-
-      // Reset the join flag so component can rejoin if remounted
-      hasJoinedRoom.current = false;
     };
   }, [navigate, handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);
 

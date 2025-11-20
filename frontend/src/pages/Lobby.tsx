@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import { PlayerList, type Player } from '../components/PlayerList';
@@ -49,6 +50,9 @@ export function Lobby() {
   const { t } = useTranslation('lobby');
   const navigate = useNavigate();
 
+  // Subscribe to RoomSessionManager state
+  const [sessionState, setSessionState] = useState(roomSessionManager.getState());
+
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
   const [room, setRoom] = useState<GameRoom | null>(null);
@@ -64,12 +68,29 @@ export function Lobby() {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
 
+  // Subscribe to session state changes (clean up on unmount)
+  useEffect(() => {
+    const unsubscribe = roomSessionManager.subscribe(setSessionState);
+    return unsubscribe;
+  }, []);
+
+  // Navigate to /game when session status becomes 'active'
+  useEffect(() => {
+    if (sessionState.status === 'active') {
+      console.log('[Lobby] Session status is active, navigating to /game');
+      navigate('/game');
+    }
+  }, [sessionState.status, navigate]);
+
   // Event handlers - defined before useEffect that uses them
   const handleRoomJoined = useCallback((data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => {
     console.log('Room joined event received:', data);
 
     // Save room code to localStorage for GameBoard to use
     localStorage.setItem('currentRoomCode', data.roomCode);
+
+    // Update RoomSessionManager with room state
+    roomSessionManager.onRoomJoined(data as any); // Will update session state
 
     setRoom({ roomCode: data.roomCode, status: data.roomStatus });
 
@@ -99,17 +120,15 @@ export function Lobby() {
       }
     }
 
-    // If rejoining an active game, navigate to game board
-    if (data.roomStatus === 'active') {
-      console.log('Rejoined active game, navigating to game board...');
-      navigate('/game');
-    } else {
+    // Navigation is now handled by useEffect that watches sessionState.status
+    // Don't navigate here to avoid race conditions
+    if (data.roomStatus !== 'active') {
       setMode('in-room');
     }
 
     setIsLoading(false);
     setError(null);
-  }, [navigate]);
+  }, []);
 
   const handlePlayerJoined = useCallback((data: { player: unknown }) => {
     const player = data.player as { id: string; nickname: string; isHost: boolean; characterClass?: string };
@@ -139,11 +158,12 @@ export function Lobby() {
     }
   }, [currentPlayerId]);
 
-  const handleGameStarted = useCallback(() => {
-    console.log('Lobby: game_started event received, navigating to /game');
-    navigate('/game');
-    console.log('Lobby: navigate() called');
-  }, [navigate]);
+  const handleGameStarted = useCallback((data: any) => {
+    console.log('Game started event received in Lobby');
+    // Update RoomSessionManager with game state
+    roomSessionManager.onGameStarted(data);
+    // Navigation is handled by useEffect that watches sessionState.status
+  }, []);
 
   const handleError = useCallback((data: { message: string }) => {
     setError(data.message);
@@ -246,9 +266,7 @@ export function Lobby() {
     websocketService.on('player_joined', handlePlayerJoined);
     websocketService.on('player_left', handlePlayerLeft);
     websocketService.on('character_selected', handleCharacterSelected);
-    console.log('Lobby: Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
-    console.log('Lobby: game_started listener registered');
     websocketService.on('error', handleError);
 
     return () => {
@@ -355,9 +373,13 @@ export function Lobby() {
 
         await waitForConnection();
 
-        // Join the room via WebSocket
-        console.log('Joining room via WebSocket:', data.room.roomCode);
-        websocketService.joinRoom(data.room.roomCode, playerNickname, uuid);
+        // Store room code in localStorage before joining (RoomSessionManager reads from there)
+        localStorage.setItem('currentRoomCode', data.room.roomCode);
+        console.log('Stored room code:', data.room.roomCode);
+
+        // Join the room via RoomSessionManager
+        console.log('Joining room via RoomSessionManager:', data.room.roomCode);
+        await roomSessionManager.ensureJoined('create');
         setMode('creating');
       } catch (fetchErr: unknown) {
         clearTimeout(timeoutId);
@@ -394,8 +416,9 @@ export function Lobby() {
       localStorage.setItem('playerUUID', uuid);
     }
 
-    // Store nickname
+    // Store nickname and roomCode for RoomSessionManager
     localStorage.setItem('playerNickname', playerNickname);
+    localStorage.setItem('currentRoomCode', roomCode);
 
     // Wait for WebSocket connection before joining room
     const waitForConnection = () => {
@@ -425,7 +448,7 @@ export function Lobby() {
 
     await waitForConnection();
 
-    websocketService.joinRoom(roomCode, playerNickname, uuid);
+    await roomSessionManager.ensureJoined('join');
     setMode('joining');
   };
 
@@ -480,7 +503,7 @@ export function Lobby() {
 
       await waitForConnection();
 
-      websocketService.joinRoom(myRoom.roomCode, storedNickname, uuid);
+      await roomSessionManager.ensureJoined('rejoin');
       setMode('joining');
     }
   };
@@ -532,15 +555,6 @@ export function Lobby() {
   // Check if current player is host - use state or check players array
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isCurrentPlayerHost = isHost || (currentPlayer?.isHost ?? false);
-
-  // Debug logging
-  console.log('Host check:', {
-    isHost,
-    currentPlayerId,
-    currentPlayer,
-    isCurrentPlayerHost,
-    players: players.map(p => ({ id: p.id, nickname: p.nickname, isHost: p.isHost }))
-  });
 
   const allPlayersReady = players.every((p) => p.characterClass);
   const canStartGame = players.length >= 1 && allPlayersReady;
@@ -759,17 +773,6 @@ export function Lobby() {
                   👑 {t('youAreHost', 'You are the host')}
                 </span>
               )}
-            </div>
-
-            {/* Debug Info */}
-            <div style={{ background: '#222', padding: '12px', marginBottom: '12px', fontSize: '12px', fontFamily: 'monospace' }}>
-              <div>DEBUG INFO:</div>
-              <div>isHost state: {isHost ? 'true' : 'false'}</div>
-              <div>currentPlayerId: {currentPlayerId || 'null'}</div>
-              <div>currentPlayer: {currentPlayer ? `${currentPlayer.nickname} (isHost: ${currentPlayer.isHost})` : 'null'}</div>
-              <div>isCurrentPlayerHost: {isCurrentPlayerHost ? 'true' : 'false'}</div>
-              <div>canStartGame: {canStartGame ? 'true' : 'false'}</div>
-              <div>players count: {players.length}</div>
             </div>
 
             {/* Start Game Section - Always visible at top */}

@@ -11,6 +11,7 @@ export interface JoinRoomPayload {
   roomCode: string;
   playerUUID: string;
   nickname: string;
+  intent?: 'create' | 'join' | 'rejoin' | 'refresh'; // Why is this join happening? Used for logging
 }
 
 export interface SelectCharacterPayload {
