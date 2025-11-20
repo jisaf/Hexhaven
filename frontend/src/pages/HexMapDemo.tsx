@@ -42,22 +42,22 @@ export function HexMapDemo() {
         // Hardcoded test data
         const testData: GameBoardData = {
           tiles: [
-            { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: -1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: -1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 0 }, terrain: 'obstacle', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 3 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 3 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: true },
+            { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: -1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: -1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 0 }, terrain: 'obstacle', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 0 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 1 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 3 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 2 }, terrain: 'normal', occupiedBy: null, hasLoot: false, hasTreasure: true },
           ] as HexTileData[],
           characters: [
             {
@@ -107,7 +107,8 @@ export function HexMapDemo() {
 
         console.log('HexMapDemo: Initializing board with test data:', testData);
         hexGrid.initializeBoard(testData);
-        console.log('HexMapDemo: Board initialized!');
+        hexGrid.centerOnGrid();
+        console.log('HexMapDemo: Board initialized and centered!');
       })
       .catch((error) => {
         console.error('HexMapDemo: Failed to initialize HexGrid:', error);

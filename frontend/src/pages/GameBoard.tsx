@@ -287,6 +287,9 @@ export function GameBoard() {
       hexGridRef.current.initializeBoard(boardData);
       console.log('✅ Board initialized successfully!');
 
+      // Center the grid after initialization
+      hexGridRef.current.centerOnGrid();
+
       // Clear pending data after current render cycle to avoid cascading renders
       queueMicrotask(() => {
         setPendingGameData(null);

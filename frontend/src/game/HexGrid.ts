@@ -619,6 +619,22 @@ export class HexGrid {
   }
 
   /**
+   * Center the viewport on the entire grid
+   */
+  public centerOnGrid(): void {
+    // Force a synchronous render to update transforms
+    this.app.renderer.render(this.app.stage);
+
+    const bounds = this.tilesLayer.getBounds();
+    const zoom = this.getOptimalZoom(bounds);
+
+    if (bounds.width > 0 && bounds.height > 0) {
+      this.viewport.moveCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      this.viewport.setZoom(zoom, true);
+    }
+  }
+
+  /**
    * Spawn loot token on the board (US2 - T123)
    */
   public spawnLootToken(lootData: LootTokenData): void {
