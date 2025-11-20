@@ -199,6 +199,19 @@ export class HexGrid {
       }
     }
 
+    // Force a synchronous render to update transforms
+    this.app.renderer.render(this.app.stage);
+
+    // Center and zoom the map
+    const bounds = this.tilesLayer.getBounds();
+    // Convert Bounds to Rectangle for getOptimalZoom
+    const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+    const zoom = this.getOptimalZoom(boundsRect);
+
+    if (bounds.width > 0 && bounds.height > 0) {
+      this.viewport.moveCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      this.viewport.setZoom(zoom, true);
+    }
   }
 
   /**

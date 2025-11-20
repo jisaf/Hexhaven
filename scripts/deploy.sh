@@ -64,17 +64,26 @@ check_directory() {
 setup_environment() {
     log_step "Setting up environment variables..."
 
-    # Copy environment template if .env doesn't exist
+    # Check if .env exists (created from GitHub secrets during deployment)
     if [ ! -f "${ENV_FILE}" ]; then
+        # Fallback: Copy environment template if available
         if [ -f "${ENV_TEMPLATE}" ]; then
-            log_info "Creating .env from template..."
+            log_warn "No .env file found, creating from template..."
+            log_warn "For production deployments, .env should be created from GitHub secrets"
             cp "${ENV_TEMPLATE}" "${ENV_FILE}"
         else
-            log_error "No .env or .env.template found!"
+            log_error "No .env file found!"
+            log_error "Expected .env to be created from GitHub secrets during deployment"
             exit 1
         fi
     else
-        log_info "Using existing .env file"
+        log_info "Using .env file (created from GitHub secrets)"
+    fi
+
+    # Verify .env has required variables
+    if ! grep -q "DATABASE_URL" "${ENV_FILE}"; then
+        log_error ".env file is missing required DATABASE_URL variable"
+        exit 1
     fi
 
     # Load environment variables
@@ -88,47 +97,95 @@ setup_environment() {
 install_backend_dependencies() {
     log_step "Installing backend dependencies..."
 
-    check_directory "${BACKEND_DIR}"
-    cd "${BACKEND_DIR}"
+    # This is a monorepo, so install from root using workspaces
+    check_directory "${DEPLOY_PATH}"
+    cd "${DEPLOY_PATH}"
 
-    # Check if node_modules exists and is recent
-    if [ -d "node_modules" ]; then
-        log_info "node_modules exists, checking if update needed..."
-        # Always run npm ci in production to ensure exact versions
-        npm ci --production=false
-    else
-        log_info "Installing fresh dependencies..."
-        npm ci --production=false
+    # Check if root package.json and package-lock.json exist
+    if [ ! -f "package.json" ] || [ ! -f "package-lock.json" ]; then
+        log_error "Missing package.json or package-lock.json in ${DEPLOY_PATH}"
+        log_error "Monorepo deployment requires root package files"
+        exit 1
     fi
 
-    log_info "Backend dependencies installed"
+    # Install backend workspace dependencies
+    # Use --workspaces --if-present to handle missing frontend workspace gracefully
+    log_info "Installing workspace dependencies..."
+    if ! npm ci --workspaces --if-present; then
+        log_error "npm ci failed!"
+        log_info "Trying alternative: npm ci --workspace=backend"
+        npm ci --workspace=backend || {
+            log_error "Backend dependency installation failed!"
+            exit 1
+        }
+    fi
+
+    # Verify critical dependency is installed
+    if [ ! -d "node_modules/@nestjs/platform-express" ]; then
+        log_error "@nestjs/platform-express not found in node_modules!"
+        log_error "Attempting to install it directly..."
+        cd "${BACKEND_DIR}"
+        npm install @nestjs/platform-express || {
+            log_error "Failed to install @nestjs/platform-express"
+            exit 1
+        }
+        cd "${DEPLOY_PATH}"
+    fi
+
+    log_info "Backend dependencies installed successfully"
 }
 
 run_database_migrations() {
     log_step "Running database migrations..."
 
     check_directory "${BACKEND_DIR}"
-    cd "${BACKEND_DIR}"
 
     # Check if Prisma is configured
-    if [ ! -f "prisma/schema.prisma" ]; then
+    if [ ! -f "${BACKEND_DIR}/prisma/schema.prisma" ]; then
         log_warn "No Prisma schema found, skipping migrations"
         return 0
     fi
 
-    # Generate Prisma client
-    log_info "Generating Prisma client..."
-    npx prisma generate
+    # TODO: Database not currently used in production
+    # The app loads data from JSON files, not the database
+    # Uncomment when database integration is needed
+    log_warn "Database migrations are currently disabled"
+    log_warn "The application uses JSON files for data storage"
+    log_warn "Database setup will be enabled in a future release"
+    return 0
 
-    # Run migrations
-    log_info "Applying database migrations..."
-    npx prisma migrate deploy
+    # Run from monorepo root using workspace
+    # cd "${DEPLOY_PATH}"
 
-    # Optional: Seed database (uncomment if needed)
-    # log_info "Seeding database..."
-    # npm run db:seed || log_warn "Database seeding failed or not configured"
+    # # Generate Prisma client
+    # log_info "Generating Prisma client..."
+    # if ! npm run prisma:generate --workspace=backend; then
+    #     log_error "Failed to generate Prisma client"
+    #     log_error "Check DATABASE_URL in ${DEPLOY_PATH}/.env or ${DEPLOY_PATH}/.server-config"
+    #     exit 1
+    # fi
 
-    log_info "Database migrations completed"
+    # # Run migrations
+    # log_info "Applying database migrations..."
+    # if ! npm run prisma:migrate:deploy --workspace=backend; then
+    #     log_error "Database migration failed!"
+    #     log_error "Possible issues:"
+    #     log_error "  1. Database server is not running"
+    #     log_error "  2. Database credentials are incorrect"
+    #     log_error "  3. Database '${DATABASE_URL}' is not accessible"
+    #     log_error ""
+    #     log_error "Please check:"
+    #     log_error "  - PostgreSQL is running: sudo systemctl status postgresql"
+    #     log_error "  - Database config: cat ${DEPLOY_PATH}/.server-config"
+    #     log_error "  - Update password: ${DEPLOY_PATH}/server-config.sh update DATABASE_URL 'postgresql://user:pass@host:port/db'"
+    #     exit 1
+    # fi
+
+    # # Optional: Seed database (uncomment if needed)
+    # # log_info "Seeding database..."
+    # # npm run db:seed --workspace=backend || log_warn "Database seeding failed or not configured"
+
+    # log_info "Database migrations completed"
 }
 
 verify_backend_build() {
@@ -176,12 +233,13 @@ Git Commit: ${GITHUB_SHA:-"N/A"}
 Git Branch: ${GITHUB_REF_NAME:-"N/A"}
 Workflow Run: ${GITHUB_RUN_NUMBER:-"N/A"}
 
-Backend Status: $(systemctl is-active hexhaven-backend || echo "not running")
-Frontend Status: $(systemctl is-active nginx || echo "not running")
+Process Manager: PM2 (backend will be started by deployment workflow)
+Nginx Status: $(systemctl is-active nginx 2>/dev/null || echo "not configured yet")
 
-Environment: production/staging
-Node Version: $(node --version)
-NPM Version: $(npm --version)
+Environment: production
+Node Version: $(node --version 2>/dev/null || echo "N/A")
+NPM Version: $(npm --version 2>/dev/null || echo "N/A")
+PM2 Version: $(pm2 --version 2>/dev/null || echo "not installed yet")
 EOF
 
     log_info "Deployment marker created"
@@ -190,30 +248,11 @@ EOF
 check_health() {
     log_step "Performing health checks..."
 
-    # Wait for backend to start
-    log_info "Waiting for backend to start..."
-    sleep 5
+    # Note: Backend is started by the GitHub Actions workflow using PM2
+    # This script focuses on preparing the deployment files
 
-    # Check if backend service is running
-    if systemctl is-active --quiet hexhaven-backend; then
-        log_info "Backend service is active"
-    else
-        log_warn "Backend service is not active yet"
-    fi
-
-    # Check backend port
-    if netstat -tuln | grep -q ":3000"; then
-        log_info "Backend is listening on port 3000"
-    else
-        log_warn "Backend is not listening on port 3000"
-    fi
-
-    # Check Nginx
-    if systemctl is-active --quiet nginx; then
-        log_info "Nginx service is active"
-    else
-        log_warn "Nginx service is not active"
-    fi
+    log_info "Backend will be started by PM2 in the deployment workflow"
+    log_info "Health checks will be performed after PM2 starts the service"
 
     log_info "Health checks completed"
 }
@@ -223,30 +262,36 @@ cleanup_old_backups() {
 
     # Keep only last 5 backups
     cd /opt
-    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf || true
+    ls -dt hexhaven.backup.* 2>/dev/null | tail -n +6 | xargs -r sudo rm -rf || true
 
     log_info "Old backups cleaned up"
 }
 
 print_deployment_summary() {
+    # Detect server IP from environment or auto-detect
+    local server_ip="${SERVER_IP:-$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "localhost")}"
+
     log_info "==============================================="
     log_info "Deployment Summary"
     log_info "==============================================="
     echo ""
     log_info "Deployment completed successfully!"
     echo ""
-    log_info "Services:"
-    echo "  - Backend: systemctl status hexhaven-backend"
-    echo "  - Nginx: systemctl status nginx"
+    log_info "PM2 Process Management:"
+    echo "  - Status: pm2 status"
+    echo "  - Backend: pm2 show hexhaven-backend"
+    echo "  - Logs: pm2 logs hexhaven-backend"
+    echo "  - Restart: pm2 restart hexhaven-backend"
+    echo "  - Stop: pm2 stop hexhaven-backend"
     echo ""
-    log_info "Logs:"
-    echo "  - Backend: journalctl -u hexhaven-backend -f"
-    echo "  - Nginx: tail -f /var/log/nginx/error.log"
+    log_info "Nginx:"
+    echo "  - Status: systemctl status nginx"
+    echo "  - Logs: tail -f /var/log/nginx/error.log"
     echo ""
     log_info "Access:"
-    echo "  - Frontend: http://150.136.88.138"
-    echo "  - Backend API: http://150.136.88.138/api/"
-    echo "  - Health: http://150.136.88.138/health"
+    echo "  - Frontend: http://${server_ip}"
+    echo "  - Backend API: http://${server_ip}/api/"
+    echo "  - Health: http://${server_ip}/health"
     echo ""
     log_info "Deployment info: ${DEPLOY_PATH}/DEPLOYMENT_INFO.txt"
     echo ""

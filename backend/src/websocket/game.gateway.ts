@@ -6,8 +6,6 @@
  */
 
 import {
-  WebSocketGateway,
-  WebSocketServer,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
@@ -70,7 +68,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     this.logger.log('GameGateway constructor called');
   }
 
-  afterInit(server: Server) {
+  afterInit(_server: Server) {
     this.logger.log('WebSocket Gateway initialized successfully');
     this.logger.log(`Socket.IO server is running`);
   }
