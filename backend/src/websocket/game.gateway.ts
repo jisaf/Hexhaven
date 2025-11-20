@@ -637,11 +637,29 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         }),
       };
 
-      // Broadcast removed to eliminate duplicate game_started events
-      // Clients receive game_started individually when they join/rejoin (see handleJoinRoom line 291)
-      // This ensures proper timing - no race condition where event arrives before listener is registered
-      // See /home/opc/hexhaven/ROOM_JOIN_UNIFIED_ARCHITECTURE.md for architecture details
-      this.logger.log(`Game started in room ${room.roomCode} - clients will receive state when they join/rejoin`);
+      // Send game_started individually to each connected client
+      // This ensures all clients (including the host who is already in the room) receive the event
+      const roomSockets = await this.server.in(room.roomCode).fetchSockets();
+      this.logger.log(`Sending game_started to ${roomSockets.length} clients in room ${room.roomCode}`);
+
+      for (const roomSocket of roomSockets) {
+        const playerUUID = this.socketToPlayer.get(roomSocket.id);
+        const player = room.players.find((p) => p.uuid === playerUUID);
+        const nickname = player?.nickname || 'Unknown';
+
+        roomSocket.emit('game_started', gameStartedPayload, (acknowledged: boolean) => {
+          if (acknowledged) {
+            this.logger.log(`✅ Game start acknowledged by ${nickname}`);
+          } else {
+            this.logger.warn(`⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`);
+            // Retry once after 500ms
+            setTimeout(() => {
+              this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+              roomSocket.emit('game_started', gameStartedPayload);
+            }, 500);
+          }
+        });
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
