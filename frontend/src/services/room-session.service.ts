@@ -21,6 +21,7 @@
  */
 
 import { websocketService } from './websocket.service';
+import { getLastRoomCode, getPlayerNickname, getPlayerUUID } from '../utils/storage';
 import type { GameStartedPayload } from '../../../shared/types/events';
 
 /**
@@ -177,9 +178,9 @@ class RoomSessionManager {
 
     try {
       // Get room info from state or localStorage
-      const roomCode = this.state.roomCode || localStorage.getItem('currentRoomCode');
-      const nickname = localStorage.getItem('playerNickname');
-      const uuid = localStorage.getItem('playerUUID');
+      const roomCode = this.state.roomCode || getLastRoomCode();
+      const nickname = getPlayerNickname();
+      const uuid = getPlayerUUID();
 
       // Validation
       if (!roomCode) {
@@ -228,7 +229,7 @@ class RoomSessionManager {
     this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
 
     // Determine player role
-    const playerUUID = localStorage.getItem('playerUUID');
+    const playerUUID = getPlayerUUID();
     const currentPlayer = data.players.find((p) => p.id === playerUUID);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
 
