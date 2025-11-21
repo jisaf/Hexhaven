@@ -52,24 +52,31 @@ export function GameBoard() {
   // Use custom hooks
   const sessionState = useRoomSession();
 
+  // Memoize callbacks to prevent infinite re-renders
+  const handleHexClick = useCallback((hex: Axial) => {
+    if (!selectedCharacterId || !isMyTurn) return;
+    websocketService.moveCharacter(hex);
+  }, [selectedCharacterId, isMyTurn]);
+
+  const handleCharacterSelectClick = useCallback((characterId: string) => {
+    if (isMyTurn) {
+      setSelectedCharacterId(characterId);
+    }
+  }, [isMyTurn]);
+
+  const handleMonsterSelectClick = useCallback((monsterId: string) => {
+    if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
+      websocketService.attackTarget(monsterId);
+      setAttackMode(false);
+      setAttackableTargets([]);
+    }
+  }, [attackMode, isMyTurn, attackableTargets]);
+
   // HexGrid hook
   const { hexGridReady, initializeBoard, moveCharacter, deselectAll } = useHexGrid(containerRef, {
-    onHexClick: (hex: Axial) => {
-      if (!selectedCharacterId || !isMyTurn) return;
-      websocketService.moveCharacter(hex);
-    },
-    onCharacterSelect: (characterId: string) => {
-      if (isMyTurn) {
-        setSelectedCharacterId(characterId);
-      }
-    },
-    onMonsterSelect: (monsterId: string) => {
-      if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
-        websocketService.attackTarget(monsterId);
-        setAttackMode(false);
-        setAttackableTargets([]);
-      }
-    },
+    onHexClick: handleHexClick,
+    onCharacterSelect: handleCharacterSelectClick,
+    onMonsterSelect: handleMonsterSelectClick,
   });
 
   // Event handlers for WebSocket

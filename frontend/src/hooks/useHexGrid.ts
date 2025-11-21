@@ -81,12 +81,26 @@ export function useHexGrid(
       mounted = false;
       window.removeEventListener('resize', handleResize);
 
-      // Only try to destroy if init has completed
-      if (initCompleted && hexGrid) {
-        try {
-          hexGrid.destroy();
-        } catch (error) {
-          console.error('Error destroying HexGrid:', error);
+      // Always destroy the hexGrid instance to prevent memory leaks
+      if (hexGrid) {
+        // Wait for init to complete before destroying
+        if (initCompleted) {
+          try {
+            hexGrid.destroy();
+          } catch (error) {
+            console.error('Error destroying HexGrid:', error);
+          }
+        } else {
+          // If init hasn't completed yet, wait for it then destroy
+          hexGrid.init().then(() => {
+            try {
+              hexGrid.destroy();
+            } catch (error) {
+              console.error('Error destroying HexGrid after delayed init:', error);
+            }
+          }).catch(() => {
+            // Init failed, nothing to destroy
+          });
         }
       }
 
