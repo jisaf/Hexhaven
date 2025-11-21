@@ -170,10 +170,16 @@ class RoomSessionManager {
 
     // Prevent duplicate joins in same session
     if (this.hasJoinedInSession && this.state.status !== 'disconnected') {
-      console.log(
-        `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
-      );
-      return;
+      // Special case: Allow 'refresh' intent if we're in an active game but missing game state
+      // This happens when navigating to /game after Lobby has unmounted
+      if (intent === 'refresh' && this.state.status === 'active' && !this.state.gameState) {
+        console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
+      } else {
+        console.log(
+          `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
+        );
+        return;
+      }
     }
 
     try {

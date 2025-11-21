@@ -5,7 +5,7 @@
  * Handles game_started, character_moved, turn_started, game_state_update events.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
@@ -35,6 +35,7 @@ interface TurnStartedData {
 
 export function useGameWebSocket(handlers: GameWebSocketHandlers) {
   const navigate = useNavigate();
+  const hasEnsuredJoin = useRef(false); // Track if we've already called ensureJoined
 
   const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
@@ -100,11 +101,17 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
 
     console.log(`🔄 GameBoard mounted - ensuring joined to room ${roomCode}`);
 
-    // Step 3: Ensure joined via RoomSessionManager (handles idempotency)
-    roomSessionManager.ensureJoined('refresh').catch((error) => {
-      console.error('❌ Failed to join room:', error);
-      navigate('/'); // Return to lobby on error
-    });
+    // Step 3: Ensure joined via RoomSessionManager (only once per component lifetime)
+    if (!hasEnsuredJoin.current) {
+      hasEnsuredJoin.current = true;
+      console.log('🔄 Calling ensureJoined(refresh) for the first time');
+      roomSessionManager.ensureJoined('refresh').catch((error) => {
+        console.error('❌ Failed to join room:', error);
+        navigate('/'); // Return to lobby on error
+      });
+    } else {
+      console.log('⏭️  Skipping ensureJoined - already called in this component lifetime');
+    }
 
     // Cleanup
     return () => {
