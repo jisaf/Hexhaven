@@ -36,37 +36,43 @@ interface TurnStartedData {
 export function useGameWebSocket(handlers: GameWebSocketHandlers) {
   const navigate = useNavigate();
   const hasEnsuredJoin = useRef(false); // Track if we've already called ensureJoined
+  const handlersRef = useRef(handlers); // Store handlers in a ref to avoid recreating callbacks
+
+  // Update ref when handlers change (without triggering useEffect re-run)
+  useEffect(() => {
+    handlersRef.current = handlers;
+  }, [handlers]);
 
   const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
-    handlers.onGameStarted(data, ackCallback);
-  }, [handlers]);
+    handlersRef.current.onGameStarted(data, ackCallback);
+  }, []);
 
   const handleCharacterMoved = useCallback((data: CharacterMovedData) => {
-    handlers.onCharacterMoved(data);
-  }, [handlers]);
+    handlersRef.current.onCharacterMoved(data);
+  }, []);
 
   const handleTurnStarted = useCallback((data: TurnStartedData) => {
     console.log('handleNextTurn called with data:', data);
-    handlers.onTurnStarted(data);
-  }, [handlers]);
+    handlersRef.current.onTurnStarted(data);
+  }, []);
 
   const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
-    handlers.onGameStateUpdate(data);
-  }, [handlers]);
+    handlersRef.current.onGameStateUpdate(data);
+  }, []);
 
   const handleWsConnected = useCallback(() => {
-    handlers.onConnectionStatusChange('connected');
-  }, [handlers]);
+    handlersRef.current.onConnectionStatusChange('connected');
+  }, []);
 
   const handleWsDisconnected = useCallback(() => {
-    handlers.onConnectionStatusChange('disconnected');
+    handlersRef.current.onConnectionStatusChange('disconnected');
     roomSessionManager.onDisconnected();
-  }, [handlers]);
+  }, []);
 
   const handleWsReconnecting = useCallback(() => {
-    handlers.onConnectionStatusChange('reconnecting');
-  }, [handlers]);
+    handlersRef.current.onConnectionStatusChange('reconnecting');
+  }, []);
 
   // Setup WebSocket event listeners and ensure joined to room
   useEffect(() => {

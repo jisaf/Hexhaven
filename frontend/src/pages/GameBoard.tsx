@@ -13,7 +13,7 @@
  * - T071: Implement character movement (tap character → tap hex → emit move event)
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
@@ -131,14 +131,17 @@ export function GameBoard() {
     setConnectionStatus(status);
   }, []);
 
-  // Setup WebSocket
-  useGameWebSocket({
+  // Memoize handlers object to prevent useGameWebSocket's useEffect from running on every render
+  const gameWebSocketHandlers = useMemo(() => ({
     onGameStarted: handleGameStarted,
     onCharacterMoved: handleCharacterMoved,
     onTurnStarted: handleTurnStarted,
     onGameStateUpdate: handleGameStateUpdate,
     onConnectionStatusChange: handleConnectionStatusChange,
-  });
+  }), [handleGameStarted, handleCharacterMoved, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
+
+  // Setup WebSocket
+  useGameWebSocket(gameWebSocketHandlers);
 
   // Render game data when HexGrid is ready
   useEffect(() => {
