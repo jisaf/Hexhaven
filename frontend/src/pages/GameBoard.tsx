@@ -30,6 +30,18 @@ import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
 import styles from './GameBoard.module.css';
 
+interface GameStartedData {
+  characters?: Array<{
+    id: string;
+    playerId: string;
+    abilityDeck?: AbilityCard[];
+    [key: string]: unknown;
+  }>;
+  mapLayout?: HexTileData[];
+  monsters?: Monster[];
+  [key: string]: unknown;
+}
+
 export function GameBoard() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,13 +92,13 @@ export function GameBoard() {
   });
 
   // Event handlers for WebSocket
-  const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
+  const handleGameStarted = useCallback((data: GameStartedData, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
-      const myCharacter = data.characters?.find((char: any) => char.playerId === playerUUID);
+      const myCharacter = data.characters?.find(char => char.playerId === playerUUID);
 
       if (myCharacter) {
         setMyCharacterId(myCharacter.id);

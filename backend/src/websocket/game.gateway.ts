@@ -58,7 +58,9 @@ import {
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
 @Injectable()
-export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   // Server is injected manually in main.ts instead of using @WebSocketServer decorator
   server!: Server;
 
@@ -98,7 +100,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private buildGameStatePayload(room: any, roomCode: string): GameStartedPayload {
+  private buildGameStatePayload(
+    room: any,
+    roomCode: string,
+  ): GameStartedPayload {
     // Get current scenario and game state
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -208,7 +213,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   ): Promise<void> {
     try {
       this.logger.log(`Join room request: ${JSON.stringify(payload)}`);
-      this.logger.log(`📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`);
+      this.logger.log(
+        `📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`,
+      );
 
       const { roomCode, playerUUID, nickname } = payload;
 
@@ -283,24 +290,32 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       // If game is active, send current game state to player (whether reconnecting or just navigating)
       if (room.status === RoomStatus.ACTIVE && isAlreadyInRoom) {
         try {
-          this.logger.log(`Sending game state to ${nickname} in active room ${roomCode}`);
+          this.logger.log(
+            `Sending game state to ${nickname} in active room ${roomCode}`,
+          );
 
           // Build game state payload using helper method
           const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
 
           // Send game_started event with acknowledgment pattern
-          client.emit('game_started', gameStartedPayload, (acknowledged: boolean) => {
-            if (acknowledged) {
-              this.logger.log(`✅ Game state acknowledged by ${nickname}`);
-            } else {
-              this.logger.warn(`⚠️  Game state NOT acknowledged by ${nickname}, retrying in 500ms...`);
-              // Retry once after 500ms
-              setTimeout(() => {
-                this.logger.log(`🔄 Retrying game_started for ${nickname}`);
-                client.emit('game_started', gameStartedPayload);
-              }, 500);
-            }
-          });
+          client.emit(
+            'game_started',
+            gameStartedPayload,
+            (acknowledged: boolean) => {
+              if (acknowledged) {
+                this.logger.log(`✅ Game state acknowledged by ${nickname}`);
+              } else {
+                this.logger.warn(
+                  `⚠️  Game state NOT acknowledged by ${nickname}, retrying in 500ms...`,
+                );
+                // Retry once after 500ms
+                setTimeout(() => {
+                  this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                  client.emit('game_started', gameStartedPayload);
+                }, 500);
+              }
+            },
+          );
 
           // Also send current turn info if turn order exists
           const turnOrder = this.roomTurnOrder.get(roomCode);
@@ -316,7 +331,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
             this.logger.log(`Sent current turn info to ${nickname}`);
           }
         } catch (activeGameError) {
-          this.logger.error(`Error sending game state to ${nickname}:`, activeGameError);
+          this.logger.error(
+            `Error sending game state to ${nickname}:`,
+            activeGameError,
+          );
         }
       }
 
@@ -606,7 +624,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.roomLootTokens.set(room.roomCode, []);
 
       // Note: Game is already started by roomService.startGame() on line 533
-      this.logger.log(`Room ${room.roomCode} game started, status set to ACTIVE`);
+      this.logger.log(
+        `Room ${room.roomCode} game started, status set to ACTIVE`,
+      );
 
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
@@ -640,25 +660,33 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();
-      this.logger.log(`Sending game_started to ${roomSockets.length} clients in room ${room.roomCode}`);
+      this.logger.log(
+        `Sending game_started to ${roomSockets.length} clients in room ${room.roomCode}`,
+      );
 
       for (const roomSocket of roomSockets) {
         const playerUUID = this.socketToPlayer.get(roomSocket.id);
         const player = room.players.find((p) => p.uuid === playerUUID);
         const nickname = player?.nickname || 'Unknown';
 
-        roomSocket.emit('game_started', gameStartedPayload, (acknowledged: boolean) => {
-          if (acknowledged) {
-            this.logger.log(`✅ Game start acknowledged by ${nickname}`);
-          } else {
-            this.logger.warn(`⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`);
-            // Retry once after 500ms
-            setTimeout(() => {
-              this.logger.log(`🔄 Retrying game_started for ${nickname}`);
-              roomSocket.emit('game_started', gameStartedPayload);
-            }, 500);
-          }
-        });
+        roomSocket.emit(
+          'game_started',
+          gameStartedPayload,
+          (acknowledged: boolean) => {
+            if (acknowledged) {
+              this.logger.log(`✅ Game start acknowledged by ${nickname}`);
+            } else {
+              this.logger.warn(
+                `⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`,
+              );
+              // Retry once after 500ms
+              setTimeout(() => {
+                this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                roomSocket.emit('game_started', gameStartedPayload);
+              }, 500);
+            }
+          },
+        );
       }
     } catch (error) {
       const errorMessage =

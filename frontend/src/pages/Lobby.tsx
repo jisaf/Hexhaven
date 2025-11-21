@@ -41,6 +41,14 @@ interface GameRoom {
   status: 'lobby' | 'active' | 'completed' | 'abandoned';
 }
 
+interface RoomJoinedEventData {
+  roomCode: string;
+  roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
+  players: Player[];
+  playerId?: string;
+  isHost?: boolean;
+}
+
 export function Lobby() {
   const { t } = useTranslation('lobby');
   const navigate = useNavigate();
@@ -67,7 +75,7 @@ export function Lobby() {
   }, [sessionState.status, navigate]);
 
   // WebSocket event handlers
-  const handleRoomJoined = useCallback((data: any) => {
+  const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
     setRoom({ roomCode: data.roomCode, status: data.roomStatus });
     setPlayers(data.players);
 

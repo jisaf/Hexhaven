@@ -11,9 +11,22 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import type { Axial } from '../game/hex-utils';
+import type { AbilityCard, Monster } from '../../../shared/types/entities';
+
+interface GameStartedData {
+  characters?: Array<{
+    id: string;
+    playerId: string;
+    abilityDeck?: AbilityCard[];
+    [key: string]: unknown;
+  }>;
+  mapLayout?: unknown[];
+  monsters?: Monster[];
+  [key: string]: unknown;
+}
 
 interface GameWebSocketHandlers {
-  onGameStarted: (data: any, ackCallback?: (ack: boolean) => void) => void;
+  onGameStarted: (data: GameStartedData, ackCallback?: (ack: boolean) => void) => void;
   onCharacterMoved: (data: CharacterMovedData) => void;
   onTurnStarted: (data: TurnStartedData) => void;
   onGameStateUpdate: (data: { gameState: unknown }) => void;
@@ -43,7 +56,7 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     handlersRef.current = handlers;
   }, [handlers]);
 
-  const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
+  const handleGameStarted = useCallback((data: GameStartedData, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
     handlersRef.current.onGameStarted(data, ackCallback);
   }, []);

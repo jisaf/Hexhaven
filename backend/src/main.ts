@@ -16,9 +16,7 @@ const dotenvResult = dotenv.config({ path: envPath });
 if (dotenvResult.error) {
   console.error(`[Bootstrap] Warning: Could not load .env from ${envPath}`);
   console.error(`[Bootstrap] Error: ${dotenvResult.error.message}`);
-  console.log(
-    `[Bootstrap] Continuing with system environment variables only`,
-  );
+  console.log(`[Bootstrap] Continuing with system environment variables only`);
 } else {
   console.log(`[Bootstrap] Loaded environment from ${envPath}`);
 }
@@ -54,7 +52,6 @@ async function bootstrap() {
   }
 
   logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
-
 
   // In development, allow all origins
   const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -150,6 +147,6 @@ async function bootstrap() {
     });
   });
 
-  logger.log('GameGateway handlers wired up to Socket.IO server')
+  logger.log('GameGateway handlers wired up to Socket.IO server');
 }
 void bootstrap();
