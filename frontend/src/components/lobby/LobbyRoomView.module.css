@@ -1,0 +1,122 @@
+.inRoomMode {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.gameControlsSection {
+  margin-bottom: 32px;
+}
+
+.hostControls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.errorBanner {
+  width: 100%;
+  max-width: 600px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.primaryButton {
+  padding: 16px 32px;
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.primaryButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.primaryButton:disabled {
+  background: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.startButton {
+  font-size: 20px;
+  padding: 16px 32px;
+  min-height: 60px;
+}
+
+.startButton:not(:disabled) {
+  background: #2ecc71;
+}
+
+.startButton:hover:not(:disabled) {
+  background: #27ae60;
+}
+
+.startHint {
+  font-size: 16px;
+  margin: 0;
+  text-align: center;
+  color: #bdc3c7;
+}
+
+.startHint.warning {
+  color: #f39c12;
+}
+
+.startHint.ready {
+  color: #2ecc71;
+}
+
+.playerWaiting {
+  text-align: center;
+}
+
+.playerWaiting p {
+  font-size: 18px;
+  padding: 20px;
+  background: #333;
+  border-radius: 8px;
+  color: #bdc3c7;
+  margin: 0;
+}
+
+.roomLayout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.roomSection {
+  background: #2c2c2c;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.scenarioSection {
+  background: #2c2c2c;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .roomLayout {
+    grid-template-columns: 1fr;
+  }
+}

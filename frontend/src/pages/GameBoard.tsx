@@ -15,31 +15,30 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { HexGrid, type GameBoardData } from '../game/HexGrid';
+import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
-import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
+import { GameHeader } from '../components/game/GameHeader';
+import { GameHints } from '../components/game/GameHints';
+import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
+import { useRoomSession } from '../hooks/useRoomSession';
+import { useGameWebSocket } from '../hooks/useGameWebSocket';
+import { useHexGrid } from '../hooks/useHexGrid';
+import styles from './GameBoard.module.css';
 
 export function GameBoard() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-  const hexGridRef = useRef<HexGrid | null>(null);
-  const ackCallbackRef = useRef<((ack: boolean) => void) | null>(null);
 
-  // Subscribe to RoomSessionManager state
-  const [sessionState, setSessionState] = useState(roomSessionManager.getState());
-
+  // State
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
-  const [hexGridReady, setHexGridReady] = useState(false);
 
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -50,99 +49,109 @@ export function GameBoard() {
   const [attackMode, setAttackMode] = useState(false);
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
-  // Subscribe to session state changes (clean up on unmount)
-  useEffect(() => {
-    const unsubscribe = roomSessionManager.subscribe(setSessionState);
-    return unsubscribe;
-  }, []);
+  // Use custom hooks
+  const sessionState = useRoomSession();
 
-  // Event handlers - defined before useEffects that use them
-  const handleGameStarted = useCallback((data: {
-    scenarioId: string;
-    scenarioName: string;
-    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
-    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
-    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean; abilityDeck?: { name: string; level: string | number; initiative: number }[] }[]
-  }, ackCallback?: (ack: boolean) => void) => {
+  // HexGrid hook
+  const { hexGridReady, initializeBoard, moveCharacter, deselectAll } = useHexGrid(containerRef, {
+    onHexClick: (hex: Axial) => {
+      if (!selectedCharacterId || !isMyTurn) return;
+      websocketService.moveCharacter(hex);
+    },
+    onCharacterSelect: (characterId: string) => {
+      if (isMyTurn) {
+        setSelectedCharacterId(characterId);
+      }
+    },
+    onMonsterSelect: (monsterId: string) => {
+      if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
+        websocketService.attackTarget(monsterId);
+        setAttackMode(false);
+        setAttackableTargets([]);
+      }
+    },
+  });
+
+  // Event handlers for WebSocket
+  const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
-    console.log('handleGameStarted: Received mapLayout with', data.mapLayout?.length || 0, 'tiles');
 
     try {
-      // Update RoomSessionManager with game state
-      roomSessionManager.onGameStarted(data as any);
-
-      // Store acknowledgment callback to call after successful render
-      if (ackCallback) {
-        ackCallbackRef.current = ackCallback;
-        console.log('✅ Stored acknowledgment callback');
-      }
-
-      // Find my character from the characters array using playerUUID from localStorage
+      // Find my character
       const playerUUID = websocketService.getPlayerUUID();
-      console.log('My playerUUID:', playerUUID);
-      console.log('Characters:', data.characters);
-
-      const myCharacter = data.characters.find((char) => char.playerId === playerUUID);
-      console.log('My character:', myCharacter);
+      const myCharacter = data.characters?.find((char: any) => char.playerId === playerUUID);
 
       if (myCharacter) {
         setMyCharacterId(myCharacter.id);
-        console.log('Set myCharacterId to:', myCharacter.id);
 
-        // T181: Load character's unique ability deck
+        // Load ability deck
         if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
-          console.log('Loading ability deck for character:', myCharacter.classType);
-          console.log('Ability deck:', myCharacter.abilityDeck);
           setPlayerHand(myCharacter.abilityDeck as never[]);
-
-          // Show card selection at start of first turn
-          // In a real game, this would be triggered by turn_started event
           setShowCardSelection(true);
-        } else {
-          console.warn('No ability deck found for character!');
         }
-      } else {
-        console.error('Could not find my character in the characters array!');
       }
+
+      // Initialize board if ready
+      const boardData: GameBoardData = {
+        tiles: data.mapLayout as HexTileData[],
+        characters: data.characters as CharacterData[],
+        monsters: (data.monsters as Monster[]) || [],
+      };
+
+      initializeBoard(boardData, ackCallback);
     } catch (error) {
       console.error('❌ Error processing game_started event:', error);
-      // Send negative acknowledgment on error
       if (ackCallback) {
         ackCallback(false);
-        ackCallbackRef.current = null;
       }
     }
-  }, []);
+  }, [initializeBoard]);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
-    if (!hexGridRef.current) return;
-
-    hexGridRef.current.moveCharacter(data.characterId, data.toHex);
-    hexGridRef.current.deselectAll();
+    moveCharacter(data.characterId, data.toHex);
+    deselectAll();
     setSelectedCharacterId(null);
-  }, []);
+  }, [moveCharacter, deselectAll]);
 
-  const handleNextTurn = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
-    console.log('handleNextTurn called with data:', data);
-    console.log('myCharacterId:', myCharacterId);
-
-    // Check if it's current player's turn by comparing entityId with my character ID
+  const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
-    console.log('Is my turn?', myTurn);
-
     setIsMyTurn(myTurn);
 
     if (!myTurn) {
-      // Deselect character when not our turn
-      hexGridRef.current?.deselectAll();
+      deselectAll();
       setSelectedCharacterId(null);
     }
-  }, [myCharacterId]);
+  }, [myCharacterId, deselectAll]);
 
   const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
-    // Handle full game state updates (for reconnection, etc.)
     console.log('Game state update:', data);
   }, []);
+
+  const handleConnectionStatusChange = useCallback((status: 'connected' | 'disconnected' | 'reconnecting') => {
+    setConnectionStatus(status);
+  }, []);
+
+  // Setup WebSocket
+  useGameWebSocket({
+    onGameStarted: handleGameStarted,
+    onCharacterMoved: handleCharacterMoved,
+    onTurnStarted: handleTurnStarted,
+    onGameStateUpdate: handleGameStateUpdate,
+    onConnectionStatusChange: handleConnectionStatusChange,
+  });
+
+  // Render game data when HexGrid is ready
+  useEffect(() => {
+    if (hexGridReady && sessionState.gameState) {
+      const boardData: GameBoardData = {
+        tiles: sessionState.gameState.mapLayout as HexTileData[],
+        characters: sessionState.gameState.characters as CharacterData[],
+        monsters: (sessionState.gameState.monsters as Monster[]) || [],
+      };
+
+      initializeBoard(boardData);
+    }
+  }, [hexGridReady, sessionState.gameState, initializeBoard]);
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((cardId: string, slot: 'top' | 'bottom') => {
@@ -157,224 +166,7 @@ export function GameBoard() {
     }
   }, [selectedCards]);
 
-  // T115: Attack target selection handlers
-  const handleMonsterSelect = useCallback((monsterId: string) => {
-    if (!attackMode || !isMyTurn) return;
 
-    if (attackableTargets.includes(monsterId)) {
-      // Confirm attack
-      websocketService.attackTarget(monsterId);
-      setAttackMode(false);
-      setAttackableTargets([]);
-    }
-  }, [attackMode, isMyTurn, attackableTargets]);
-
-  // T071: Character movement implementation
-  const handleCharacterSelect = useCallback((characterId: string) => {
-    if (!isMyTurn) {
-      console.log('Not your turn');
-      return;
-    }
-
-    setSelectedCharacterId(characterId);
-  }, [isMyTurn]);
-
-  const handleHexClick = useCallback((hex: Axial) => {
-    if (!selectedCharacterId) return;
-    if (!isMyTurn) {
-      console.log('Not your turn');
-      return;
-    }
-
-    // Emit move event to server
-    websocketService.moveCharacter(hex);
-
-    // Optimistic update (server will confirm or reject)
-    // The server response will trigger handleCharacterMoved
-  }, [selectedCharacterId, isMyTurn]);
-
-  // Initialize hex grid
-  useEffect(() => {
-    console.log('=== HEX GRID INITIALIZATION EFFECT ===');
-    console.log('containerRef.current:', containerRef.current ? 'EXISTS' : 'NULL');
-    console.log('hexGridRef.current:', hexGridRef.current ? 'ALREADY INITIALIZED' : 'NULL');
-
-    if (!containerRef.current || hexGridRef.current) {
-      console.log('Skipping HexGrid init - already initialized or no container');
-      return;
-    }
-
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
-    console.log('🎨 Container dimensions:', { width, height });
-
-    const hexGrid = new HexGrid(containerRef.current, {
-      width,
-      height,
-      onHexClick: handleHexClick,
-      onCharacterSelect: handleCharacterSelect,
-      onMonsterSelect: handleMonsterSelect,
-    });
-    console.log('🎨 HexGrid instance created, starting async initialization...');
-
-    // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
-    let mounted = true;
-    let initCompleted = false;
-
-    hexGrid.init().then(() => {
-      console.log('✅ HexGrid.init() promise resolved!');
-      initCompleted = true;
-      if (mounted) {
-        hexGridRef.current = hexGrid;
-        setHexGridReady(true); // Signal that HexGrid is ready
-        console.log('✅ HexGrid reference set! Ready to render game data.');
-      } else {
-        console.log('⚠️ Component unmounted before init completed');
-      }
-      // Note: Don't destroy here if unmounted - the cleanup function will handle it
-    }).catch((error) => {
-      console.error('❌ Failed to initialize HexGrid:', error);
-      initCompleted = true; // Mark as completed even on error
-    });
-
-    // Handle resize
-    const handleResize = () => {
-      if (containerRef.current && hexGridRef.current) {
-        hexGridRef.current.resize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      mounted = false;
-      window.removeEventListener('resize', handleResize);
-
-      // Only try to destroy if init has completed
-      // Otherwise, the PixiJS app hasn't been created yet and there's nothing to cleanup
-      if (initCompleted && hexGrid) {
-        try {
-          hexGrid.destroy();
-        } catch (error) {
-          console.error('Error destroying HexGrid:', error);
-        }
-      }
-
-      // Clear the ref and state
-      hexGridRef.current = null;
-      setHexGridReady(false);
-    };
-  }, [handleHexClick, handleCharacterSelect, handleMonsterSelect]);
-
-  // Render game data when HexGrid is ready (fixes race condition)
-  useEffect(() => {
-    console.log('=== RENDER GAME DATA EFFECT TRIGGERED ===');
-    console.log('hexGridReady:', hexGridReady);
-    console.log('hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
-    console.log('sessionState.gameState:', sessionState.gameState ? 'EXISTS' : 'NULL');
-
-    if (!hexGridReady || !hexGridRef.current) {
-      console.log('⏳ HexGrid not ready yet - waiting for initialization');
-      return;
-    }
-
-    if (!sessionState.gameState) {
-      console.log('⏳ No game state yet');
-      return;
-    }
-
-    console.log('✅ HexGrid is ready and game data is available - initializing board');
-    console.log('📦 gameState:', JSON.stringify(sessionState.gameState, null, 2));
-
-    // Initialize board with the map layout and entities
-    const boardData: GameBoardData = {
-      tiles: sessionState.gameState.mapLayout as HexTileData[],
-      characters: sessionState.gameState.characters as CharacterData[],
-      monsters: (sessionState.gameState.monsters as Monster[]) || [],
-    };
-
-    console.log('🎮 Calling hexGridRef.current.initializeBoard with boardData containing:');
-    console.log('  - Tiles:', boardData.tiles.length);
-    console.log('  - Characters:', boardData.characters.length);
-    console.log('  - Monsters:', boardData.monsters?.length || 0);
-
-    try {
-      hexGridRef.current.initializeBoard(boardData);
-      console.log('✅ Board initialized successfully!');
-
-      // Send positive acknowledgment to backend
-      if (ackCallbackRef.current) {
-        ackCallbackRef.current(true);
-        console.log('✅ Sent positive acknowledgment to server');
-        ackCallbackRef.current = null;
-      }
-    } catch (error) {
-      console.error('❌ ERROR initializing board:', error);
-
-      // Send negative acknowledgment on error
-      if (ackCallbackRef.current) {
-        ackCallbackRef.current(false);
-        console.log('❌ Sent negative acknowledgment to server');
-        ackCallbackRef.current = null;
-      }
-    }
-  }, [hexGridReady, sessionState.gameState]); // Depend on BOTH hexGridReady and gameState
-
-  // Setup WebSocket event listeners AND ensure joined to room
-  // IMPORTANT: Listeners MUST be registered BEFORE joining to catch game_started event
-  useEffect(() => {
-    console.log('🔧 Setting up WebSocket listeners and ensuring room join');
-
-    // Step 1: Register all event listeners FIRST
-    console.log('📡 Registering WebSocket event listeners...');
-
-    // Connection status
-    websocketService.on('ws_connected', () => setConnectionStatus('connected'));
-    websocketService.on('ws_disconnected', () => {
-      setConnectionStatus('disconnected');
-      roomSessionManager.onDisconnected(); // Notify session manager of disconnect
-    });
-    websocketService.on('ws_reconnecting', () => setConnectionStatus('reconnecting'));
-
-    // Game events
-    console.log('✅ Registering game_started event listener');
-    websocketService.on('game_started', handleGameStarted);
-    websocketService.on('character_moved', handleCharacterMoved);
-    websocketService.on('turn_started', handleNextTurn);
-    websocketService.on('game_state_update', handleGameStateUpdate);
-    console.log('✅ All event listeners registered');
-
-    // Step 2: Get room info from localStorage
-    const roomCode = localStorage.getItem('currentRoomCode');
-    const playerUUID = localStorage.getItem('playerUUID');
-    const nickname = localStorage.getItem('playerNickname');
-
-    if (!roomCode || !playerUUID || !nickname) {
-      console.error('❌ Cannot join room - missing roomCode, playerUUID, or nickname');
-      navigate('/');
-      return;
-    }
-
-    console.log(`🔄 GameBoard mounted - ensuring joined to room ${roomCode}`);
-
-    // Step 3: Ensure joined via RoomSessionManager (handles idempotency)
-    roomSessionManager.ensureJoined('refresh').catch((error) => {
-      console.error('❌ Failed to join room:', error);
-      navigate('/'); // Return to lobby on error
-    });
-
-    // Cleanup
-    return () => {
-      console.log('🧹 Cleaning up WebSocket listeners');
-      websocketService.off('ws_connected');
-      websocketService.off('ws_disconnected');
-      websocketService.off('ws_reconnecting');
-      websocketService.off('game_started');
-      websocketService.off('character_moved');
-      websocketService.off('turn_started');
-      websocketService.off('game_state_update');
-    };
-  }, [navigate, handleGameStarted, handleCharacterMoved, handleNextTurn, handleGameStateUpdate]);
 
   const handleLeaveGame = () => {
     websocketService.leaveRoom();
@@ -382,34 +174,14 @@ export function GameBoard() {
   };
 
   return (
-    <div className="game-board-page">
-      <header className="game-header">
-        <div className="game-info">
-          <h2>{t('game:title', 'Hexhaven Battle')}</h2>
-          <div className="turn-indicator">
-            {isMyTurn ? (
-              <span className="your-turn">{t('game:yourTurn', 'Your Turn')}</span>
-            ) : (
-              <span className="waiting">{t('game:opponentTurn', "Opponent's Turn")}</span>
-            )}
-          </div>
-        </div>
+    <div className={styles.gameBoardPage}>
+      <GameHeader
+        isMyTurn={isMyTurn}
+        connectionStatus={connectionStatus}
+        onLeaveGame={handleLeaveGame}
+      />
 
-        <div className="game-controls">
-          <div className={`connection-status ${connectionStatus}`}>
-            <span className="status-dot" />
-            <span className="status-text">
-              {t(`game:connection.${connectionStatus}`, connectionStatus)}
-            </span>
-          </div>
-
-          <button className="leave-button" onClick={handleLeaveGame}>
-            {t('game:leaveGame', 'Leave Game')}
-          </button>
-        </div>
-      </header>
-
-      <div ref={containerRef} className="game-container" />
+      <div ref={containerRef} className={styles.gameContainer} />
 
       {/* T111: Card Selection Panel */}
       {showCardSelection && (
@@ -423,218 +195,12 @@ export function GameBoard() {
         />
       )}
 
-      {/* T115: Attack Mode Indicator */}
-      {attackMode && (
-        <div className="attack-mode-hint">
-          {t('game:attackHint', 'Select an enemy to attack')}
-        </div>
-      )}
+      <GameHints
+        attackMode={attackMode}
+        showMovementHint={selectedCharacterId !== null && isMyTurn && !attackMode}
+      />
 
-      {selectedCharacterId && isMyTurn && !attackMode && (
-        <div className="movement-hint">
-          {t('game:movementHint', 'Tap a highlighted hex to move your character')}
-        </div>
-      )}
-
-      {connectionStatus === 'reconnecting' && (
-        <div className="reconnecting-overlay">
-          <div className="reconnecting-message">
-            <div className="spinner" />
-            <p>{t('game:reconnecting', 'Reconnecting...')}</p>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .game-board-page {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          background: #1a1a1a;
-          color: #ffffff;
-          overflow: hidden;
-        }
-
-        .game-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 24px;
-          background: #2c2c2c;
-          border-bottom: 2px solid #333;
-          flex-shrink: 0;
-        }
-
-        .game-info h2 {
-          margin: 0 0 8px 0;
-          font-size: 20px;
-          font-weight: 600;
-        }
-
-        .turn-indicator {
-          font-size: 14px;
-        }
-
-        .your-turn {
-          padding: 4px 12px;
-          background: #4ade80;
-          color: #000;
-          font-weight: 600;
-          border-radius: 12px;
-        }
-
-        .waiting {
-          color: #888;
-        }
-
-        .game-controls {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .connection-status {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-size: 13px;
-        }
-
-        .connection-status.connected {
-          background: rgba(74, 222, 128, 0.1);
-          color: #4ade80;
-        }
-
-        .connection-status.disconnected {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
-
-        .connection-status.reconnecting {
-          background: rgba(251, 191, 36, 0.1);
-          color: #fbbf24;
-        }
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: currentColor;
-        }
-
-        .leave-button {
-          padding: 8px 16px;
-          font-size: 14px;
-          color: #ef4444;
-          background: transparent;
-          border: 1px solid #ef4444;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .leave-button:hover {
-          background: rgba(239, 68, 68, 0.1);
-        }
-
-        .game-container {
-          flex: 1;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .movement-hint,
-        .attack-mode-hint {
-          position: absolute;
-          bottom: 24px;
-          left: 50%;
-          transform: translateX(-50%);
-          padding: 12px 24px;
-          background: rgba(90, 159, 212, 0.9);
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 500;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          pointer-events: none;
-          animation: slideUp 0.3s ease-out;
-        }
-
-        .attack-mode-hint {
-          background: rgba(239, 68, 68, 0.9);
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translate(-50%, 20px);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-        }
-
-        .reconnecting-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .reconnecting-message {
-          text-align: center;
-        }
-
-        .spinner {
-          width: 48px;
-          height: 48px;
-          margin: 0 auto 16px;
-          border: 4px solid #444;
-          border-top-color: #5a9fd4;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .reconnecting-message p {
-          margin: 0;
-          font-size: 18px;
-          color: #ffffff;
-        }
-
-        @media (max-width: 768px) {
-          .game-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-          }
-
-          .game-controls {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .movement-hint {
-            bottom: 16px;
-            left: 16px;
-            right: 16px;
-            transform: none;
-            text-align: center;
-          }
-        }
-      `}</style>
+      <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
     </div>
   );
 }

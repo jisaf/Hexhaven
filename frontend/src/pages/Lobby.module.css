@@ -1,0 +1,509 @@
+/* Lobby Page Styles */
+
+.lobbyPage {
+  min-height: 100vh;
+  background: #1a1a1a;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.lobbyHeader {
+  padding: 24px;
+  text-align: center;
+  border-bottom: 2px solid #333;
+}
+
+.lobbyHeader h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.welcomeMessage {
+  margin: 12px 0 0 0;
+  font-size: 18px;
+  color: #aaa;
+}
+
+.welcomeMessage strong {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.gameControlsSection {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(46, 204, 113, 0.1);
+  border: 2px solid #2ecc71;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.lobbyContent {
+  flex: 1;
+  padding: 32px 24px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.initialMode,
+.joinMode,
+.inRoomMode {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.buttonGroup {
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.primaryButton,
+.secondaryButton {
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 56px;
+}
+
+.primaryButton {
+  color: #ffffff;
+  background: #5a9fd4;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #4a8fc4;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(90, 159, 212, 0.4);
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  color: #ffffff;
+  background: transparent;
+  border: 2px solid #5a9fd4;
+}
+
+.secondaryButton:hover {
+  background: rgba(90, 159, 212, 0.1);
+}
+
+.divider {
+  text-align: center;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #444;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+.divider span {
+  padding: 0 16px;
+  color: #888;
+}
+
+.backButton {
+  margin-bottom: 24px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #5a9fd4;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  color: #4a8fc4;
+}
+
+.joinContent,
+.nicknameContent {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.joinContent h2,
+.nicknameContent h2 {
+  margin: 0 0 16px 0;
+  font-size: 28px;
+}
+
+.joinInstruction,
+.nicknameInstruction {
+  margin: 0 0 32px 0;
+  color: #aaa;
+}
+
+.roomHeader {
+  margin-bottom: 32px;
+  padding: 20px;
+  text-align: center;
+  background: #2c2c2c;
+  border-radius: 12px;
+}
+
+.roomHeader h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.roomCodeSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.roomCode {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #5a9fd4;
+}
+
+.copyArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.copyButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #5a9fd4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copyButton:hover {
+  background: #4a8fc4;
+  transform: translateY(-1px);
+}
+
+.copiedMessage {
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 600;
+  animation: fadeIn 0.2s;
+}
+
+.hostIndicator {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  background: rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+}
+
+.roomLayout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.roomSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.hostControls {
+  text-align: center;
+}
+
+.startButton {
+  min-width: 300px;
+}
+
+.startHint {
+  margin-top: 16px;
+  color: #888;
+  font-size: 14px;
+}
+
+.playerWaiting {
+  text-align: center;
+  padding: 32px;
+  color: #888;
+  font-style: italic;
+}
+
+.errorBanner {
+  margin-top: 24px;
+  padding: 16px;
+  text-align: center;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+}
+
+.myRoomSection {
+  margin-bottom: 48px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.myRoomTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #ffd700;
+}
+
+.myRoomCard {
+  background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%);
+  border: 3px solid #ffd700;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.myRoomHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #3a3a3a;
+}
+
+.myRoomCode {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #ffd700;
+}
+
+.myRoomStatus {
+  font-size: 14px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.myRoomInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #ddd;
+}
+
+.myRoomPlayers {
+  font-size: 16px;
+  background: #1a1a1a;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.myRoomHost {
+  font-size: 14px;
+}
+
+.myRoomRejoinButton {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  background: #ffd700;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.myRoomRejoinButton:hover:not(:disabled) {
+  background: #ffed4e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.myRoomRejoinButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.activeGamesSection {
+  margin-top: 48px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.activeGamesTitle {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.loadingRooms,
+.noRooms {
+  padding: 48px 24px;
+  text-align: center;
+  color: #888;
+}
+
+.roomsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.roomCard {
+  background: #2c2c2c;
+  border: 2px solid #3a3a3a;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roomCard:hover {
+  border-color: #5a9fd4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(90, 159, 212, 0.2);
+}
+
+.roomCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.roomCardCode {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #5a9fd4;
+}
+
+.roomCardPlayers {
+  font-size: 14px;
+  color: #aaa;
+  background: #1a1a1a;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.roomCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.roomCardHost {
+  font-size: 14px;
+  color: #ddd;
+}
+
+.roomCardStatus {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+
+.roomCardJoinButton {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #5a9fd4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.roomCardJoinButton:hover:not(:disabled) {
+  background: #4a8fc4;
+  transform: translateY(-1px);
+}
+
+.roomCardJoinButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Additional utility classes */
+.headerTop {
+  /* Placeholder for header top section */
+}
+
+.scenarioSection {
+  /* Placeholder for scenario selection section */
+}
+
+@media (max-width: 768px) {
+  .roomLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .startButton {
+    min-width: 100%;
+  }
+
+  .roomsList {
+    grid-template-columns: 1fr;
+  }
+}

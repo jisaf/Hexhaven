@@ -18,17 +18,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { v4 as uuidv4 } from 'uuid';
 import { websocketService } from '../services/websocket.service';
-import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import { PlayerList, type Player } from '../components/PlayerList';
-import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
-import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
+import type { Player } from '../components/PlayerList';
+import type { CharacterClass } from '../components/CharacterSelect';
 import { DebugConsole } from '../components/DebugConsole';
-import { LanguageSelector } from '../components/LanguageSelector';
-import { getApiUrl, getWebSocketUrl, logApiConfig } from '../config/api';
+import { LobbyHeader } from '../components/lobby/LobbyHeader';
+import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
+import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
+import { useRoomSession } from '../hooks/useRoomSession';
+import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
+import { useRoomManagement } from '../hooks/useRoomManagement';
+import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
+import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
+import styles from './Lobby.module.css';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
@@ -37,21 +41,9 @@ interface GameRoom {
   status: 'lobby' | 'active' | 'completed' | 'abandoned';
 }
 
-interface ActiveRoom {
-  roomCode: string;
-  status: string;
-  playerCount: number;
-  maxPlayers: number;
-  hostNickname: string;
-  createdAt: string;
-}
-
 export function Lobby() {
   const { t } = useTranslation('lobby');
   const navigate = useNavigate();
-
-  // Subscribe to RoomSessionManager state
-  const [sessionState, setSessionState] = useState(roomSessionManager.getState());
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
@@ -61,18 +53,10 @@ export function Lobby() {
   const [isHost, setIsHost] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showCopied, setShowCopied] = useState(false);
-  const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
 
-  // Subscribe to session state changes (clean up on unmount)
-  useEffect(() => {
-    const unsubscribe = roomSessionManager.subscribe(setSessionState);
-    return unsubscribe;
-  }, []);
+  // Use custom hooks
+  const sessionState = useRoomSession();
+  const { activeRooms, loadingRooms, myRoom, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
 
   // Navigate to /game when session status becomes 'active'
   useEffect(() => {
@@ -82,158 +66,62 @@ export function Lobby() {
     }
   }, [sessionState.status, navigate]);
 
-  // Event handlers - defined before useEffect that uses them
-  const handleRoomJoined = useCallback((data: { roomCode: string; roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned'; players: unknown[]; playerId?: string; isHost?: boolean }) => {
-    console.log('Room joined event received:', data);
-
-    // Save room code to localStorage for GameBoard to use
-    localStorage.setItem('currentRoomCode', data.roomCode);
-
-    // Update RoomSessionManager with room state
-    roomSessionManager.onRoomJoined(data as any); // Will update session state
-
+  // WebSocket event handlers
+  const handleRoomJoined = useCallback((data: any) => {
     setRoom({ roomCode: data.roomCode, status: data.roomStatus });
-
-    // Transform server players to include required Player interface fields
-    const transformedPlayers = (data.players as Array<{
-      id: string;
-      nickname: string;
-      isHost: boolean;
-      characterClass?: string;
-    }>).map(p => ({
-      ...p,
-      connectionStatus: 'connected' as const,
-      isReady: !!p.characterClass, // Ready if they have selected a character
-    }));
-
-    setPlayers(transformedPlayers);
+    setPlayers(data.players);
 
     // Get current player ID from localStorage UUID
-    const uuid = localStorage.getItem('playerUUID');
+    const uuid = getPlayerUUID();
     if (uuid) {
       setCurrentPlayerId(uuid);
 
       // Find if this player is the host
-      const currentPlayer = transformedPlayers.find(p => p.id === uuid);
+      const currentPlayer = data.players.find((p: Player) => p.id === uuid);
       if (currentPlayer) {
         setIsHost(currentPlayer.isHost);
       }
     }
 
-    // Navigation is now handled by useEffect that watches sessionState.status
-    // Don't navigate here to avoid race conditions
     if (data.roomStatus !== 'active') {
       setMode('in-room');
     }
-
-    setIsLoading(false);
-    setError(null);
   }, []);
 
-  const handlePlayerJoined = useCallback((data: { player: unknown }) => {
-    const player = data.player as { id: string; nickname: string; isHost: boolean; characterClass?: string };
-    setPlayers((prev) => [...prev, {
-      ...player,
-      connectionStatus: 'connected' as const,
-      isReady: !!player.characterClass,
-    }]);
+  const handlePlayerJoined = useCallback((player: Player) => {
+    setPlayers((prev) => [...prev, player]);
   }, []);
 
-  const handlePlayerLeft = useCallback((data: { playerId: string }) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
+  const handlePlayerLeft = useCallback((playerId: string) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
   }, []);
 
-  const handleCharacterSelected = useCallback((data: { playerId: string; characterClass: string }) => {
+  const handleCharacterSelected = useCallback((playerId: string, characterClass: CharacterClass) => {
     setPlayers((prev) =>
       prev.map((p) =>
-        p.id === data.playerId
-          ? { ...p, characterClass: data.characterClass as CharacterClass, isReady: true }
+        p.id === playerId
+          ? { ...p, characterClass, isReady: true }
           : p
       )
     );
 
-    // Update own selection
-    if (data.playerId === currentPlayerId) {
-      setSelectedCharacter(data.characterClass as CharacterClass);
+    if (playerId === currentPlayerId) {
+      setSelectedCharacter(characterClass);
     }
   }, [currentPlayerId]);
 
-  const handleGameStarted = useCallback((data: any) => {
-    console.log('Game started event received in Lobby');
-    // Update RoomSessionManager with game state
-    roomSessionManager.onGameStarted(data);
-    // Navigation is handled by useEffect that watches sessionState.status
-  }, []);
+  const handleWebSocketError = useCallback((message: string) => {
+    setError(message);
+  }, [setError]);
 
-  const handleError = useCallback((data: { message: string }) => {
-    setError(data.message);
-    setIsLoading(false);
-  }, []);
-
-  // Fetch player's current room
-  const fetchMyRoom = useCallback(async () => {
-    const uuid = localStorage.getItem('playerUUID');
-    if (!uuid) return;
-
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/rooms/my-room/${uuid}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.room) {
-          const hostPlayer = (data.players as Player[]).find((p) => p.isHost);
-          setMyRoom({
-            roomCode: data.room.roomCode,
-            status: data.room.status,
-            playerCount: data.room.playerCount,
-            maxPlayers: 4,
-            hostNickname: hostPlayer?.nickname || 'Unknown',
-            createdAt: data.room.createdAt,
-          });
-        } else {
-          setMyRoom(null);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch my room:', err);
-      // Silently fail
-    }
-  }, []);
-
-  // Fetch active rooms
-  const fetchActiveRooms = useCallback(async () => {
-    if (mode !== 'initial') return; // Only fetch when in initial mode
-
-    try {
-      setLoadingRooms(true);
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/rooms`);
-
-      if (response.ok) {
-        const data = await response.json();
-        setActiveRooms(data.rooms || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch active rooms:', err);
-      // Silently fail - not critical to the user experience
-    } finally {
-      setLoadingRooms(false);
-    }
-  }, [mode]);
-
-  // Fetch my room on mount
-  useEffect(() => {
-    const loadMyRoom = async () => {
-      try {
-        await fetchMyRoom();
-      } catch (err) {
-        console.error('Error loading my room:', err);
-      }
-    };
-    loadMyRoom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  // Setup WebSocket listeners
+  useLobbyWebSocket({
+    onRoomJoined: handleRoomJoined,
+    onPlayerJoined: handlePlayerJoined,
+    onPlayerLeft: handlePlayerLeft,
+    onCharacterSelected: handleCharacterSelected,
+    onError: handleWebSocketError,
+  });
 
   // Auto-rejoin active game if player is in one
   useEffect(() => {
@@ -244,222 +132,45 @@ export function Lobby() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myRoom]);
 
-  // Fetch active rooms on mount and periodically
-  useEffect(() => {
-    if (mode === 'initial') {
-      fetchActiveRooms(); // Initial fetch
-      const interval = setInterval(fetchActiveRooms, 5000); // Refresh every 5 seconds
-      return () => clearInterval(interval);
-    }
-  }, [mode, fetchActiveRooms]);
-
-  // Connect to WebSocket on mount
-  useEffect(() => {
-    // Log the API configuration for debugging
-    logApiConfig();
-
-    const wsUrl = getWebSocketUrl();
-    websocketService.connect(wsUrl);
-
-    // Setup event listeners
-    websocketService.on('room_joined', handleRoomJoined);
-    websocketService.on('player_joined', handlePlayerJoined);
-    websocketService.on('player_left', handlePlayerLeft);
-    websocketService.on('character_selected', handleCharacterSelected);
-    websocketService.on('game_started', handleGameStarted);
-    websocketService.on('error', handleError);
-
-    return () => {
-      // Cleanup
-      websocketService.off('room_joined');
-      websocketService.off('player_joined');
-      websocketService.off('player_left');
-      websocketService.off('character_selected');
-      websocketService.off('game_started');
-      websocketService.off('error');
-    };
-  }, [handleRoomJoined, handlePlayerJoined, handlePlayerLeft, handleCharacterSelected, handleGameStarted, handleError]);
-
   // Room creation flow (T067)
   const handleCreateRoom = () => {
-    // Check if nickname is already set
-    const storedNickname = localStorage.getItem('playerNickname');
+    const storedNickname = getPlayerNickname();
     if (storedNickname) {
-      // If nickname exists, proceed directly
       proceedWithRoomCreation(storedNickname);
     } else {
-      // Show nickname input first
       setMode('nickname-for-create');
     }
   };
 
   const handleNicknameSubmit = (submittedNickname: string) => {
-    localStorage.setItem('playerNickname', submittedNickname);
     proceedWithRoomCreation(submittedNickname);
   };
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
-    setIsLoading(true);
-    setError(null);
-
     try {
-      // Get or create UUID
-      let uuid = localStorage.getItem('playerUUID');
-      if (!uuid) {
-        uuid = uuidv4();
-        localStorage.setItem('playerUUID', uuid);
-      }
-
-      console.log('Creating room for:', { uuid, nickname: playerNickname });
-
-      // Call REST API to create room
-      const apiUrl = getApiUrl();
-      console.log('API URL:', apiUrl);
-
-      // Add timeout to fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      try {
-        console.log('Starting fetch request...');
-        const response = await fetch(`${apiUrl}/rooms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({ uuid, nickname: playerNickname }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        console.log('API Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('API Error:', errorData);
-          throw new Error('Failed to create room');
-        }
-
-        const data = await response.json();
-        console.log('Room created:', data);
-
-        // Wait for WebSocket connection before joining room
-        const waitForConnection = () => {
-          return new Promise<void>((resolve) => {
-            if (websocketService.isConnected()) {
-              console.log('WebSocket already connected');
-              resolve();
-            } else {
-              console.log('Waiting for WebSocket connection...');
-              const checkConnection = setInterval(() => {
-                if (websocketService.isConnected()) {
-                  console.log('WebSocket connected');
-                  clearInterval(checkConnection);
-                  resolve();
-                }
-              }, 100); // Check every 100ms
-
-              // Timeout after 5 seconds
-              setTimeout(() => {
-                clearInterval(checkConnection);
-                console.error('WebSocket connection timeout');
-                resolve(); // Resolve anyway to prevent hanging
-              }, 5000);
-            }
-          });
-        };
-
-        await waitForConnection();
-
-        // Store room code in localStorage before joining (RoomSessionManager reads from there)
-        localStorage.setItem('currentRoomCode', data.room.roomCode);
-        console.log('Stored room code:', data.room.roomCode);
-
-        // Join the room via RoomSessionManager
-        console.log('Joining room via RoomSessionManager:', data.room.roomCode);
-        await roomSessionManager.ensureJoined('create');
-        setMode('creating');
-      } catch (fetchErr: unknown) {
-        clearTimeout(timeoutId);
-        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
-          console.error('Request timed out after 10 seconds');
-          throw new Error('Request timed out - please check your network connection');
-        }
-        throw fetchErr;
-      }
-    } catch (err: unknown) {
+      await createRoom(playerNickname);
+      setMode('creating');
+    } catch (err) {
       console.error('Room creation error:', err);
-      if (err instanceof Error) {
-        console.error('Error type:', err.constructor.name);
-        console.error('Error details:', {
-          message: err.message,
-          name: err.name,
-          stack: err.stack
-        });
-      }
-      setError(err instanceof Error ? err.message : 'Failed to create room');
-      setIsLoading(false);
     }
   };
 
   // Room join flow (T068)
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    // Get or create UUID
-    let uuid = localStorage.getItem('playerUUID');
-    if (!uuid) {
-      uuid = uuidv4();
-      localStorage.setItem('playerUUID', uuid);
+    try {
+      await joinRoom(roomCode, playerNickname);
+      setMode('joining');
+    } catch (err) {
+      console.error('Room join error:', err);
     }
-
-    // Store nickname and roomCode for RoomSessionManager
-    localStorage.setItem('playerNickname', playerNickname);
-    localStorage.setItem('currentRoomCode', roomCode);
-
-    // Wait for WebSocket connection before joining room
-    const waitForConnection = () => {
-      return new Promise<void>((resolve) => {
-        if (websocketService.isConnected()) {
-          console.log('WebSocket already connected');
-          resolve();
-        } else {
-          console.log('Waiting for WebSocket connection...');
-          const checkConnection = setInterval(() => {
-            if (websocketService.isConnected()) {
-              console.log('WebSocket connected');
-              clearInterval(checkConnection);
-              resolve();
-            }
-          }, 100); // Check every 100ms
-
-          // Timeout after 5 seconds
-          setTimeout(() => {
-            clearInterval(checkConnection);
-            console.error('WebSocket connection timeout');
-            resolve(); // Resolve anyway to prevent hanging
-          }, 5000);
-        }
-      });
-    };
-
-    await waitForConnection();
-
-    await roomSessionManager.ensureJoined('join');
-    setMode('joining');
   };
 
   // Quick join from active room list
   const handleQuickJoinRoom = (roomCode: string) => {
-    const storedNickname = localStorage.getItem('playerNickname');
+    const storedNickname = getPlayerNickname();
     if (storedNickname) {
-      // If nickname exists, join directly
       handleJoinRoom(roomCode, storedNickname);
     } else {
-      // Show join form with pre-filled room code
       setMode('joining');
     }
   };
@@ -468,43 +179,11 @@ export function Lobby() {
   const handleRejoinMyRoom = async () => {
     if (!myRoom) return;
 
-    const storedNickname = localStorage.getItem('playerNickname');
-    const uuid = localStorage.getItem('playerUUID');
-
-    if (storedNickname && uuid) {
-      setIsLoading(true);
-      setError(null);
-
-      // Wait for WebSocket connection before joining room
-      const waitForConnection = () => {
-        return new Promise<void>((resolve) => {
-          if (websocketService.isConnected()) {
-            console.log('WebSocket already connected');
-            resolve();
-          } else {
-            console.log('Waiting for WebSocket connection...');
-            const checkConnection = setInterval(() => {
-              if (websocketService.isConnected()) {
-                console.log('WebSocket connected');
-                clearInterval(checkConnection);
-                resolve();
-              }
-            }, 100); // Check every 100ms
-
-            // Timeout after 5 seconds
-            setTimeout(() => {
-              clearInterval(checkConnection);
-              console.error('WebSocket connection timeout');
-              resolve(); // Resolve anyway to prevent hanging
-            }, 5000);
-          }
-        });
-      };
-
-      await waitForConnection();
-
-      await roomSessionManager.ensureJoined('rejoin');
+    try {
+      await rejoinRoom();
       setMode('joining');
+    } catch (err) {
+      console.error('Room rejoin error:', err);
     }
   };
 
@@ -534,163 +213,39 @@ export function Lobby() {
     websocketService.startGame(selectedScenario);
   };
 
-  // Copy room code to clipboard
-  const handleCopyRoomCode = async () => {
-    if (!room) return;
-
-    try {
-      await navigator.clipboard.writeText(room.roomCode);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy room code:', err);
-    }
-  };
-
-  // Get disabled character classes
-  const disabledClasses = players
-    .filter((p) => p.id !== currentPlayerId && p.characterClass)
-    .map((p) => p.characterClass as CharacterClass);
+  // Get disabled character classes using utility
+  const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
 
   // Check if current player is host - use state or check players array
-  const currentPlayer = players.find((p) => p.id === currentPlayerId);
-  const isCurrentPlayerHost = isHost || (currentPlayer?.isHost ?? false);
+  const currentPlayer = findPlayerById(players, currentPlayerId || '');
+  const isCurrentPlayerHost = isHost || isPlayerHost(currentPlayer);
 
-  const allPlayersReady = players.every((p) => p.characterClass);
-  const canStartGame = players.length >= 1 && allPlayersReady;
+  const playersReady = allPlayersReady(players);
+  const canStartGame = players.length >= 1 && playersReady;
 
   return (
-    <div className="lobby-page">
+    <div className={styles.lobbyPage}>
       <DebugConsole />
-      <header className="lobby-header">
-        <div className="header-top">
-          <h1>{t('title', 'Hexhaven Multiplayer')}</h1>
-          <LanguageSelector className="header-language-selector" />
-        </div>
-        {localStorage.getItem('playerNickname') && (
-          <p className="welcome-message">
-            {t('welcome', 'Welcome')}, <strong>{localStorage.getItem('playerNickname')}</strong>
-          </p>
-        )}
-      </header>
+      <LobbyHeader playerNickname={getPlayerNickname()} />
 
-      <main className="lobby-content">
+      <main className={styles.lobbyContent}>
         {mode === 'initial' && (
-          <div className="initial-mode">
-            {/* Your Active Game Section - Temporarily disabled for debugging */}
-            {myRoom && myRoom.roomCode && (
-              <div className="my-room-section">
-                <h2 className="my-room-title">
-                  {t('yourActiveGame', 'Your Active Game')}
-                </h2>
-                <div className="my-room-card">
-                  <div className="my-room-header">
-                    <span className="my-room-code">{myRoom.roomCode}</span>
-                    <span className="my-room-status">
-                      {myRoom.status === 'lobby'
-                        ? t('waitingToStart', 'Waiting to Start')
-                        : myRoom.status === 'active'
-                        ? t('inProgress', 'In Progress')
-                        : myRoom.status === 'completed'
-                        ? t('completed', 'Completed')
-                        : t('abandoned', 'Abandoned')}
-                    </span>
-                  </div>
-                  <div className="my-room-info">
-                    <span className="my-room-players">
-                      {myRoom.playerCount}/{myRoom.maxPlayers} {t('players', 'Players')}
-                    </span>
-                    <span className="my-room-host">
-                      👑 {myRoom.hostNickname}
-                    </span>
-                  </div>
-                  <button
-                    className="my-room-rejoin-button"
-                    onClick={handleRejoinMyRoom}
-                    disabled={isLoading}
-                  >
-                    {isLoading
-                      ? t('rejoining', 'Rejoining...')
-                      : t('rejoinGame', 'Rejoin Game')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="button-group">
-              <button
-                className="primary-button create-button"
-                onClick={handleCreateRoom}
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? t('creating', 'Creating...')
-                  : t('createRoom', 'Create Game')}
-              </button>
-
-              <div className="divider">
-                <span>{t('or', 'or')}</span>
-              </div>
-
-              <button
-                className="secondary-button"
-                onClick={() => setMode('joining')}
-              >
-                {t('joinRoom', 'Join with Room Code')}
-              </button>
-            </div>
-
-            {/* Active Games List */}
-            <div className="active-games-section">
-              <h2 className="active-games-title">
-                {t('activeGames', 'Active Games')}
-              </h2>
-
-              {loadingRooms && activeRooms.length === 0 ? (
-                <div className="loading-rooms">
-                  <p>{t('loadingRooms', 'Loading available games...')}</p>
-                </div>
-              ) : activeRooms.length === 0 ? (
-                <div className="no-rooms">
-                  <p>{t('noActiveGames', 'No active games available. Create one!')}</p>
-                </div>
-              ) : (
-                <div className="rooms-list">
-                  {activeRooms.map((room) => (
-                    <div key={room.roomCode} className="room-card">
-                      <div className="room-card-header">
-                        <span className="room-card-code">{room.roomCode}</span>
-                        <span className="room-card-players">
-                          {room.playerCount}/{room.maxPlayers} {t('players', 'Players')}
-                        </span>
-                      </div>
-                      <div className="room-card-info">
-                        <span className="room-card-host">
-                          👑 {room.hostNickname}
-                        </span>
-                        <span className="room-card-status">
-                          {t('waitingInLobby', 'Waiting in Lobby')}
-                        </span>
-                      </div>
-                      <button
-                        className="room-card-join-button"
-                        onClick={() => handleQuickJoinRoom(room.roomCode)}
-                        disabled={isLoading}
-                      >
-                        {t('join', 'Join')}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <LobbyWelcome
+            myRoom={myRoom}
+            activeRooms={activeRooms}
+            loadingRooms={loadingRooms}
+            isLoading={isLoading}
+            onCreateRoom={handleCreateRoom}
+            onJoinRoom={() => setMode('joining')}
+            onRejoinMyRoom={handleRejoinMyRoom}
+            onQuickJoinRoom={handleQuickJoinRoom}
+          />
         )}
 
         {mode === 'nickname-for-create' && (
-          <div className="nickname-mode">
+          <div className={styles.nicknameMode}>
             <button
-              className="back-button"
+              className={styles.backButton}
               onClick={() => {
                 setMode('initial');
                 setError(null);
@@ -699,9 +254,9 @@ export function Lobby() {
               ← {t('back', 'Back')}
             </button>
 
-            <div className="nickname-content">
+            <div className={styles.nicknameContent}>
               <h2>{t('enterNicknameTitle', 'Enter Your Nickname')}</h2>
-              <p className="nickname-instruction">
+              <p className={styles.nicknameInstruction}>
                 {t('nicknameInstruction', 'Choose a nickname for this game')}
               </p>
 
@@ -710,7 +265,7 @@ export function Lobby() {
                 onCancel={() => setMode('initial')}
                 isLoading={isLoading}
                 error={error || undefined}
-                initialValue={localStorage.getItem('playerNickname') || ''}
+                initialValue={getPlayerNickname() || ''}
                 showCancel={true}
               />
             </div>
@@ -718,9 +273,9 @@ export function Lobby() {
         )}
 
         {mode === 'joining' && !room && (
-          <div className="join-mode">
+          <div className={styles.joinMode}>
             <button
-              className="back-button"
+              className={styles.backButton}
               onClick={() => {
                 setMode('initial');
                 setError(null);
@@ -729,9 +284,9 @@ export function Lobby() {
               ← {t('back', 'Back')}
             </button>
 
-            <div className="join-content">
+            <div className={styles.joinContent}>
               <h2>{t('joinGameTitle', 'Join a Game')}</h2>
-              <p className="join-instruction">
+              <p className={styles.joinInstruction}>
                 {t('enterJoinDetails', 'Enter the room code and your nickname')}
               </p>
 
@@ -739,621 +294,36 @@ export function Lobby() {
                 onSubmit={handleJoinRoom}
                 isLoading={isLoading}
                 error={error || undefined}
-                initialNickname={localStorage.getItem('playerNickname') || ''}
+                initialNickname={getPlayerNickname() || ''}
               />
             </div>
           </div>
         )}
 
         {mode === 'in-room' && room && (
-          <div className="in-room-mode" data-testid="lobby-page">
-            <div className="room-header">
-              <div className="room-code-section">
-                <h2>
-                  {t('roomCode', 'Room Code')}: <span className="room-code" data-testid="room-code">{room.roomCode}</span>
-                </h2>
-                <div className="copy-area">
-                  <button
-                    className="copy-button"
-                    onClick={handleCopyRoomCode}
-                    data-testid="copy-room-code"
-                    aria-label={t('copyRoomCode', 'Copy room code')}
-                  >
-                    📋 {t('copy', 'Copy')}
-                  </button>
-                  {showCopied && (
-                    <span className="copied-message">
-                      {t('copied', 'Copied!')}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {isCurrentPlayerHost && (
-                <span className="host-indicator" data-testid="host-indicator">
-                  👑 {t('youAreHost', 'You are the host')}
-                </span>
-              )}
-            </div>
-
-            {/* Start Game Section - Always visible at top */}
-            <div className="game-controls-section">
-              {isCurrentPlayerHost ? (
-                <div className="host-controls">
-                  {/* Error banner near the button for visibility */}
-                  {error && (
-                    <div className="error-banner-inline" role="alert" style={{
-                      marginBottom: '16px',
-                      padding: '16px',
-                      backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                      border: '2px solid #ef4444',
-                      borderRadius: '8px',
-                      color: '#ef4444',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      textAlign: 'center'
-                    }}>
-                      ⚠️ {error}
-                    </div>
-                  )}
-
-                  <button
-                    className="primary-button start-button"
-                    onClick={handleStartGame}
-                    disabled={!canStartGame}
-                    style={{
-                      fontSize: '20px',
-                      padding: '16px 32px',
-                      minHeight: '60px',
-                      backgroundColor: canStartGame ? '#2ecc71' : '#555',
-                      cursor: canStartGame ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    🎮 {t('startGame', 'Start Game')}
-                  </button>
-
-                  {!canStartGame && (
-                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px' }}>
-                      ⏳ {t('waitingForCharacterSelection', 'Please select a character to start...')}
-                    </p>
-                  )}
-                  {canStartGame && !allPlayersReady && (
-                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#f39c12' }}>
-                      ⚠️ {t('playersNeedToSelect', 'Some players need to select characters')}
-                    </p>
-                  )}
-                  {canStartGame && allPlayersReady && (
-                    <p className="start-hint" style={{ fontSize: '16px', marginTop: '12px', color: '#2ecc71' }}>
-                      ✅ {t('readyToStart', 'All players ready! Click Start Game')}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="player-waiting">
-                  <p style={{ fontSize: '18px', padding: '20px', backgroundColor: '#333', borderRadius: '8px' }}>
-                    ⏳ {t('waitingForHost', 'Waiting for host to start the game...')}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="room-layout">
-              <div className="room-section">
-                <PlayerList players={players} currentPlayerId={currentPlayerId || undefined} />
-              </div>
-
-              <div className="room-section">
-                <CharacterSelect
-                  selectedClass={selectedCharacter}
-                  disabledClasses={disabledClasses}
-                  onSelect={handleSelectCharacter}
-                />
-              </div>
-            </div>
-
-            {/* Scenario Selection (US5 - Host Only) */}
-            {isCurrentPlayerHost && (
-              <div className="scenario-section">
-                <ScenarioSelectionPanel
-                  selectedScenarioId={selectedScenario}
-                  onSelectScenario={handleSelectScenario}
-                />
-              </div>
-            )}
-          </div>
+          <LobbyRoomView
+            roomCode={room.roomCode}
+            players={players}
+            currentPlayerId={currentPlayerId || undefined}
+            isHost={isCurrentPlayerHost}
+            selectedCharacter={selectedCharacter}
+            disabledClasses={disabledClasses}
+            selectedScenario={selectedScenario}
+            canStartGame={canStartGame}
+            allPlayersReady={playersReady}
+            error={error}
+            onSelectCharacter={handleSelectCharacter}
+            onSelectScenario={handleSelectScenario}
+            onStartGame={handleStartGame}
+          />
         )}
 
         {error && mode !== 'joining' && (
-          <div className="error-banner" role="alert">
+          <div className={styles.errorBanner} role="alert">
             {error}
           </div>
         )}
       </main>
-
-      <style>{`
-        .lobby-page {
-          min-height: 100vh;
-          background: #1a1a1a;
-          color: #ffffff;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .lobby-header {
-          padding: 24px;
-          text-align: center;
-          border-bottom: 2px solid #333;
-        }
-
-        .lobby-header h1 {
-          margin: 0;
-          font-size: 32px;
-          font-weight: 700;
-        }
-
-        .welcome-message {
-          margin: 12px 0 0 0;
-          font-size: 18px;
-          color: #aaa;
-        }
-
-        .welcome-message strong {
-          color: #2ecc71;
-          font-weight: 600;
-        }
-
-        .game-controls-section {
-          margin-bottom: 32px;
-          padding: 24px;
-          background: rgba(46, 204, 113, 0.1);
-          border: 2px solid #2ecc71;
-          border-radius: 12px;
-          text-align: center;
-        }
-
-        .lobby-content {
-          flex: 1;
-          padding: 32px 24px;
-          max-width: 1200px;
-          width: 100%;
-          margin: 0 auto;
-        }
-
-        .initial-mode, .join-mode, .in-room-mode {
-          animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .button-group {
-          max-width: 400px;
-          margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .primary-button, .secondary-button {
-          padding: 16px 32px;
-          font-size: 18px;
-          font-weight: 600;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-          min-height: 56px;
-        }
-
-        .primary-button {
-          color: #ffffff;
-          background: #5a9fd4;
-        }
-
-        .primary-button:hover:not(:disabled) {
-          background: #4a8fc4;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(90, 159, 212, 0.4);
-        }
-
-        .primary-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .secondary-button {
-          color: #ffffff;
-          background: transparent;
-          border: 2px solid #5a9fd4;
-        }
-
-        .secondary-button:hover {
-          background: rgba(90, 159, 212, 0.1);
-        }
-
-        .divider {
-          text-align: center;
-          position: relative;
-        }
-
-        .divider::before, .divider::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          width: 40%;
-          height: 1px;
-          background: #444;
-        }
-
-        .divider::before { left: 0; }
-        .divider::after { right: 0; }
-
-        .divider span {
-          padding: 0 16px;
-          color: #888;
-        }
-
-        .back-button {
-          margin-bottom: 24px;
-          padding: 8px 16px;
-          font-size: 14px;
-          color: #5a9fd4;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .back-button:hover {
-          color: #4a8fc4;
-        }
-
-        .join-content,
-        .nickname-content {
-          max-width: 500px;
-          margin: 0 auto;
-          text-align: center;
-        }
-
-        .join-content h2,
-        .nickname-content h2 {
-          margin: 0 0 16px 0;
-          font-size: 28px;
-        }
-
-        .join-instruction,
-        .nickname-instruction {
-          margin: 0 0 32px 0;
-          color: #aaa;
-        }
-
-        .room-header {
-          margin-bottom: 32px;
-          padding: 20px;
-          text-align: center;
-          background: #2c2c2c;
-          border-radius: 12px;
-        }
-
-        .room-header h2 {
-          margin: 0 0 8px 0;
-          font-size: 20px;
-          font-weight: 500;
-        }
-
-        .room-code-section {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-
-        .room-code {
-          font-size: 32px;
-          font-weight: 700;
-          letter-spacing: 0.2em;
-          color: #5a9fd4;
-        }
-
-        .copy-area {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .copy-button {
-          padding: 8px 16px;
-          font-size: 14px;
-          background: #5a9fd4;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .copy-button:hover {
-          background: #4a8fc4;
-          transform: translateY(-1px);
-        }
-
-        .copied-message {
-          color: #10b981;
-          font-size: 14px;
-          font-weight: 600;
-          animation: fadeIn 0.2s;
-        }
-
-        .host-indicator {
-          display: inline-block;
-          margin-top: 8px;
-          padding: 6px 12px;
-          font-size: 14px;
-          background: rgba(255, 215, 0, 0.2);
-          border-radius: 8px;
-        }
-
-        .room-layout {
-          display: grid;
-          grid-template-columns: 1fr 2fr;
-          gap: 32px;
-          margin-bottom: 32px;
-        }
-
-        .room-section {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .host-controls {
-          text-align: center;
-        }
-
-        .start-button {
-          min-width: 300px;
-        }
-
-        .start-hint {
-          margin-top: 16px;
-          color: #888;
-          font-size: 14px;
-        }
-
-        .player-waiting {
-          text-align: center;
-          padding: 32px;
-          color: #888;
-          font-style: italic;
-        }
-
-        .error-banner {
-          margin-top: 24px;
-          padding: 16px;
-          text-align: center;
-          color: #ef4444;
-          background: rgba(239, 68, 68, 0.1);
-          border: 2px solid #ef4444;
-          border-radius: 8px;
-        }
-
-        .my-room-section {
-          margin-bottom: 48px;
-          max-width: 600px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .my-room-title {
-          font-size: 20px;
-          font-weight: 600;
-          margin-bottom: 16px;
-          text-align: center;
-          color: #ffd700;
-        }
-
-        .my-room-card {
-          background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%);
-          border: 3px solid #ffd700;
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 8px 24px rgba(255, 215, 0, 0.2);
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .my-room-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding-bottom: 12px;
-          border-bottom: 2px solid #3a3a3a;
-        }
-
-        .my-room-code {
-          font-size: 28px;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          color: #ffd700;
-        }
-
-        .my-room-status {
-          font-size: 14px;
-          color: #10b981;
-          background: rgba(16, 185, 129, 0.1);
-          padding: 6px 12px;
-          border-radius: 12px;
-          font-weight: 600;
-        }
-
-        .my-room-info {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          color: #ddd;
-        }
-
-        .my-room-players {
-          font-size: 16px;
-          background: #1a1a1a;
-          padding: 6px 12px;
-          border-radius: 8px;
-        }
-
-        .my-room-host {
-          font-size: 14px;
-        }
-
-        .my-room-rejoin-button {
-          width: 100%;
-          padding: 16px;
-          font-size: 18px;
-          font-weight: 700;
-          background: #ffd700;
-          color: #1a1a1a;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .my-room-rejoin-button:hover:not(:disabled) {
-          background: #ffed4e;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .my-room-rejoin-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .active-games-section {
-          margin-top: 48px;
-          max-width: 800px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .active-games-title {
-          font-size: 24px;
-          font-weight: 600;
-          margin-bottom: 24px;
-          text-align: center;
-          color: #ffffff;
-        }
-
-        .loading-rooms,
-        .no-rooms {
-          padding: 48px 24px;
-          text-align: center;
-          color: #888;
-        }
-
-        .rooms-list {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 16px;
-        }
-
-        .room-card {
-          background: #2c2c2c;
-          border: 2px solid #3a3a3a;
-          border-radius: 12px;
-          padding: 20px;
-          transition: all 0.2s;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .room-card:hover {
-          border-color: #5a9fd4;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(90, 159, 212, 0.2);
-        }
-
-        .room-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-
-        .room-card-code {
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          color: #5a9fd4;
-        }
-
-        .room-card-players {
-          font-size: 14px;
-          color: #aaa;
-          background: #1a1a1a;
-          padding: 4px 12px;
-          border-radius: 12px;
-        }
-
-        .room-card-info {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          margin-bottom: 12px;
-        }
-
-        .room-card-host {
-          font-size: 14px;
-          color: #ddd;
-        }
-
-        .room-card-status {
-          font-size: 12px;
-          color: #888;
-          font-style: italic;
-        }
-
-        .room-card-join-button {
-          width: 100%;
-          padding: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          background: #5a9fd4;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .room-card-join-button:hover:not(:disabled) {
-          background: #4a8fc4;
-          transform: translateY(-1px);
-        }
-
-        .room-card-join-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-          .room-layout {
-            grid-template-columns: 1fr;
-          }
-
-          .start-button {
-            min-width: 100%;
-          }
-
-          .rooms-list {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }

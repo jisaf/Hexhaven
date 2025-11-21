@@ -1,0 +1,121 @@
+/**
+ * useGameWebSocket Hook
+ *
+ * Manages WebSocket event listeners for the GameBoard component.
+ * Handles game_started, character_moved, turn_started, game_state_update events.
+ */
+
+import { useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
+import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
+import type { Axial } from '../game/hex-utils';
+
+interface GameWebSocketHandlers {
+  onGameStarted: (data: any, ackCallback?: (ack: boolean) => void) => void;
+  onCharacterMoved: (data: CharacterMovedData) => void;
+  onTurnStarted: (data: TurnStartedData) => void;
+  onGameStateUpdate: (data: { gameState: unknown }) => void;
+  onConnectionStatusChange: (status: 'connected' | 'disconnected' | 'reconnecting') => void;
+}
+
+interface CharacterMovedData {
+  characterId: string;
+  fromHex: Axial;
+  toHex: Axial;
+  movementPath: Axial[];
+}
+
+interface TurnStartedData {
+  turnIndex: number;
+  entityId: string;
+  entityType: 'character' | 'monster';
+}
+
+export function useGameWebSocket(handlers: GameWebSocketHandlers) {
+  const navigate = useNavigate();
+
+  const handleGameStarted = useCallback((data: any, ackCallback?: (ack: boolean) => void) => {
+    console.log('handleGameStarted called with data:', data);
+    handlers.onGameStarted(data, ackCallback);
+  }, [handlers]);
+
+  const handleCharacterMoved = useCallback((data: CharacterMovedData) => {
+    handlers.onCharacterMoved(data);
+  }, [handlers]);
+
+  const handleTurnStarted = useCallback((data: TurnStartedData) => {
+    console.log('handleNextTurn called with data:', data);
+    handlers.onTurnStarted(data);
+  }, [handlers]);
+
+  const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
+    handlers.onGameStateUpdate(data);
+  }, [handlers]);
+
+  const handleWsConnected = useCallback(() => {
+    handlers.onConnectionStatusChange('connected');
+  }, [handlers]);
+
+  const handleWsDisconnected = useCallback(() => {
+    handlers.onConnectionStatusChange('disconnected');
+    roomSessionManager.onDisconnected();
+  }, [handlers]);
+
+  const handleWsReconnecting = useCallback(() => {
+    handlers.onConnectionStatusChange('reconnecting');
+  }, [handlers]);
+
+  // Setup WebSocket event listeners and ensure joined to room
+  useEffect(() => {
+    console.log('🔧 Setting up WebSocket listeners and ensuring room join');
+
+    // Step 1: Register all event listeners FIRST
+    console.log('📡 Registering WebSocket event listeners...');
+
+    // Connection status
+    websocketService.on('ws_connected', handleWsConnected);
+    websocketService.on('ws_disconnected', handleWsDisconnected);
+    websocketService.on('ws_reconnecting', handleWsReconnecting);
+
+    // Game events
+    console.log('✅ Registering game_started event listener');
+    websocketService.on('game_started', handleGameStarted);
+    websocketService.on('character_moved', handleCharacterMoved);
+    websocketService.on('turn_started', handleTurnStarted);
+    websocketService.on('game_state_update', handleGameStateUpdate);
+    console.log('✅ All event listeners registered');
+
+    // Step 2: Get room info from localStorage
+    const roomCode = getLastRoomCode();
+    const playerUUID = getPlayerUUID();
+    const nickname = getPlayerNickname();
+
+    if (!roomCode || !playerUUID || !nickname) {
+      console.error('❌ Cannot join room - missing roomCode, playerUUID, or nickname');
+      navigate('/');
+      return;
+    }
+
+    console.log(`🔄 GameBoard mounted - ensuring joined to room ${roomCode}`);
+
+    // Step 3: Ensure joined via RoomSessionManager (handles idempotency)
+    roomSessionManager.ensureJoined('refresh').catch((error) => {
+      console.error('❌ Failed to join room:', error);
+      navigate('/'); // Return to lobby on error
+    });
+
+    // Cleanup
+    return () => {
+      console.log('🧹 Cleaning up WebSocket listeners');
+      websocketService.off('ws_connected');
+      websocketService.off('ws_disconnected');
+      websocketService.off('ws_reconnecting');
+      websocketService.off('game_started');
+      websocketService.off('character_moved');
+      websocketService.off('turn_started');
+      websocketService.off('game_state_update');
+    };
+  }, [navigate, handleGameStarted, handleCharacterMoved, handleTurnStarted, handleGameStateUpdate, handleWsConnected, handleWsDisconnected, handleWsReconnecting]);
+}

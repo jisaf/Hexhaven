@@ -1,0 +1,64 @@
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statusText {
+  text-transform: capitalize;
+}
+
+/* Connected state */
+.connected {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.connected .statusDot {
+  background: #2ecc71;
+  box-shadow: 0 0 4px #2ecc71;
+}
+
+/* Disconnected state */
+.disconnected {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+.disconnected .statusDot {
+  background: #e74c3c;
+  box-shadow: 0 0 4px #e74c3c;
+}
+
+/* Reconnecting state */
+.reconnecting {
+  background: rgba(241, 196, 15, 0.2);
+  color: #f1c40f;
+}
+
+.reconnecting .statusDot {
+  background: #f1c40f;
+  box-shadow: 0 0 4px #f1c40f;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
