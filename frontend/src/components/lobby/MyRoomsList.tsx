@@ -7,27 +7,14 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { RoomWithPlayers } from '../../hooks/useRoomManagement';
 import styles from './MyRoomsList.module.css';
 
-interface RoomData {
-  room: {
-    id: string;
-    roomCode: string;
-    status: string;
-    playerCount: number;
-  };
-  players: {
-    nickname: string;
-    isHost: boolean;
-  }[];
-}
-
 interface MyRoomsListProps {
-  rooms: RoomData[];
-  currentPlayerUuid: string;
+  rooms: RoomWithPlayers[];
 }
 
-export function MyRoomsList({ rooms, currentPlayerUuid }: MyRoomsListProps) {
+export function MyRoomsList({ rooms }: MyRoomsListProps) {
   const { t } = useTranslation('lobby');
   const navigate = useNavigate();
 

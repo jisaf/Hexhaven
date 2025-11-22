@@ -235,7 +235,7 @@ export function Lobby() {
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
           <>
-            <MyRoomsList rooms={myRooms} currentPlayerUuid={getPlayerUUID() || ''} />
+            <MyRoomsList rooms={myRooms} />
             <LobbyWelcome
               myRoom={myRoom}
               activeRooms={activeRooms}

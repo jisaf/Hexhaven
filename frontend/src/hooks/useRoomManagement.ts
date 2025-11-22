@@ -27,6 +27,20 @@ export interface ActiveRoom {
   createdAt: string;
 }
 
+export interface RoomWithPlayers {
+  room: {
+    id: string;
+    roomCode: string;
+    status: string;
+    scenarioId?: string;
+    playerCount: number;
+    createdAt: string;
+    updatedAt: string;
+    expiresAt: string;
+  };
+  players: Player[];
+}
+
 interface UseRoomManagementOptions {
   mode: string;
   onRoomCreated?: () => void;
@@ -38,7 +52,7 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
   const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
-  const [myRooms, setMyRooms] = useState<any[]>([]); // All rooms player is in
+  const [myRooms, setMyRooms] = useState<RoomWithPlayers[]>([]); // All rooms player is in
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
