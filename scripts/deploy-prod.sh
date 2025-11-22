@@ -36,14 +36,17 @@ VITE_API_URL="http://$HOST" npm run build -w frontend
 
 # Create deployment package
 info "Creating deployment package"
-mkdir -p /tmp/hexhaven-deploy/frontend
+mkdir -p /tmp/hexhaven-deploy/frontend /tmp/hexhaven-deploy/backend /tmp/hexhaven-deploy/scripts
 cp package.json package-lock.json /tmp/hexhaven-deploy/
-cp -r backend/package.json backend/dist backend/prisma /tmp/hexhaven-deploy/backend/ 2>/dev/null || mkdir -p /tmp/hexhaven-deploy/backend && cp backend/package.json /tmp/hexhaven-deploy/backend/ && cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
+cp backend/package.json /tmp/hexhaven-deploy/backend/
+cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
 cp -r frontend/dist/* /tmp/hexhaven-deploy/frontend/
 cp ecosystem.config.js /tmp/hexhaven-deploy/
-mkdir -p /tmp/hexhaven-deploy/scripts
 cp scripts/deploy.sh scripts/server-config.sh /tmp/hexhaven-deploy/scripts/
-tar czf deploy.tar.gz -C /tmp/hexhaven-deploy .
+cd /tmp/hexhaven-deploy
+tar czf /tmp/deploy.tar.gz *
+cd -
+mv /tmp/deploy.tar.gz deploy.tar.gz
 
 # Upload
 info "Uploading to $HOST"
@@ -62,14 +65,19 @@ if ! command -v node >/dev/null; then
 fi
 
 # Extract
-cd /tmp
-tar xzf deploy.tar.gz
-rm deploy.tar.gz
+mkdir -p /tmp/hexhaven-extract
+cd /tmp/hexhaven-extract
+tar xzf /tmp/deploy.tar.gz
+rm /tmp/deploy.tar.gz
 
 # Copy to deployment directory
 sudo mkdir -p /opt/hexhaven
-sudo cp -r . /opt/hexhaven/
+sudo cp -r * /opt/hexhaven/
 sudo chown -R ubuntu:ubuntu /opt/hexhaven
+
+# Cleanup extract directory
+cd /tmp
+rm -rf /tmp/hexhaven-extract
 
 # Deploy
 cd /opt/hexhaven
