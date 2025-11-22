@@ -16,19 +16,19 @@ No manual action needed - just create or update a PR targeting `main`.
 
 ## Production Deployment
 
-### deploy-to-production.sh
+### deploy-prod.sh
 
-**Main deployment script for production server (129.213.88.197)**
+**Fresh deployment script for production server (129.213.88.197)**
 
 Deploys the complete application to the production server via SSH.
 
 **Usage:**
 ```bash
 # Deploy using default SSH authentication
-./scripts/deploy-to-production.sh
+./scripts/deploy-prod.sh
 
 # Deploy using a specific SSH key
-./scripts/deploy-to-production.sh /path/to/ssh-key
+./scripts/deploy-prod.sh /path/to/ssh-key
 ```
 
 **What it does:**

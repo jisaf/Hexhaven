@@ -20,10 +20,10 @@ You can also deploy manually using the SSH deployment script:
 
 ```bash
 # Deploy using default SSH authentication (SSH key from ~/.ssh)
-./scripts/deploy-to-production.sh
+./scripts/deploy-prod.sh
 
 # Or specify a custom SSH key
-./scripts/deploy-to-production.sh /path/to/your/ssh-key
+./scripts/deploy-prod.sh /path/to/your/ssh-key
 ```
 
 **Prerequisites:**

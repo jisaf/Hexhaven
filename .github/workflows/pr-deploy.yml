@@ -35,7 +35,7 @@ jobs:
 
       - name: Run deployment script
         run: |
-          ./scripts/deploy-to-production.sh ~/.ssh/deploy_key
+          ./scripts/deploy-prod.sh ~/.ssh/deploy_key
 
       - name: Cleanup
         if: always()

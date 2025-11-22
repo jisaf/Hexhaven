@@ -10,7 +10,7 @@
 - Pull request reopened targeting `main`
 
 ### What It Does
-Simply executes the `scripts/deploy-to-production.sh` script, which:
+Simply executes the `scripts/deploy-prod.sh` script, which:
 1. Runs tests and linting
 2. Builds backend and frontend
 3. Creates deployment archive
