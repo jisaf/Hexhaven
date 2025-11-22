@@ -124,15 +124,6 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     setError(null);
 
     try {
-      // Switch room context to prepare for new room (keeps old room membership)
-      if (websocketService.isConnected()) {
-        console.log('Switching to new room context (keeping old room membership)');
-        roomSessionManager.switchRoom();
-
-        // Wait a brief moment for the state transition
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
       // Get or create UUID
       const uuid = getOrCreatePlayerUUID();
 
@@ -224,15 +215,6 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
   const joinRoom = useCallback(async (roomCode: string, playerNickname: string) => {
     setIsLoading(true);
     setError(null);
-
-    // Switch room context to prepare for joining (keeps old room membership)
-    if (websocketService.isConnected()) {
-      console.log('Switching to new room context (keeping old room membership)');
-      roomSessionManager.switchRoom();
-
-      // Wait a brief moment for the state transition
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
 
     // Get or create UUID (stored in localStorage)
     getOrCreatePlayerUUID();

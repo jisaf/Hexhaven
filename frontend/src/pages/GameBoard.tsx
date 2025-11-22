@@ -19,7 +19,6 @@ import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
-import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
@@ -196,9 +195,7 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
-    // Switch room context (keeps room in player's game list)
-    // The room will persist if it's active, allowing rejoin later
-    roomSessionManager.switchRoom();
+    // Navigate to lobby - cleanup will happen automatically when Lobby page mounts
     navigate('/');
   };
 
