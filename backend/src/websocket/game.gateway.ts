@@ -540,15 +540,16 @@ export class GameGateway
 
       this.logger.log(`Start game request from ${playerUUID}`);
 
-      const player = playerService.getPlayerByUuid(playerUUID);
-      if (!player) {
-        throw new Error('Player not found');
-      }
-
       // Find player's room
       const room = roomService.getRoomByPlayerId(playerUUID);
       if (!room) {
         throw new Error('Player not in a room');
+      }
+
+      // Get player from room (not global registry)
+      const player = room.getPlayer(playerUUID);
+      if (!player) {
+        throw new Error('Player not found in room');
       }
 
       // Verify player is host
