@@ -78,7 +78,7 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
         // Also set myRoom to the first room for backwards compatibility
         if (data.rooms && data.rooms.length > 0) {
           const firstRoom = data.rooms[0];
-          const hostPlayer = firstRoom.players.find((p: Player) => p.isHost);
+          const hostPlayer = firstRoom.players.find((p) => p.isHost);
           setMyRoom({
             roomCode: firstRoom.room.roomCode,
             status: firstRoom.room.status,
