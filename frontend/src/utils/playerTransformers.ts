@@ -7,7 +7,7 @@
 import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
 
-interface RawPlayerData {
+export interface RawPlayerData {
   id: string;
   nickname: string;
   isHost: boolean;

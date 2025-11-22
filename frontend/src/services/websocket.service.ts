@@ -8,6 +8,14 @@
 
 import { io, Socket } from 'socket.io-client';
 import { getOrCreatePlayerUUID, saveLastRoomCode } from '../utils/storage';
+import type {
+  RoomJoinedPayload,
+  GameStartedPayload,
+  PlayerLeftPayload,
+  PlayerDisconnectedPayload,
+  PlayerReconnectedPayload,
+  CharacterSelectedPayload
+} from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -22,29 +30,17 @@ export interface WebSocketEvents {
   ws_reconnected: () => void;
 
   // Room events
-  room_joined: (data: {
-    roomCode: string;
-    roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
-    players: { id: string; nickname: string; isHost: boolean; characterClass?: string }[];
-    playerId?: string;
-    isHost?: boolean
-  }) => void;
+  room_joined: (data: RoomJoinedPayload) => void;
   player_joined: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
-  player_left: (data: { playerId: string }) => void;
-  player_disconnected: (data: { playerId: string; playerName: string }) => void;
-  player_reconnected: (data: { playerId: string; playerName: string }) => void;
+  player_left: (data: PlayerLeftPayload) => void;
+  player_disconnected: (data: PlayerDisconnectedPayload) => void;
+  player_reconnected: (data: PlayerReconnectedPayload) => void;
 
   // Character selection
-  character_selected: (data: { playerId: string; characterClass: string }) => void;
+  character_selected: (data: CharacterSelectedPayload) => void;
 
   // Game start
-  game_started: (data: {
-    scenarioId: string;
-    scenarioName: string;
-    mapLayout: { coordinates: { q: number; r: number }; terrain: string; occupiedBy: string | null; hasLoot: boolean; hasTreasure: boolean }[];
-    monsters: { id: string; monsterType: string; isElite: boolean; currentHex: { q: number; r: number }; health: number; maxHealth: number; conditions: string[] }[];
-    characters: { id: string; playerId: string; classType: string; health: number; maxHealth: number; currentHex: { q: number; r: number }; conditions: string[]; isExhausted: boolean }[]
-  }) => void;
+  game_started: (data: GameStartedPayload) => void;
 
   // Turn events
   turn_order_determined: (data: { turnOrder: string[] }) => void;

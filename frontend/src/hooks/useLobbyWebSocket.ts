@@ -10,9 +10,10 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getWebSocketUrl, logApiConfig } from '../config/api';
 import { saveLastRoomCode } from '../utils/storage';
-import { transformPlayers, transformPlayer } from '../utils/playerTransformers';
+import { transformPlayers, transformPlayer, type RawPlayerData } from '../utils/playerTransformers';
 import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
+import type { RoomJoinedPayload, GameStartedPayload } from '../../../shared/types/events';
 
 interface LobbyWebSocketHandlers {
   onRoomJoined: (data: RoomJoinedData) => void;
@@ -30,25 +31,9 @@ interface RoomJoinedData {
   isHost?: boolean;
 }
 
-interface RawRoomJoinedData {
-  roomCode: string;
-  roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
-  players: unknown[];
-  playerId?: string;
-  isHost?: boolean;
-}
-
-interface RawPlayer {
-  [key: string]: unknown;
-}
-
-interface GameStartedEventData {
-  [key: string]: unknown;
-}
-
 export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
 
-  const handleRoomJoined = useCallback((data: RawRoomJoinedData) => {
+  const handleRoomJoined = useCallback((data: RoomJoinedPayload) => {
     console.log('Room joined event received:', data);
 
     // Save room code to localStorage for GameBoard to use
@@ -64,12 +49,12 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
       roomCode: data.roomCode,
       roomStatus: data.roomStatus,
       players: transformedPlayers,
-      playerId: data.playerId,
-      isHost: data.isHost,
+      playerId: undefined, // Not provided in RoomJoinedPayload - determined from players array
+      isHost: undefined, // Not provided in RoomJoinedPayload - determined from players array
     });
   }, [handlers]);
 
-  const handlePlayerJoined = useCallback((data: { player: RawPlayer }) => {
+  const handlePlayerJoined = useCallback((data: { player: RawPlayerData }) => {
     const transformedPlayer = transformPlayer(data.player);
     handlers.onPlayerJoined(transformedPlayer);
   }, [handlers]);
@@ -82,7 +67,7 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
     handlers.onCharacterSelected(data.playerId, data.characterClass as CharacterClass);
   }, [handlers]);
 
-  const handleGameStarted = useCallback((data: GameStartedEventData) => {
+  const handleGameStarted = useCallback((data: GameStartedPayload) => {
     console.log('Game started event received in Lobby');
     // Update RoomSessionManager with game state
     roomSessionManager.onGameStarted(data);

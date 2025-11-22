@@ -28,19 +28,8 @@ import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
+import type { GameStartedPayload } from '../../../shared/types/events';
 import styles from './GameBoard.module.css';
-
-interface GameStartedData {
-  characters?: Array<{
-    id: string;
-    playerId: string;
-    abilityDeck?: AbilityCard[];
-    [key: string]: unknown;
-  }>;
-  mapLayout?: HexTileData[];
-  monsters?: Monster[];
-  [key: string]: unknown;
-}
 
 export function GameBoard() {
   const navigate = useNavigate();
@@ -92,20 +81,21 @@ export function GameBoard() {
   });
 
   // Event handlers for WebSocket
-  const handleGameStarted = useCallback((data: GameStartedData, ackCallback?: (ack: boolean) => void) => {
+  const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
     console.log('handleGameStarted called with data:', data);
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
-      const myCharacter = data.characters?.find(char => char.playerId === playerUUID);
+      const myCharacter = data.characters.find(char => char.playerId === playerUUID);
 
       if (myCharacter) {
         setMyCharacterId(myCharacter.id);
 
-        // Load ability deck
-        if (myCharacter.abilityDeck && Array.isArray(myCharacter.abilityDeck)) {
-          setPlayerHand(myCharacter.abilityDeck as never[]);
+        // Load ability deck (if available in extended character data)
+        const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+        if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+          setPlayerHand(characterWithDeck.abilityDeck);
           setShowCardSelection(true);
         }
       }
@@ -113,8 +103,14 @@ export function GameBoard() {
       // Initialize board if ready
       const boardData: GameBoardData = {
         tiles: data.mapLayout as HexTileData[],
-        characters: data.characters as CharacterData[],
-        monsters: (data.monsters as Monster[]) || [],
+        characters: data.characters.map(char => ({
+          ...char,
+          currentHex: char.currentHex as Axial,
+        })) as CharacterData[],
+        monsters: data.monsters.map(monster => ({
+          ...monster,
+          currentHex: monster.currentHex as Axial,
+        })) as Monster[],
       };
 
       initializeBoard(boardData, ackCallback);
