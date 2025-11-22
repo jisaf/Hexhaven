@@ -41,7 +41,7 @@ jobs:
         run: npm run build
         working-directory: ./frontend
         env:
-          VITE_API_URL: http://${{ env.STAGING_HOST }}:3000
+          VITE_API_URL: http://${{ env.STAGING_HOST }}:3000/api
 
       - name: Create deployment archive
         run: |

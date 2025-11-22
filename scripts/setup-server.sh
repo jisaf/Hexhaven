@@ -363,7 +363,7 @@ PORT=${BACKEND_PORT}
 HOST=0.0.0.0
 
 # Frontend Configuration (build time)
-VITE_API_URL=http://${SERVER_IP}:${BACKEND_PORT}
+VITE_API_URL=http://${SERVER_IP}:${BACKEND_PORT}/api
 
 # Session Configuration (generate secure secret in production)
 SESSION_SECRET=$(openssl rand -base64 32)

@@ -41,7 +41,7 @@ jobs:
       - name: Build frontend
         run: npm run build -w frontend
         env:
-          VITE_API_URL: http://${{ env.PRODUCTION_HOST }}
+          VITE_API_URL: http://${{ env.PRODUCTION_HOST }}/api
           NODE_ENV: production
 
       - name: Create deployment archive
