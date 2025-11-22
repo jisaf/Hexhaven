@@ -67,13 +67,13 @@ export function Lobby() {
   const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
 
-  // Navigate to game when room status becomes active
+  // Navigate to game when room status becomes active (only when creating/joining)
   useEffect(() => {
-    if (sessionState.status === 'active' && sessionState.roomCode) {
+    if (sessionState.status === 'active' && sessionState.roomCode && mode !== 'initial') {
       console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
       navigate(`/game/${sessionState.roomCode}`);
     }
-  }, [sessionState.status, sessionState.roomCode, navigate]);
+  }, [sessionState.status, sessionState.roomCode, mode, navigate]);
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
@@ -131,15 +131,6 @@ export function Lobby() {
     onCharacterSelected: handleCharacterSelected,
     onError: handleWebSocketError,
   });
-
-  // Auto-rejoin active game if player is in one
-  useEffect(() => {
-    if (myRoom && myRoom.status === 'active' && mode === 'initial') {
-      console.log('Player is in an active game, auto-rejoining room...');
-      handleRejoinMyRoom();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myRoom]);
 
   // Room creation flow (T067)
   const handleCreateRoom = () => {
