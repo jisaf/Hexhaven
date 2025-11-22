@@ -100,10 +100,10 @@ export class GameGateway
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private buildGameStatePayload(
+  private async buildGameStatePayload(
     room: any,
     roomCode: string,
-  ): GameStartedPayload {
+  ): Promise<GameStartedPayload> {
     // Get current scenario and game state
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -119,6 +119,27 @@ export class GameGateway
       });
     }
 
+    // Load ability decks for all characters
+    const charactersWithDecks = await Promise.all(
+      characters.map(async (c: any) => {
+        const charData = c.toJSON();
+        const abilityDeck = this.abilityCardService.getCardsByClass(
+          charData.characterClass,
+        );
+        return {
+          id: charData.id,
+          playerId: charData.playerId,
+          classType: charData.characterClass,
+          health: charData.currentHealth,
+          maxHealth: charData.stats.maxHealth,
+          currentHex: charData.position,
+          conditions: charData.conditions,
+          isExhausted: charData.exhausted,
+          abilityDeck, // Include ability deck for card selection
+        };
+      }),
+    );
+
     // Build game state payload
     const gameStartedPayload: GameStartedPayload = {
       scenarioId: room.scenarioId || 'scenario-1',
@@ -133,19 +154,7 @@ export class GameGateway
         maxHealth: m.maxHealth,
         conditions: m.conditions,
       })),
-      characters: characters.map((c: any) => {
-        const charData = c.toJSON();
-        return {
-          id: charData.id,
-          playerId: charData.playerId,
-          classType: charData.characterClass,
-          health: charData.currentHealth,
-          maxHealth: charData.stats.maxHealth,
-          currentHex: charData.position,
-          conditions: charData.conditions,
-          isExhausted: charData.exhausted,
-        };
-      }),
+      characters: charactersWithDecks,
     };
 
     return gameStartedPayload;
@@ -295,7 +304,10 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(
+            room,
+            roomCode,
+          );
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -628,6 +640,28 @@ export class GameGateway
         `Room ${room.roomCode} game started, status set to ACTIVE`,
       );
 
+      // Load ability cards for each character
+      const charactersWithDecks = await Promise.all(
+        characters.map(async (c) => {
+          const charData = c.toJSON();
+          // Get ability deck for this character class
+          const abilityDeck = this.abilityCardService.getCardsByClass(
+            charData.characterClass,
+          );
+          return {
+            id: charData.id,
+            playerId: charData.playerId,
+            classType: charData.characterClass,
+            health: charData.currentHealth,
+            maxHealth: charData.stats.maxHealth,
+            currentHex: charData.position,
+            conditions: charData.conditions,
+            isExhausted: charData.exhausted,
+            abilityDeck, // Include ability deck for card selection
+          };
+        }),
+      );
+
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
@@ -642,19 +676,7 @@ export class GameGateway
           maxHealth: m.maxHealth,
           conditions: m.conditions,
         })),
-        characters: characters.map((c) => {
-          const charData = c.toJSON();
-          return {
-            id: charData.id,
-            playerId: charData.playerId,
-            classType: charData.characterClass,
-            health: charData.currentHealth,
-            maxHealth: charData.stats.maxHealth,
-            currentHex: charData.position,
-            conditions: charData.conditions,
-            isExhausted: charData.exhausted,
-          };
-        }),
+        characters: charactersWithDecks,
       };
 
       // Send game_started individually to each connected client
