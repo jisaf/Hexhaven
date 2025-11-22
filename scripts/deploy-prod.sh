@@ -36,16 +36,14 @@ VITE_API_URL="http://$HOST" npm run build -w frontend
 
 # Create deployment package
 info "Creating deployment package"
-tar czf deploy.tar.gz \
-  package.json \
-  package-lock.json \
-  backend/package.json \
-  backend/dist \
-  backend/prisma \
-  frontend/dist \
-  ecosystem.config.js \
-  scripts/deploy.sh \
-  scripts/server-config.sh
+mkdir -p /tmp/hexhaven-deploy/frontend
+cp package.json package-lock.json /tmp/hexhaven-deploy/
+cp -r backend/package.json backend/dist backend/prisma /tmp/hexhaven-deploy/backend/ 2>/dev/null || mkdir -p /tmp/hexhaven-deploy/backend && cp backend/package.json /tmp/hexhaven-deploy/backend/ && cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
+cp -r frontend/dist/* /tmp/hexhaven-deploy/frontend/
+cp ecosystem.config.js /tmp/hexhaven-deploy/
+mkdir -p /tmp/hexhaven-deploy/scripts
+cp scripts/deploy.sh scripts/server-config.sh /tmp/hexhaven-deploy/scripts/
+tar czf deploy.tar.gz -C /tmp/hexhaven-deploy .
 
 # Upload
 info "Uploading to $HOST"
@@ -117,6 +115,7 @@ DEPLOY
 
 # Cleanup
 rm deploy.tar.gz
+rm -rf /tmp/hexhaven-deploy
 
 info "✓ Deployment complete"
 info "URL: http://$HOST"
