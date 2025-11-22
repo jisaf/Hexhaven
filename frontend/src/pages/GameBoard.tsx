@@ -196,9 +196,9 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
-    // Clean up room session before leaving
-    websocketService.leaveRoom();
-    roomSessionManager.reset();
+    // Switch room context (keeps room in player's game list)
+    // The room will persist if it's active, allowing rejoin later
+    roomSessionManager.switchRoom();
     navigate('/');
   };
 

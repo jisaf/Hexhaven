@@ -124,13 +124,12 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     setError(null);
 
     try {
-      // Clean up any existing room session before creating a new one
+      // Switch room context to prepare for new room (keeps old room membership)
       if (websocketService.isConnected()) {
-        console.log('Leaving existing room before creating new one');
-        websocketService.leaveRoom();
-        roomSessionManager.reset();
+        console.log('Switching to new room context (keeping old room membership)');
+        roomSessionManager.switchRoom();
 
-        // Wait a brief moment for the leave event to be processed
+        // Wait a brief moment for the state transition
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
@@ -226,13 +225,12 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     setIsLoading(true);
     setError(null);
 
-    // Clean up any existing room session before joining a new one
+    // Switch room context to prepare for joining (keeps old room membership)
     if (websocketService.isConnected()) {
-      console.log('Leaving existing room before joining new one');
-      websocketService.leaveRoom();
-      roomSessionManager.reset();
+      console.log('Switching to new room context (keeping old room membership)');
+      roomSessionManager.switchRoom();
 
-      // Wait a brief moment for the leave event to be processed
+      // Wait a brief moment for the state transition
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
