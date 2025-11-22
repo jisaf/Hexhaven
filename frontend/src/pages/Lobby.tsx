@@ -16,7 +16,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
@@ -28,7 +27,6 @@ import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
-import { useRoomSession } from '../hooks/useRoomSession';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
 import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
@@ -52,7 +50,6 @@ interface RoomJoinedEventData {
 
 export function Lobby() {
   const { t } = useTranslation('lobby');
-  const navigate = useNavigate();
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
@@ -64,7 +61,6 @@ export function Lobby() {
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
 
   // Use custom hooks
-  const sessionState = useRoomSession();
   const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
 
   // Auto-redirect removed to support multi-game join

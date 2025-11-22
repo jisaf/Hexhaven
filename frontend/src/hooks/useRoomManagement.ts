@@ -16,7 +16,6 @@ import {
   saveLastRoomCode,
   getPlayerNickname
 } from '../utils/storage';
-import type { Player } from '../components/PlayerList';
 
 export interface ActiveRoom {
   roomCode: string;
@@ -38,7 +37,14 @@ export interface RoomWithPlayers {
     updatedAt: string;
     expiresAt: string;
   };
-  players: Player[];
+  players: {
+    id: string;
+    uuid: string;
+    nickname: string;
+    isHost: boolean;
+    characterClass?: string;
+    connectionStatus: string;
+  }[];
 }
 
 interface UseRoomManagementOptions {
@@ -87,37 +93,6 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
       }
     } catch (err) {
       console.error('Failed to fetch my rooms:', err);
-      // Silently fail
-    }
-  }, []);
-
-  // Fetch player's current room (deprecated, use fetchMyRooms)
-  const fetchMyRoom = useCallback(async () => {
-    const uuid = getPlayerUUID();
-    if (!uuid) return;
-
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/rooms/my-room/${uuid}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.room) {
-          const hostPlayer = (data.players as Player[]).find((p) => p.isHost);
-          setMyRoom({
-            roomCode: data.room.roomCode,
-            status: data.room.status,
-            playerCount: data.room.playerCount,
-            maxPlayers: 4,
-            hostNickname: hostPlayer?.nickname || 'Unknown',
-            createdAt: data.room.createdAt,
-          });
-        } else {
-          setMyRoom(null);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch my room:', err);
       // Silently fail
     }
   }, []);
