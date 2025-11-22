@@ -226,22 +226,30 @@ export class GameGateway
 
       const { roomCode, playerUUID, nickname } = payload;
 
-      // Get or create player
-      let player = playerService.getPlayerByUuid(playerUUID);
-      if (!player) {
-        player = playerService.createPlayer(playerUUID, nickname);
-      }
-
       // Check if player is already in the room (e.g., they created it via HTTP or are reconnecting)
       let room = roomService.getRoomByPlayerId(playerUUID);
       const isAlreadyInRoom = room && room.roomCode === roomCode;
+
+      // Check reconnection status
+      const roomPlayer = isAlreadyInRoom && room ? room.getPlayer(playerUUID) : null;
       const isReconnecting =
-        player.connectionStatus === ConnectionStatus.DISCONNECTED &&
+        roomPlayer &&
+        roomPlayer.connectionStatus === ConnectionStatus.DISCONNECTED &&
         isAlreadyInRoom;
 
       if (!isAlreadyInRoom) {
+        // Register player globally if not exists (for user management)
+        let globalPlayer = playerService.getPlayerByUuid(playerUUID);
+        if (!globalPlayer) {
+          globalPlayer = playerService.createPlayer(playerUUID, nickname);
+        }
+
+        // Create a new player instance for this room
+        // Each room has its own Player instance to track room-specific state
+        const newRoomPlayer = Player.create(playerUUID, nickname);
+
         // Join room (adds player to room state)
-        room = roomService.joinRoom(roomCode, player);
+        room = roomService.joinRoom(roomCode, newRoomPlayer);
       } else {
         // Player is already in the room, just get the room
         room = roomService.getRoom(roomCode);
@@ -254,11 +262,8 @@ export class GameGateway
       }
 
       // Update connection status to connected (US4 - T153)
-      if (isReconnecting) {
-        playerService.updateConnectionStatus(
-          playerUUID,
-          ConnectionStatus.CONNECTED,
-        );
+      if (isReconnecting && roomPlayer) {
+        roomPlayer.updateConnectionStatus(ConnectionStatus.CONNECTED);
       }
 
       // Associate socket with player
@@ -285,11 +290,11 @@ export class GameGateway
       client.emit('room_joined', roomJoinedPayload);
 
       // Broadcast based on join type (US4 - T153)
-      if (isReconnecting) {
+      if (isReconnecting && roomPlayer) {
         // Broadcast reconnection to other players
         client.to(roomCode).emit('player_reconnected', {
-          playerId: player.uuid,
-          nickname: player.nickname,
+          playerId: roomPlayer.uuid,
+          nickname: roomPlayer.nickname,
         });
         this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
       }
@@ -351,15 +356,19 @@ export class GameGateway
       }
 
       if (!isAlreadyInRoom) {
-        // Only broadcast new join to other players
-        const playerJoinedPayload: PlayerJoinedPayload = {
-          playerId: player.uuid,
-          nickname: player.nickname,
-          isHost: player.isHost,
-        };
+        // Get the newly joined player from the room
+        const newlyJoinedPlayer = room.getPlayer(playerUUID);
+        if (newlyJoinedPlayer) {
+          // Only broadcast new join to other players
+          const playerJoinedPayload: PlayerJoinedPayload = {
+            playerId: newlyJoinedPlayer.uuid,
+            nickname: newlyJoinedPlayer.nickname,
+            isHost: newlyJoinedPlayer.isHost,
+          };
 
-        client.to(roomCode).emit('player_joined', playerJoinedPayload);
-        this.logger.log(`Player ${nickname} joined room ${roomCode}`);
+          client.to(roomCode).emit('player_joined', playerJoinedPayload);
+          this.logger.log(`Player ${nickname} joined room ${roomCode}`);
+        }
       } else {
         this.logger.log(
           `Player ${nickname} connected socket to room ${roomCode}`,
@@ -470,15 +479,16 @@ export class GameGateway
         `Select character request from ${playerUUID}: ${payload.characterClass}`,
       );
 
-      const player = playerService.getPlayerByUuid(playerUUID);
-      if (!player) {
-        throw new Error('Player not found');
-      }
-
       // Find player's room
       const room = roomService.getRoomByPlayerId(playerUUID);
       if (!room) {
         throw new Error('Player not in a room');
+      }
+
+      // Get player from room (not global registry)
+      const player = room.getPlayer(playerUUID);
+      if (!player) {
+        throw new Error('Player not found in room');
       }
 
       // Validate room status
