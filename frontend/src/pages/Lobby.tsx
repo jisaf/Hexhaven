@@ -27,6 +27,7 @@ import { DebugConsole } from '../components/DebugConsole';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
+import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
@@ -64,15 +65,10 @@ export function Lobby() {
 
   // Use custom hooks
   const sessionState = useRoomSession();
-  const { activeRooms, loadingRooms, myRoom, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
+  const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
 
-  // Navigate to /game when session status becomes 'active'
-  useEffect(() => {
-    if (sessionState.status === 'active') {
-      console.log('[Lobby] Session status is active, navigating to /game');
-      navigate('/game');
-    }
-  }, [sessionState.status, navigate]);
+  // Auto-redirect removed to support multi-game join
+  // Users will manually navigate to specific games via room list
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
@@ -238,16 +234,19 @@ export function Lobby() {
 
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
-          <LobbyWelcome
-            myRoom={myRoom}
-            activeRooms={activeRooms}
-            loadingRooms={loadingRooms}
-            isLoading={isLoading}
-            onCreateRoom={handleCreateRoom}
-            onJoinRoom={() => setMode('joining')}
-            onRejoinMyRoom={handleRejoinMyRoom}
-            onQuickJoinRoom={handleQuickJoinRoom}
-          />
+          <>
+            <MyRoomsList rooms={myRooms} currentPlayerUuid={getPlayerUUID() || ''} />
+            <LobbyWelcome
+              myRoom={myRoom}
+              activeRooms={activeRooms}
+              loadingRooms={loadingRooms}
+              isLoading={isLoading}
+              onCreateRoom={handleCreateRoom}
+              onJoinRoom={() => setMode('joining')}
+              onRejoinMyRoom={handleRejoinMyRoom}
+              onQuickJoinRoom={handleQuickJoinRoom}
+            />
+          </>
         )}
 
         {mode === 'nickname-for-create' && (

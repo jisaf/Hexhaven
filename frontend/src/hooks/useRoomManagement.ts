@@ -38,10 +38,46 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
   const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
+  const [myRooms, setMyRooms] = useState<any[]>([]); // All rooms player is in
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch player's current room
+  // Fetch all rooms player is in (multi-room support)
+  const fetchMyRooms = useCallback(async () => {
+    const uuid = getPlayerUUID();
+    if (!uuid) return;
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/rooms/my-rooms/${uuid}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setMyRooms(data.rooms || []);
+
+        // Also set myRoom to the first room for backwards compatibility
+        if (data.rooms && data.rooms.length > 0) {
+          const firstRoom = data.rooms[0];
+          const hostPlayer = firstRoom.players.find((p: Player) => p.isHost);
+          setMyRoom({
+            roomCode: firstRoom.room.roomCode,
+            status: firstRoom.room.status,
+            playerCount: firstRoom.room.playerCount,
+            maxPlayers: 4,
+            hostNickname: hostPlayer?.nickname || 'Unknown',
+            createdAt: firstRoom.room.createdAt,
+          });
+        } else {
+          setMyRoom(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch my rooms:', err);
+      // Silently fail
+    }
+  }, []);
+
+  // Fetch player's current room (deprecated, use fetchMyRooms)
   const fetchMyRoom = useCallback(async () => {
     const uuid = getPlayerUUID();
     if (!uuid) return;
@@ -263,10 +299,10 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     }
   }, [myRoom]);
 
-  // Fetch my room on mount
+  // Fetch my rooms on mount (multi-room support)
   useEffect(() => {
-    fetchMyRoom();
-  }, [fetchMyRoom]);
+    fetchMyRooms();
+  }, [fetchMyRooms]);
 
   // Fetch active rooms on mount and periodically
   useEffect(() => {
@@ -281,6 +317,7 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     activeRooms,
     loadingRooms,
     myRoom,
+    myRooms, // All rooms player is in
     isLoading,
     error,
     createRoom,

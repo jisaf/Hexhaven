@@ -131,6 +131,7 @@ export class RoomService {
 
   /**
    * Find room containing a specific player
+   * @deprecated Use getRoomsByPlayerId for multi-room support
    */
   getRoomByPlayerId(playerUuid: string): GameRoom | null {
     for (const room of this.rooms.values()) {
@@ -139,6 +140,19 @@ export class RoomService {
       }
     }
     return null;
+  }
+
+  /**
+   * Find all rooms containing a specific player (multi-room support)
+   */
+  getRoomsByPlayerId(playerUuid: string): GameRoom[] {
+    const playerRooms: GameRoom[] = [];
+    for (const room of this.rooms.values()) {
+      if (room.getPlayer(playerUuid)) {
+        playerRooms.push(room);
+      }
+    }
+    return playerRooms;
   }
 
   /**

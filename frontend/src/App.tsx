@@ -79,7 +79,7 @@ function App() {
         <ConnectionUI />
         <Routes>
           <Route path="/" element={<Lobby />} />
-          <Route path="/game" element={<GameBoard />} />
+          <Route path="/game/:roomCode" element={<GameBoard />} />
           <Route path="/demo" element={<HexMapDemo />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

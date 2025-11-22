@@ -140,16 +140,12 @@ export class ValidationService {
 
   /**
    * Validate room join
+   * Note: Players can now join multiple rooms simultaneously
    */
   validateRoomJoin(
     room: GameRoom,
     playerAlreadyInRoom: boolean,
   ): { valid: boolean; error?: string } {
-    // Check if player is already in another room
-    if (playerAlreadyInRoom) {
-      return { valid: false, error: 'Player is already in another room' };
-    }
-
     // Check room status
     if (room.status !== RoomStatus.LOBBY) {
       return { valid: false, error: 'Game has already started' };

@@ -106,42 +106,18 @@ export class RoomsController {
       // Check if player already exists
       let player = playerService.getPlayerByUuid(uuid);
 
-      // Check if player is already in a room
-      if (player && player.roomId) {
-        const existingRoom = roomService.getRoomById(player.roomId);
-        if (
-          existingRoom &&
-          (existingRoom.status === RoomStatus.LOBBY ||
-            existingRoom.status === RoomStatus.ACTIVE)
-        ) {
-          // Return the existing room instead of creating a new one
-          // This allows the player to resume after a page refresh
-          return {
-            room: {
-              id: existingRoom.id,
-              roomCode: existingRoom.roomCode,
-              status: existingRoom.status,
-              createdAt: existingRoom.createdAt.toISOString(),
-              expiresAt: existingRoom.expiresAt.toISOString(),
-            },
-            player: {
-              id: player.id,
-              uuid: player.uuid,
-              nickname: player.nickname,
-              isHost: player.isHost,
-              connectionStatus: player.connectionStatus,
-            },
-          };
-        }
-      }
-
       // Create or get player
+      // Note: Players can now create multiple rooms
       if (!player) {
         player = playerService.createPlayer(uuid, trimmedNickname);
       }
 
+      // Create a new player instance for this room
+      // Each room has its own Player instance to track room-specific state
+      const roomPlayer = playerService.createPlayer(uuid, trimmedNickname);
+
       // Create room with player as host
-      const room = roomService.createRoom(player);
+      const room = roomService.createRoom(roomPlayer);
 
       return {
         room: {
@@ -152,11 +128,11 @@ export class RoomsController {
           expiresAt: room.expiresAt.toISOString(),
         },
         player: {
-          id: player.id,
-          uuid: player.uuid,
-          nickname: player.nickname,
-          isHost: player.isHost,
-          connectionStatus: player.connectionStatus,
+          id: roomPlayer.id,
+          uuid: roomPlayer.uuid,
+          nickname: roomPlayer.nickname,
+          isHost: roomPlayer.isHost,
+          connectionStatus: roomPlayer.connectionStatus,
         },
       };
     } catch (error: any) {
@@ -191,8 +167,54 @@ export class RoomsController {
   }
 
   /**
+   * GET /api/rooms/my-rooms/:playerUuid
+   * Get all rooms for a player by their UUID (multi-room support)
+   */
+  @Get('my-rooms/:playerUuid')
+  getMyRooms(
+    @Param('playerUuid') playerUuid: string,
+  ): { rooms: GetRoomResponse[] } {
+    try {
+      // Find all rooms by player UUID
+      const rooms = roomService.getRoomsByPlayerId(playerUuid);
+
+      return {
+        rooms: rooms.map((room) => ({
+          room: {
+            id: room.id,
+            roomCode: room.roomCode,
+            status: room.status,
+            scenarioId: room.scenarioId || undefined,
+            createdAt: room.createdAt.toISOString(),
+            updatedAt: room.updatedAt.toISOString(),
+            expiresAt: room.expiresAt.toISOString(),
+            playerCount: room.playerCount,
+          },
+          players: room.players.map((player) => ({
+            id: player.id,
+            uuid: player.uuid,
+            nickname: player.nickname,
+            isHost: player.isHost,
+            characterClass: player.characterClass || undefined,
+            connectionStatus: player.connectionStatus,
+          })),
+        })),
+      };
+    } catch {
+      throw new HttpException(
+        {
+          error: 'INTERNAL_ERROR',
+          message: 'Failed to retrieve player rooms',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * GET /api/rooms/my-room/:playerUuid
    * Get the current room for a player by their UUID
+   * @deprecated Use my-rooms endpoint for multi-room support
    */
   @Get('my-room/:playerUuid')
   getMyRoom(
