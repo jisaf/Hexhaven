@@ -58,7 +58,9 @@ import {
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
 @Injectable()
-export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   // Server is injected manually in main.ts instead of using @WebSocketServer decorator
   server!: Server;
 
@@ -93,6 +95,61 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     string,
     Map<string, number>
   >(); // roomCode -> (monsterType -> initiative)
+
+  /**
+   * Build game state payload for an active game
+   * Helper method to construct GameStartedPayload with current game state
+   */
+  private buildGameStatePayload(
+    room: any,
+    roomCode: string,
+  ): GameStartedPayload {
+    // Get current scenario and game state
+    const monsters = this.roomMonsters.get(roomCode) || [];
+    const characters = room.players
+      .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+      .filter((c: any) => c !== null);
+
+    // Get map from room state
+    const hexMap = this.roomMaps.get(roomCode);
+    const mapLayout: any[] = [];
+    if (hexMap) {
+      hexMap.forEach((tile: any) => {
+        mapLayout.push(tile);
+      });
+    }
+
+    // Build game state payload
+    const gameStartedPayload: GameStartedPayload = {
+      scenarioId: room.scenarioId || 'scenario-1',
+      scenarioName: 'Black Barrow', // TODO: Get from scenario
+      mapLayout,
+      monsters: monsters.map((m: any) => ({
+        id: m.id,
+        monsterType: m.monsterType,
+        isElite: m.isElite,
+        currentHex: m.currentHex,
+        health: m.health,
+        maxHealth: m.maxHealth,
+        conditions: m.conditions,
+      })),
+      characters: characters.map((c: any) => {
+        const charData = c.toJSON();
+        return {
+          id: charData.id,
+          playerId: charData.playerId,
+          classType: charData.characterClass,
+          health: charData.currentHealth,
+          maxHealth: charData.stats.maxHealth,
+          currentHex: charData.position,
+          conditions: charData.conditions,
+          isExhausted: charData.exhausted,
+        };
+      }),
+    };
+
+    return gameStartedPayload;
+  }
 
   /**
    * Handle client connection
@@ -156,6 +213,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   ): Promise<void> {
     try {
       this.logger.log(`Join room request: ${JSON.stringify(payload)}`);
+      this.logger.log(
+        `📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`,
+      );
 
       const { roomCode, playerUUID, nickname } = payload;
 
@@ -228,62 +288,34 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       }
 
       // If game is active, send current game state to player (whether reconnecting or just navigating)
-      this.logger.log(`Checking room status for ${roomCode}: ${room.status} (ACTIVE=${RoomStatus.ACTIVE})`);
       if (room.status === RoomStatus.ACTIVE && isAlreadyInRoom) {
-          try {
-            this.logger.log(`Entered ACTIVE block for ${nickname}`);
+        try {
+          this.logger.log(
+            `Sending game state to ${nickname} in active room ${roomCode}`,
+          );
 
-            // Get current scenario and game state
-            const monsters = this.roomMonsters.get(roomCode) || [];
-            this.logger.log(`Found ${monsters.length} monsters for ${roomCode}`);
+          // Build game state payload using helper method
+          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
 
-            const characters = room.players
-              .map((p) => characterService.getCharacterByPlayerId(p.uuid))
-              .filter((c) => c !== null);
-            this.logger.log(`Found ${characters.length} characters for ${roomCode}`);
-
-            // Get map from room state
-            const hexMap = this.roomMaps.get(roomCode);
-            const mapLayout: any[] = [];
-            if (hexMap) {
-              hexMap.forEach((tile: any) => {
-                mapLayout.push(tile);
-              });
-            }
-            this.logger.log(`Built mapLayout with ${mapLayout.length} tiles`);
-
-            // Send game_started event to reconnecting player with current state
-            const gameStartedPayload: GameStartedPayload = {
-            scenarioId: room.scenarioId || 'scenario-1',
-            scenarioName: 'Black Barrow', // TODO: Get from scenario
-            mapLayout,
-            monsters: monsters.map((m) => ({
-              id: m.id,
-              monsterType: m.monsterType,
-              isElite: m.isElite,
-              currentHex: m.currentHex,
-              health: m.health,
-              maxHealth: m.maxHealth,
-              conditions: m.conditions,
-            })),
-            characters: characters.map((c: any) => {
-              const charData = c.toJSON();
-              return {
-                id: charData.id,
-                playerId: charData.playerId,
-                classType: charData.characterClass,
-                health: charData.currentHealth,
-                maxHealth: charData.stats.maxHealth,
-                currentHex: charData.position,
-                conditions: charData.conditions,
-                isExhausted: charData.exhausted,
-              };
-            }),
-          };
-
-          this.logger.log(`Sending game_started to ${nickname} with ${mapLayout.length} tiles`);
-          client.emit('game_started', gameStartedPayload);
-          this.logger.log(`Sent game state to reconnecting player ${nickname}`);
+          // Send game_started event with acknowledgment pattern
+          client.emit(
+            'game_started',
+            gameStartedPayload,
+            (acknowledged: boolean) => {
+              if (acknowledged) {
+                this.logger.log(`✅ Game state acknowledged by ${nickname}`);
+              } else {
+                this.logger.warn(
+                  `⚠️  Game state NOT acknowledged by ${nickname}, retrying in 500ms...`,
+                );
+                // Retry once after 500ms
+                setTimeout(() => {
+                  this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                  client.emit('game_started', gameStartedPayload);
+                }, 500);
+              }
+            },
+          );
 
           // Also send current turn info if turn order exists
           const turnOrder = this.roomTurnOrder.get(roomCode);
@@ -296,12 +328,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
               turnIndex: currentTurnIdx,
             };
             client.emit('turn_started', turnStartedPayload);
-            this.logger.log(
-              `Sent current turn to reconnecting player ${nickname}`,
-            );
+            this.logger.log(`Sent current turn info to ${nickname}`);
           }
         } catch (activeGameError) {
-          this.logger.error(`Error sending game state to reconnecting player ${nickname}:`, activeGameError);
+          this.logger.error(
+            `Error sending game state to ${nickname}:`,
+            activeGameError,
+          );
         }
       }
 
@@ -591,7 +624,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.roomLootTokens.set(room.roomCode, []);
 
       // Note: Game is already started by roomService.startGame() on line 533
-      this.logger.log(`Room ${room.roomCode} game started, status set to ACTIVE`);
+      this.logger.log(
+        `Room ${room.roomCode} game started, status set to ACTIVE`,
+      );
 
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
@@ -622,10 +657,37 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         }),
       };
 
-      this.logger.log(`Broadcasting game_started to room ${room.roomCode} with ${scenario.mapLayout.length} tiles`);
-      this.server.to(room.roomCode).emit('game_started', gameStartedPayload);
+      // Send game_started individually to each connected client
+      // This ensures all clients (including the host who is already in the room) receive the event
+      const roomSockets = await this.server.in(room.roomCode).fetchSockets();
+      this.logger.log(
+        `Sending game_started to ${roomSockets.length} clients in room ${room.roomCode}`,
+      );
 
-      this.logger.log(`Game started in room ${room.roomCode}`);
+      for (const roomSocket of roomSockets) {
+        const playerUUID = this.socketToPlayer.get(roomSocket.id);
+        const player = room.players.find((p) => p.uuid === playerUUID);
+        const nickname = player?.nickname || 'Unknown';
+
+        roomSocket.emit(
+          'game_started',
+          gameStartedPayload,
+          (acknowledged: boolean) => {
+            if (acknowledged) {
+              this.logger.log(`✅ Game start acknowledged by ${nickname}`);
+            } else {
+              this.logger.warn(
+                `⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`,
+              );
+              // Retry once after 500ms
+              setTimeout(() => {
+                this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                roomSocket.emit('game_started', gameStartedPayload);
+              }, 500);
+            }
+          },
+        );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';

@@ -1,0 +1,31 @@
+.lobbyHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.headerTop h1 {
+  font-size: 32px;
+  margin: 0;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.welcomeMessage {
+  margin-top: 16px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.welcomeMessage strong {
+  color: #ffd700;
+}

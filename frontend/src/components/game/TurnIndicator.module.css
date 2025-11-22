@@ -1,0 +1,32 @@
+.turnIndicator {
+  display: inline-block;
+}
+
+.turnIndicator span {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.yourTurn {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.waiting {
+  background: #555;
+  color: #95a5a6;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

@@ -83,19 +83,19 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
     };
 
     // Player disconnect/reconnect handlers
-    const handlePlayerDisconnected = (data: { playerId: string; playerName: string }) => {
+    const handlePlayerDisconnected = (data: { playerId: string; nickname: string }) => {
       console.log('Player disconnected event in context:', data);
       setDisconnectedPlayers((prev) => [
         ...prev,
         {
           playerId: data.playerId,
-          playerName: data.playerName,
+          playerName: data.nickname,
           timestamp: Date.now(),
         },
       ]);
     };
 
-    const handlePlayerReconnected = (data: { playerId: string; playerName: string }) => {
+    const handlePlayerReconnected = (data: { playerId: string; nickname: string }) => {
       console.log('Player reconnected event in context:', data);
 
       // Remove from disconnected list
@@ -106,7 +106,7 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
         ...prev,
         {
           playerId: data.playerId,
-          playerName: data.playerName,
+          playerName: data.nickname,
           timestamp: Date.now(),
         },
       ]);
