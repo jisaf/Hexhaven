@@ -26,10 +26,14 @@ export class AbilityCardService {
     }
 
     try {
-      const cardsPath = path.join(__dirname, '../data/ability-cards.json');
+      // In development: backend/src/services -> backend/src/data
+      // In production: backend/dist/services -> backend/dist/data
+      // Use ../../data to go up from services directory
+      const cardsPath = path.join(__dirname, '../../data/ability-cards.json');
       const fileContent = fs.readFileSync(cardsPath, 'utf-8');
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
+      console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${cardsPath}`);
       return this.abilityCards;
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);
