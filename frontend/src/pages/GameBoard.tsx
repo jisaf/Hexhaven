@@ -194,8 +194,7 @@ export function GameBoard() {
 
 
 
-  const handleLeaveGame = () => {
-    websocketService.leaveRoom();
+  const handleBackToLobby = () => {
     navigate('/');
   };
 
@@ -204,7 +203,7 @@ export function GameBoard() {
       <GameHeader
         isMyTurn={isMyTurn}
         connectionStatus={connectionStatus}
-        onLeaveGame={handleLeaveGame}
+        onLeaveGame={handleBackToLobby}
       />
 
       <div ref={containerRef} className={styles.gameContainer} />

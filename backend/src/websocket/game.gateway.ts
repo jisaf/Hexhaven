@@ -270,6 +270,18 @@ export class GameGateway
       this.socketToPlayer.set(client.id, playerUUID);
       this.playerToSocket.set(playerUUID, client.id);
 
+      // Leave all other game rooms to ensure proper isolation
+      // Get all rooms this socket is currently in (excluding default rooms)
+      const currentRooms = Array.from(client.rooms).filter(
+        (r) => r !== client.id && r !== roomCode,
+      );
+      for (const otherRoom of currentRooms) {
+        client.leave(otherRoom);
+        this.logger.log(
+          `Player ${playerUUID} left Socket.io room ${otherRoom} before joining ${roomCode}`,
+        );
+      }
+
       // Join Socket.io room
       await client.join(roomCode);
 

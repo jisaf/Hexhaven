@@ -28,7 +28,7 @@ export function GameHeader({ isMyTurn, connectionStatus, onLeaveGame }: GameHead
       <div className={styles.gameControls}>
         <ConnectionStatus status={connectionStatus} />
         <button className={styles.leaveButton} onClick={onLeaveGame}>
-          {t('game:leaveGame', 'Leave Game')}
+          {t('game:backToLobby', 'Back to Lobby')}
         </button>
       </div>
     </header>
