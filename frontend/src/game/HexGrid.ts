@@ -217,21 +217,10 @@ export class HexGrid {
       const zoom = this.getOptimalZoom(boundsRect);
       console.log('🔍 Calculated zoom:', zoom);
 
-      // First, set zoom and center WITHOUT clamping active
-      this.viewport.setZoom(zoom, true);
+      // Center the viewport on the map center, then apply zoom
+      // Don't use clamp during initialization - it can interfere with centering
       this.viewport.moveCenter(centerX, centerY);
-
-      // Now set clamp boundaries with generous margin for panning
-      // Setting clamp AFTER centering ensures the initial view is correct
-      const margin = Math.max(bounds.width, bounds.height) * 0.5;
-      this.viewport.clamp({
-        left: bounds.x - margin,
-        right: bounds.x + bounds.width + margin,
-        top: bounds.y - margin,
-        bottom: bounds.y + bounds.height + margin,
-        direction: 'all',
-        underflow: 'center' // Center content if it's smaller than the screen
-      });
+      this.viewport.setZoom(zoom, true);
 
       console.log('✅ Viewport positioned - center:', this.viewport.center, 'scale:', this.viewport.scale);
     }
