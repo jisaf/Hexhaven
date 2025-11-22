@@ -84,9 +84,9 @@ export class HexGrid {
     this.container.appendChild(this.app.canvas);
 
     // Create viewport with pan/zoom/pinch support (US3 - T133-T135)
-    // World bounds: 2000x2000 provides enough space for typical scenarios
-    const worldWidth = 2000;
-    const worldHeight = 2000;
+    // World bounds: Use large enough space to accommodate any typical game board
+    const worldWidth = 4000;
+    const worldHeight = 4000;
 
     this.viewport = new Viewport({
       screenWidth: this.options.width,
@@ -132,17 +132,10 @@ export class HexGrid {
         maxScale: 3.0
       });
 
-    // Set world boundaries to prevent panning outside the game board (US3 - T135)
-    this.viewport
-      .clamp({
-        left: -worldWidth / 2,
-        right: worldWidth / 2,
-        top: -worldHeight / 2,
-        bottom: worldHeight / 2,
-        direction: 'all'
-      });
+    // Don't set clamp here - we'll set it dynamically after board initialization
+    // to match the actual map bounds
 
-    // Center the viewport on the world
+    // Center the viewport on the world origin
     this.viewport.moveCenter(0, 0);
 
     // Create layers
@@ -202,15 +195,34 @@ export class HexGrid {
     // Force a synchronous render to update transforms
     this.app.renderer.render(this.app.stage);
 
-    // Center and zoom the map
+    // Get the bounds of all tiles
     const bounds = this.tilesLayer.getBounds();
-    // Convert Bounds to Rectangle for getOptimalZoom
-    const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-    const zoom = this.getOptimalZoom(boundsRect);
+    console.log('🗺️ Tile bounds:', {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      screenWidth: this.options.width,
+      screenHeight: this.options.height
+    });
 
     if (bounds.width > 0 && bounds.height > 0) {
-      this.viewport.moveCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      // Calculate center point of the map
+      const centerX = bounds.x + bounds.width / 2;
+      const centerY = bounds.y + bounds.height / 2;
+      console.log('🎯 Map center:', { centerX, centerY });
+
+      // Calculate optimal zoom to fit the map with comfortable margins
+      const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+      const zoom = this.getOptimalZoom(boundsRect);
+      console.log('🔍 Calculated zoom:', zoom);
+
+      // Center the viewport on the map center, then apply zoom
+      // Don't use clamp during initialization - it can interfere with centering
+      this.viewport.moveCenter(centerX, centerY);
       this.viewport.setZoom(zoom, true);
+
+      console.log('✅ Viewport positioned - center:', this.viewport.center, 'scale:', this.viewport.scale);
     }
   }
 
@@ -602,7 +614,7 @@ export class HexGrid {
 
     const screenWidth = this.options.width;
     const screenHeight = this.options.height;
-    const margin = 0.9; // 10% margin
+    const margin = 0.8; // 20% margin for comfortable spacing on mobile
 
     const scaleX = (screenWidth / gridBounds.width) * margin;
     const scaleY = (screenHeight / gridBounds.height) * margin;
