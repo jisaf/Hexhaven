@@ -32,7 +32,7 @@ info "Building backend"
 npm run build -w backend
 
 info "Building frontend"
-VITE_API_URL="http://$HOST" npm run build -w frontend
+VITE_API_URL="http://$HOST/api" npm run build -w frontend
 
 # Create deployment package
 info "Creating deployment package"
