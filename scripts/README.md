@@ -2,6 +2,18 @@
 
 This directory contains scripts for deploying and managing the Hexhaven application.
 
+## Automatic Deployment (Recommended)
+
+**Every pull request to `main` automatically triggers deployment** to production (129.213.88.197).
+
+The GitHub Actions workflow (`.github/workflows/pr-deploy.yml`):
+- Runs on PR creation and updates
+- Runs in parallel with tests (non-blocking)
+- Deploys via SSH to production server
+- Verifies deployment health
+
+No manual action needed - just create or update a PR targeting `main`.
+
 ## Production Deployment
 
 ### deploy-to-production.sh

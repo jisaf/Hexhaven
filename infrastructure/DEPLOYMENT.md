@@ -2,9 +2,21 @@
 
 ## Quick Start - Production Deployment
 
-### Deploy to Production Server (129.213.88.197)
+### Automatic Deployment (Recommended)
 
-The easiest way to deploy to production is using the automated SSH deployment script:
+**Every pull request to `main` automatically deploys to production** at 129.213.88.197.
+
+The deployment:
+- Runs automatically on PR creation and updates
+- Runs in parallel with tests (non-blocking)
+- Deploys via SSH to the production server
+- Verifies deployment health
+
+Simply create or update a PR targeting `main` and the deployment workflow will run automatically.
+
+### Manual Deployment (Alternative)
+
+You can also deploy manually using the SSH deployment script:
 
 ```bash
 # Deploy using default SSH authentication (SSH key from ~/.ssh)
