@@ -26,10 +26,39 @@ export class AbilityCardService {
     }
 
     try {
-      const cardsPath = path.join(__dirname, '../data/ability-cards.json');
-      const fileContent = fs.readFileSync(cardsPath, 'utf-8');
+      // Try multiple possible paths for ability-cards.json
+      const possiblePaths = [
+        // Development path: backend/src/data/ability-cards.json
+        path.join(__dirname, '../data/ability-cards.json'),
+        // Production path in dist: backend/dist/data/ability-cards.json
+        path.join(__dirname, '../../../data/ability-cards.json'),
+        // Alternative production path
+        path.join(process.cwd(), 'backend/dist/data/ability-cards.json'),
+        // Root dist path (monorepo structure)
+        path.join(process.cwd(), 'dist/data/ability-cards.json'),
+      ];
+
+      let fileContent: string | null = null;
+      let successfulPath: string | null = null;
+
+      for (const cardsPath of possiblePaths) {
+        try {
+          fileContent = fs.readFileSync(cardsPath, 'utf-8');
+          successfulPath = cardsPath;
+          break;
+        } catch {
+          // Try next path
+          continue;
+        }
+      }
+
+      if (!fileContent) {
+        throw new Error('ability-cards.json not found in any expected location');
+      }
+
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
+      console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${successfulPath}`);
       return this.abilityCards;
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);
