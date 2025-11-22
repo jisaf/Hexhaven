@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
+import { Player } from '../models/player.model';
 import {
   NotFoundError,
   ValidationError,
@@ -103,18 +104,18 @@ export class RoomsController {
         );
       }
 
-      // Check if player already exists
+      // Check if player already exists in global registry
       let player = playerService.getPlayerByUuid(uuid);
 
-      // Create or get player
-      // Note: Players can now create multiple rooms
+      // Register player globally if not exists (for user management)
       if (!player) {
         player = playerService.createPlayer(uuid, trimmedNickname);
       }
 
       // Create a new player instance for this room
       // Each room has its own Player instance to track room-specific state
-      const roomPlayer = playerService.createPlayer(uuid, trimmedNickname);
+      // Use Player.create() directly to avoid global registry conflicts
+      const roomPlayer = Player.create(uuid, trimmedNickname);
 
       // Create room with player as host
       const room = roomService.createRoom(roomPlayer);
