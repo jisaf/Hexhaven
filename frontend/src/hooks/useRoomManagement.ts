@@ -124,6 +124,16 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     setError(null);
 
     try {
+      // Clean up any existing room session before creating a new one
+      if (websocketService.isConnected()) {
+        console.log('Leaving existing room before creating new one');
+        websocketService.leaveRoom();
+        roomSessionManager.reset();
+
+        // Wait a brief moment for the leave event to be processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       // Get or create UUID
       const uuid = getOrCreatePlayerUUID();
 
@@ -215,6 +225,16 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
   const joinRoom = useCallback(async (roomCode: string, playerNickname: string) => {
     setIsLoading(true);
     setError(null);
+
+    // Clean up any existing room session before joining a new one
+    if (websocketService.isConnected()) {
+      console.log('Leaving existing room before joining new one');
+      websocketService.leaveRoom();
+      roomSessionManager.reset();
+
+      // Wait a brief moment for the leave event to be processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
     // Get or create UUID (stored in localStorage)
     getOrCreatePlayerUUID();

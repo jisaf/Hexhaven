@@ -19,6 +19,7 @@ import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
@@ -195,6 +196,9 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
+    // Clean up room session before leaving
+    websocketService.leaveRoom();
+    roomSessionManager.reset();
     navigate('/');
   };
 
