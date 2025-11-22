@@ -1,5 +1,59 @@
 # Deployment Guide for Hexhaven
 
+## Quick Start - Production Deployment
+
+### Automatic Deployment (Recommended)
+
+**Every pull request to `main` automatically deploys to production** at 129.213.88.197.
+
+The deployment:
+- Runs automatically on PR creation and updates
+- Runs in parallel with tests (non-blocking)
+- Deploys via SSH to the production server
+- Verifies deployment health
+
+Simply create or update a PR targeting `main` and the deployment workflow will run automatically.
+
+### Manual Deployment (Alternative)
+
+You can also deploy manually using the SSH deployment script:
+
+```bash
+# Deploy using default SSH authentication (SSH key from ~/.ssh)
+./scripts/deploy-prod.sh
+
+# Or specify a custom SSH key
+./scripts/deploy-prod.sh /path/to/your/ssh-key
+```
+
+**Prerequisites:**
+- SSH access to the production server (129.213.88.197)
+- SSH key added to the server's authorized_keys
+- Node.js 20+ installed locally
+- npm installed locally
+
+**The script will:**
+1. Run tests and linting
+2. Build both frontend and backend
+3. Create a deployment archive
+4. Upload to the production server via SCP
+5. Deploy and configure all services (Nginx, PM2)
+6. Verify the deployment
+
+**First-time Oracle Cloud Setup:**
+
+After the first deployment, you need to configure Oracle Cloud Security List to allow HTTP traffic:
+
+1. Go to: https://cloud.oracle.com
+2. Navigate to: Networking → Virtual Cloud Networks
+3. Select your VCN → Security Lists → Default Security List
+4. Click "Add Ingress Rules"
+5. Configure:
+   - Source CIDR: 0.0.0.0/0
+   - IP Protocol: TCP
+   - Destination Port Range: 80
+6. Click "Add Ingress Rules"
+
 ## Architecture Overview
 
 Hexhaven uses a **decoupled architecture** designed for horizontal scalability:

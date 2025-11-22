@@ -1,0 +1,43 @@
+name: Deploy on PR
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20'
+  PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST || '129.213.88.197' }}
+  DEPLOY_USER: 'ubuntu'
+  DEPLOY_PATH: '/opt/hexhaven'
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ env.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Run deployment script
+        run: |
+          ./scripts/deploy-prod.sh ~/.ssh/deploy_key
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
