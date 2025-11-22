@@ -197,29 +197,43 @@ export class HexGrid {
 
     // Get the bounds of all tiles
     const bounds = this.tilesLayer.getBounds();
+    console.log('🗺️ Tile bounds:', {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      screenWidth: this.options.width,
+      screenHeight: this.options.height
+    });
 
     if (bounds.width > 0 && bounds.height > 0) {
-      // Calculate center point
+      // Calculate center point of the map
       const centerX = bounds.x + bounds.width / 2;
       const centerY = bounds.y + bounds.height / 2;
+      console.log('🎯 Map center:', { centerX, centerY });
 
-      // Set clamp boundaries with generous margin for panning
+      // Calculate optimal zoom to fit the map with comfortable margins
+      const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+      const zoom = this.getOptimalZoom(boundsRect);
+      console.log('🔍 Calculated zoom:', zoom);
+
+      // First, set zoom and center WITHOUT clamping active
+      this.viewport.setZoom(zoom, true);
+      this.viewport.moveCenter(centerX, centerY);
+
+      // Now set clamp boundaries with generous margin for panning
+      // Setting clamp AFTER centering ensures the initial view is correct
       const margin = Math.max(bounds.width, bounds.height) * 0.5;
       this.viewport.clamp({
         left: bounds.x - margin,
         right: bounds.x + bounds.width + margin,
         top: bounds.y - margin,
         bottom: bounds.y + bounds.height + margin,
-        direction: 'all'
+        direction: 'all',
+        underflow: 'center' // Center content if it's smaller than the screen
       });
 
-      // Calculate optimal zoom to fit the map with comfortable margins
-      const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-      const zoom = this.getOptimalZoom(boundsRect);
-
-      // Center and zoom to show the full map
-      this.viewport.setZoom(zoom, true);
-      this.viewport.moveCenter(centerX, centerY);
+      console.log('✅ Viewport positioned - center:', this.viewport.center, 'scale:', this.viewport.scale);
     }
   }
 
