@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
@@ -33,7 +33,15 @@ import styles from './GameBoard.module.css';
 
 export function GameBoard() {
   const navigate = useNavigate();
+  const { roomCode } = useParams<{ roomCode: string }>();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Redirect to lobby if no roomCode provided
+  useEffect(() => {
+    if (!roomCode) {
+      navigate('/');
+    }
+  }, [roomCode, navigate]);
 
   // State
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);

@@ -12,7 +12,7 @@ export interface PlayerData {
   id: string;
   uuid: string;
   nickname: string;
-  roomId: string | null;
+  roomId: string | null; // Room this player instance belongs to
   characterClass: CharacterClass | null;
   isHost: boolean;
   connectionStatus: ConnectionStatus;

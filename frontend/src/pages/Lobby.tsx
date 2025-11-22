@@ -27,9 +27,10 @@ import { DebugConsole } from '../components/DebugConsole';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
-import { useRoomSession } from '../hooks/useRoomSession';
+import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
+import { useRoomSession } from '../hooks/useRoomSession';
 import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './Lobby.module.css';
@@ -50,8 +51,8 @@ interface RoomJoinedEventData {
 }
 
 export function Lobby() {
-  const { t } = useTranslation('lobby');
   const navigate = useNavigate();
+  const { t } = useTranslation('lobby');
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
@@ -63,16 +64,16 @@ export function Lobby() {
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
 
   // Use custom hooks
+  const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
-  const { activeRooms, loadingRooms, myRoom, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
 
-  // Navigate to /game when session status becomes 'active'
+  // Navigate to game when room status becomes active
   useEffect(() => {
-    if (sessionState.status === 'active') {
-      console.log('[Lobby] Session status is active, navigating to /game');
-      navigate('/game');
+    if (sessionState.status === 'active' && sessionState.roomCode) {
+      console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
+      navigate(`/game/${sessionState.roomCode}`);
     }
-  }, [sessionState.status, navigate]);
+  }, [sessionState.status, sessionState.roomCode, navigate]);
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
@@ -238,16 +239,19 @@ export function Lobby() {
 
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
-          <LobbyWelcome
-            myRoom={myRoom}
-            activeRooms={activeRooms}
-            loadingRooms={loadingRooms}
-            isLoading={isLoading}
-            onCreateRoom={handleCreateRoom}
-            onJoinRoom={() => setMode('joining')}
-            onRejoinMyRoom={handleRejoinMyRoom}
-            onQuickJoinRoom={handleQuickJoinRoom}
-          />
+          <>
+            <MyRoomsList rooms={myRooms} />
+            <LobbyWelcome
+              myRoom={myRoom}
+              activeRooms={activeRooms}
+              loadingRooms={loadingRooms}
+              isLoading={isLoading}
+              onCreateRoom={handleCreateRoom}
+              onJoinRoom={() => setMode('joining')}
+              onRejoinMyRoom={handleRejoinMyRoom}
+              onQuickJoinRoom={handleQuickJoinRoom}
+            />
+          </>
         )}
 
         {mode === 'nickname-for-create' && (

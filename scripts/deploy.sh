@@ -66,24 +66,20 @@ setup_environment() {
 
     # Check if .env exists (created from GitHub secrets during deployment)
     if [ ! -f "${ENV_FILE}" ]; then
-        # Fallback: Copy environment template if available
-        if [ -f "${ENV_TEMPLATE}" ]; then
-            log_warn "No .env file found, creating from template..."
-            log_warn "For production deployments, .env should be created from GitHub secrets"
-            cp "${ENV_TEMPLATE}" "${ENV_FILE}"
-        else
-            log_error "No .env file found!"
-            log_error "Expected .env to be created from GitHub secrets during deployment"
-            exit 1
-        fi
-    else
-        log_info "Using .env file (created from GitHub secrets)"
-    fi
+        # Create minimal .env for production
+        log_warn "No .env file found, creating minimal production environment..."
+        cat > "${ENV_FILE}" << 'ENVEOF'
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+LOG_LEVEL=info
 
-    # Verify .env has required variables
-    if ! grep -q "DATABASE_URL" "${ENV_FILE}"; then
-        log_error ".env file is missing required DATABASE_URL variable"
-        exit 1
+# Database is not currently used - app loads data from JSON files
+# DATABASE_URL will be added in a future release when database integration is enabled
+ENVEOF
+        log_info "Created minimal .env file"
+    else
+        log_info "Using existing .env file"
     fi
 
     # Load environment variables
@@ -92,6 +88,16 @@ setup_environment() {
     set +a
 
     log_info "Environment configured"
+}
+
+create_required_directories() {
+    log_step "Creating required directories..."
+
+    # Create logs directory for PM2
+    mkdir -p "${DEPLOY_PATH}/logs"
+    log_info "Created logs directory for PM2"
+
+    log_info "Required directories created"
 }
 
 install_backend_dependencies() {
@@ -310,6 +316,7 @@ main() {
 
     # Execute deployment steps
     setup_environment
+    create_required_directories
     install_backend_dependencies
     run_database_migrations
     verify_backend_build

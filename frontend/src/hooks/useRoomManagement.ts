@@ -16,7 +16,6 @@ import {
   saveLastRoomCode,
   getPlayerNickname
 } from '../utils/storage';
-import type { Player } from '../components/PlayerList';
 
 export interface ActiveRoom {
   roomCode: string;
@@ -25,6 +24,27 @@ export interface ActiveRoom {
   maxPlayers: number;
   hostNickname: string;
   createdAt: string;
+}
+
+export interface RoomWithPlayers {
+  room: {
+    id: string;
+    roomCode: string;
+    status: string;
+    scenarioId?: string;
+    playerCount: number;
+    createdAt: string;
+    updatedAt: string;
+    expiresAt: string;
+  };
+  players: {
+    id: string;
+    uuid: string;
+    nickname: string;
+    isHost: boolean;
+    characterClass?: string;
+    connectionStatus: string;
+  }[];
 }
 
 interface UseRoomManagementOptions {
@@ -38,36 +58,41 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
   const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [myRoom, setMyRoom] = useState<ActiveRoom | null>(null);
+  const [myRooms, setMyRooms] = useState<RoomWithPlayers[]>([]); // All rooms player is in
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch player's current room
-  const fetchMyRoom = useCallback(async () => {
+  // Fetch all rooms player is in (multi-room support)
+  const fetchMyRooms = useCallback(async () => {
     const uuid = getPlayerUUID();
     if (!uuid) return;
 
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/rooms/my-room/${uuid}`);
+      const response = await fetch(`${apiUrl}/rooms/my-rooms/${uuid}`);
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.room) {
-          const hostPlayer = (data.players as Player[]).find((p) => p.isHost);
+        const data: { rooms: RoomWithPlayers[] } = await response.json();
+        setMyRooms(data.rooms || []);
+
+        // Also set myRoom to the first room for backwards compatibility
+        if (data.rooms && data.rooms.length > 0) {
+          const firstRoom = data.rooms[0];
+          const hostPlayer = firstRoom.players.find((p) => p.isHost);
           setMyRoom({
-            roomCode: data.room.roomCode,
-            status: data.room.status,
-            playerCount: data.room.playerCount,
+            roomCode: firstRoom.room.roomCode,
+            status: firstRoom.room.status,
+            playerCount: firstRoom.room.playerCount,
             maxPlayers: 4,
             hostNickname: hostPlayer?.nickname || 'Unknown',
-            createdAt: data.room.createdAt,
+            createdAt: firstRoom.room.createdAt,
           });
         } else {
           setMyRoom(null);
         }
       }
     } catch (err) {
-      console.error('Failed to fetch my room:', err);
+      console.error('Failed to fetch my rooms:', err);
       // Silently fail
     }
   }, []);
@@ -263,10 +288,10 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     }
   }, [myRoom]);
 
-  // Fetch my room on mount
+  // Fetch my rooms on mount (multi-room support)
   useEffect(() => {
-    fetchMyRoom();
-  }, [fetchMyRoom]);
+    fetchMyRooms();
+  }, [fetchMyRooms]);
 
   // Fetch active rooms on mount and periodically
   useEffect(() => {
@@ -281,6 +306,7 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
     activeRooms,
     loadingRooms,
     myRoom,
+    myRooms, // All rooms player is in
     isLoading,
     error,
     createRoom,
