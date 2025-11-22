@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
@@ -29,6 +30,7 @@ import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
+import { useRoomSession } from '../hooks/useRoomSession';
 import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './Lobby.module.css';
@@ -49,6 +51,7 @@ interface RoomJoinedEventData {
 }
 
 export function Lobby() {
+  const navigate = useNavigate();
   const { t } = useTranslation('lobby');
 
   // State
@@ -62,9 +65,15 @@ export function Lobby() {
 
   // Use custom hooks
   const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
+  const sessionState = useRoomSession();
 
-  // Auto-redirect removed to support multi-game join
-  // Users will manually navigate to specific games via room list
+  // Navigate to game when room status becomes active
+  useEffect(() => {
+    if (sessionState.status === 'active' && sessionState.roomCode) {
+      console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
+      navigate(`/game/${sessionState.roomCode}`);
+    }
+  }, [sessionState.status, sessionState.roomCode, navigate]);
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
