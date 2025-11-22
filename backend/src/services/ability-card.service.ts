@@ -53,12 +53,16 @@ export class AbilityCardService {
       }
 
       if (!fileContent) {
-        throw new Error('ability-cards.json not found in any expected location');
+        throw new Error(
+          'ability-cards.json not found in any expected location',
+        );
       }
 
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
-      console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${successfulPath}`);
+      console.log(
+        `✅ Loaded ${this.abilityCards.length} ability cards from ${successfulPath}`,
+      );
       return this.abilityCards;
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);

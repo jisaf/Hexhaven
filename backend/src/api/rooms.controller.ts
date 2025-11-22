@@ -171,9 +171,9 @@ export class RoomsController {
    * Get all rooms for a player by their UUID (multi-room support)
    */
   @Get('my-rooms/:playerUuid')
-  getMyRooms(
-    @Param('playerUuid') playerUuid: string,
-  ): { rooms: GetRoomResponse[] } {
+  getMyRooms(@Param('playerUuid') playerUuid: string): {
+    rooms: GetRoomResponse[];
+  } {
     try {
       // Find all rooms by player UUID
       const rooms = roomService.getRoomsByPlayerId(playerUuid);

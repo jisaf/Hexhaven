@@ -144,7 +144,7 @@ export class ValidationService {
    */
   validateRoomJoin(
     room: GameRoom,
-    playerAlreadyInRoom: boolean,
+    _playerAlreadyInRoom: boolean,
   ): { valid: boolean; error?: string } {
     // Check room status
     if (room.status !== RoomStatus.LOBBY) {

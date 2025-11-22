@@ -72,7 +72,7 @@ export function useRoomManagement(options: UseRoomManagementOptions) {
       const response = await fetch(`${apiUrl}/rooms/my-rooms/${uuid}`);
 
       if (response.ok) {
-        const data = await response.json();
+        const data: { rooms: RoomWithPlayers[] } = await response.json();
         setMyRooms(data.rooms || []);
 
         // Also set myRoom to the first room for backwards compatibility

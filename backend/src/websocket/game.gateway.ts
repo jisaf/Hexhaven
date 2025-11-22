@@ -100,10 +100,10 @@ export class GameGateway
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private async buildGameStatePayload(
+  private buildGameStatePayload(
     room: any,
     roomCode: string,
-  ): Promise<GameStartedPayload> {
+  ): GameStartedPayload {
     // Get current scenario and game state
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -120,25 +120,23 @@ export class GameGateway
     }
 
     // Load ability decks for all characters
-    const charactersWithDecks = await Promise.all(
-      characters.map(async (c: any) => {
-        const charData = c.toJSON();
-        const abilityDeck = this.abilityCardService.getCardsByClass(
-          charData.characterClass,
-        );
-        return {
-          id: charData.id,
-          playerId: charData.playerId,
-          classType: charData.characterClass,
-          health: charData.currentHealth,
-          maxHealth: charData.stats.maxHealth,
-          currentHex: charData.position,
-          conditions: charData.conditions,
-          isExhausted: charData.exhausted,
-          abilityDeck, // Include ability deck for card selection
-        };
-      }),
-    );
+    const charactersWithDecks = characters.map((c: any) => {
+      const charData = c.toJSON();
+      const abilityDeck = this.abilityCardService.getCardsByClass(
+        charData.characterClass,
+      );
+      return {
+        id: charData.id,
+        playerId: charData.playerId,
+        classType: charData.characterClass,
+        health: charData.currentHealth,
+        maxHealth: charData.stats.maxHealth,
+        currentHex: charData.position,
+        conditions: charData.conditions,
+        isExhausted: charData.exhausted,
+        abilityDeck, // Include ability deck for card selection
+      };
+    });
 
     // Build game state payload
     const gameStartedPayload: GameStartedPayload = {
@@ -304,10 +302,7 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = await this.buildGameStatePayload(
-            room,
-            roomCode,
-          );
+          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -641,26 +636,24 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = await Promise.all(
-        characters.map(async (c) => {
-          const charData = c.toJSON();
-          // Get ability deck for this character class
-          const abilityDeck = this.abilityCardService.getCardsByClass(
-            charData.characterClass,
-          );
-          return {
-            id: charData.id,
-            playerId: charData.playerId,
-            classType: charData.characterClass,
-            health: charData.currentHealth,
-            maxHealth: charData.stats.maxHealth,
-            currentHex: charData.position,
-            conditions: charData.conditions,
-            isExhausted: charData.exhausted,
-            abilityDeck, // Include ability deck for card selection
-          };
-        }),
-      );
+      const charactersWithDecks = characters.map((c) => {
+        const charData = c.toJSON();
+        // Get ability deck for this character class
+        const abilityDeck = this.abilityCardService.getCardsByClass(
+          charData.characterClass,
+        );
+        return {
+          id: charData.id,
+          playerId: charData.playerId,
+          classType: charData.characterClass,
+          health: charData.currentHealth,
+          maxHealth: charData.stats.maxHealth,
+          currentHex: charData.position,
+          conditions: charData.conditions,
+          isExhausted: charData.exhausted,
+          abilityDeck, // Include ability deck for card selection
+        };
+      });
 
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
