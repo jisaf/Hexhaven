@@ -1,15 +1,14 @@
 /**
  * CardSelectionPanel Component (US2 - T104)
  *
- * Displays a swipeable carousel of ability cards for selection.
+ * Displays cards in a fan layout with focus and selection states.
  * Players select 2 cards (top/bottom) for the turn.
- * Mobile-optimized with touch gestures.
+ * Mobile-optimized with tap interactions.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
-import { GestureHandler, type SwipeEvent } from '../utils/gestures';
 import './CardSelectionPanel.css';
 
 interface CardSelectionPanelProps {
@@ -31,57 +30,19 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   onConfirm,
   disabled = false,
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [focusedIndex, setFocusedIndex] = useState(Math.floor(cards.length / 2));
   const [selectionMode, setSelectionMode] = useState<'top' | 'bottom' | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const gestureHandlerRef = useRef<GestureHandler | null>(null);
 
-  // Initialize gesture handler
-  useEffect(() => {
-    if (!carouselRef.current) return;
-
-    const handler = new GestureHandler(carouselRef.current, {
-      swipeVelocityThreshold: 0.3,
-      swipeDistanceThreshold: 50,
-      enablePan: false, // Disable pan to avoid conflicts
-      enablePinch: false,
-    });
-
-    // Handle swipe gestures for card navigation
-    handler.onSwipe((event: SwipeEvent) => {
-      if (isAnimating) return;
-
-      const isLeftSwipe = event.direction === 'left';
-      const isRightSwipe = event.direction === 'right';
-
-      setIsAnimating(true);
-
-      if (isLeftSwipe && currentIndex < cards.length - 1) {
-        setCurrentIndex((prev) => Math.min(prev + 1, cards.length - 1));
-      } else if (isRightSwipe && currentIndex > 0) {
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
-      }
-
-      // Reset animation flag after transition
-      setTimeout(() => setIsAnimating(false), 300);
-    });
-
-    // Prevent tap from selecting during swipe
-    handler.onTap(() => {
-      // Taps are handled by card click handlers
-    });
-
-    gestureHandlerRef.current = handler;
-
-    return () => {
-      handler.destroy();
-    };
-  }, [cards.length, currentIndex, isAnimating]);
-
-  const handleCardClick = (cardId: string) => {
+  const handleCardClick = (cardId: string, index: number) => {
     if (disabled) return;
 
+    // If card is not focused, focus it
+    if (index !== focusedIndex) {
+      setFocusedIndex(index);
+      return;
+    }
+
+    // If card is focused, select it
     // If no card selected yet, ask which half to use
     if (!selectionMode) {
       setSelectionMode('top');
@@ -97,18 +58,6 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
     }
   };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
   const canConfirm = selectedTopCard !== null && selectedBottomCard !== null;
 
   return (
@@ -118,7 +67,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         <h3>Select Your Cards</h3>
         <p>
           {!selectedTopCard && !selectedBottomCard
-            ? 'Select 2 cards for this turn'
+            ? 'Tap unfocused cards to focus, tap focused cards to select'
             : !selectedTopCard
               ? 'Select TOP action'
               : !selectedBottomCard
@@ -149,69 +98,49 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         </div>
       )}
 
-      {/* Carousel Container */}
-      <div className="carousel-container">
-        <button
-          className="carousel-nav prev"
-          onClick={handlePrevious}
-          disabled={currentIndex === 0}
-          aria-label="Previous card"
-          data-testid="carousel-prev"
-        >
-          ◀
-        </button>
-
-        <div
-          className="carousel-track"
-          ref={carouselRef}
-          data-testid="card-carousel"
-          style={{
-            transform: `translateX(-${currentIndex * 100}%)`,
-            transition: isAnimating ? 'transform 0.3s ease-out' : 'none',
-          }}
-        >
-          {cards.map((card) => {
+      {/* Fan Display Container */}
+      <div className="fan-container" data-testid="card-fan">
+        <div className="fan-cards">
+          {cards.map((card, index) => {
             const isSelectedTop = selectedTopCard === card.id;
             const isSelectedBottom = selectedBottomCard === card.id;
             const isSelected = isSelectedTop || isSelectedBottom;
+            const isFocused = index === focusedIndex;
+
+            // Calculate rotation and position for fan layout
+            const totalCards = cards.length;
+            const centerIndex = (totalCards - 1) / 2;
+            const offset = index - centerIndex;
+            const maxRotation = 15; // degrees
+            const rotation = (offset / centerIndex) * maxRotation;
+            const verticalOffset = Math.abs(offset) * 10; // pixels
 
             return (
-              <div key={card.id} className="carousel-item">
+              <div
+                key={card.id}
+                className={`fan-card ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`}
+                style={{
+                  transform: `
+                    translateX(${offset * 20}px)
+                    translateY(${isFocused ? 0 : verticalOffset}px)
+                    rotate(${isFocused ? 0 : rotation}deg)
+                    ${isSelected ? 'translateY(-40px)' : ''}
+                  `,
+                  zIndex: isFocused ? 100 : 50 - Math.abs(offset),
+                }}
+                data-testid={`fan-card-${index}`}
+              >
                 <AbilityCard
                   card={card}
                   isSelected={isSelected}
                   isTop={isSelectedTop ? true : isSelectedBottom ? false : undefined}
-                  onClick={() => handleCardClick(card.id)}
+                  onClick={() => handleCardClick(card.id, index)}
                   disabled={disabled}
                 />
               </div>
             );
           })}
         </div>
-
-        <button
-          className="carousel-nav next"
-          onClick={handleNext}
-          disabled={currentIndex === cards.length - 1}
-          aria-label="Next card"
-          data-testid="carousel-next"
-        >
-          ▶
-        </button>
-      </div>
-
-      {/* Carousel Indicators */}
-      <div className="carousel-indicators" data-testid="carousel-pagination">
-        {cards.map((card, idx) => (
-          <button
-            key={card.id}
-            className={`indicator ${idx === currentIndex ? 'active' : ''}`}
-            onClick={() => setCurrentIndex(idx)}
-            aria-label={`Go to card ${idx + 1}`}
-            data-testid={`pagination-dot-${idx}`}
-            data-active={idx === currentIndex}
-          />
-        ))}
       </div>
 
       {/* Action Buttons */}

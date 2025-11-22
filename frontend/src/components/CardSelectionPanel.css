@@ -64,103 +64,59 @@
   font-size: 14px;
 }
 
-/* Carousel Container */
-.carousel-container {
+/* Fan Display Container */
+.fan-container {
   position: relative;
   width: 100%;
-  overflow: hidden;
+  min-height: 500px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow: visible;
 }
 
-.carousel-track {
+.fan-cards {
+  position: relative;
   display: flex;
-  transition: transform 0.3s ease-in-out;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  touch-action: pan-y;
+  height: 100%;
 }
 
-.carousel-item {
-  flex: 0 0 100%;
-  display: flex;
-  justify-content: center;
-  padding: 8px;
-}
-
-/* Carousel Navigation */
-.carousel-nav {
+.fan-card {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-  min-width: 44px; /* Touch target minimum */
-  min-height: 44px;
-  border: none;
-  background: rgba(52, 152, 219, 0.9);
-  color: white;
-  font-size: 24px;
-  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.carousel-nav:hover:not(:disabled) {
-  background: rgba(41, 128, 185, 1);
-  transform: translateY(-50%) scale(1.1);
+.fan-card.focused {
+  transform: scale(1.15) !important;
+  filter: none;
 }
 
-.carousel-nav:active:not(:disabled) {
-  transform: translateY(-50%) scale(0.95);
+.fan-card:not(.focused) {
+  transform: scale(0.85);
+  opacity: 0.8;
+  filter: brightness(0.7);
 }
 
-.carousel-nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+.fan-card.selected {
+  animation: raise-card 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.carousel-nav.prev {
-  left: 8px;
-}
-
-.carousel-nav.next {
-  right: 8px;
-}
-
-/* Carousel Indicators */
-.carousel-indicators {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-}
-
-.indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid #7f8c8d;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-}
-
-.indicator:hover {
-  border-color: #3498db;
-}
-
-.indicator.active {
-  background: #3498db;
-  border-color: #3498db;
-  width: 16px;
-  height: 16px;
+@keyframes raise-card {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-50px);
+  }
+  100% {
+    transform: translateY(-40px);
+  }
 }
 
 /* Action Buttons */
@@ -229,25 +185,24 @@
     padding: 24px;
   }
 
-  .carousel-container {
-    gap: 16px;
+  .fan-container {
+    min-height: 600px;
+    padding: 60px 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fan-container {
+    min-height: 450px;
+    padding: 30px 10px;
   }
 
-  .carousel-nav {
-    width: 56px;
-    height: 56px;
+  .fan-card.focused {
+    transform: scale(1.1) !important;
   }
 
-  .carousel-nav.prev {
-    left: 16px;
-  }
-
-  .carousel-nav.next {
-    right: 16px;
-  }
-
-  .carousel-item {
-    padding: 16px;
+  .fan-card:not(.focused) {
+    transform: scale(0.75);
   }
 }
 
@@ -269,16 +224,20 @@
     font-size: 14px;
     padding: 10px 16px;
   }
+
+  .fan-container {
+    min-height: 400px;
+    padding: 20px 5px;
+  }
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .carousel-track {
-    transition: none;
+  .fan-card {
+    transition: transform 0.1s linear, opacity 0.1s linear;
   }
 
-  .carousel-nav,
-  .indicator {
-    transition: none;
+  .fan-card.selected {
+    animation: none;
   }
 }
