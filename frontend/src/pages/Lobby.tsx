@@ -15,8 +15,7 @@
  * - T070: Game start button (host only)
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
@@ -30,7 +29,6 @@ import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
-import { useRoomSession } from '../hooks/useRoomSession';
 import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './Lobby.module.css';
@@ -51,7 +49,6 @@ interface RoomJoinedEventData {
 }
 
 export function Lobby() {
-  const navigate = useNavigate();
   const { t } = useTranslation('lobby');
 
   // State
@@ -65,7 +62,6 @@ export function Lobby() {
 
   // Use custom hooks
   const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
-  const sessionState = useRoomSession();
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
