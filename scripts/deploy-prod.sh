@@ -42,6 +42,7 @@ cp backend/package.json /tmp/hexhaven-deploy/backend/
 cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
 cp -r frontend/dist/* /tmp/hexhaven-deploy/frontend/
 cp ecosystem.config.js /tmp/hexhaven-deploy/
+cp infrastructure/nginx-hexhaven.conf /tmp/hexhaven-deploy/
 cp scripts/deploy.sh scripts/server-config.sh /tmp/hexhaven-deploy/scripts/
 cd /tmp/hexhaven-deploy
 tar czf /tmp/deploy.tar.gz *
@@ -115,8 +116,16 @@ fi
 
 # Copy frontend to nginx directory
 sudo mkdir -p /var/www/hexhaven/frontend
-sudo cp -r frontend/dist/* /var/www/hexhaven/frontend/
+sudo cp -r frontend/* /var/www/hexhaven/frontend/
 sudo chown -R www-data:www-data /var/www/hexhaven
+
+# Configure nginx
+SERVER_IP=$(hostname -I | awk '{print $1}')
+sed "s/__SERVER_IP__/$SERVER_IP/g" nginx-hexhaven.conf | sudo tee /etc/nginx/sites-available/hexhaven > /dev/null
+sudo ln -sf /etc/nginx/sites-available/hexhaven /etc/nginx/sites-enabled/hexhaven
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+echo "Nginx configured for $SERVER_IP"
 
 echo "✓ Deployed successfully"
 DEPLOY
