@@ -250,13 +250,10 @@ export function Lobby() {
                 label: t('activeGames', 'Active Games'),
                 content: (
                   <LobbyWelcome
-                    myRoom={myRoom}
                     activeRooms={activeRooms}
                     loadingRooms={loadingRooms}
                     isLoading={isLoading}
-                    onCreateRoom={handleCreateRoom}
                     onJoinRoom={() => setMode('joining')}
-                    onRejoinMyRoom={handleRejoinMyRoom}
                     onQuickJoinRoom={handleQuickJoinRoom}
                   />
                 ),
