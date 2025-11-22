@@ -10,22 +10,34 @@ import styles from './LobbyHeader.module.css';
 
 interface LobbyHeaderProps {
   playerNickname?: string | null;
+  onCreateRoom: () => void;
 }
 
-export function LobbyHeader({ playerNickname }: LobbyHeaderProps) {
+export function LobbyHeader({ playerNickname, onCreateRoom }: LobbyHeaderProps) {
   const { t } = useTranslation();
 
   return (
     <header className={styles.lobbyHeader}>
-      <div className={styles.headerTop}>
-        <h1>{t('title', 'Hexhaven Multiplayer')}</h1>
-        <LanguageSelector className="header-language-selector" />
+      <div className={styles.headerContent}>
+        <div className={styles.titleContainer}>
+          <h1>{t('title', 'Hexhaven')}</h1>
+          {playerNickname && (
+            <p className={styles.welcomeMessage}>
+              {t('welcome', 'Welcome')}, <strong>{playerNickname}</strong>
+            </p>
+          )}
+        </div>
+        <div className={styles.actionsContainer}>
+          <button
+            className={styles.createRoomButton}
+            onClick={onCreateRoom}
+            aria-label={t('createGame', 'Create Game')}
+          >
+            +
+          </button>
+          <LanguageSelector className="header-language-selector" />
+        </div>
       </div>
-      {playerNickname && (
-        <p className={styles.welcomeMessage}>
-          {t('welcome', 'Welcome')}, <strong>{playerNickname}</strong>
-        </p>
-      )}
     </header>
   );
 }

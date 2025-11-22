@@ -28,6 +28,7 @@ import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
+import { Tabs } from '../components/Tabs';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
 import { useRoomSession } from '../hooks/useRoomSession';
@@ -235,23 +236,34 @@ export function Lobby() {
   return (
     <div className={styles.lobbyPage}>
       <DebugConsole />
-      <LobbyHeader playerNickname={getPlayerNickname()} />
+      <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
 
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
-          <>
-            <MyRoomsList rooms={myRooms} />
-            <LobbyWelcome
-              myRoom={myRoom}
-              activeRooms={activeRooms}
-              loadingRooms={loadingRooms}
-              isLoading={isLoading}
-              onCreateRoom={handleCreateRoom}
-              onJoinRoom={() => setMode('joining')}
-              onRejoinMyRoom={handleRejoinMyRoom}
-              onQuickJoinRoom={handleQuickJoinRoom}
-            />
-          </>
+          <Tabs
+            tabs={[
+              {
+                label: t('myGames', 'My Games'),
+                content: <MyRoomsList rooms={myRooms} />,
+              },
+              {
+                label: t('activeGames', 'Active Games'),
+                content: (
+                  <LobbyWelcome
+                    myRoom={myRoom}
+                    activeRooms={activeRooms}
+                    loadingRooms={loadingRooms}
+                    isLoading={isLoading}
+                    onCreateRoom={handleCreateRoom}
+                    onJoinRoom={() => setMode('joining')}
+                    onRejoinMyRoom={handleRejoinMyRoom}
+                    onQuickJoinRoom={handleQuickJoinRoom}
+                  />
+                ),
+              },
+            ]}
+            defaultTab={myRooms.length > 0 ? 0 : 1}
+          />
         )}
 
         {mode === 'nickname-for-create' && (

@@ -1,11 +1,11 @@
 .lobbyHeader {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 32px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  background-color: #0d1a2e;
+  padding: 16px 24px;
+  border-bottom: 2px solid #c9a444;
+  color: #f0e6d2;
 }
 
-.headerTop {
+.headerContent {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -13,19 +13,51 @@
   margin: 0 auto;
 }
 
-.headerTop h1 {
-  font-size: 32px;
+.titleContainer h1 {
+  font-family: 'MedievalSharp', serif;
+  font-size: 28px;
   margin: 0;
-  color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: #c9a444;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
 .welcomeMessage {
-  margin-top: 16px;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #dcdcdc;
 }
 
 .welcomeMessage strong {
-  color: #ffd700;
+  color: #c9a444;
+  font-weight: bold;
+}
+
+.actionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.createRoomButton {
+  background-color: transparent;
+  border: 2px solid #c9a444;
+  color: #c9a444;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 28px;
+  line-height: 36px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.createRoomButton:hover {
+  background-color: #c9a444;
+  color: #0d1a2e;
+  box-shadow: 0 0 10px #c9a444;
 }
