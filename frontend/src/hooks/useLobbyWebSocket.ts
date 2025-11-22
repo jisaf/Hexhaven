@@ -20,6 +20,7 @@ interface LobbyWebSocketHandlers {
   onPlayerJoined: (player: Player) => void;
   onPlayerLeft: (playerId: string) => void;
   onCharacterSelected: (playerId: string, characterClass: CharacterClass) => void;
+  onGameStarted?: () => void;
   onError: (message: string) => void;
 }
 
@@ -71,8 +72,9 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
     console.log('Game started event received in Lobby');
     // Update RoomSessionManager with game state
     roomSessionManager.onGameStarted(data);
-    // Navigation is handled by session state watcher
-  }, []);
+    // Notify Lobby component that game has started
+    handlers.onGameStarted?.();
+  }, [handlers]);
 
   const handleError = useCallback((data: { message: string }) => {
     handlers.onError(data.message);

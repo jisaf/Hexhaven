@@ -107,6 +107,11 @@ export function Lobby() {
     }
   }, [currentPlayerId]);
 
+  const handleGameStarted = useCallback(() => {
+    console.log('[Lobby] Game started, returning to initial mode');
+    setMode('initial');
+  }, []);
+
   const handleWebSocketError = useCallback((message: string) => {
     setError(message);
   }, [setError]);
@@ -117,6 +122,7 @@ export function Lobby() {
     onPlayerJoined: handlePlayerJoined,
     onPlayerLeft: handlePlayerLeft,
     onCharacterSelected: handleCharacterSelected,
+    onGameStarted: handleGameStarted,
     onError: handleWebSocketError,
   });
 
