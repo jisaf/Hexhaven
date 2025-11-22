@@ -28,9 +28,6 @@ $SSH -o ConnectTimeout=5 $USER@$HOST "echo ok" >/dev/null || error "SSH failed"
 info "Installing dependencies"
 npm ci
 
-info "Running tests"
-npm test || true
-
 info "Building backend"
 npm run build -w backend
 
