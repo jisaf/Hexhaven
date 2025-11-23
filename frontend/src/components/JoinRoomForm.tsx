@@ -20,7 +20,7 @@ export function JoinRoomForm({
   error,
   initialNickname = ''
 }: JoinRoomFormProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [nickname, setNickname] = useState(initialNickname);
   const [touched, setTouched] = useState({ roomCode: false, nickname: false });
@@ -55,49 +55,49 @@ export function JoinRoomForm({
     <form onSubmit={handleSubmit} className="join-room-form">
       <div className="form-fields">
         <div className="field-group">
-          <label htmlFor="room-code-input">{t('lobby:roomCode', 'Room Code')}</label>
+          <label htmlFor="room-code-input">{t('roomCode', 'Room Code')}</label>
           <input
             id="room-code-input"
             type="text"
             value={roomCode}
             onChange={handleRoomCodeChange}
             onBlur={() => setTouched(prev => ({ ...prev, roomCode: true }))}
-            placeholder={t('lobby:enterRoomCode', 'Enter Room Code')}
+            placeholder={t('enterRoomCode', 'Enter Room Code')}
             maxLength={6}
             disabled={isLoading}
             className={`input-field ${showRoomCodeError ? 'error' : ''} ${isRoomCodeValid ? 'valid' : ''}`}
-            aria-label={t('lobby:roomCodeLabel', 'Room code')}
+            aria-label={t('roomCodeLabel', 'Room code')}
             aria-invalid={showRoomCodeError ? 'true' : 'false'}
             autoComplete="off"
             data-testid="room-code-input"
           />
           {showRoomCodeError && (
             <span className="error-message">
-              {t('lobby:invalidRoomCode', 'Invalid room code (6 characters required)')}
+              {t('invalidRoomCode', 'Invalid room code (6 characters required)')}
             </span>
           )}
         </div>
 
         <div className="field-group">
-          <label htmlFor="nickname-input">{t('lobby:nickname', 'Nickname')}</label>
+          <label htmlFor="nickname-input">{t('nickname', 'Nickname')}</label>
           <input
             id="nickname-input"
             type="text"
             value={nickname}
             onChange={handleNicknameChange}
             onBlur={() => setTouched(prev => ({ ...prev, nickname: true }))}
-            placeholder={t('lobby:enterNickname', 'Enter your nickname')}
+            placeholder={t('enterNickname', 'Enter your nickname')}
             maxLength={50}
             disabled={isLoading}
             className={`input-field ${showNicknameError ? 'error' : ''} ${isNicknameValid ? 'valid' : ''}`}
-            aria-label={t('lobby:nicknameLabel', 'Nickname')}
+            aria-label={t('nicknameLabel', 'Nickname')}
             aria-invalid={showNicknameError ? 'true' : 'false'}
             autoComplete="off"
             data-testid="nickname-input"
           />
           {showNicknameError && (
             <span className="error-message">
-              {t('lobby:invalidNickname', 'Nickname must be 1-50 characters')}
+              {t('invalidNickname', 'Nickname must be 1-50 characters')}
             </span>
           )}
         </div>
@@ -106,9 +106,9 @@ export function JoinRoomForm({
           type="submit"
           disabled={!isFormValid || isLoading}
           className="submit-button"
-          aria-label={t('lobby:joinRoom', 'Join Room')}
+          aria-label={t('joinRoom', 'Join Room')}
         >
-          {isLoading ? t('lobby:joining', 'Joining...') : t('lobby:join', 'Join')}
+          {isLoading ? t('joining', 'Joining...') : t('join', 'Join')}
         </button>
       </div>
 

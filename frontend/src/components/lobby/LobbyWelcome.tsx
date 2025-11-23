@@ -24,7 +24,7 @@ export function LobbyWelcome({
   onJoinRoom,
   onQuickJoinRoom,
 }: LobbyWelcomeProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
 
   return (
     <div className={styles.initialMode}>
