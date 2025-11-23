@@ -22,44 +22,46 @@ export function MyRoomsList({ rooms }: MyRoomsListProps) {
     navigate(`/game/${roomCode}`);
   };
 
-  if (rooms.length === 0) {
-    return null;
-  }
-
   return (
     <div className={styles.myRoomsList}>
       <h2 className={styles.title}>{t('myGames', 'My Games')}</h2>
-      <div className={styles.roomsGrid}>
-        {rooms.map(({ room, players }) => {
-          const isHost = players.find(p => p.isHost)?.nickname;
-          const statusClass = room.status === 'active' ? styles.active : styles.lobby;
+      {rooms.length === 0 ? (
+        <div className={styles.noRooms}>
+          <p>{t('noGames', 'You have not joined any games yet.')}</p>
+        </div>
+      ) : (
+        <div className={styles.roomsGrid}>
+          {rooms.map(({ room, players }) => {
+            const isHost = players.find(p => p.isHost)?.nickname;
+            const statusClass = room.status === 'active' ? styles.active : styles.lobby;
 
-          return (
-            <div key={room.roomCode} className={`${styles.roomCard} ${statusClass}`}>
-              <div className={styles.roomHeader}>
-                <span className={styles.roomCode}>{room.roomCode}</span>
-                <span className={styles.roomStatus}>
-                  {room.status === 'active' ? t('inProgress', 'In Progress') : t('inLobby', 'In Lobby')}
-                </span>
+            return (
+              <div key={room.roomCode} className={`${styles.roomCard} ${statusClass}`}>
+                <div className={styles.roomHeader}>
+                  <span className={styles.roomCode}>{room.roomCode}</span>
+                  <span className={styles.roomStatus}>
+                    {room.status === 'active' ? t('inProgress', 'In Progress') : t('inLobby', 'In Lobby')}
+                  </span>
+                </div>
+                <div className={styles.roomInfo}>
+                  <span className={styles.playerCount}>
+                    {t('players', 'Players')}: {room.playerCount}/4
+                  </span>
+                  <span className={styles.host}>
+                    {t('host', 'Host')}: {isHost}
+                  </span>
+                </div>
+                <button
+                  className={styles.joinButton}
+                  onClick={() => handleJoinGame(room.roomCode)}
+                >
+                  {room.status === 'active' ? t('resume', 'Resume Game') : t('viewLobby', 'View Lobby')}
+                </button>
               </div>
-              <div className={styles.roomInfo}>
-                <span className={styles.playerCount}>
-                  {t('players', 'Players')}: {room.playerCount}/4
-                </span>
-                <span className={styles.host}>
-                  {t('host', 'Host')}: {isHost}
-                </span>
-              </div>
-              <button
-                className={styles.joinButton}
-                onClick={() => handleJoinGame(room.roomCode)}
-              >
-                {room.status === 'active' ? t('resume', 'Resume Game') : t('viewLobby', 'View Lobby')}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
+import { Tabs } from '../components/Tabs';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
 import { useRoomSession } from '../hooks/useRoomSession';
@@ -64,7 +65,7 @@ export function Lobby() {
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
 
   // Use custom hooks
-  const { activeRooms, loadingRooms, myRoom, myRooms, isLoading, error, createRoom, joinRoom, rejoinRoom, setError } = useRoomManagement({ mode });
+  const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
 
   // Navigate to game when room status becomes active (only when creating/joining)
@@ -175,18 +176,6 @@ export function Lobby() {
     }
   };
 
-  // Rejoin player's existing room
-  const handleRejoinMyRoom = async () => {
-    if (!myRoom) return;
-
-    try {
-      await rejoinRoom();
-      setMode('joining');
-    } catch (err) {
-      console.error('Room rejoin error:', err);
-    }
-  };
-
   // Character selection (T069)
   const handleSelectCharacter = (characterClass: CharacterClass) => {
     setSelectedCharacter(characterClass);
@@ -226,23 +215,31 @@ export function Lobby() {
   return (
     <div className={styles.lobbyPage}>
       <DebugConsole />
-      <LobbyHeader playerNickname={getPlayerNickname()} />
+      <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
 
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
-          <>
-            <MyRoomsList rooms={myRooms} />
-            <LobbyWelcome
-              myRoom={myRoom}
-              activeRooms={activeRooms}
-              loadingRooms={loadingRooms}
-              isLoading={isLoading}
-              onCreateRoom={handleCreateRoom}
-              onJoinRoom={() => setMode('joining')}
-              onRejoinMyRoom={handleRejoinMyRoom}
-              onQuickJoinRoom={handleQuickJoinRoom}
-            />
-          </>
+          <Tabs
+            tabs={[
+              {
+                label: t('myGames', 'My Games'),
+                content: <MyRoomsList rooms={myRooms} />,
+              },
+              {
+                label: t('activeGames', 'Active Games'),
+                content: (
+                  <LobbyWelcome
+                    activeRooms={activeRooms}
+                    loadingRooms={loadingRooms}
+                    isLoading={isLoading}
+                    onJoinRoom={() => setMode('joining')}
+                    onQuickJoinRoom={handleQuickJoinRoom}
+                  />
+                ),
+              },
+            ]}
+            defaultTab={myRooms.length > 0 ? 0 : 1}
+          />
         )}
 
         {mode === 'nickname-for-create' && (
