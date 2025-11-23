@@ -100,7 +100,9 @@ export class GameGateway
    * Get the room that a Socket.IO client is currently in
    * Multi-room support: Uses Socket.IO rooms to determine which game room the client is active in
    */
-  private getRoomFromSocket(client: Socket): { room: any; roomCode: string } | null {
+  private getRoomFromSocket(
+    client: Socket,
+  ): { room: any; roomCode: string } | null {
     // Get all Socket.IO rooms the client is in
     const clientRooms = Array.from(client.rooms);
     // Filter out the socket ID (always first room)
@@ -524,7 +526,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -539,7 +541,7 @@ export class GameGateway
 
       // Check if character class is already taken
       const characterTaken = room.players.some(
-        (p) =>
+        (p: Player) =>
           p.characterClass === payload.characterClass && p.uuid !== playerUUID,
       );
 
@@ -639,7 +641,9 @@ export class GameGateway
       // This would improve UX and remove the need for player-count-specific position arrays
 
       // Get player starting positions from scenario
-      const playerCount = room.players.filter((p) => p.characterClass).length;
+      const playerCount = room.players.filter(
+        (p: Player) => p.characterClass,
+      ).length;
       const startingPositions = scenario.playerStartPositions[playerCount];
       if (!startingPositions || startingPositions.length < playerCount) {
         throw new Error(`Scenario does not support ${playerCount} players`);
@@ -647,8 +651,8 @@ export class GameGateway
 
       // Create characters for all players at starting positions
       const characters = room.players
-        .filter((p) => p.characterClass)
-        .map((p, index) => {
+        .filter((p: Player) => p.characterClass)
+        .map((p: Player, index: number) => {
           const startingPosition = startingPositions[index];
           return characterService.selectCharacter(
             p.uuid,
@@ -691,7 +695,7 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = characters.map((c) => {
+      const charactersWithDecks = characters.map((c: any) => {
         const charData = c.toJSON();
         // Get ability deck for this character class
         const abilityDeck = this.abilityCardService.getCardsByClass(
@@ -736,7 +740,7 @@ export class GameGateway
 
       for (const roomSocket of roomSockets) {
         const playerUUID = this.socketToPlayer.get(roomSocket.id);
-        const player = room.players.find((p) => p.uuid === playerUUID);
+        const player = room.players.find((p: Player) => p.uuid === playerUUID);
         const nickname = player?.nickname || 'Unknown';
 
         roomSocket.emit(
@@ -792,7 +796,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
@@ -901,7 +905,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
@@ -959,11 +963,11 @@ export class GameGateway
 
       // Check if all players have selected cards
       const allCharacters = room.players
-        .map((p) => characterService.getCharacterByPlayerId(p.uuid))
-        .filter((c) => c && !c.exhausted);
+        .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
-      const allSelected = allCharacters.every(
-        (c) => c && c.selectedCards !== undefined,
+      const allSelected = allCharacters.every((c: any): c is any =>
+        Boolean(c && c.selectedCards !== undefined),
       );
 
       // If all players selected, determine turn order and broadcast
@@ -1074,7 +1078,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
@@ -1242,7 +1246,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
@@ -1346,7 +1350,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
