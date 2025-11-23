@@ -32,7 +32,6 @@ export function LobbyHeader({ playerNickname, onCreateRoom }: LobbyHeaderProps) 
             className={styles.createRoomButton}
             onClick={onCreateRoom}
             aria-label={t('createGame', 'Create Game')}
-            data-testid="create-room-button"
           >
             +
           </button>

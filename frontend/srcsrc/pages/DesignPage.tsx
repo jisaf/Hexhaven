@@ -8,13 +8,19 @@ import HexEditor from '../components/designer/HexEditor';
 import ScenarioSaveLoad from '../components/designer/ScenarioSaveLoad';
 import BackgroundImageUploader from '../components/designer/BackgroundImageUploader';
 import ExportButton from '../components/designer/ExportButton';
-import { createNewScenario } from '../../../../shared/data/scenarios';
 
 const AUTOSAVE_KEY = 'hexhaven-designer-autosave';
 
 const DesignPage: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [scenario, setScenario] = useState<Omit<Scenario, 'id'>>(createNewScenario());
+    const [scenario, setScenario] = useState<Omit<Scenario, 'id'>>({
+        name: 'New Scenario',
+        difficulty: 1,
+        mapLayout: [],
+        monsterGroups: [],
+        playerStartPositions: {},
+        objectivePrimary: '',
+    });
     const [scenarioId, setScenarioId] = useState<string | null>(null);
     const [selectedHex, setSelectedHex] = useState<Axial | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);

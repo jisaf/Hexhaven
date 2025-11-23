@@ -1,11 +1,12 @@
-
 import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
 import { ScenarioDesignerService } from './scenario-designer.service';
 import type { Scenario } from '../../../../shared/types';
 
 @Controller('api/scenarios/designer')
 export class ScenarioDesignerController {
-  constructor(private readonly scenarioDesignerService: ScenarioDesignerService) {}
+  constructor(
+    private readonly scenarioDesignerService: ScenarioDesignerService,
+  ) {}
 
   @Get()
   findAll() {
