@@ -195,6 +195,7 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
+    websocketService.leaveRoom();
     navigate('/');
   };
 
