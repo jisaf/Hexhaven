@@ -97,6 +97,31 @@ export class GameGateway
   >(); // roomCode -> (monsterType -> initiative)
 
   /**
+   * Get the room that a Socket.IO client is currently in
+   * Multi-room support: Uses Socket.IO rooms to determine which game room the client is active in
+   */
+  private getRoomFromSocket(client: Socket): { room: any; roomCode: string } | null {
+    // Get all Socket.IO rooms the client is in
+    const clientRooms = Array.from(client.rooms);
+    // Filter out the socket ID (always first room)
+    const roomCodes = clientRooms.filter((r) => r !== client.id);
+
+    if (roomCodes.length === 0) {
+      return null;
+    }
+
+    // Get the first game room (should only be one active at a time per socket)
+    const roomCode = roomCodes[0];
+    const room = roomService.getRoom(roomCode);
+
+    if (!room) {
+      return null;
+    }
+
+    return { room, roomCode };
+  }
+
+  /**
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
@@ -485,11 +510,13 @@ export class GameGateway
         `Select character request from ${playerUUID}: ${payload.characterClass}`,
       );
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
+
+      const { room, roomCode } = roomData;
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -556,11 +583,14 @@ export class GameGateway
 
       this.logger.log(`Start game request from ${playerUUID}`);
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
+
+      const { room, roomCode } = roomData;
+      this.logger.log(`Starting game in room ${roomCode}`);
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
