@@ -1,11 +1,41 @@
-.inRoomMode {
-  max-width: 1200px;
+/* General Container */
+.inRoomView {
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 24px;
 }
 
+/* Desktop: Two-Column Layout */
+.desktopLayout {
+  display: grid;
+  grid-template-columns: 1fr 350px; /* Main content and sidebar */
+  gap: 32px;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-radius: 12px;
+}
+
+/* Mobile: Tabbed Layout */
+.mobileLayout {
+  display: none; /* Hidden by default */
+}
+
+/* Game Controls */
 .gameControlsSection {
-  margin-bottom: 32px;
+  margin-top: auto; /* Pushes to the bottom in sidebar */
 }
 
 .hostControls {
@@ -94,29 +124,25 @@
   margin: 0;
 }
 
-.roomLayout {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 32px;
-  margin-bottom: 32px;
-}
-
-.roomSection {
+.scenarioSection,
+.characterSelectSection {
   background: #2c2c2c;
-  padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.scenarioSection {
-  background: #2c2c2c;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
+/* Responsive Breakpoint */
+@media (max-width: 900px) {
+  .desktopLayout {
+    display: none; /* Hide desktop layout */
+  }
 
-@media (max-width: 768px) {
-  .roomLayout {
-    grid-template-columns: 1fr;
+  .mobileLayout {
+    display: block; /* Show mobile layout */
+  }
+
+  .sidebar {
+    padding: 16px;
   }
 }

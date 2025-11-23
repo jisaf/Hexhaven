@@ -1,88 +1,43 @@
-.roomHeader {
-  background: #2c2c2c;
-  padding: 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.roomCodeDisplay {
+  background: rgba(0,0,0,0.2);
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #444;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  color: #ccc;
+  font-size: 14px;
 }
 
-.roomCodeSection {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.roomCodeSection h2 {
-  font-size: 20px;
-  color: #ffffff;
-  margin: 0;
-}
-
-.roomCode {
-  color: #3498db;
-  font-size: 32px;
-  font-weight: bold;
-  letter-spacing: 3px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.copyArea {
+.copyableText {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
 }
 
-.copyButton {
-  padding: 8px 16px;
-  background: #3498db;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.copyableText:hover {
+  background-color: rgba(255,255,255,0.1);
 }
 
-.copyButton:hover {
-  background: #2980b9;
-  transform: translateY(-1px);
+.copyableText strong {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
 }
 
 .copiedMessage {
   color: #2ecc71;
-  font-size: 14px;
   font-weight: 600;
-  animation: fadeInOut 2s ease-in-out;
-}
-
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
 }
 
 .hostIndicator {
-  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #f39c12;
 }
