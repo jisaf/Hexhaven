@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScenarioCard } from './ScenarioCard';
+import { ScenarioDetailView } from './lobby/ScenarioDetailView';
 import { getApiUrl } from '../config/api';
 
 interface Scenario {
@@ -23,11 +24,13 @@ interface Scenario {
 export interface ScenarioSelectionPanelProps {
   selectedScenarioId?: string;
   onSelectScenario: (scenarioId: string) => void;
+  isHost: boolean;
 }
 
 export function ScenarioSelectionPanel({
   selectedScenarioId,
   onSelectScenario,
+  isHost,
 }: ScenarioSelectionPanelProps) {
   const { t } = useTranslation();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -93,34 +96,44 @@ export function ScenarioSelectionPanel({
 
   return (
     <div className="scenario-panel" data-testid="scenario-selection-panel">
-      <h3 className="panel-title">
-        {t('scenario.selectScenario', 'Select Scenario')}
-        <span className="host-badge">{t('lobby:hostOnly', 'Host Only')}</span>
-      </h3>
+      {isHost ? (
+        <>
+          <h3 className="panel-title">
+            {t('scenario.selectScenario', 'Select Scenario')}
+            <span className="host-badge">{t('lobby:hostOnly', 'Host Only')}</span>
+          </h3>
+          <div className="scenario-grid">
+            {scenarios.map((scenario) => (
+              <ScenarioCard
+                key={scenario.id}
+                id={scenario.id}
+                name={scenario.name}
+                difficulty={scenario.difficulty}
+                objective={scenarioObjectives[scenario.id] || 'Complete the scenario'}
+                isSelected={selectedScenarioId === scenario.id}
+                onSelect={onSelectScenario}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <h3 className="panel-title">{t('scenario.title', 'Scenario')}</h3>
+      )}
 
-      <div className="scenario-grid">
-        {scenarios.map((scenario) => (
-          <ScenarioCard
-            key={scenario.id}
-            id={scenario.id}
-            name={scenario.name}
-            difficulty={scenario.difficulty}
-            objective={scenarioObjectives[scenario.id] || 'Complete the scenario'}
-            isSelected={selectedScenarioId === scenario.id}
-            onSelect={onSelectScenario}
-          />
-        ))}
-      </div>
+      {selectedScenarioId && (
+        <div className="scenario-details-container">
+          <ScenarioDetailView scenarioId={selectedScenarioId} />
+        </div>
+      )}
 
       <style>{`
         .scenario-panel {
           width: 100%;
           max-width: 1000px;
-          margin: 24px auto;
-          padding: 24px;
-          background: #1a1a1a;
-          border-radius: 12px;
-          border: 2px solid #333;
+          margin: 0 auto;
+          padding: 0;
+          background: none;
+          border: none;
         }
 
         .scenario-panel.loading,
@@ -156,9 +169,13 @@ export function ScenarioSelectionPanel({
           gap: 16px;
         }
 
+        .scenario-details-container {
+          margin-top: 24px;
+        }
+
         @media (max-width: 768px) {
           .scenario-panel {
-            padding: 16px;
+            padding: 0;
           }
 
           .scenario-grid {

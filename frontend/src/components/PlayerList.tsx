@@ -52,181 +52,65 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
   };
 
   return (
-    <div className="player-list" data-testid="player-list">
-      <h3 className="player-list-title">
+    <div className="player-list-container" data-testid="player-list-container">
+      <h4 className="player-list-title">
         {t('lobby:players', 'Players')} ({players.length}/4)
-      </h3>
-
-      <ul className="players" role="list">
-        {players.map((player) => (
-          <li
-            key={player.id}
-            className={`player-item ${player.id === currentPlayerId ? 'current-player' : ''}`}
-            data-testid="player-item"
-          >
-            <div className="player-info">
-              <span
-                className="connection-status"
-                style={{ color: getConnectionColor(player.connectionStatus) }}
-                aria-label={t(`lobby:connectionStatus.${player.connectionStatus}`, player.connectionStatus)}
-              >
-                {getConnectionIcon(player.connectionStatus)}
-              </span>
-
-              <span className="player-nickname">
-                {player.nickname}
-                {player.id === currentPlayerId && (
-                  <span className="you-badge">{t('lobby:you', '(You)')}</span>
-                )}
-              </span>
-
-              {player.isHost && (
-                <span className="host-badge" title={t('lobby:host', 'Host')}>
-                  👑
-                </span>
-              )}
-            </div>
-
-            <div className="player-status">
-              {player.characterClass && (
-                <span className="character-class">{player.characterClass}</span>
-              )}
-
-              {player.characterClass && player.isReady && (
-                <span className="ready-badge">{t('lobby:ready', 'Ready')}</span>
-              )}
-            </div>
-          </li>
+      </h4>
+      <div className="player-grid">
+        {players.map(player => (
+          <div key={player.id} className="player-card">
+            <span className="player-nickname">{player.nickname}</span>
+            {player.isHost && <span className="host-badge">👑</span>}
+            {player.id === currentPlayerId && <span className="you-badge">{t('lobby:you', '(You)')}</span>}
+          </div>
         ))}
-
-        {/* Empty slots */}
-        {players.length < 4 &&
-          Array.from({ length: 4 - players.length }).map((_, index) => (
-            <li key={`empty-${index}`} className="player-item empty-slot">
-              <span className="empty-slot-text">
-                {t('lobby:waitingForPlayer', 'Waiting for player...')}
-              </span>
-            </li>
-          ))}
-      </ul>
-
+        {Array.from({ length: 4 - players.length }).map((_, i) => (
+          <div key={`empty-${i}`} className="player-card empty">
+            {t('lobby:waiting', 'Waiting...')}
+          </div>
+        ))}
+      </div>
       <style>{`
-        .player-list {
+        .player-list-container {
           width: 100%;
-          max-width: 500px;
-          margin: 0 auto;
         }
-
         .player-list-title {
-          margin: 0 0 16px 0;
-          font-size: 20px;
-          font-weight: 600;
-          color: #ffffff;
-        }
-
-        .players {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .player-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          background: #2c2c2c;
-          border: 2px solid #444;
-          border-radius: 8px;
-          min-height: 60px;
-          transition: all 0.2s;
-        }
-
-        .player-item.current-player {
-          border-color: #5a9fd4;
-          background: rgba(90, 159, 212, 0.1);
-        }
-
-        .player-item.empty-slot {
-          border-style: dashed;
-          opacity: 0.5;
-        }
-
-        .player-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex: 1;
-        }
-
-        .connection-status {
-          font-size: 18px;
-          line-height: 1;
-        }
-
-        .player-nickname {
           font-size: 16px;
-          font-weight: 500;
-          color: #ffffff;
-          display: flex;
-          align-items: center;
+          color: #c9a444;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 0 0 12px 0;
+          text-align: center;
+        }
+        .player-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
           gap: 8px;
         }
-
-        .you-badge {
-          font-size: 12px;
-          font-weight: 400;
-          color: #5a9fd4;
-        }
-
-        .host-badge {
-          font-size: 20px;
-          line-height: 1;
-        }
-
-        .player-status {
+        .player-card {
+          background: rgba(0,0,0,0.3);
+          padding: 10px;
+          border-radius: 6px;
+          text-align: center;
+          font-size: 14px;
+          color: #e0e0e0;
           display: flex;
           align-items: center;
-          gap: 12px;
+          justify-content: center;
+          gap: 6px;
+          min-height: 40px;
         }
-
-        .character-class {
-          padding: 4px 12px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #ffffff;
-          background: #5a9fd4;
-          border-radius: 12px;
-        }
-
-        .ready-badge {
-          padding: 4px 12px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #ffffff;
-          background: #4ade80;
-          border-radius: 12px;
-        }
-
-        .empty-slot-text {
-          font-size: 14px;
-          font-style: italic;
+        .player-card.empty {
           color: #888;
+          font-style: italic;
         }
-
-        @media (max-width: 480px) {
-          .player-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-          }
-
-          .player-status {
-            align-self: flex-end;
-          }
+        .host-badge {
+          font-size: 12px;
+        }
+        .you-badge {
+          font-size: 11px;
+          color: #c9a444;
+          margin-left: 2px;
         }
       `}</style>
     </div>

@@ -28,26 +28,15 @@ export function RoomCodeDisplay({ roomCode, isHost }: RoomCodeDisplayProps) {
   };
 
   return (
-    <div className={styles.roomHeader}>
-      <div className={styles.roomCodeSection}>
-        <h2>
-          {t('roomCode', 'Room Code')}: <span className={styles.roomCode} data-testid="room-code">{roomCode}</span>
-        </h2>
-        <div className={styles.copyArea}>
-          <button
-            className={styles.copyButton}
-            onClick={handleCopyRoomCode}
-            data-testid="copy-room-code"
-            aria-label={t('copyRoomCode', 'Copy room code')}
-          >
-            📋 {t('copy', 'Copy')}
-          </button>
-          {showCopied && (
-            <span className={styles.copiedMessage}>
-              {t('copied', 'Copied!')}
-            </span>
-          )}
-        </div>
+    <div className={styles.roomCodeDisplay}>
+      <div
+        className={styles.copyableText}
+        onClick={handleCopyRoomCode}
+        title={t('copyRoomCode', 'Copy room code')}
+        data-testid="room-code-display"
+      >
+        <span>{t('roomCode', 'Room Code')}: <strong>{roomCode}</strong></span>
+        {showCopied && <span className={styles.copiedMessage}>{t('copied', 'Copied!')}</span>}
       </div>
       {isHost && (
         <span className={styles.hostIndicator} data-testid="host-indicator">
