@@ -95,7 +95,7 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
     websocketService.on('error', handleError);
 
     return () => {
-      // Cleanup
+      // Cleanup on unmount only
       websocketService.off('room_joined');
       websocketService.off('player_joined');
       websocketService.off('player_left');
@@ -103,5 +103,6 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
       websocketService.off('game_started');
       websocketService.off('error');
     };
-  }, [handleRoomJoined, handlePlayerJoined, handlePlayerLeft, handleCharacterSelected, handleGameStarted, handleError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount/unmount to prevent handler leaks
 }

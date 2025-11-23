@@ -119,8 +119,12 @@ export class RoomService {
       removedPlayer.leaveRoom();
     }
 
-    // If room is empty, delete it
-    if (room.playerCount === 0) {
+    // Don't auto-delete empty rooms to support multi-room tracking
+    // Rooms will be cleaned up based on expiration time instead
+    // This allows players to see their game history and rejoin rooms
+    // Note: Empty lobby rooms may be deleted, but active/completed games persist
+    if (room.playerCount === 0 && room.status === RoomStatus.LOBBY) {
+      // Only delete empty rooms that are still in lobby (not started)
       this.rooms.delete(room.id);
       this.roomCodeIndex.delete(room.roomCode);
       return null;
