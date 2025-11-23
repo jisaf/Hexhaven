@@ -1,15 +1,8 @@
-/**
- * CardSelectionPanel Component (US2 - T104)
- *
- * Displays cards in a fan layout with focus and selection states.
- * Players select 2 cards (top/bottom) for the turn.
- * Mobile-optimized with tap interactions.
- */
-
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
 import './CardSelectionPanel.css';
+import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
 
 interface CardSelectionPanelProps {
   cards: AbilityCardType[];
@@ -30,6 +23,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   onConfirm,
   disabled = false,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(Math.floor(cards.length / 2));
   const [selectionMode, setSelectionMode] = useState<'top' | 'bottom' | null>(null);
 
@@ -59,9 +53,14 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   };
 
   const canConfirm = selectedTopCard !== null && selectedBottomCard !== null;
+  const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''}`;
 
   return (
-    <div className="card-selection-panel">
+    <div className={panelClassName}>
+      <button className="collapse-toggle" onClick={() => setIsCollapsed(!isCollapsed)}>
+        {isCollapsed ? <GiScrollQuill /> : <GiScrollUnfurled />}
+      </button>
+
       {/* Selection Instructions */}
       <div className="selection-instructions">
         <h3>Select Your Cards</h3>
@@ -111,21 +110,25 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
             const totalCards = cards.length;
             const centerIndex = (totalCards - 1) / 2;
             const offset = index - centerIndex;
-            const maxRotation = 15; // degrees
-            const rotation = (offset / centerIndex) * maxRotation;
-            const verticalOffset = Math.abs(offset) * 10; // pixels
+            const maxRotation = 20; // degrees from center
+            const rotation = (offset / (centerIndex || 1)) * maxRotation;
+            const horizontalOffset = offset * 40; // px
+            const verticalOffset = Math.abs(offset) * 20; // px
+
+            const transform = isFocused
+              ? `translateY(-20px) scale(1.15)`
+              : `translateX(${horizontalOffset}px) translateY(${verticalOffset}px) rotate(${rotation}deg) scale(0.85)`;
+
+            const finalTransform = isSelected
+              ? `${transform} translateY(-40px)`
+              : transform;
 
             return (
               <div
                 key={card.id}
                 className={`fan-card ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`}
                 style={{
-                  transform: `
-                    translateX(${offset * 20}px)
-                    translateY(${isFocused ? 0 : verticalOffset}px)
-                    rotate(${isFocused ? 0 : rotation}deg)
-                    ${isSelected ? 'translateY(-40px)' : ''}
-                  `,
+                  transform: finalTransform,
                   zIndex: isFocused ? 100 : 50 - Math.abs(offset),
                 }}
                 data-testid={`fan-card-${index}`}

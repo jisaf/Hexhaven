@@ -1,38 +1,79 @@
-/**
- * CardSelectionPanel Styles (US2 - T104)
- *
- * Mobile-first swipeable carousel for ability card selection
- */
-
 .card-selection-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.8);
-  border-radius: 12px;
-  max-width: 100%;
+  background-color: rgba(13, 26, 46, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 200;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0%);
 }
+
+.card-selection-panel.collapsed {
+  transform: translateY(calc(100% - 60px));
+}
+
+.collapse-toggle {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  background-color: #c9a444;
+  border: 2px solid #0d1a2e;
+  border-bottom: none;
+  border-radius: 50% 50% 0 0;
+  color: #0d1a2e;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 201;
+  padding-bottom: 10px;
+}
+
+.card-selection-panel.collapsed .collapse-toggle {
+  top: -50px;
+}
+
+.card-selection-panel > *:not(.collapse-toggle) {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.card-selection-panel.collapsed > *:not(.collapse-toggle) {
+  opacity: 0;
+  pointer-events: none;
+}
+
 
 /* Selection Instructions */
 .selection-instructions {
   text-align: center;
   padding: 12px;
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(201, 164, 68, 0.1);
   border-radius: 8px;
-  border: 2px solid #3498db;
+  border: 1px solid #c9a444;
 }
 
 .selection-instructions h3 {
   margin: 0 0 8px 0;
   font-size: 20px;
-  color: #3498db;
+  color: #c9a444;
+  font-family: 'MedievalSharp', serif;
 }
 
 .selection-instructions p {
   margin: 0;
   font-size: 14px;
-  color: #ecf0f1;
+  color: #f0e6d2;
 }
 
 /* Selection Summary */
@@ -41,9 +82,9 @@
   gap: 16px;
   justify-content: center;
   padding: 12px;
-  background: rgba(46, 204, 113, 0.1);
+  background: rgba(201, 164, 68, 0.1);
   border-radius: 8px;
-  border: 2px solid #2ecc71;
+  border: 1px solid #c9a444;
 }
 
 .summary-item {
@@ -60,7 +101,7 @@
 
 .summary-value {
   font-weight: bold;
-  color: #2ecc71;
+  color: #f0e6d2;
   font-size: 14px;
 }
 
@@ -68,12 +109,12 @@
 .fan-container {
   position: relative;
   width: 100%;
-  min-height: 500px;
+  flex-grow: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
   overflow: visible;
+  min-height: 250px; /* Ensure a minimum height for the fan */
 }
 
 .fan-cards {
@@ -93,12 +134,10 @@
 }
 
 .fan-card.focused {
-  transform: scale(1.15) !important;
   filter: none;
 }
 
 .fan-card:not(.focused) {
-  transform: scale(0.85);
   opacity: 0.8;
   filter: brightness(0.7);
 }
@@ -108,15 +147,9 @@
 }
 
 @keyframes raise-card {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-50px);
-  }
-  100% {
-    transform: translateY(-40px);
-  }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-50px); }
+  100% { transform: translateY(-40px); }
 }
 
 /* Action Buttons */
@@ -125,6 +158,7 @@
   gap: 12px;
   justify-content: center;
   padding-top: 8px;
+  flex-shrink: 0;
 }
 
 .action-buttons button {
@@ -134,23 +168,22 @@
   padding: 12px 24px;
   font-size: 16px;
   font-weight: bold;
-  border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
+  font-family: 'MedievalSharp', serif;
 }
 
 .btn-clear {
-  background: rgba(231, 76, 60, 0.8);
-  color: white;
+  background: transparent;
+  color: #ffadad;
+  border: 1px solid #ffadad;
 }
 
 .btn-clear:hover:not(:disabled) {
-  background: rgba(231, 76, 60, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+  background: rgba(139, 0, 0, 0.5);
 }
 
 .btn-clear:disabled {
@@ -159,14 +192,14 @@
 }
 
 .btn-confirm {
-  background: rgba(46, 204, 113, 0.8);
-  color: white;
+  background: #c9a444;
+  color: #0d1a2e;
+  border: 1px solid #c9a444;
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background: rgba(46, 204, 113, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+  background: #f0e6d2;
+  border-color: #f0e6d2;
 }
 
 .btn-confirm:disabled {
@@ -176,68 +209,5 @@
 
 .btn-confirm:active:not(:disabled),
 .btn-clear:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Responsive Design */
-@media (min-width: 768px) {
-  .card-selection-panel {
-    padding: 24px;
-  }
-
-  .fan-container {
-    min-height: 600px;
-    padding: 60px 40px;
-  }
-}
-
-@media (max-width: 768px) {
-  .fan-container {
-    min-height: 450px;
-    padding: 30px 10px;
-  }
-
-  .fan-card.focused {
-    transform: scale(1.1) !important;
-  }
-
-  .fan-card:not(.focused) {
-    transform: scale(0.75);
-  }
-}
-
-@media (max-width: 375px) {
-  .card-selection-panel {
-    padding: 8px;
-    gap: 8px;
-  }
-
-  .selection-instructions h3 {
-    font-size: 18px;
-  }
-
-  .selection-instructions p {
-    font-size: 13px;
-  }
-
-  .action-buttons button {
-    font-size: 14px;
-    padding: 10px 16px;
-  }
-
-  .fan-container {
-    min-height: 400px;
-    padding: 20px 5px;
-  }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .fan-card {
-    transition: transform 0.1s linear, opacity 0.1s linear;
-  }
-
-  .fan-card.selected {
-    animation: none;
-  }
+  transform: translateY(1px);
 }
