@@ -43,6 +43,8 @@
   "taken": "Ocupado",
   "notAllReady": "Todos los jugadores deben seleccionar un personaje",
   "needMorePlayers": "Se necesitan al menos 2 jugadores para comenzar",
+  "needAtLeastOnePlayer": "Se necesita al menos 1 jugador para comenzar",
+  "myGames": "Mis Juegos",
   "activeGames": "Juegos Activos",
   "loadingRooms": "Cargando juegos disponibles...",
   "noActiveGames": "No hay juegos activos disponibles. ¡Crea uno!",

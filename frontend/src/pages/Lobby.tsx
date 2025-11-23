@@ -54,7 +54,7 @@ interface RoomJoinedEventData {
 
 export function Lobby() {
   const navigate = useNavigate();
-  const { t } = useTranslation('lobby');
+  const { t } = useTranslation(['common', 'lobby']);
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
@@ -205,7 +205,7 @@ export function Lobby() {
     }
 
     if (players.length < 1) {
-      setError(t('needAtLeastOnePlayer', 'Need at least 1 player to start'));
+      setError(t('needAtLeastOnePlayer', { ns: 'lobby' }));
       return;
     }
 
@@ -222,6 +222,8 @@ export function Lobby() {
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
 
+  const activeTab = myRooms.length > 0 ? 0 : 1;
+
   return (
     <div className={styles.lobbyPage}>
       <DebugConsole />
@@ -232,11 +234,11 @@ export function Lobby() {
           <Tabs
             tabs={[
               {
-                label: t('myGames', 'My Games'),
+                label: t('myGames', { ns: 'lobby' }),
                 content: <MyRoomsList rooms={myRooms} />,
               },
               {
-                label: t('activeGames', 'Active Games'),
+                label: t('activeGames', { ns: 'lobby' }),
                 content: (
                   <LobbyWelcome
                     activeRooms={activeRooms}
@@ -248,7 +250,7 @@ export function Lobby() {
                 ),
               },
             ]}
-            defaultTab={myRooms.length > 0 ? 0 : 1}
+            activeTab={activeTab}
           />
         )}
 
@@ -261,13 +263,13 @@ export function Lobby() {
                 setError(null);
               }}
             >
-              ← {t('back', 'Back')}
+              ← {t('back')}
             </button>
 
             <div className={styles.nicknameContent}>
-              <h2>{t('enterNicknameTitle', 'Enter Your Nickname')}</h2>
+              <h2>{t('enterNicknameTitle', { ns: 'lobby' })}</h2>
               <p className={styles.nicknameInstruction}>
-                {t('nicknameInstruction', 'Choose a nickname for this game')}
+                {t('nicknameInstruction', { ns: 'lobby' })}
               </p>
 
               <NicknameInput
@@ -291,13 +293,13 @@ export function Lobby() {
                 setError(null);
               }}
             >
-              ← {t('back', 'Back')}
+              ← {t('back')}
             </button>
 
             <div className={styles.joinContent}>
-              <h2>{t('joinGameTitle', 'Join a Game')}</h2>
+              <h2>{t('joinGameTitle', { ns: 'lobby' })}</h2>
               <p className={styles.joinInstruction}>
-                {t('enterJoinDetails', 'Enter the room code and your nickname')}
+                {t('enterJoinDetails', { ns: 'lobby' })}
               </p>
 
               <JoinRoomForm
