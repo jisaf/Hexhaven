@@ -6,12 +6,12 @@
 
 .ability-card {
   position: relative;
-  width: 280px;
-  min-height: 380px;
+  width: 180px;
+  height: 250px;
   background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  border: 3px solid #7f8c8d;
-  border-radius: 12px;
-  padding: 16px;
+  border: 2px solid #7f8c8d;
+  border-radius: 10px;
+  padding: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   touch-action: manipulation;
@@ -60,28 +60,28 @@
 }
 
 .card-name {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
   color: #ecf0f1;
   flex: 1;
 }
 
 .card-initiative {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: bold;
   color: #f39c12;
   background: rgba(243, 156, 18, 0.2);
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
 }
 
 /* Card Sections */
 .card-section {
   flex: 1;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 8px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
-  margin: 8px 0;
+  margin: 6px 0;
   transition: all 0.2s ease;
 }
 
@@ -109,16 +109,16 @@
 .action-main {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
+  gap: 6px;
+  font-size: 18px;
 }
 
 .action-icon {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .action-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: #e74c3c;
 }
@@ -167,11 +167,11 @@
 }
 
 .effect-tag {
-  font-size: 11px;
-  padding: 3px 8px;
+  font-size: 10px;
+  padding: 2px 6px;
   background: rgba(155, 89, 182, 0.3);
   color: #9b59b6;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: bold;
 }
 
