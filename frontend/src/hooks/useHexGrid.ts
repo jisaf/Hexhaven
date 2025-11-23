@@ -36,26 +36,36 @@ export function useHexGrid(
       return;
     }
 
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
-    console.log('🎨 Container dimensions:', { width, height });
+    // Defer initialization to ensure the container has been sized by the browser
+    const timeoutId = setTimeout(() => {
+      if (!containerRef.current) {
+        return;
+      }
 
-    const hexGrid = new HexGrid(containerRef.current, {
-      width,
-      height,
-      onHexClick,
-      onCharacterSelect,
-      onMonsterSelect,
-    });
-    console.log('🎨 HexGrid instance created, starting async initialization...');
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
+      console.log('🎨 Container dimensions:', { width, height });
 
-    // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
-    let mounted = true;
-    let initCompleted = false;
+      // If dimensions are still 0, something is wrong with the layout
+      if (width === 0 || height === 0) {
+        console.error('❌ HexGrid container has zero dimensions. Aborting initialization.');
+        return;
+      }
 
-    hexGrid.init().then(() => {
+      const hexGrid = new HexGrid(containerRef.current, {
+        width,
+        height,
+        onHexClick,
+        onCharacterSelect,
+        onMonsterSelect,
+      });
+      console.log('🎨 HexGrid instance created, starting async initialization...');
+
+      // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
+      const mounted = true;
+
+      hexGrid.init().then(() => {
       console.log('✅ HexGrid.init() promise resolved!');
-      initCompleted = true;
       if (mounted) {
         hexGridRef.current = hexGrid;
         setHexGridReady(true); // Signal that HexGrid is ready
@@ -65,7 +75,7 @@ export function useHexGrid(
       }
     }).catch((error) => {
       console.error('❌ Failed to initialize HexGrid:', error);
-      initCompleted = true; // Mark as completed even on error
+    });
     });
 
     // Handle resize
@@ -78,29 +88,15 @@ export function useHexGrid(
     window.addEventListener('resize', handleResize);
 
     return () => {
-      mounted = false;
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
 
       // Always destroy the hexGrid instance to prevent memory leaks
-      if (hexGrid) {
-        // Wait for init to complete before destroying
-        if (initCompleted) {
-          try {
-            hexGrid.destroy();
-          } catch (error) {
-            console.error('Error destroying HexGrid:', error);
-          }
-        } else {
-          // If init hasn't completed yet, wait for it then destroy
-          hexGrid.init().then(() => {
-            try {
-              hexGrid.destroy();
-            } catch (error) {
-              console.error('Error destroying HexGrid after delayed init:', error);
-            }
-          }).catch(() => {
-            // Init failed, nothing to destroy
-          });
+      if (hexGridRef.current) {
+        try {
+          hexGridRef.current.destroy();
+        } catch (err) {
+          console.error('Error destroying HexGrid:', err);
         }
       }
 
