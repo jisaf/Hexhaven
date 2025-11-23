@@ -70,7 +70,8 @@ export function GameBoard() {
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
   const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
-  const [selectedCards, setSelectedCards] = useState<{ top: string | null; bottom: string | null }>({ top: null, bottom: null });
+  const [selectedTopAction, setSelectedTopAction] = useState<AbilityCard | null>(null);
+  const [selectedBottomAction, setSelectedBottomAction] = useState<AbilityCard | null>(null);
 
   // Attack targeting state (T115)
   const [attackMode, setAttackMode] = useState(false);
@@ -233,21 +234,27 @@ export function GameBoard() {
   }, [hexGridReady, sessionState.gameState, initializeBoard]);
 
   // T111: Card selection handlers
-  const handleCardSelect = useCallback((cardId: string, slot: 'top' | 'bottom') => {
-    setSelectedCards(prev => ({ ...prev, [slot]: cardId }));
-  }, []);
+  const handleCardSelect = useCallback((card: AbilityCard) => {
+    if (!selectedTopAction) {
+      setSelectedTopAction(card);
+    } else if (!selectedBottomAction && card.id !== selectedTopAction.id) {
+      setSelectedBottomAction(card);
+    }
+  }, [selectedTopAction, selectedBottomAction]);
 
   const handleConfirmCardSelection = useCallback(() => {
-    if (selectedCards.top && selectedCards.bottom) {
-      websocketService.selectCards(selectedCards.top, selectedCards.bottom);
+    if (selectedTopAction && selectedBottomAction) {
+      websocketService.selectCards(selectedTopAction.id, selectedBottomAction.id);
       addLog('Cards selected.');
       setShowCardSelection(false);
-      setSelectedCards({ top: null, bottom: null });
+      setSelectedTopAction(null);
+      setSelectedBottomAction(null);
     }
-  }, [selectedCards, addLog]);
+  }, [selectedTopAction, selectedBottomAction, addLog]);
 
   const handleClearCardSelection = useCallback(() => {
-    setSelectedCards({ top: null, bottom: null });
+    setSelectedTopAction(null);
+    setSelectedBottomAction(null);
   }, []);
 
 
@@ -272,12 +279,11 @@ export function GameBoard() {
       {showCardSelection && (
         <CardSelectionPanel
           cards={playerHand}
-          selectedTopCard={selectedCards.top}
-          selectedBottomCard={selectedCards.bottom}
-          onSelectTop={(cardId) => handleCardSelect(cardId, 'top')}
-          onSelectBottom={(cardId) => handleCardSelect(cardId, 'bottom')}
-          onConfirm={handleConfirmCardSelection}
+          onCardSelect={handleCardSelect}
           onClearSelection={handleClearCardSelection}
+          onConfirmSelection={handleConfirmCardSelection}
+          selectedTopAction={selectedTopAction}
+          selectedBottomAction={selectedBottomAction}
         />
       )}
 

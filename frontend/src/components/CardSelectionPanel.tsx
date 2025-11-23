@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
+import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
 import './CardSelectionPanel.css';
 import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
