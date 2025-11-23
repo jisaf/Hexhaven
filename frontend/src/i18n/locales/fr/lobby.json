@@ -43,6 +43,8 @@
   "taken": "Pris",
   "notAllReady": "Tous les joueurs doivent sélectionner un personnage",
   "needMorePlayers": "Il faut au moins 2 joueurs pour commencer",
+  "needAtLeastOnePlayer": "Il faut au moins 1 joueur pour commencer",
+  "myGames": "Mes Parties",
   "activeGames": "Parties Actives",
   "loadingRooms": "Chargement des parties disponibles...",
   "noActiveGames": "Aucune partie active disponible. Créez-en une !",

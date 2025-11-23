@@ -43,6 +43,8 @@
   "taken": "Belegt",
   "notAllReady": "Alle Spieler müssen einen Charakter auswählen",
   "needMorePlayers": "Mindestens 2 Spieler erforderlich zum Starten",
+  "needAtLeastOnePlayer": "Mindestens 1 Spieler erforderlich zum Starten",
+  "myGames": "Meine Spiele",
   "activeGames": "Aktive Spiele",
   "loadingRooms": "Verfügbare Spiele werden geladen...",
   "noActiveGames": "Keine aktiven Spiele verfügbar. Erstellen Sie eines!",

@@ -16,7 +16,7 @@ interface ActiveRoomsListProps {
 }
 
 export function ActiveRoomsList({ rooms, loading, onJoinRoom, isLoading }: ActiveRoomsListProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
 
   if (loading && rooms.length === 0) {
     return (
