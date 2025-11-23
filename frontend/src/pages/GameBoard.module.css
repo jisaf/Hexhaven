@@ -1,96 +1,11 @@
-/* GameBoard Page Styles */
-
 .gameBoardPage {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #1a1a1a;
-  color: #ffffff;
+  background-color: #0d1a2e;
+  color: #f0e6d2;
   overflow: hidden;
-}
-
-.gameHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  background: #2c2c2c;
-  border-bottom: 2px solid #333;
-  flex-shrink: 0;
-}
-
-.gameInfo h2 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.turnIndicator {
-  font-size: 14px;
-}
-
-.yourTurn {
-  padding: 4px 12px;
-  background: #4ade80;
-  color: #000;
-  font-weight: 600;
-  border-radius: 12px;
-}
-
-.waiting {
-  color: #888;
-}
-
-.gameControls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.connectionStatus {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.connectionStatus.connected {
-  background: rgba(74, 222, 128, 0.1);
-  color: #4ade80;
-}
-
-.connectionStatus.disconnected {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.connectionStatus.reconnecting {
-  background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
-}
-
-.statusDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.leaveButton {
-  padding: 8px 16px;
-  font-size: 14px;
-  color: #ef4444;
-  background: transparent;
-  border: 1px solid #ef4444;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.leaveButton:hover {
-  background: rgba(239, 68, 68, 0.1);
+  font-family: 'Georgia', serif;
 }
 
 .gameContainer {
@@ -106,8 +21,10 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 24px;
-  background: rgba(90, 159, 212, 0.9);
-  color: #ffffff;
+  background: rgba(13, 26, 46, 0.85);
+  backdrop-filter: blur(5px);
+  border: 1px solid #c9a444;
+  color: #f0e6d2;
   font-size: 14px;
   font-weight: 500;
   border-radius: 8px;
@@ -117,7 +34,9 @@
 }
 
 .attackModeHint {
-  background: rgba(239, 68, 68, 0.9);
+  background: rgba(139, 0, 0, 0.5);
+  border-color: #ffadad;
+  color: #ffadad;
 }
 
 @keyframes slideUp {
@@ -137,7 +56,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(13, 26, 46, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -152,8 +71,8 @@
   width: 48px;
   height: 48px;
   margin: 0 auto 16px;
-  border: 4px solid #444;
-  border-top-color: #5a9fd4;
+  border: 4px solid rgba(201, 164, 68, 0.3);
+  border-top-color: #c9a444;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -167,26 +86,31 @@
 .reconnectingMessage p {
   margin: 0;
   font-size: 18px;
-  color: #ffffff;
+  color: #f0e6d2;
+  font-family: 'MedievalSharp', serif;
 }
 
-@media (max-width: 768px) {
-  .gameHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+.orientationWarning {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #0d1a2e;
+  color: #f0e6d2;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 2000;
+}
 
-  .gameControls {
-    width: 100%;
-    justify-content: space-between;
+@media (orientation: portrait) {
+  .orientationWarning {
+    display: flex;
   }
-
-  .movementHint {
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    transform: none;
-    text-align: center;
+  .gameContainer {
+    display: none;
   }
 }

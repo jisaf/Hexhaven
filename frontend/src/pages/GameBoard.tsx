@@ -23,7 +23,7 @@ import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
-import { GameHeader } from '../components/game/GameHeader';
+import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
@@ -60,6 +60,12 @@ export function GameBoard() {
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
+  const [logs, setLogs] = useState<string[]>([]);
+
+  // T200: Action Log
+  const addLog = useCallback((message: string) => {
+    setLogs(prevLogs => [...prevLogs, message].slice(-5)); // Keep last 5 logs
+  }, []);
 
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -144,19 +150,29 @@ export function GameBoard() {
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
     moveCharacter(data.characterId, data.toHex);
+    const charName = data.characterId === myCharacterId ? 'You' : 'Opponent';
+    addLog(`${charName} moved.`);
     deselectAll();
     setSelectedCharacterId(null);
-  }, [moveCharacter, deselectAll]);
+  }, [moveCharacter, deselectAll, addLog, myCharacterId]);
 
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
     setIsMyTurn(myTurn);
 
+    if (myTurn) {
+      addLog('Your turn has started.');
+    } else if (data.entityType === 'character') {
+      addLog("Opponent's turn.");
+    } else {
+      addLog('Monster turn.');
+    }
+
     if (!myTurn) {
       deselectAll();
       setSelectedCharacterId(null);
     }
-  }, [myCharacterId, deselectAll]);
+  }, [myCharacterId, deselectAll, addLog]);
 
   const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
     console.log('Game state update:', data);
@@ -177,6 +193,31 @@ export function GameBoard() {
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
+
+  // T200: Fullscreen management
+  useEffect(() => {
+    const enterFullscreen = () => {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        });
+      }
+    };
+
+    const exitFullscreen = () => {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    };
+
+    // Enter fullscreen only in landscape
+    if (window.matchMedia('(orientation: landscape)').matches) {
+      enterFullscreen();
+    }
+
+    // Cleanup on component unmount
+    return () => exitFullscreen();
+  }, []);
 
   // Render game data when HexGrid is ready
   useEffect(() => {
@@ -199,10 +240,11 @@ export function GameBoard() {
   const handleConfirmCardSelection = useCallback(() => {
     if (selectedCards.top && selectedCards.bottom) {
       websocketService.selectCards(selectedCards.top, selectedCards.bottom);
+      addLog('Cards selected.');
       setShowCardSelection(false);
       setSelectedCards({ top: null, bottom: null });
     }
-  }, [selectedCards]);
+  }, [selectedCards, addLog]);
 
 
 
@@ -213,8 +255,9 @@ export function GameBoard() {
 
   return (
     <div className={styles.gameBoardPage}>
-      <GameHeader
-        isMyTurn={isMyTurn}
+      {/* HUD */}
+      <GameHUD
+        logs={logs}
         connectionStatus={connectionStatus}
         onBackToLobby={handleBackToLobby}
       />
@@ -239,6 +282,13 @@ export function GameBoard() {
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
+
+      {/* T200: Orientation warning */}
+      <div className={styles.orientationWarning}>
+        <div className={styles.orientationWarningContent}>
+          <p>Please rotate your device to landscape mode to play.</p>
+        </div>
+      </div>
     </div>
   );
 }
