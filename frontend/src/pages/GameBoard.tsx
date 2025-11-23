@@ -246,6 +246,10 @@ export function GameBoard() {
     }
   }, [selectedCards, addLog]);
 
+  const handleClearCardSelection = useCallback(() => {
+    setSelectedCards({ top: null, bottom: null });
+  }, []);
+
 
 
   const handleBackToLobby = () => {
@@ -273,6 +277,7 @@ export function GameBoard() {
           onSelectTop={(cardId) => handleCardSelect(cardId, 'top')}
           onSelectBottom={(cardId) => handleCardSelect(cardId, 'bottom')}
           onConfirm={handleConfirmCardSelection}
+          onClearSelection={handleClearCardSelection}
         />
       )}
 

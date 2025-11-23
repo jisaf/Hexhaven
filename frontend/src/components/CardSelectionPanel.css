@@ -3,16 +3,18 @@
   bottom: 0;
   left: 0;
   right: 0;
-  top: 0;
+  height: 50vh;
+  max-height: 420px;
+  min-height: 350px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px;
   background-color: rgba(13, 26, 46, 0.95);
-  backdrop-filter: blur(10px);
   z-index: 200;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateY(0%);
+  border-top: 2px solid #c9a444;
 }
 
 .card-selection-panel.collapsed {
@@ -21,15 +23,13 @@
 
 .collapse-toggle {
   position: absolute;
-  top: -50px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 16px;
+  left: 16px;
   width: 50px;
   height: 50px;
   background-color: #c9a444;
   border: 2px solid #0d1a2e;
-  border-bottom: none;
-  border-radius: 50% 50% 0 0;
+  border-radius: 50%;
   color: #0d1a2e;
   font-size: 24px;
   display: flex;
@@ -37,11 +37,6 @@
   justify-content: center;
   cursor: pointer;
   z-index: 201;
-  padding-bottom: 10px;
-}
-
-.card-selection-panel.collapsed .collapse-toggle {
-  top: -50px;
 }
 
 .card-selection-panel > *:not(.collapse-toggle) {
@@ -124,6 +119,8 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 .fan-card {
@@ -154,11 +151,13 @@
 
 /* Action Buttons */
 .action-buttons {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
   display: flex;
+  flex-direction: row;
   gap: 12px;
-  justify-content: center;
-  padding-top: 8px;
-  flex-shrink: 0;
+  align-items: center;
 }
 
 .action-buttons button {
