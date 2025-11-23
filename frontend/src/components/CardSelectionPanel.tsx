@@ -11,6 +11,7 @@ interface CardSelectionPanelProps {
   onSelectTop: (cardId: string) => void;
   onSelectBottom: (cardId: string) => void;
   onConfirm: () => void;
+  onClearSelection: () => void;
   disabled?: boolean;
 }
 
@@ -21,6 +22,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   onSelectTop,
   onSelectBottom,
   onConfirm,
+  onClearSelection,
   disabled = false,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -110,17 +112,17 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
             const totalCards = cards.length;
             const centerIndex = (totalCards - 1) / 2;
             const offset = index - centerIndex;
-            const maxRotation = 20; // degrees from center
+            const maxRotation = 15; // degrees from center
             const rotation = (offset / (centerIndex || 1)) * maxRotation;
-            const horizontalOffset = offset * 40; // px
-            const verticalOffset = Math.abs(offset) * 20; // px
+            const horizontalOffset = offset * 30; // px
+            const verticalOffset = Math.abs(offset) * 15; // px
 
             const transform = isFocused
-              ? `translateY(-20px) scale(1.15)`
-              : `translateX(${horizontalOffset}px) translateY(${verticalOffset}px) rotate(${rotation}deg) scale(0.85)`;
+              ? `translateY(-15px) scale(1.1)`
+              : `translateX(${horizontalOffset}px) translateY(${verticalOffset}px) rotate(${rotation}deg) scale(0.8)`;
 
             const finalTransform = isSelected
-              ? `${transform} translateY(-40px)`
+              ? `${transform} translateY(-30px)`
               : transform;
 
             return (
@@ -151,13 +153,13 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         <button
           className="btn-clear"
           onClick={() => {
-            onSelectTop('');
-            onSelectBottom('');
+            onClearSelection();
             setSelectionMode(null);
           }}
-          disabled={!selectedTopCard && !selectedBottomCard}
+          disabled={(!selectedTopCard && !selectedBottomCard) || disabled}
+          data-testid="clear-selection-button"
         >
-          Clear Selection
+          Clear
         </button>
         <button
           className="btn-confirm"
