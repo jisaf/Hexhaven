@@ -61,6 +61,7 @@ export function GameBoard() {
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const [logs, setLogs] = useState<string[]>([]);
+  const [gameData, setGameData] = useState<GameStartedPayload | null>(null);
 
   // T200: Action Log
   const addLog = useCallback((message: string) => {
@@ -127,27 +128,19 @@ export function GameBoard() {
         }
       }
 
-      // Initialize board if ready
-      const boardData: GameBoardData = {
-        tiles: data.mapLayout as HexTileData[],
-        characters: data.characters.map(char => ({
-          ...char,
-          currentHex: char.currentHex as Axial,
-        })) as CharacterData[],
-        monsters: data.monsters.map(monster => ({
-          ...monster,
-          currentHex: monster.currentHex as Axial,
-        })) as Monster[],
-      };
+      setGameData(data);
 
-      initializeBoard(boardData, ackCallback);
+      // Acknowledge the event was processed successfully on the client.
+      if (ackCallback) {
+        ackCallback(true);
+      }
     } catch (error) {
       console.error('❌ Error processing game_started event:', error);
       if (ackCallback) {
         ackCallback(false);
       }
     }
-  }, [initializeBoard]);
+  }, []);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
     moveCharacter(data.characterId, data.toHex);
@@ -222,16 +215,16 @@ export function GameBoard() {
 
   // Render game data when HexGrid is ready
   useEffect(() => {
-    if (hexGridReady && sessionState.gameState) {
+    if (hexGridReady && gameData) {
       const boardData: GameBoardData = {
-        tiles: sessionState.gameState.mapLayout as HexTileData[],
-        characters: sessionState.gameState.characters as CharacterData[],
-        monsters: (sessionState.gameState.monsters as Monster[]) || [],
+        tiles: gameData.mapLayout as HexTileData[],
+        characters: gameData.characters as CharacterData[],
+        monsters: (gameData.monsters as Monster[]) || [],
       };
 
       initializeBoard(boardData);
     }
-  }, [hexGridReady, sessionState.gameState, initializeBoard]);
+  }, [hexGridReady, gameData, initializeBoard]);
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((card: AbilityCard) => {
