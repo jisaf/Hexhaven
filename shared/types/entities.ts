@@ -45,6 +45,9 @@ export enum TerrainType {
   OBSTACLE = 'obstacle',
   DIFFICULT = 'difficult',
   HAZARDOUS = 'hazardous',
+  TRAP = 'trap',
+  WALL = 'wall',
+  DOOR = 'door',
 }
 
 export enum Condition {

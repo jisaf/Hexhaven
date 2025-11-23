@@ -42,5 +42,12 @@
     "websockets"
   ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
 }

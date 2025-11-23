@@ -6,9 +6,10 @@ import { GameGateway } from './websocket/game.gateway';
 import { RoomsController } from './api/rooms.controller';
 import { ScenariosController } from './api/scenarios.controller';
 import { ScenarioService } from './services/scenario.service';
+import { ScenarioDesignerModule } from './api/scenario-designer/scenario-designer.module';
 
 @Module({
-  imports: [],
+  imports: [ScenarioDesignerModule],
   controllers: [
     HealthController,
     AppController,
