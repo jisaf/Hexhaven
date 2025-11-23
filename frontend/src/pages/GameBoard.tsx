@@ -19,6 +19,7 @@ import type { GameBoardData } from '../game/HexGrid';
 import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
@@ -63,6 +64,16 @@ export function GameBoard() {
       }
     };
   }, []);
+  // CENTRALIZED CLEANUP: Reset room session when navigating to different game
+  // This handles direct URL navigation to a different game (bypassing Lobby)
+  // Runs when roomCode changes OR on first mount
+  useEffect(() => {
+    if (roomCode) {
+      console.log('[GameBoard] Room code changed, resetting room session for:', roomCode);
+      roomSessionManager.switchRoom();
+    }
+    // Run when roomCode changes (including first mount)
+  }, [roomCode]);
 
   // State
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
@@ -218,6 +229,7 @@ export function GameBoard() {
   }, [selectedCards]);
 
   const handleBackToLobby = () => {
+    // Navigate to lobby - cleanup will happen automatically when Lobby page mounts
     navigate('/');
   };
 

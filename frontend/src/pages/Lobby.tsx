@@ -19,6 +19,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
+import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import type { Player } from '../components/PlayerList';
@@ -67,6 +68,15 @@ export function Lobby() {
   // Use custom hooks
   const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
+
+  // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
+  // This handles ALL navigation methods: back button, direct URL, "Back to Lobby" button, etc.
+  useEffect(() => {
+    console.log('[Lobby] Component mounted - resetting room session for clean state');
+    roomSessionManager.switchRoom();
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Navigate to game when room status becomes active (only when creating/joining)
   useEffect(() => {

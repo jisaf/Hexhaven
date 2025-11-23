@@ -131,5 +131,6 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
       websocketService.off('turn_started');
       websocketService.off('game_state_update');
     };
-  }, [navigate, handleGameStarted, handleCharacterMoved, handleTurnStarted, handleGameStateUpdate, handleWsConnected, handleWsDisconnected, handleWsReconnecting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]); // Only navigate can change, handlers are in ref to prevent re-registration
 }
