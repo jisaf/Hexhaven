@@ -12,10 +12,10 @@ import styles from './GameHeader.module.css';
 interface GameHeaderProps {
   isMyTurn: boolean;
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
-  onLeaveGame: () => void;
+  onBackToLobby: () => void;
 }
 
-export function GameHeader({ isMyTurn, connectionStatus, onLeaveGame }: GameHeaderProps) {
+export function GameHeader({ isMyTurn, connectionStatus, onBackToLobby }: GameHeaderProps) {
   const { t } = useTranslation();
 
   return (
@@ -27,8 +27,8 @@ export function GameHeader({ isMyTurn, connectionStatus, onLeaveGame }: GameHead
 
       <div className={styles.gameControls}>
         <ConnectionStatus status={connectionStatus} />
-        <button className={styles.leaveButton} onClick={onLeaveGame}>
-          {t('game:leaveGame', 'Leave Game')}
+        <button className={styles.leaveButton} onClick={onBackToLobby}>
+          {t('game:backToLobby', 'Back to Lobby')}
         </button>
       </div>
     </header>
