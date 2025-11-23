@@ -226,12 +226,22 @@ export class GameGateway
 
       const { roomCode, playerUUID, nickname } = payload;
 
-      // Check if player is already in the room (e.g., they created it via HTTP or are reconnecting)
-      let room = roomService.getRoomByPlayerId(playerUUID);
-      const isAlreadyInRoom = room && room.roomCode === roomCode;
+      // Check if player is already in THIS SPECIFIC room
+      // Note: Player may be in other rooms (multi-room support), so we check the target room
+      const targetRoom = roomService.getRoom(roomCode);
+      if (!targetRoom) {
+        this.server.to(client.id).emit('error', {
+          message: `Room ${roomCode} not found`,
+          code: 'ROOM_NOT_FOUND',
+        } as ErrorPayload);
+        return;
+      }
+
+      const isAlreadyInRoom = targetRoom.getPlayer(playerUUID) !== null;
+      let room = targetRoom;
 
       // Check reconnection status
-      const roomPlayer = isAlreadyInRoom && room ? room.getPlayer(playerUUID) : null;
+      const roomPlayer = isAlreadyInRoom ? room.getPlayer(playerUUID) : null;
       const isReconnecting =
         roomPlayer &&
         roomPlayer.connectionStatus === ConnectionStatus.DISCONNECTED &&
@@ -251,11 +261,7 @@ export class GameGateway
         // Join room (adds player to room state)
         room = roomService.joinRoom(roomCode, newRoomPlayer);
       } else {
-        // Player is already in the room, just get the room
-        room = roomService.getRoom(roomCode);
-        if (!room) {
-          throw new Error('Room not found');
-        }
+        // Player is already in this specific room
         this.logger.log(
           `Player ${nickname} is ${isReconnecting ? 'reconnecting to' : 'already in'} room ${roomCode}`,
         );
