@@ -205,21 +205,29 @@ export class GameGateway
           ConnectionStatus.DISCONNECTED,
         );
 
-        // Find player's room and broadcast disconnection
-        const room = roomService.getRoomByPlayerId(playerUUID);
-        if (room) {
-          // Save session to enable reconnection (US4 - T154)
-          sessionService.saveSession(room);
+        // Find ALL rooms this player is in (multi-room support)
+        // Socket.IO stores room names in client.rooms (Set of room IDs)
+        const clientRooms = Array.from(client.rooms);
+        // Filter out the client's own socket ID (which is also in rooms)
+        const roomCodes = clientRooms.filter((r) => r !== client.id);
 
-          this.server.to(room.roomCode).emit('player_disconnected', {
-            playerId: playerUUID,
-            nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
-            willReconnect: true, // Player can reconnect within 10 minutes
-          });
+        // Process each room the player is in
+        for (const roomCode of roomCodes) {
+          const room = roomService.getRoom(roomCode);
+          if (room) {
+            // Save session to enable reconnection (US4 - T154)
+            sessionService.saveSession(room);
 
-          this.logger.log(
-            `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
-          );
+            this.server.to(room.roomCode).emit('player_disconnected', {
+              playerId: playerUUID,
+              nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
+              willReconnect: true, // Player can reconnect within 10 minutes
+            });
+
+            this.logger.log(
+              `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
+            );
+          }
         }
       } catch (error) {
         this.logger.error(
@@ -429,16 +437,16 @@ export class GameGateway
         return;
       }
 
-      // Find which room this player is in
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
         this.logger.warn(
           `Player ${playerUUID} tried to leave but is not in any room`,
         );
         return;
       }
 
-      const roomCode = room.roomCode;
+      const { room, roomCode } = roomData;
       this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
 
       // Remove player from room
@@ -778,21 +786,23 @@ export class GameGateway
 
       this.logger.log(`Move character request from ${playerUUID}`);
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
-      if (!character) {
-        throw new Error('Character not found');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
-      }
+      const { room, roomCode } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
+      }
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
       }
 
       // Check if character is immobilized
@@ -885,21 +895,23 @@ export class GameGateway
 
       this.logger.log(`Select cards request from ${playerUUID}`);
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
-      if (!character) {
-        throw new Error('Character not found');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
-      }
+      const { room, roomCode } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
+      }
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
       }
 
       // Validate cards are in player's hand (belong to character class)
@@ -1056,21 +1068,23 @@ export class GameGateway
         `Attack target request from ${playerUUID} -> ${payload.targetId}`,
       );
 
-      // Get attacker's character
-      const attacker = characterService.getCharacterByPlayerId(playerUUID);
-      if (!attacker) {
-        throw new Error('Character not found');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
-      }
+      const { room, roomCode } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
+      }
+
+      // Get attacker's character
+      const attacker = characterService.getCharacterByPlayerId(playerUUID);
+      if (!attacker) {
+        throw new Error('Character not found');
       }
 
       // Check if attacker is disarmed
@@ -1222,21 +1236,23 @@ export class GameGateway
         `Collect loot request from ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
       );
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
-      if (!character) {
-        throw new Error('Character not found');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
-      }
+      const { room, roomCode } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
+      }
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
       }
 
       // Get loot tokens from room state
@@ -1324,21 +1340,23 @@ export class GameGateway
 
       this.logger.log(`End turn request from ${playerUUID}`);
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
-      if (!character) {
-        throw new Error('Character not found');
+      // Get room from client's current Socket.IO room (multi-room support)
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
       }
 
-      // Find player's room
-      const room = roomService.getRoomByPlayerId(playerUUID);
-      if (!room) {
-        throw new Error('Player not in a room');
-      }
+      const { room, roomCode } = roomData;
 
       // Validate game is active
       if (room.status !== RoomStatus.ACTIVE) {
         throw new Error('Game is not active');
+      }
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
       }
 
       // Get turn order for this room
