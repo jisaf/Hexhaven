@@ -1,0 +1,95 @@
+/* PlayerList.module.css */
+.playerListContainer {
+  width: 100%;
+}
+
+.playerListTitle {
+  font-size: 16px;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.playerGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.playerCard {
+  background: rgba(0,0,0,0.3);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 50px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.playerCard.currentPlayer {
+  border-color: #c9a444;
+}
+
+.playerCard.empty {
+  color: #888;
+  font-style: italic;
+  justify-content: center;
+  border: 1px dashed #555;
+}
+
+.playerInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connectionStatus {
+  font-size: 14px;
+}
+
+.playerNickname {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.youBadge {
+  font-size: 11px;
+  color: #c9a444;
+  font-weight: 400;
+}
+
+.hostBadge {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.characterInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.characterClass {
+  font-style: italic;
+  color: #ccc;
+}
+
+.readyBadge {
+  color: #2ecc71;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.noCharacter {
+  color: #888;
+  font-style: italic;
+}

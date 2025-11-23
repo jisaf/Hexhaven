@@ -30,28 +30,6 @@ export interface PlayerListProps {
 export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
   const { t } = useTranslation();
 
-  const getConnectionIcon = (status: Player['connectionStatus']) => {
-    switch (status) {
-      case 'connected':
-        return '●';
-      case 'disconnected':
-        return '○';
-      case 'reconnecting':
-        return '◐';
-    }
-  };
-
-  const getConnectionColor = (status: Player['connectionStatus']) => {
-    switch (status) {
-      case 'connected':
-        return '#4ade80';
-      case 'disconnected':
-        return '#ef4444';
-      case 'reconnecting':
-        return '#fbbf24';
-    }
-  };
-
   return (
     <div className={styles.playerListContainer} data-testid="player-list-container">
       <h4 className={styles.playerListTitle}>
@@ -63,10 +41,10 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
             <div className={styles.playerInfo}>
               <span
                 className={styles.connectionStatus}
-                style={{ color: getConnectionColor(player.connectionStatus) }}
-                title={t(`lobby:connectionStatus.${player.connectionStatus}`, player.connectionStatus)}
+                style={{ color: '#4ade80' }} // Hardcoded for now
+                title={player.connectionStatus}
               >
-                {getConnectionIcon(player.connectionStatus)}
+                ●
               </span>
               <span className={styles.playerNickname}>
                 {player.nickname}

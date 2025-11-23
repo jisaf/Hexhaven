@@ -66,6 +66,16 @@ export function LobbyRoomView({
               ⏳ {t('waitingForCharacterSelection', 'Please select a character to start...')}
             </p>
           )}
+          {canStartGame && !allPlayersReady && (
+            <p className={`${styles.startHint} ${styles.warning}`}>
+              ⚠️ {t('playersNeedToSelect', 'Some players need to select characters')}
+            </p>
+          )}
+          {canStartGame && allPlayersReady && (
+            <p className={`${styles.startHint} ${styles.ready}`}>
+              ✅ {t('readyToStart', 'All players ready! Click Start Game')}
+            </p>
+          )}
         </div>
       ) : (
         <div className={styles.playerWaiting}>

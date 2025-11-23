@@ -8,10 +8,10 @@ import { useTranslation } from 'react-i18next';
 import type { MonsterGroup } from '../../../../shared/types/entities';
 import styles from './MonsterList.module.css';
 
-// Dynamically import all monster SVGs
-const monsterImages: Record<string, string> = import.meta.globEager('../../assets/monsters/*.svg');
+// Type assertion to inform TypeScript about Vite's import.meta.globEager
+const monsterImages = (import.meta as any).globEager('../../assets/monsters/*.svg') as Record<string, { default: string }>;
 
-const getMonsterImagePath = (monsterType: string) => {
+const getMonsterImagePath = (monsterType: string): string => {
   const key = `../../assets/monsters/${monsterType.toLowerCase().replace(/ /g, '-')}.svg`;
   return monsterImages[key]?.default || '';
 };
@@ -39,7 +39,7 @@ export function MonsterList({ monsterGroups }: MonsterListProps) {
   return (
     <div className={styles.monsterList} data-testid="monster-list">
       <div className={styles.monsterGrid}>
-        {monsterGroups.map((monster, index) => (
+        {monsterGroups.map((monster: MonsterGroup, index: number) => (
           <div key={index} className={styles.monsterItem} onClick={() => handleMonsterClick(monster)}>
             <img
               src={getMonsterImagePath(monster.type)}
@@ -62,20 +62,6 @@ export function MonsterList({ monsterGroups }: MonsterListProps) {
                 alt={selectedMonster.type}
                 className={styles.modalImage}
               />
-              <ul className={styles.statsList}>
-                <li><strong>{t('common.health', 'Health')}:</strong> {selectedMonster.stats.health}</li>
-                <li><strong>{t('common.movement', 'Movement')}:</strong> {selectedMonster.stats.movement}</li>
-                <li><strong>{t('common.attack', 'Attack')}:</strong> {selectedMonster.stats.attack}</li>
-                <li><strong>{t('common.range', 'Range')}:</strong> {selectedMonster.stats.range}</li>
-                {selectedMonster.stats.specialAbilities.length > 0 && (
-                  <li>
-                    <strong>{t('common.abilities', 'Abilities')}:</strong>
-                    <ul className={styles.abilitiesList}>
-                      {selectedMonster.stats.specialAbilities.map((ability, i) => <li key={i}>{ability}</li>)}
-                    </ul>
-                  </li>
-                )}
-              </ul>
             </div>
           </div>
         </div>
