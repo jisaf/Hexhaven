@@ -14,7 +14,7 @@ interface LobbyHeaderProps {
 }
 
 export function LobbyHeader({ playerNickname, onCreateRoom }: LobbyHeaderProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
 
   return (
     <header className={styles.lobbyHeader}>

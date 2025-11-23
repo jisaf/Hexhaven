@@ -43,6 +43,8 @@
   "taken": "已选",
   "notAllReady": "所有玩家必须选择一个角色",
   "needMorePlayers": "需要至少2名玩家才能开始",
+  "needAtLeastOnePlayer": "需要至少1名玩家才能开始",
+  "myGames": "我的游戏",
   "activeGames": "活跃游戏",
   "loadingRooms": "正在加载可用游戏...",
   "noActiveGames": "没有可用的活跃游戏。创建一个！",

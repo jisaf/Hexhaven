@@ -28,7 +28,7 @@ export function NicknameInput({
   initialValue = '',
   showCancel = false
 }: NicknameInputProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lobby');
   const [nickname, setNickname] = useState(initialValue);
   const [touched, setTouched] = useState(false);
 
@@ -59,11 +59,11 @@ export function NicknameInput({
           value={nickname}
           onChange={handleChange}
           onBlur={() => setTouched(true)}
-          placeholder={t('lobby:enterNickname', 'Enter your nickname')}
+          placeholder={t('enterNickname', 'Enter your nickname')}
           maxLength={50}
           disabled={isLoading}
           className={`nickname-field ${hasError ? 'error' : ''} ${isValid ? 'valid' : ''}`}
-          aria-label={t('lobby:nicknameLabel', 'Nickname')}
+          aria-label={t('nicknameLabel', 'Nickname')}
           aria-invalid={hasError ? 'true' : 'false'}
           aria-describedby={hasError ? 'nickname-error' : undefined}
           autoComplete="off"
@@ -96,7 +96,7 @@ export function NicknameInput({
 
       {hasError && (
         <div id="nickname-error" className="error-message" role="alert">
-          {error || t('lobby:invalidNickname', 'Nickname must be 1-50 characters')}
+          {error || t('invalidNickname', 'Nickname must be 1-50 characters')}
         </div>
       )}
 

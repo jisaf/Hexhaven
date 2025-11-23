@@ -15,10 +15,21 @@ interface Tab {
 interface TabsProps {
   tabs: Tab[];
   defaultTab?: number;
+  activeTab?: number;
+  onTabChange?: (index: number) => void;
 }
 
-export function Tabs({ tabs, defaultTab = 0 }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+export function Tabs({ tabs, defaultTab = 0, activeTab: controlledTab, onTabChange }: TabsProps) {
+  const [internalTab, setInternalTab] = useState(defaultTab);
+  const activeTab = controlledTab ?? internalTab;
+
+  const handleTabClick = (index: number) => {
+    if (onTabChange) {
+      onTabChange(index);
+    } else {
+      setInternalTab(index);
+    }
+  };
 
   return (
     <div className={styles.tabs}>
@@ -27,14 +38,14 @@ export function Tabs({ tabs, defaultTab = 0 }: TabsProps) {
           <button
             key={index}
             className={`${styles.tabHeader} ${activeTab === index ? styles.active : ''}`}
-            onClick={() => setActiveTab(index)}
+            onClick={() => handleTabClick(index)}
           >
             {tab.label}
           </button>
         ))}
       </div>
       <div className={styles.tabContent}>
-        {tabs[activeTab].content}
+        {tabs[activeTab]?.content}
       </div>
     </div>
   );
