@@ -4,7 +4,7 @@
  * Renders a tabbed interface.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './Tabs.module.css';
 
 interface Tab {
@@ -22,12 +22,6 @@ interface TabsProps {
 export function Tabs({ tabs, defaultTab = 0, activeTab: controlledTab, onTabChange }: TabsProps) {
   const [internalTab, setInternalTab] = useState(defaultTab);
   const activeTab = controlledTab ?? internalTab;
-
-  useEffect(() => {
-    if (controlledTab !== undefined && controlledTab !== internalTab) {
-      setInternalTab(controlledTab);
-    }
-  }, [controlledTab, internalTab]);
 
   const handleTabClick = (index: number) => {
     if (onTabChange) {

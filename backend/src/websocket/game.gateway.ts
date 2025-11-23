@@ -97,33 +97,6 @@ export class GameGateway
   >(); // roomCode -> (monsterType -> initiative)
 
   /**
-   * Get the room that a Socket.IO client is currently in
-   * Multi-room support: Uses Socket.IO rooms to determine which game room the client is active in
-   */
-  private getRoomFromSocket(
-    client: Socket,
-  ): { room: any; roomCode: string } | null {
-    // Get all Socket.IO rooms the client is in
-    const clientRooms = Array.from(client.rooms);
-    // Filter out the socket ID (always first room)
-    const roomCodes = clientRooms.filter((r) => r !== client.id);
-
-    if (roomCodes.length === 0) {
-      return null;
-    }
-
-    // Get the first game room (should only be one active at a time per socket)
-    const roomCode = roomCodes[0];
-    const room = roomService.getRoom(roomCode);
-
-    if (!room) {
-      return null;
-    }
-
-    return { room, roomCode };
-  }
-
-  /**
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
@@ -207,29 +180,21 @@ export class GameGateway
           ConnectionStatus.DISCONNECTED,
         );
 
-        // Find ALL rooms this player is in (multi-room support)
-        // Socket.IO stores room names in client.rooms (Set of room IDs)
-        const clientRooms = Array.from(client.rooms);
-        // Filter out the client's own socket ID (which is also in rooms)
-        const roomCodes = clientRooms.filter((r) => r !== client.id);
+        // Find player's room and broadcast disconnection
+        const room = roomService.getRoomByPlayerId(playerUUID);
+        if (room) {
+          // Save session to enable reconnection (US4 - T154)
+          sessionService.saveSession(room);
 
-        // Process each room the player is in
-        for (const roomCode of roomCodes) {
-          const room = roomService.getRoom(roomCode);
-          if (room) {
-            // Save session to enable reconnection (US4 - T154)
-            sessionService.saveSession(room);
+          this.server.to(room.roomCode).emit('player_disconnected', {
+            playerId: playerUUID,
+            nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
+            willReconnect: true, // Player can reconnect within 10 minutes
+          });
 
-            this.server.to(room.roomCode).emit('player_disconnected', {
-              playerId: playerUUID,
-              nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
-              willReconnect: true, // Player can reconnect within 10 minutes
-            });
-
-            this.logger.log(
-              `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
-            );
-          }
+          this.logger.log(
+            `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
+          );
         }
       } catch (error) {
         this.logger.error(
@@ -261,22 +226,12 @@ export class GameGateway
 
       const { roomCode, playerUUID, nickname } = payload;
 
-      // Check if player is already in THIS SPECIFIC room
-      // Note: Player may be in other rooms (multi-room support), so we check the target room
-      const targetRoom = roomService.getRoom(roomCode);
-      if (!targetRoom) {
-        this.server.to(client.id).emit('error', {
-          message: `Room ${roomCode} not found`,
-          code: 'ROOM_NOT_FOUND',
-        } as ErrorPayload);
-        return;
-      }
-
-      const isAlreadyInRoom = targetRoom.getPlayer(playerUUID) !== null;
-      let room = targetRoom;
+      // Check if player is already in the room (e.g., they created it via HTTP or are reconnecting)
+      let room = roomService.getRoomByPlayerId(playerUUID);
+      const isAlreadyInRoom = room && room.roomCode === roomCode;
 
       // Check reconnection status
-      const roomPlayer = isAlreadyInRoom ? room.getPlayer(playerUUID) : null;
+      const roomPlayer = isAlreadyInRoom && room ? room.getPlayer(playerUUID) : null;
       const isReconnecting =
         roomPlayer &&
         roomPlayer.connectionStatus === ConnectionStatus.DISCONNECTED &&
@@ -296,7 +251,11 @@ export class GameGateway
         // Join room (adds player to room state)
         room = roomService.joinRoom(roomCode, newRoomPlayer);
       } else {
-        // Player is already in this specific room
+        // Player is already in the room, just get the room
+        room = roomService.getRoom(roomCode);
+        if (!room) {
+          throw new Error('Room not found');
+        }
         this.logger.log(
           `Player ${nickname} is ${isReconnecting ? 'reconnecting to' : 'already in'} room ${roomCode}`,
         );
@@ -439,16 +398,16 @@ export class GameGateway
         return;
       }
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
+      // Find which room this player is in
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
         this.logger.warn(
           `Player ${playerUUID} tried to leave but is not in any room`,
         );
         return;
       }
 
-      const { room, roomCode } = roomData;
+      const roomCode = room.roomCode;
       this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
 
       // Remove player from room
@@ -520,13 +479,11 @@ export class GameGateway
         `Select character request from ${playerUUID}: ${payload.characterClass}`,
       );
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
       }
-
-      const { room } = roomData;
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -541,7 +498,7 @@ export class GameGateway
 
       // Check if character class is already taken
       const characterTaken = room.players.some(
-        (p: Player) =>
+        (p) =>
           p.characterClass === payload.characterClass && p.uuid !== playerUUID,
       );
 
@@ -593,14 +550,11 @@ export class GameGateway
 
       this.logger.log(`Start game request from ${playerUUID}`);
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
       }
-
-      const { room, roomCode } = roomData;
-      this.logger.log(`Starting game in room ${roomCode}`);
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -641,9 +595,7 @@ export class GameGateway
       // This would improve UX and remove the need for player-count-specific position arrays
 
       // Get player starting positions from scenario
-      const playerCount = room.players.filter(
-        (p: Player) => p.characterClass,
-      ).length;
+      const playerCount = room.players.filter((p) => p.characterClass).length;
       const startingPositions = scenario.playerStartPositions[playerCount];
       if (!startingPositions || startingPositions.length < playerCount) {
         throw new Error(`Scenario does not support ${playerCount} players`);
@@ -651,8 +603,8 @@ export class GameGateway
 
       // Create characters for all players at starting positions
       const characters = room.players
-        .filter((p: Player) => p.characterClass)
-        .map((p: Player, index: number) => {
+        .filter((p) => p.characterClass)
+        .map((p, index) => {
           const startingPosition = startingPositions[index];
           return characterService.selectCharacter(
             p.uuid,
@@ -695,7 +647,7 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = characters.map((c: any) => {
+      const charactersWithDecks = characters.map((c) => {
         const charData = c.toJSON();
         // Get ability deck for this character class
         const abilityDeck = this.abilityCardService.getCardsByClass(
@@ -740,7 +692,7 @@ export class GameGateway
 
       for (const roomSocket of roomSockets) {
         const playerUUID = this.socketToPlayer.get(roomSocket.id);
-        const player = room.players.find((p: Player) => p.uuid === playerUUID);
+        const player = room.players.find((p) => p.uuid === playerUUID);
         const nickname = player?.nickname || 'Unknown';
 
         roomSocket.emit(
@@ -790,23 +742,21 @@ export class GameGateway
 
       this.logger.log(`Move character request from ${playerUUID}`);
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
-      }
-
-      const { room } = roomData;
-
-      // Validate game is active
-      if (room.status !== RoomStatus.ACTIVE) {
-        throw new Error('Game is not active');
-      }
-
       // Get player's character
       const character = characterService.getCharacterByPlayerId(playerUUID);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
       }
 
       // Check if character is immobilized
@@ -899,23 +849,21 @@ export class GameGateway
 
       this.logger.log(`Select cards request from ${playerUUID}`);
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
-      }
-
-      const { room } = roomData;
-
-      // Validate game is active
-      if (room.status !== RoomStatus.ACTIVE) {
-        throw new Error('Game is not active');
-      }
-
       // Get player's character
       const character = characterService.getCharacterByPlayerId(playerUUID);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
       }
 
       // Validate cards are in player's hand (belong to character class)
@@ -963,11 +911,11 @@ export class GameGateway
 
       // Check if all players have selected cards
       const allCharacters = room.players
-        .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
-        .filter((c: any): c is any => Boolean(c && !c.exhausted));
+        .map((p) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c) => c && !c.exhausted);
 
-      const allSelected = allCharacters.every((c: any): c is any =>
-        Boolean(c && c.selectedCards !== undefined),
+      const allSelected = allCharacters.every(
+        (c) => c && c.selectedCards !== undefined,
       );
 
       // If all players selected, determine turn order and broadcast
@@ -1072,23 +1020,21 @@ export class GameGateway
         `Attack target request from ${playerUUID} -> ${payload.targetId}`,
       );
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
-      }
-
-      const { room } = roomData;
-
-      // Validate game is active
-      if (room.status !== RoomStatus.ACTIVE) {
-        throw new Error('Game is not active');
-      }
-
       // Get attacker's character
       const attacker = characterService.getCharacterByPlayerId(playerUUID);
       if (!attacker) {
         throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
       }
 
       // Check if attacker is disarmed
@@ -1240,23 +1186,21 @@ export class GameGateway
         `Collect loot request from ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
       );
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
-      }
-
-      const { room } = roomData;
-
-      // Validate game is active
-      if (room.status !== RoomStatus.ACTIVE) {
-        throw new Error('Game is not active');
-      }
-
       // Get player's character
       const character = characterService.getCharacterByPlayerId(playerUUID);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
       }
 
       // Get loot tokens from room state
@@ -1344,23 +1288,21 @@ export class GameGateway
 
       this.logger.log(`End turn request from ${playerUUID}`);
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        throw new Error('Player not in any room or room not found');
-      }
-
-      const { room } = roomData;
-
-      // Validate game is active
-      if (room.status !== RoomStatus.ACTIVE) {
-        throw new Error('Game is not active');
-      }
-
       // Get player's character
       const character = characterService.getCharacterByPlayerId(playerUUID);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Find player's room
+      const room = roomService.getRoomByPlayerId(playerUUID);
+      if (!room) {
+        throw new Error('Player not in a room');
+      }
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
       }
 
       // Get turn order for this room
