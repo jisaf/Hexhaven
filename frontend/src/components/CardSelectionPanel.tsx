@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
@@ -6,53 +7,27 @@ import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
 
 interface CardSelectionPanelProps {
   cards: AbilityCardType[];
-  selectedTopCard: string | null;
-  selectedBottomCard: string | null;
-  onSelectTop: (cardId: string) => void;
-  onSelectBottom: (cardId: string) => void;
-  onConfirm: () => void;
+  onCardSelect: (card: AbilityCardType) => void;
+  onClearSelection: () => void;
+  onConfirmSelection: () => void;
+  selectedTopAction: AbilityCardType | null;
+  selectedBottomAction: AbilityCardType | null;
   disabled?: boolean;
 }
 
 export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   cards,
-  selectedTopCard,
-  selectedBottomCard,
-  onSelectTop,
-  onSelectBottom,
-  onConfirm,
+  onCardSelect,
+  onClearSelection,
+  onConfirmSelection,
+  selectedTopAction,
+  selectedBottomAction,
   disabled = false,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(Math.floor(cards.length / 2));
-  const [selectionMode, setSelectionMode] = useState<'top' | 'bottom' | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
-  const handleCardClick = (cardId: string, index: number) => {
-    if (disabled) return;
-
-    // If card is not focused, focus it
-    if (index !== focusedIndex) {
-      setFocusedIndex(index);
-      return;
-    }
-
-    // If card is focused, select it
-    // If no card selected yet, ask which half to use
-    if (!selectionMode) {
-      setSelectionMode('top');
-      return;
-    }
-
-    if (selectionMode === 'top') {
-      onSelectTop(cardId);
-      setSelectionMode('bottom');
-    } else {
-      onSelectBottom(cardId);
-      setSelectionMode(null);
-    }
-  };
-
-  const canConfirm = selectedTopCard !== null && selectedBottomCard !== null;
+  const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
   const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''}`;
 
   return (
@@ -61,111 +36,57 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         {isCollapsed ? <GiScrollQuill /> : <GiScrollUnfurled />}
       </button>
 
-      {/* Selection Instructions */}
       <div className="selection-instructions">
-        <h3>Select Your Cards</h3>
+        <h3>Select Your Actions</h3>
         <p>
-          {!selectedTopCard && !selectedBottomCard
-            ? 'Tap unfocused cards to focus, tap focused cards to select'
-            : !selectedTopCard
-              ? 'Select TOP action'
-              : !selectedBottomCard
-                ? 'Select BOTTOM action'
-                : 'Cards selected! Click Confirm when ready.'}
+          {!selectedTopAction
+            ? 'Select a card for your TOP action'
+            : !selectedBottomAction
+              ? 'Select a card for your BOTTOM action'
+              : 'Cards selected! Ready to confirm.'}
         </p>
       </div>
 
-      {/* Selection Summary */}
-      {(selectedTopCard || selectedBottomCard) && (
-        <div className="selection-summary">
-          <div className="summary-item">
-            <span className="summary-label">Top:</span>
-            <span className="summary-value">
-              {selectedTopCard
-                ? cards.find((c) => c.id === selectedTopCard)?.name || 'Unknown'
-                : 'Not selected'}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="summary-label">Bottom:</span>
-            <span className="summary-value">
-              {selectedBottomCard
-                ? cards.find((c) => c.id === selectedBottomCard)?.name || 'Unknown'
-                : 'Not selected'}
-            </span>
-          </div>
-        </div>
-      )}
+      <div className="cards-container">
+        {cards.map((card) => {
+          const isSelected = card.id === selectedTopAction?.id || card.id === selectedBottomAction?.id;
+          const isFocused = card.id === focusedId;
 
-      {/* Fan Display Container */}
-      <div className="fan-container" data-testid="card-fan">
-        <div className="fan-cards">
-          {cards.map((card, index) => {
-            const isSelectedTop = selectedTopCard === card.id;
-            const isSelectedBottom = selectedBottomCard === card.id;
-            const isSelected = isSelectedTop || isSelectedBottom;
-            const isFocused = index === focusedIndex;
+          const wrapperClassName = `card-wrapper ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
 
-            // Calculate rotation and position for fan layout
-            const totalCards = cards.length;
-            const centerIndex = (totalCards - 1) / 2;
-            const offset = index - centerIndex;
-            const maxRotation = 20; // degrees from center
-            const rotation = (offset / (centerIndex || 1)) * maxRotation;
-            const horizontalOffset = offset * 40; // px
-            const verticalOffset = Math.abs(offset) * 20; // px
-
-            const transform = isFocused
-              ? `translateY(-20px) scale(1.15)`
-              : `translateX(${horizontalOffset}px) translateY(${verticalOffset}px) rotate(${rotation}deg) scale(0.85)`;
-
-            const finalTransform = isSelected
-              ? `${transform} translateY(-40px)`
-              : transform;
-
-            return (
-              <div
-                key={card.id}
-                className={`fan-card ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`}
-                style={{
-                  transform: finalTransform,
-                  zIndex: isFocused ? 100 : 50 - Math.abs(offset),
-                }}
-                data-testid={`fan-card-${index}`}
-              >
-                <AbilityCard
-                  card={card}
-                  isSelected={isSelected}
-                  isTop={isSelectedTop ? true : isSelectedBottom ? false : undefined}
-                  onClick={() => handleCardClick(card.id, index)}
-                  disabled={disabled}
-                />
-              </div>
-            );
-          })}
-        </div>
+          return (
+            <div
+              key={card.id}
+              className={wrapperClassName}
+              onClick={() => onCardSelect(card)}
+              onMouseEnter={() => setFocusedId(card.id)}
+              onMouseLeave={() => setFocusedId(null)}
+            >
+              <AbilityCard
+                card={card}
+                isSelected={isSelected}
+                isTop={card.id === selectedTopAction?.id}
+                disabled={disabled}
+              />
+            </div>
+          );
+        })}
       </div>
 
-      {/* Action Buttons */}
       <div className="action-buttons">
         <button
           className="btn-clear"
-          onClick={() => {
-            onSelectTop('');
-            onSelectBottom('');
-            setSelectionMode(null);
-          }}
-          disabled={!selectedTopCard && !selectedBottomCard}
+          onClick={onClearSelection}
+          disabled={!selectedTopAction && !selectedBottomAction || disabled}
         >
-          Clear Selection
+          Clear
         </button>
         <button
           className="btn-confirm"
-          onClick={onConfirm}
+          onClick={onConfirmSelection}
           disabled={!canConfirm || disabled}
-          data-testid="confirm-cards-button"
         >
-          Confirm Cards
+          Confirm
         </button>
       </div>
     </div>
