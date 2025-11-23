@@ -8,6 +8,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Lobby } from './pages/Lobby';
 import { GameBoard } from './pages/GameBoard';
+import { GameRoom } from './pages/GameRoom';
 import { HexMapDemo } from './pages/HexMapDemo';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
@@ -79,6 +80,7 @@ function App() {
         <ConnectionUI />
         <Routes>
           <Route path="/" element={<Lobby />} />
+          <Route path="/room/:roomCode" element={<GameRoom />} />
           <Route path="/game/:roomCode" element={<GameBoard />} />
           <Route path="/demo" element={<HexMapDemo />} />
           <Route path="*" element={<Navigate to="/" replace />} />

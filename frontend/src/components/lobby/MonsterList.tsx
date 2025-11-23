@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 import type { MonsterGroup } from '../../../../shared/types/entities';
 import styles from './MonsterList.module.css';
 
-// Type assertion to inform TypeScript about Vite's import.meta.globEager
-const monsterImages = (import.meta as any).globEager('../../assets/monsters/*.svg') as Record<string, { default: string }>;
+// Use Vite's globEager feature with the new type definition
+const monsterImages = import.meta.globEager('../../assets/monsters/*.svg');
 
 const getMonsterImagePath = (monsterType: string): string => {
   const key = `../../assets/monsters/${monsterType.toLowerCase().replace(/ /g, '-')}.svg`;

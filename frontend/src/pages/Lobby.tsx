@@ -18,7 +18,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
@@ -27,14 +26,11 @@ import type { CharacterClass } from '../components/CharacterSelect';
 import { DebugConsole } from '../components/DebugConsole';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
-import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomManagement } from '../hooks/useRoomManagement';
-import { useRoomSession } from '../hooks/useRoomSession';
 import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
-import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './Lobby.module.css';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
@@ -59,15 +55,12 @@ export function Lobby() {
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
   const [room, setRoom] = useState<GameRoom | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  const [isHost, setIsHost] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
-  const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
+  const [, setPlayers] = useState<Player[]>([]);
+  const [, setCurrentPlayerId] = useState<string | null>(null);
+  const [, setIsHost] = useState(false);
 
   // Use custom hooks
   const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
-  const sessionState = useRoomSession();
 
   // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
   // This handles ALL navigation methods: back button, direct URL, "Back to Lobby" button, etc.
@@ -78,13 +71,12 @@ export function Lobby() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Navigate to game when room status becomes active (only when creating/joining)
+  // Navigate to game room when a room is joined or created
   useEffect(() => {
-    if (sessionState.status === 'active' && sessionState.roomCode && mode !== 'initial') {
-      console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
-      navigate(`/game/${sessionState.roomCode}`);
+    if (mode === 'in-room' && room?.roomCode) {
+      navigate(`/room/${room.roomCode}`);
     }
-  }, [sessionState.status, sessionState.roomCode, mode, navigate]);
+  }, [mode, room, navigate]);
 
   // WebSocket event handlers
   const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
@@ -124,11 +116,7 @@ export function Lobby() {
           : p
       )
     );
-
-    if (playerId === currentPlayerId) {
-      setSelectedCharacter(characterClass);
-    }
-  }, [currentPlayerId]);
+  }, []);
 
   const handleWebSocketError = useCallback((message: string) => {
     setError(message);
@@ -185,42 +173,6 @@ export function Lobby() {
       setMode('joining');
     }
   };
-
-  // Character selection (T069)
-  const handleSelectCharacter = (characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-    websocketService.selectCharacter(characterClass);
-  };
-
-  // Scenario selection (US5 - T179)
-  const handleSelectScenario = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
-    websocketService.selectScenario(scenarioId);
-  };
-
-  // Game start (T070 - host only)
-  const handleStartGame = () => {
-    if (!isCurrentPlayerHost) {
-      return;
-    }
-
-    if (players.length < 1) {
-      setError(t('needAtLeastOnePlayer', 'Need at least 1 player to start'));
-      return;
-    }
-
-    websocketService.startGame(selectedScenario);
-  };
-
-  // Get disabled character classes using utility
-  const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
-
-  // Check if current player is host - use state or check players array
-  const currentPlayer = findPlayerById(players, currentPlayerId || '');
-  const isCurrentPlayerHost = isHost || isPlayerHost(currentPlayer);
-
-  const playersReady = allPlayersReady(players);
-  const canStartGame = players.length >= 1 && playersReady;
 
   return (
     <div className={styles.lobbyPage}>
@@ -308,24 +260,6 @@ export function Lobby() {
               />
             </div>
           </div>
-        )}
-
-        {mode === 'in-room' && room && (
-          <LobbyRoomView
-            roomCode={room.roomCode}
-            players={players}
-            currentPlayerId={currentPlayerId || undefined}
-            isHost={isCurrentPlayerHost}
-            selectedCharacter={selectedCharacter}
-            disabledClasses={disabledClasses}
-            selectedScenario={selectedScenario}
-            canStartGame={canStartGame}
-            allPlayersReady={playersReady}
-            error={error}
-            onSelectCharacter={handleSelectCharacter}
-            onSelectScenario={handleSelectScenario}
-            onStartGame={handleStartGame}
-          />
         )}
 
         {error && mode !== 'joining' && (
