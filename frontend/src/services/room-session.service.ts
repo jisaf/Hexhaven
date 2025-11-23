@@ -184,7 +184,11 @@ class RoomSessionManager {
 
     try {
       // Get room info from state or localStorage
-      const roomCode = this.state.roomCode || getLastRoomCode();
+      // When creating a new room, always use fresh roomCode from localStorage
+      // to avoid using stale roomCode from previous game session
+      const roomCode = intent === 'create'
+        ? getLastRoomCode() || this.state.roomCode
+        : this.state.roomCode || getLastRoomCode();
       const nickname = getPlayerNickname();
       const uuid = getPlayerUUID();
 
