@@ -79,7 +79,7 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Use custom hooks
-  const sessionState = useRoomSession();
+  useRoomSession();
 
   // Memoize callbacks to prevent infinite re-renders
   const handleHexClick = useCallback((hex: Axial) => {

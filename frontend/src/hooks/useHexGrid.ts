@@ -62,12 +62,10 @@ export function useHexGrid(
       console.log('🎨 HexGrid instance created, starting async initialization...');
 
       // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
-      let mounted = true;
-      let initCompleted = false;
+      const mounted = true;
 
       hexGrid.init().then(() => {
       console.log('✅ HexGrid.init() promise resolved!');
-      initCompleted = true;
       if (mounted) {
         hexGridRef.current = hexGrid;
         setHexGridReady(true); // Signal that HexGrid is ready
@@ -77,7 +75,6 @@ export function useHexGrid(
       }
     }).catch((error) => {
       console.error('❌ Failed to initialize HexGrid:', error);
-      initCompleted = true; // Mark as completed even on error
     });
     });
 
@@ -92,29 +89,14 @@ export function useHexGrid(
 
     return () => {
       clearTimeout(timeoutId);
-      mounted = false;
       window.removeEventListener('resize', handleResize);
 
       // Always destroy the hexGrid instance to prevent memory leaks
-      if (hexGrid) {
-        // Wait for init to complete before destroying
-        if (initCompleted) {
-          try {
-            hexGrid.destroy();
-          } catch (error) {
-            console.error('Error destroying HexGrid:', error);
-          }
-        } else {
-          // If init hasn't completed yet, wait for it then destroy
-          hexGrid.init().then(() => {
-            try {
-              hexGrid.destroy();
-            } catch (error) {
-              console.error('Error destroying HexGrid after delayed init:', error);
-            }
-          }).catch(() => {
-            // Init failed, nothing to destroy
-          });
+      if (hexGridRef.current) {
+        try {
+          hexGridRef.current.destroy();
+        } catch (err) {
+          console.error('Error destroying HexGrid:', err);
         }
       }
 
