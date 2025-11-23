@@ -137,10 +137,17 @@ export function Lobby() {
   useEffect(() => {
     if (myRoom && myRoom.status === 'active' && mode === 'initial') {
       console.log('Player is in an active game, auto-rejoining room...');
-      handleRejoinMyRoom();
+      const autoRejoin = async () => {
+        try {
+          await rejoinRoom();
+          setMode('joining');
+        } catch (err) {
+          console.error('Room rejoin error:', err);
+        }
+      };
+      autoRejoin();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myRoom]);
+  }, [myRoom, mode, rejoinRoom]);
 
   // Room creation flow (T067)
   const handleCreateRoom = () => {
@@ -182,18 +189,6 @@ export function Lobby() {
       handleJoinRoom(roomCode, storedNickname);
     } else {
       setMode('joining');
-    }
-  };
-
-  // Rejoin player's existing room
-  const handleRejoinMyRoom = async () => {
-    if (!myRoom) return;
-
-    try {
-      await rejoinRoom();
-      setMode('joining');
-    } catch (err) {
-      console.error('Room rejoin error:', err);
     }
   };
 
