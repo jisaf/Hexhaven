@@ -294,6 +294,26 @@ class RoomSessionManager {
   }
 
   /**
+   * Switch to a different room without calling leaveRoom on backend
+   * Used when player wants to create/join a new room while keeping old room membership
+   */
+  public switchRoom(): void {
+    console.log('[RoomSessionManager] Switching to new room (keeping old room membership)');
+
+    this.state = {
+      roomCode: null,
+      status: 'disconnected',
+      playerRole: null,
+      gameState: null,
+      lastJoinIntent: null,
+    };
+
+    this.hasJoinedInSession = false;
+
+    this.emitStateUpdate();
+  }
+
+  /**
    * Clear game state only (keep room membership)
    * Used when game ends but player stays in lobby
    */
