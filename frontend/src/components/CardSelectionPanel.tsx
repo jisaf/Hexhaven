@@ -1,15 +1,8 @@
-/**
- * CardSelectionPanel Component (US2 - T104)
- *
- * Displays cards in a fan layout with focus and selection states.
- * Players select 2 cards (top/bottom) for the turn.
- * Mobile-optimized with tap interactions.
- */
-
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
 import './CardSelectionPanel.css';
+import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
 
 interface CardSelectionPanelProps {
   cards: AbilityCardType[];
@@ -30,6 +23,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   onConfirm,
   disabled = false,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(Math.floor(cards.length / 2));
   const [selectionMode, setSelectionMode] = useState<'top' | 'bottom' | null>(null);
 
@@ -59,9 +53,14 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   };
 
   const canConfirm = selectedTopCard !== null && selectedBottomCard !== null;
+  const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''}`;
 
   return (
-    <div className="card-selection-panel">
+    <div className={panelClassName}>
+      <button className="collapse-toggle" onClick={() => setIsCollapsed(!isCollapsed)}>
+        {isCollapsed ? <GiScrollQuill /> : <GiScrollUnfurled />}
+      </button>
+
       {/* Selection Instructions */}
       <div className="selection-instructions">
         <h3>Select Your Cards</h3>

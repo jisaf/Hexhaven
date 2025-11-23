@@ -22,8 +22,8 @@ import { websocketService } from '../services/websocket.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster } from '../../../shared/types/entities';
-import { GameHeader } from '../components/game/GameHeader';
 import { GameHints } from '../components/game/GameHints';
+import { GameHUD } from '../components/game/GameHUD';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
@@ -43,11 +43,33 @@ export function GameBoard() {
     }
   }, [roomCode, navigate]);
 
+  // Force landscape orientation
+  useEffect(() => {
+    const lockOrientation = async () => {
+      try {
+        if (screen.orientation && typeof screen.orientation.lock === 'function') {
+          await screen.orientation.lock('landscape');
+        }
+      } catch (error) {
+        console.error('Failed to lock screen orientation:', error);
+      }
+    };
+
+    lockOrientation();
+
+    return () => {
+      if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+        screen.orientation.unlock();
+      }
+    };
+  }, []);
+
   // State
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
+  const [gameLogs, setGameLogs] = useState<string[]>([]);
 
   // Card selection state (T111, T181)
   const [showCardSelection, setShowCardSelection] = useState(false);
@@ -90,6 +112,7 @@ export function GameBoard() {
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
+    setGameLogs(prev => [...prev, 'Game started!']);
     console.log('handleGameStarted called with data:', data);
 
     try {
@@ -131,12 +154,14 @@ export function GameBoard() {
   }, [initializeBoard]);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
+    setGameLogs(prev => [...prev, `Character ${data.characterId.substring(0, 4)} moved.`]);
     moveCharacter(data.characterId, data.toHex);
     deselectAll();
     setSelectedCharacterId(null);
   }, [moveCharacter, deselectAll]);
 
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
+    setGameLogs(prev => [...prev, `Turn ${data.turnIndex}: ${data.entityType} ${data.entityId.substring(0, 4)}`]);
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
     setIsMyTurn(myTurn);
 
@@ -192,20 +217,22 @@ export function GameBoard() {
     }
   }, [selectedCards]);
 
-
-
   const handleBackToLobby = () => {
     navigate('/');
   };
 
   return (
     <div className={styles.gameBoardPage}>
-      <GameHeader
-        isMyTurn={isMyTurn}
+      <div className={styles.orientationWarning}>
+        <h2>Please Rotate Your Device</h2>
+        <p>This game is best played in landscape mode.</p>
+      </div>
+
+      <GameHUD
+        logs={gameLogs}
         connectionStatus={connectionStatus}
         onBackToLobby={handleBackToLobby}
       />
-
       <div ref={containerRef} className={styles.gameContainer} />
 
       {/* T111: Card Selection Panel */}
