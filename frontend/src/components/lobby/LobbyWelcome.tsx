@@ -27,7 +27,7 @@ export function LobbyWelcome({
   const { t } = useTranslation();
 
   return (
-    <div className={styles.initialMode}>
+    <div className={styles.initialMode} data-testid="lobby-welcome">
       <ActiveRoomsList
         rooms={activeRooms}
         loading={loadingRooms}

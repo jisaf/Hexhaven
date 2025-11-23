@@ -1,34 +1,49 @@
-.tabs {
+/* Tabs.module.css */
+.tabsContainer {
   width: 100%;
 }
 
-.tabHeaders {
+.tabList {
   display: flex;
-  border-bottom: 1px solid #444;
+  border-bottom: 2px solid #333;
+  margin-bottom: 16px;
 }
 
-.tabHeader {
-  padding: 1rem 1.5rem;
+.tab {
+  padding: 12px 20px;
   cursor: pointer;
-  background-color: transparent;
+  background: none;
   border: none;
-  color: #9ab0c9;
-  font-family: 'MedievalSharp', serif;
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px; /* Overlap with container border */
+  color: #aaa;
+  font-size: 16px;
+  font-weight: 600;
+  position: relative;
+  transition: color 0.2s ease;
 }
 
-.tabHeader:hover {
-  color: #f0e6d2;
+.tab:hover {
+  color: #fff;
 }
 
-.tabHeader.active {
+.tab.active {
   color: #c9a444;
-  border-bottom: 2px solid #c9a444;
 }
 
-.tabContent {
-  padding-top: 2rem;
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #c9a444;
+}
+
+.tab[disabled] {
+  color: #666;
+  cursor: not-allowed;
+}
+
+.tabPanel {
+  padding: 16px 0;
 }

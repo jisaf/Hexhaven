@@ -17,7 +17,7 @@ export function LobbyHeader({ playerNickname, onCreateRoom }: LobbyHeaderProps) 
   const { t } = useTranslation();
 
   return (
-    <header className={styles.lobbyHeader}>
+    <header className={styles.lobbyHeader} data-testid="lobby-header">
       <div className={styles.headerContent}>
         <div className={styles.titleContainer}>
           <h1>{t('title', 'Hexhaven')}</h1>

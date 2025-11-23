@@ -1,0 +1,67 @@
+/* ScenarioDetailView.module.css */
+.scenarioDetailView {
+  padding: 20px;
+  background-color: #1a1d2e;
+  border: 1px solid #c9a444;
+  border-radius: 8px;
+}
+
+.placeholder, .loading, .error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #a0a0a0;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+.error {
+  color: #ef4444;
+}
+
+.scenarioTitle {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 24px;
+  color: #c9a444;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.scenarioObjective {
+  font-size: 16px;
+  color: #e0e0e0;
+  margin: 0 0 20px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+.detailsLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.miniMapContainer, .monsterListContainer {
+  background-color: rgba(0,0,0,0.3);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.detailsLayout h4 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: #c9a444;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .detailsLayout {
+    grid-template-columns: 1fr;
+  }
+}
