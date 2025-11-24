@@ -101,7 +101,10 @@ export const AbilityCard: React.FC<AbilityCardProps> = ({
       </div>
 
       {/* Top Action */}
-      <div className={`card-section top ${isTop === true ? 'active' : ''}`}>
+      <div
+        className={`card-section top ${isTop === true ? 'active' : ''}`}
+        data-testid={`ability-card-${card.name}-top`}
+      >
         <div className="section-label">Top</div>
         <ActionDisplay action={card.topAction} />
       </div>
@@ -110,7 +113,10 @@ export const AbilityCard: React.FC<AbilityCardProps> = ({
       <div className="card-divider" />
 
       {/* Bottom Action */}
-      <div className={`card-section bottom ${isTop === false ? 'active' : ''}`}>
+      <div
+        className={`card-section bottom ${isTop === false ? 'active' : ''}`}
+        data-testid={`ability-card-${card.name}-bottom`}
+      >
         <div className="section-label">Bottom</div>
         <ActionDisplay action={card.bottomAction} />
       </div>

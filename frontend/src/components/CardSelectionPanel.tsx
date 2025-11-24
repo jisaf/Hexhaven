@@ -65,7 +65,13 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
               <AbilityCard
                 card={card}
                 isSelected={isSelected}
-                isTop={card.id === selectedTopAction?.id}
+                isTop={
+                  card.id === selectedTopAction?.id
+                    ? true
+                    : card.id === selectedBottomAction?.id
+                      ? false
+                      : undefined
+                }
                 disabled={disabled}
               />
             </div>

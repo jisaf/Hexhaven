@@ -48,6 +48,7 @@ export class CharacterSprite extends PIXI.Container {
   constructor(data: CharacterData, options: CharacterSpriteOptions = {}) {
     super();
 
+    this.name = `character-sprite-${data.classType}`;
     this.characterId = data.id;
     this.classType = data.classType;
     this.data = data;
@@ -254,35 +255,37 @@ export class CharacterSprite extends PIXI.Container {
   }
 
   /**
-   * Animate movement to a new hex
+   * Animate movement along a path of hexes
    */
-  public async animateMoveTo(targetHex: Axial, duration: number = 500): Promise<void> {
-    const startPos = this.position.clone();
-    const endPos = axialToScreen(targetHex);
-    const startTime = Date.now();
+  public async animateMoveTo(path: Axial[], speed: number = 200): Promise<void> {
+    for (const targetHex of path) {
+      const startPos = this.position.clone();
+      const endPos = axialToScreen(targetHex);
+      const distance = Math.sqrt(Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2));
+      const duration = (distance / speed) * 1000;
+      const startTime = Date.now();
 
-    return new Promise((resolve) => {
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+      await new Promise<void>((resolve) => {
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
 
-        // Easing function (ease-in-out)
-        const eased = progress < 0.5
-          ? 2 * progress * progress
-          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          const eased = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
 
-        this.position.x = startPos.x + (endPos.x - startPos.x) * eased;
-        this.position.y = startPos.y + (endPos.y - startPos.y) * eased;
+          this.position.x = startPos.x + (endPos.x - startPos.x) * eased;
+          this.position.y = startPos.y + (endPos.y - startPos.y) * eased;
 
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      };
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.updatePosition(targetHex); // Snap to final position
+            resolve();
+          }
+        };
 
-      animate();
-    });
+        animate();
+      });
+    }
   }
 
   /**
