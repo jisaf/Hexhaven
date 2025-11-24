@@ -9,6 +9,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Lobby } from './pages/Lobby';
 import { GameBoard } from './pages/GameBoard';
 import { HexMapDemo } from './pages/HexMapDemo';
+import { NewGame } from './pages/NewGame';
+import { NewGameProvider } from './contexts/NewGameContext';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
@@ -79,6 +81,7 @@ function App() {
         <ConnectionUI />
         <Routes>
           <Route path="/" element={<Lobby />} />
+          <Route path="/new-game" element={<NewGameProvider><NewGame /></NewGameProvider>} />
           <Route path="/game/:roomCode" element={<GameBoard />} />
           <Route path="/demo" element={<HexMapDemo />} />
           <Route path="*" element={<Navigate to="/" replace />} />

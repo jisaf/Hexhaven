@@ -1,0 +1,138 @@
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CharacterSelect } from '../components/CharacterSelect';
+import { PlayerList } from '../components/PlayerList';
+import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
+import { Tabs } from '../components/Tabs';
+import { useNewGame } from '../contexts/NewGameContext';
+import { websocketService } from '../services/websocket.service';
+import styles from './NewGame.module.css';
+import { useTranslation } from 'react-i18next';
+import { getPlayerNickname, getPlayerUUID } from '../utils/storage';
+import { roomSessionManager } from '../services/room-session.service';
+
+export function NewGame() {
+  const { t } = useTranslation(['lobby', 'common']);
+  const navigate = useNavigate();
+  const {
+    players,
+    setPlayers,
+    selectedScenario,
+    selectScenario,
+    selectedCharacter,
+    selectCharacter,
+  } = useNewGame();
+
+  useEffect(() => {
+    const playerNickname = getPlayerNickname();
+    const playerUUID = getPlayerUUID();
+    if (playerNickname && playerUUID) {
+      setPlayers([
+        {
+          id: playerUUID,
+          nickname: playerNickname,
+          isHost: true,
+          isReady: false,
+        },
+      ]);
+    }
+  }, [setPlayers]);
+
+  useEffect(() => {
+    const handleRoomJoined = (data: { roomCode: string }) => {
+      roomSessionManager.onRoomJoined(data);
+      navigate(`/game/${data.roomCode}`);
+    };
+
+    websocketService.on('room_joined', handleRoomJoined);
+
+    return () => {
+      websocketService.off('room_joined', handleRoomJoined);
+    };
+  }, [navigate]);
+
+  const handleStartGame = () => {
+    const playerNickname = getPlayerNickname();
+    if (selectedScenario && selectedCharacter && playerNickname) {
+      websocketService.createRoom({
+        playerNickname,
+        scenarioId: selectedScenario,
+        characterClass: selectedCharacter,
+      });
+    }
+  };
+
+  const canStartGame = selectedScenario && selectedCharacter;
+
+  // Mobile view logic
+  const tabs = [
+    {
+      label: t('scenario'),
+      content: (
+        <ScenarioSelectionPanel
+          selectedScenarioId={selectedScenario}
+          onSelectScenario={selectScenario}
+        />
+      ),
+    },
+    {
+      label: t('character'),
+      content: (
+        <CharacterSelect
+          selectedClass={selectedCharacter}
+          onSelect={selectCharacter}
+          disabledClasses={[]}
+        />
+      ),
+    },
+  ];
+
+  let activeTab = 0;
+  if (selectedScenario && !selectedCharacter) {
+    activeTab = 1;
+  } else if (selectedScenario && selectedCharacter) {
+    activeTab = 0;
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.layout}>
+        <div className={styles.mainContent}>
+          {/* Desktop */}
+          <div className={styles.hiddenMobile}>
+            <ScenarioSelectionPanel
+              selectedScenarioId={selectedScenario}
+              onSelectScenario={selectScenario}
+            />
+            <CharacterSelect
+              selectedClass={selectedCharacter}
+              onSelect={selectCharacter}
+              disabledClasses={[]}
+            />
+          </div>
+          {/* Mobile */}
+          <div className={styles.hiddenDesktop}>
+            <Tabs tabs={tabs} activeTab={activeTab} />
+          </div>
+        </div>
+        <div className={styles.sidebar}>
+          <PlayerList players={players} />
+          <div className={styles.startGameSection}>
+            <button
+              className={styles.startButton}
+              onClick={handleStartGame}
+              disabled={!canStartGame}
+            >
+              {t('startGame', { ns: 'lobby' })}
+            </button>
+            {!canStartGame && (
+              <p className={styles.startHint}>
+                {t('selectScenarioAndCharacter', { ns: 'lobby' })}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

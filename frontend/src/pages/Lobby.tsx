@@ -63,7 +63,6 @@ export function Lobby() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
-  const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
 
   // Use custom hooks
   const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
@@ -143,28 +142,15 @@ export function Lobby() {
     onError: handleWebSocketError,
   });
 
+  const handleSelectCharacter = (characterClass: CharacterClass) => {
+    websocketService.selectCharacter(characterClass);
+  };
+
   // Room creation flow (T067)
   const handleCreateRoom = () => {
-    const storedNickname = getPlayerNickname();
-    if (storedNickname) {
-      proceedWithRoomCreation(storedNickname);
-    } else {
-      setMode('nickname-for-create');
-    }
+    navigate('/new-game');
   };
 
-  const handleNicknameSubmit = (submittedNickname: string) => {
-    proceedWithRoomCreation(submittedNickname);
-  };
-
-  const proceedWithRoomCreation = async (playerNickname: string) => {
-    try {
-      await createRoom(playerNickname);
-      setMode('creating');
-    } catch (err) {
-      console.error('Room creation error:', err);
-    }
-  };
 
   // Room join flow (T068)
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
@@ -186,31 +172,6 @@ export function Lobby() {
     }
   };
 
-  // Character selection (T069)
-  const handleSelectCharacter = (characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-    websocketService.selectCharacter(characterClass);
-  };
-
-  // Scenario selection (US5 - T179)
-  const handleSelectScenario = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
-    websocketService.selectScenario(scenarioId);
-  };
-
-  // Game start (T070 - host only)
-  const handleStartGame = () => {
-    if (!isCurrentPlayerHost) {
-      return;
-    }
-
-    if (players.length < 1) {
-      setError(t('needAtLeastOnePlayer', { ns: 'lobby' }));
-      return;
-    }
-
-    websocketService.startGame(selectedScenario);
-  };
 
   // Get disabled character classes using utility
   const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
@@ -273,7 +234,7 @@ export function Lobby() {
               </p>
 
               <NicknameInput
-                onSubmit={handleNicknameSubmit}
+                onSubmit={() => {}}
                 onCancel={() => setMode('initial')}
                 isLoading={isLoading}
                 error={error || undefined}
@@ -320,13 +281,11 @@ export function Lobby() {
             isHost={isCurrentPlayerHost}
             selectedCharacter={selectedCharacter}
             disabledClasses={disabledClasses}
-            selectedScenario={selectedScenario}
             canStartGame={canStartGame}
             allPlayersReady={playersReady}
             error={error}
             onSelectCharacter={handleSelectCharacter}
-            onSelectScenario={handleSelectScenario}
-            onStartGame={handleStartGame}
+            onStartGame={() => {}}
           />
         )}
 
