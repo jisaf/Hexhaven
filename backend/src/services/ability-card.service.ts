@@ -45,7 +45,7 @@ export class AbilityCardService {
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
       console.log(
-        `✅ Loaded ${this.abilityCards.length} ability cards from ${successfulPath}`,
+        `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
       );
       return this.abilityCards;
     } catch (error) {
