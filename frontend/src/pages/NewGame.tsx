@@ -15,7 +15,7 @@ import { useWebSocketConnection } from '../contexts/WebSocketConnectionContext';
 
 export function NewGame() {
   const { t } = useTranslation(['lobby', 'common']);
-  const { isConnected } = useWebSocketConnection();
+  useWebSocketConnection();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const {
