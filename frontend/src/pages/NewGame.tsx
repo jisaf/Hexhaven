@@ -11,9 +11,11 @@ import styles from './NewGame.module.css';
 import { useTranslation } from 'react-i18next';
 import { getPlayerNickname, getPlayerUUID } from '../utils/storage';
 import { roomSessionManager } from '../services/room-session.service';
+import { useWebSocketConnection } from '../contexts/WebSocketConnectionContext';
 
 export function NewGame() {
   const { t } = useTranslation(['lobby', 'common']);
+  const { isConnected } = useWebSocketConnection();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const {
@@ -140,9 +142,9 @@ export function NewGame() {
             <button
               className={styles.startButton}
               onClick={handleStartGame}
-              disabled={!canStartGame}
+              disabled={!canStartGame || !isConnected}
             >
-              {t('startGame', { ns: 'lobby' })}
+              {isConnected ? t('startGame', { ns: 'lobby' }) : t('connecting', { ns: 'common' })}
             </button>
             {!canStartGame && (
               <p className={styles.startHint}>
