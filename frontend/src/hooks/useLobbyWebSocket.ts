@@ -8,7 +8,7 @@
 import { useEffect, useCallback } from 'react';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
-import { getWebSocketUrl, logApiConfig } from '../config/api';
+import { logApiConfig } from '../config/api';
 import { saveLastRoomCode } from '../utils/storage';
 import { transformPlayers, transformPlayer, type RawPlayerData } from '../utils/playerTransformers';
 import type { Player } from '../components/PlayerList';

@@ -86,6 +86,7 @@ export type EventHandler<T extends EventName> = WebSocketEvents[T];
 
 class WebSocketService {
   private socket: Socket | null = null;
+  private lastUrl: string | null = null;
   private connectionStatus: ConnectionStatus = 'disconnected';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private eventHandlers: Map<string, Set<any>> = new Map();
@@ -102,6 +103,7 @@ class WebSocketService {
       console.warn('WebSocket already connected');
       return;
     }
+    this.lastUrl = url;
 
     // Get or create persistent UUID for session restoration
     this.playerUUID = getOrCreatePlayerUUID();
@@ -225,6 +227,19 @@ class WebSocketService {
       this.socket.disconnect();
       this.socket = null;
       this.connectionStatus = 'disconnected';
+    }
+  }
+
+  reconnect(): void {
+    if (this.socket?.connected) {
+      console.warn('WebSocket already connected, no need to reconnect.');
+      return;
+    }
+    if (this.lastUrl) {
+      console.log('Attempting to reconnect...');
+      this.connect(this.lastUrl);
+    } else {
+      console.error('Cannot reconnect: no last URL available.');
     }
   }
 

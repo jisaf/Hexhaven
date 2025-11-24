@@ -6,7 +6,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { websocketService, type ConnectionStatus } from '../services/websocket.service';
-import { getWebSocketUrl } from '../config/api';
 
 export function useWebSocket(url?: string) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');

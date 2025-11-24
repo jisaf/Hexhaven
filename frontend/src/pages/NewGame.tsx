@@ -87,6 +87,8 @@ export function NewGame() {
   // Switch to character tab when scenario is selected for the first time
   useEffect(() => {
     if (selectedScenario && !selectedCharacter && !hasAutoSwitched) {
+      // This is an intentional UI behavior to guide the user to the next step.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(1);
       setHasAutoSwitched(true);
     }
