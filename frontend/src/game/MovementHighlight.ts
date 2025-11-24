@@ -133,6 +133,37 @@ export class MovementHighlight {
   }
 
   /**
+   * Highlight a single hex as the selected destination
+   */
+  public showSelected(hex: Axial, color: number = 0x0000ff, alpha: number = 0.5): void {
+    this.clearSelected(); // Clear previous selection
+
+    const key = 'selected';
+    const highlight = this.createHexHighlight(hex, {
+      color,
+      alpha,
+      lineWidth: 2,
+      lineColor: 0x8888ff
+    });
+
+    highlight.name = 'selected';
+    this.highlights.set(key, highlight);
+    this.container.addChild(highlight);
+  }
+
+  /**
+   * Remove selected highlight
+   */
+  public clearSelected(): void {
+    const existing = this.highlights.get('selected');
+
+    if (existing) {
+      this.container.removeChild(existing);
+      this.highlights.delete('selected');
+    }
+  }
+
+  /**
    * Clear all highlights
    */
   public clear(): void {
@@ -167,6 +198,10 @@ export class MovementHighlight {
   private createHexHighlight(hex: Axial, options: HighlightOptions): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
     const pos = axialToScreen(hex);
+
+    // Make the highlight non-interactive
+    graphic.eventMode = 'none';
+    graphic.name = 'highlight';
 
     // Draw filled hex
     graphic.beginFill(options.color, options.alpha);

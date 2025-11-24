@@ -22,8 +22,8 @@ export function useHexGrid(
   const hexGridRef = useRef<HexGrid | null>(null);
   const [hexGridReady, setHexGridReady] = useState(false);
   const ackCallbackRef = useRef<((ack: boolean) => void) | null>(null);
-
-  const { onHexClick, onCharacterSelect, onMonsterSelect } = options;
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   // Initialize hex grid
   useEffect(() => {
@@ -55,9 +55,9 @@ export function useHexGrid(
       const hexGrid = new HexGrid(containerRef.current, {
         width,
         height,
-        onHexClick,
-        onCharacterSelect,
-        onMonsterSelect,
+        onHexClick: (...args) => optionsRef.current.onHexClick(...args),
+        onCharacterSelect: (...args) => optionsRef.current.onCharacterSelect(...args),
+        onMonsterSelect: (...args) => optionsRef.current.onMonsterSelect(...args),
       });
       console.log('🎨 HexGrid instance created, starting async initialization...');
 
@@ -104,7 +104,7 @@ export function useHexGrid(
       hexGridRef.current = null;
       setHexGridReady(false);
     };
-  }, [containerRef, onHexClick, onCharacterSelect, onMonsterSelect]);
+  }, [containerRef]);
 
   // Initialize board with game data
   const initializeBoard = useCallback((boardData: GameBoardData, ackCallback?: (ack: boolean) => void) => {
@@ -154,9 +154,9 @@ export function useHexGrid(
   }, [hexGridReady]);
 
   // Move character on the grid
-  const moveCharacter = useCallback((characterId: string, toHex: Axial) => {
+  const moveCharacter = useCallback((characterId: string, toHex: Axial, movementPath?: Axial[]) => {
     if (hexGridRef.current) {
-      hexGridRef.current.moveCharacter(characterId, toHex);
+      hexGridRef.current.moveCharacter(characterId, toHex, movementPath);
       hexGridRef.current.deselectAll();
     }
   }, []);
@@ -168,11 +168,25 @@ export function useHexGrid(
     }
   }, []);
 
+  const showSelectedHex = useCallback((hex: Axial) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showSelectedHex(hex);
+    }
+  }, []);
+
+  const clearSelectedHex = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearSelectedHex();
+    }
+  }, []);
+
   return {
     hexGridRef,
     hexGridReady,
     initializeBoard,
     moveCharacter,
     deselectAll,
+    showSelectedHex,
+    clearSelectedHex,
   };
 }
