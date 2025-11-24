@@ -198,7 +198,7 @@ export interface HexTile {
   terrain: TerrainType;
   features?: HexFeature[];
   triggers?: Trigger[];
-  occupiedBy?: string; // Entity UUID
+  occupiedBy: string | null; // Entity UUID
   hasLoot: boolean;
   hasTreasure: boolean;
 }

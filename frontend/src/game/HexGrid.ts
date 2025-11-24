@@ -19,7 +19,7 @@ import { MonsterSprite } from './MonsterSprite';
 import { MovementHighlight } from './MovementHighlight';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
 import { type Axial, axialKey, screenToAxial, hexRangeReachable, axialToScreen } from './hex-utils';
-import type { Monster } from '../../../shared/types/entities';
+import type { Monster, HexTile as SharedHexTile } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
   width: number;
@@ -31,7 +31,7 @@ export interface HexGridOptions {
 }
 
 export interface GameBoardData {
-  tiles: HexTileData[];
+  tiles: SharedHexTile[];
   characters: CharacterData[];
   monsters?: Monster[];
 }

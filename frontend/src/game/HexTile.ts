@@ -10,13 +10,12 @@
 
 import * as PIXI from 'pixi.js';
 import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
-
-export type TerrainType = 'normal' | 'obstacle' | 'difficult' | 'hazardous';
+import { TerrainType } from '../../../shared/types/entities';
 
 export interface HexTileData {
   coordinates: Axial;
   terrain: TerrainType;
-  occupiedBy?: string; // Entity ID
+  occupiedBy: string | null; // Entity ID
   hasLoot?: boolean;
   hasTreasure?: boolean;
 }

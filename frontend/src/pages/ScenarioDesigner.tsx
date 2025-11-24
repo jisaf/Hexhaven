@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
 import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
@@ -43,26 +43,29 @@ const ScenarioDesigner: React.FC = () => {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HexGrid | null>(null);
 
-  const handleHexClick = (hex: AxialCoordinates) => {
+  const handleHexClick = useCallback((hex: AxialCoordinates) => {
     const key = `${hex.q},${hex.r}`;
-    const newActiveHexes = new Map(scenarioState.activeHexes);
-
-    if (newActiveHexes.has(key)) {
-      setSelectedHex(hex);
-      setIsPanelOpen(true);
-    } else {
-      const newTile: HexTile = {
-        coordinates: hex,
-        terrain: 'normal' as TerrainType,
-        features: [],
-        triggers: [],
-        hasLoot: false,
-        hasTreasure: false,
-      };
-      newActiveHexes.set(key, newTile);
-      setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-    }
-  };
+    setScenarioState(prevState => {
+      const newActiveHexes = new Map(prevState.activeHexes);
+      if (newActiveHexes.has(key)) {
+        setSelectedHex(hex);
+        setIsPanelOpen(true);
+        return prevState;
+      } else {
+        const newTile: HexTile = {
+          coordinates: hex,
+          terrain: 'normal' as TerrainType,
+          features: [],
+          triggers: [],
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        };
+        newActiveHexes.set(key, newTile);
+        return { ...prevState, activeHexes: newActiveHexes };
+      }
+    });
+  }, []);
 
   const handleDeleteHex = () => {
     if (selectedHex) {
@@ -275,7 +278,7 @@ const ScenarioDesigner: React.FC = () => {
     return () => {
       gridRef.current?.destroy();
     };
-  }, []);
+  }, [handleHexClick]);
 
   useEffect(() => {
     if (gridRef.current) {
