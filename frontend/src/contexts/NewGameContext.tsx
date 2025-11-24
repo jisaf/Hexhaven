@@ -23,9 +23,18 @@ export const NewGameProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setSelectedScenario(scenarioId);
   }, []);
 
-  const selectCharacter = useCallback((characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-  }, []);
+  const selectCharacter = useCallback(
+    (characterClass: CharacterClass) => {
+      setSelectedCharacter(characterClass);
+      // Also update the player list to reflect the host's choice
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((p) =>
+          p.isHost ? { ...p, characterClass, isReady: true } : p
+        )
+      );
+    },
+    [players]
+  );
 
   const value = {
     players,

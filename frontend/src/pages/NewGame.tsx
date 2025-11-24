@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { RoomJoinedPayload } from '../../../shared/types/events';
 import { CharacterSelect } from '../components/CharacterSelect';
@@ -15,6 +15,7 @@ import { roomSessionManager } from '../services/room-session.service';
 export function NewGame() {
   const { t } = useTranslation(['lobby', 'common']);
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
   const {
     players,
     setPlayers,
@@ -50,13 +51,19 @@ export function NewGame() {
   useEffect(() => {
     const handleRoomJoined = (data: RoomJoinedPayload) => {
       roomSessionManager.onRoomJoined(data);
-      navigate(`/game/${data.roomCode}`);
+      navigate('/'); // Navigate to lobby to wait for players
+    };
+
+    const handleError = (message: string) => {
+      setError(message);
     };
 
     websocketService.on('room_joined', handleRoomJoined);
+    websocketService.on('error', handleError);
 
     return () => {
       websocketService.off('room_joined', handleRoomJoined);
+      websocketService.off('error', handleError);
     };
   }, [navigate]);
 
@@ -72,6 +79,18 @@ export function NewGame() {
   };
 
   const canStartGame = selectedScenario && selectedCharacter;
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Switch to character tab when scenario is selected for the first time
+  useEffect(() => {
+    if (selectedScenario && !selectedCharacter) {
+      setActiveTab(1);
+    }
+  }, [selectedScenario, selectedCharacter]);
+
+  const handleTabChange = (tabIndex: number) => {
+    setActiveTab(tabIndex);
+  };
 
   // Mobile view logic
   const tabs = [
@@ -96,13 +115,6 @@ export function NewGame() {
     },
   ];
 
-  let activeTab = 0;
-  if (selectedScenario && !selectedCharacter) {
-    activeTab = 1;
-  } else if (selectedScenario && selectedCharacter) {
-    activeTab = 0;
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.layout}>
@@ -121,12 +133,9 @@ export function NewGame() {
           </div>
           {/* Mobile */}
           <div className={styles.hiddenDesktop}>
-            <Tabs tabs={tabs} activeTab={activeTab} />
+            <Tabs tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
           </div>
-        </div>
-        <div className={styles.sidebar}>
-          <PlayerList players={players} />
-          <div className={styles.startGameSection}>
+        <div className={styles.startGameSection}>
             <button
               className={styles.startButton}
               onClick={handleStartGame}
@@ -139,7 +148,11 @@ export function NewGame() {
                 {t('selectScenarioAndCharacter', { ns: 'lobby' })}
               </p>
             )}
+            {error && <p className={styles.error}>{error}</p>}
           </div>
+          </div>
+        <div className={styles.sidebar}>
+          <PlayerList players={players} />
         </div>
       </div>
     </div>
