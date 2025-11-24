@@ -41,6 +41,7 @@ export class HexGrid {
   private container: HTMLElement;
 
   // Layers
+  private placeholderLayer!: PIXI.Container;
   private tilesLayer!: PIXI.Container;
   private highlightsLayer!: PIXI.Container;
   private entitiesLayer!: PIXI.Container;
@@ -139,11 +140,13 @@ export class HexGrid {
     this.viewport.moveCenter(0, 0);
 
     // Create layers
+    this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
     this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
+    this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
     this.viewport.addChild(this.lootLayer);
@@ -402,6 +405,11 @@ export class HexGrid {
    * Handle background click (deselect)
    */
   private handleBackgroundClick(event: PIXI.FederatedPointerEvent): void {
+    if (this.options.onHexClick) {
+      const hex = this.getHexAtScreenPosition(event.global.x, event.global.y);
+      this.options.onHexClick(hex);
+    }
+
     // Only deselect if clicking on stage (not on entities or tiles)
     if (event.target === this.app.stage) {
       this.deselectAll();
@@ -671,6 +679,66 @@ export class HexGrid {
   /**
    * Destroy and cleanup
    */
+  public drawPlaceholderGrid(width: number, height: number): void {
+    this.placeholderLayer.removeChildren();
+    const graphics = new PIXI.Graphics();
+    graphics.lineStyle(1, 0x555555, 0.5);
+
+    for (let r = 0; r < height; r++) {
+      for (let q = 0; q < width; q++) {
+        const hex = { q, r };
+        const pos = axialToScreen(hex);
+        this.drawHexagon(graphics, pos.x, pos.y, 48);
+      }
+    }
+    this.placeholderLayer.addChild(graphics);
+  }
+
+  private drawHexagon(graphic: PIXI.Graphics, x: number, y: number, size: number): void {
+    const angles = [30, 90, 150, 210, 270, 330];
+    const points: Array<{ x: number; y: number }> = [];
+
+    for (const angle of angles) {
+      const rad = (Math.PI / 180) * angle;
+      points.push({
+        x: x + size * Math.cos(rad),
+        y: y + size * Math.sin(rad)
+      });
+    }
+
+    graphic.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      graphic.lineTo(points[i].x, points[i].y);
+    }
+
+    graphic.closePath();
+  }
+
+  public setBackgroundImage(imageUrl: string): void {
+    const sprite = PIXI.Sprite.from(imageUrl);
+    sprite.width = this.app.screen.width;
+    sprite.height = this.app.screen.height;
+    this.app.stage.addChildAt(sprite, 0);
+  }
+
+  public async exportToPng(): Promise<void> {
+    const originalBackgroundColor = this.app.renderer.background.color;
+    this.app.renderer.background.color = 0x00ff00; // Green screen
+    this.app.render();
+
+    const dataUrl = await this.app.renderer.extract.base64(this.app.stage);
+    const link = document.createElement('a');
+    link.download = 'scenario-map.png';
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.app.renderer.background.color = originalBackgroundColor;
+    this.app.render();
+  }
+
   public destroy(): void {
     // Only destroy if app was initialized
     if (!this.app) return;

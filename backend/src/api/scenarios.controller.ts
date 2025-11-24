@@ -6,12 +6,22 @@
  * - GET /api/scenarios/:id - Get scenario details
  */
 
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, NotFoundException } from '@nestjs/common';
 import { ScenarioService } from '../services/scenario.service';
+import { Scenario } from '../../../shared/types/entities';
 
 @Controller('api/scenarios')
 export class ScenariosController {
   constructor(private readonly scenarioService: ScenarioService) {}
+
+  @Post()
+  async createScenario(@Body() scenario: Omit<Scenario, 'id'>) {
+    const newScenario = await this.scenarioService.saveScenario(scenario);
+    return {
+      message: 'Scenario saved successfully',
+      scenario: newScenario,
+    };
+  }
 
   /**
    * GET /api/scenarios

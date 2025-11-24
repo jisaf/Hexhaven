@@ -47,6 +47,26 @@ export enum TerrainType {
   HAZARDOUS = 'hazardous',
 }
 
+export enum HexFeatureType {
+  WALL = 'wall',
+  DOOR = 'door',
+  TRAP = 'trap',
+}
+
+export enum TriggerType {
+  ON_ENTER = 'onEnter',
+}
+
+export interface Trigger {
+  type: TriggerType;
+  // actions will be defined later
+}
+
+export interface HexFeature {
+  type: HexFeatureType;
+  isOpen?: boolean; // For doors
+}
+
 export enum Condition {
   POISON = 'poison',
   WOUND = 'wound',
@@ -176,6 +196,8 @@ export interface Scenario {
 export interface HexTile {
   coordinates: AxialCoordinates;
   terrain: TerrainType;
+  features: HexFeature[];
+  triggers: Trigger[];
   occupiedBy: string | null; // Entity UUID
   hasLoot: boolean;
   hasTreasure: boolean;
@@ -185,6 +207,11 @@ export interface MonsterGroup {
   type: string;
   count: number;
   spawnPoints: AxialCoordinates[];
+  isElite: boolean;
+}
+
+export interface MonsterType {
+  type: string;
   isElite: boolean;
 }
 
