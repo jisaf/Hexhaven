@@ -154,9 +154,9 @@ export function useHexGrid(
   }, [hexGridReady]);
 
   // Move character on the grid
-  const moveCharacter = useCallback((characterId: string, toHex: Axial) => {
+  const moveCharacter = useCallback((characterId: string, toHex: Axial, movementPath?: Axial[]) => {
     if (hexGridRef.current) {
-      hexGridRef.current.moveCharacter(characterId, toHex);
+      hexGridRef.current.moveCharacter(characterId, toHex, movementPath);
       hexGridRef.current.deselectAll();
     }
   }, []);
@@ -168,11 +168,25 @@ export function useHexGrid(
     }
   }, []);
 
+  const showSelectedHex = useCallback((hex: Axial) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showSelectedHex(hex);
+    }
+  }, []);
+
+  const clearSelectedHex = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearSelectedHex();
+    }
+  }, []);
+
   return {
     hexGridRef,
     hexGridReady,
     initializeBoard,
     moveCharacter,
     deselectAll,
+    showSelectedHex,
+    clearSelectedHex,
   };
 }
