@@ -145,9 +145,9 @@ export function NewGame() {
             <button
               className={styles.startButton}
               onClick={handleStartGame}
-              disabled={!canStartGame || !isConnected}
+              disabled={!canStartGame}
             >
-              {isConnected ? t('startGame', { ns: 'lobby' }) : t('connecting', { ns: 'common' })}
+              {t('startGame', { ns: 'lobby' })}
             </button>
             {!canStartGame && (
               <p className={styles.startHint}>
