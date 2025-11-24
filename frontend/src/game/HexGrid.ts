@@ -235,6 +235,10 @@ export class HexGrid {
       onSelect: this.handleCharacterSelect.bind(this)
     });
 
+    // Set character's position on the grid
+    const pos = axialToScreen(data.currentHex);
+    sprite.position.set(pos.x, pos.y);
+
     this.characters.set(data.id, sprite);
     this.entitiesLayer.addChild(sprite);
   }
@@ -279,6 +283,10 @@ export class HexGrid {
    */
   public addMonster(monster: Monster): void {
     const sprite = new MonsterSprite(monster);
+
+    // Set monster's position on the grid
+    const pos = axialToScreen(monster.currentHex);
+    sprite.position.set(pos.x, pos.y);
 
     // Enable interaction for targeting
     sprite.eventMode = 'static';
