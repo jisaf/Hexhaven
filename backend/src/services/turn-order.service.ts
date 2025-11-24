@@ -47,6 +47,14 @@ export class TurnOrderService {
     }
 
     return [...entities].sort((a, b) => {
+      // FOR TESTING: Prioritize players over monsters
+      if (a.entityType === 'character' && b.entityType === 'monster') {
+        return -1;
+      }
+      if (a.entityType === 'monster' && b.entityType === 'character') {
+        return 1;
+      }
+
       // Primary sort: initiative (lower goes first)
       if (a.initiative !== b.initiative) {
         return a.initiative - b.initiative;
