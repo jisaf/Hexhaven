@@ -1,26 +1,51 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { HexGrid } from '../game/HexGrid';
-import { AxialCoordinates, HexTile, TerrainType, HexFeatureType, TriggerType, MonsterType } from '../../../shared/types/entities';
+import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
 
+interface ScenarioState {
+  name: string;
+  difficulty: number;
+  objective: string;
+  activeHexes: Map<string, HexTile>;
+  playerStartPositions: Record<number, AxialCoordinates[]>;
+  monsterGroups: MonsterGroup[];
+}
+
 const ScenarioDesigner: React.FC = () => {
-  const [activeHexes, setActiveHexes] = useState<Map<string, HexTile>>(new Map());
+  const [scenarioState, setScenarioState] = useState<ScenarioState>(() => {
+    const savedState = localStorage.getItem('scenarioDesignerState');
+    if (savedState) {
+      const parsedState = JSON.parse(savedState);
+      return {
+        name: parsedState.name || '',
+        difficulty: parsedState.difficulty || 1,
+        objective: parsedState.objective || '',
+        activeHexes: new Map(parsedState.activeHexes || []),
+        playerStartPositions: parsedState.playerStartPositions || { 2: [], 3: [], 4: [] },
+        monsterGroups: parsedState.monsterGroups || [],
+      };
+    }
+    return {
+      name: '',
+      difficulty: 1,
+      objective: '',
+      activeHexes: new Map(),
+      playerStartPositions: { 2: [], 3: [], 4: [] },
+      monsterGroups: [],
+    };
+  });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedHex, setSelectedHex] = useState<AxialCoordinates | null>(null);
-  const [scenarioName, setScenarioName] = useState('');
-  const [scenarioDifficulty, setScenarioDifficulty] = useState(1);
-  const [scenarioObjective, setScenarioObjective] = useState('');
   const [monsterTypes, setMonsterTypes] = useState<MonsterType[]>([]);
-  const [playerStartPositions, setPlayerStartPositions] = useState<Record<number, AxialCoordinates[]>>({ 2: [], 3: [], 4: [] });
-  const [monsterGroups, setMonsterGroups] = useState<any[]>([]);
   const [selectedPlayerCount, setSelectedPlayerCount] = useState<number>(2);
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HexGrid | null>(null);
 
   const handleHexClick = (hex: AxialCoordinates) => {
     const key = `${hex.q},${hex.r}`;
-    const newActiveHexes = new Map(activeHexes);
+    const newActiveHexes = new Map(scenarioState.activeHexes);
 
     if (newActiveHexes.has(key)) {
       setSelectedHex(hex);
@@ -28,33 +53,32 @@ const ScenarioDesigner: React.FC = () => {
     } else {
       const newTile: HexTile = {
         coordinates: hex,
-        terrain: 'normal',
+        terrain: 'normal' as TerrainType,
         features: [],
         triggers: [],
-        occupiedBy: null,
         hasLoot: false,
         hasTreasure: false,
       };
       newActiveHexes.set(key, newTile);
-      setActiveHexes(newActiveHexes);
+      setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
     }
   };
 
   const handleDeleteHex = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       if (newActiveHexes.has(key)) {
         newActiveHexes.delete(key);
-        setActiveHexes(newActiveHexes);
       }
 
-      const newMonsterGroups = [...monsterGroups];
+      const newMonsterGroups = [...scenarioState.monsterGroups];
       newMonsterGroups.forEach(group => {
         group.spawnPoints = group.spawnPoints.filter(p => p.q !== selectedHex.q || p.r !== selectedHex.r);
         group.count = group.spawnPoints.length;
       });
-      setMonsterGroups(newMonsterGroups.filter(g => g.count > 0));
+
+      setScenarioState({ ...scenarioState, activeHexes: newActiveHexes, monsterGroups: newMonsterGroups.filter(g => g.count > 0) });
 
       setIsPanelOpen(false);
       setSelectedHex(null);
@@ -65,7 +89,7 @@ const ScenarioDesigner: React.FC = () => {
     if (selectedHex && monsterIdentifier) {
       const [type, isEliteStr] = monsterIdentifier.split('-');
       const isElite = isEliteStr === 'true';
-      const newMonsterGroups = [...monsterGroups];
+      const newMonsterGroups = [...scenarioState.monsterGroups];
       let group = newMonsterGroups.find(g => g.type === type && g.isElite === isElite);
       if (!group) {
         group = { type, isElite, count: 0, spawnPoints: [] };
@@ -73,19 +97,22 @@ const ScenarioDesigner: React.FC = () => {
       }
       group.spawnPoints.push(selectedHex);
       group.count = group.spawnPoints.length;
-      setMonsterGroups(newMonsterGroups);
+      setScenarioState({ ...scenarioState, monsterGroups: newMonsterGroups });
     }
   };
 
   const handleAddFeature = (type: HexFeatureType) => {
     if (selectedHex && type) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
       if (hex) {
+        if (!hex.features) {
+          hex.features = [];
+        }
         const newFeature = { type, isOpen: type === HexFeatureType.DOOR ? false : undefined };
         hex.features.push(newFeature);
-        setActiveHexes(new Map(newActiveHexes));
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
@@ -93,11 +120,11 @@ const ScenarioDesigner: React.FC = () => {
   const handleRemoveFeature = (index: number) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
-      if (hex) {
+      if (hex && hex.features) {
         hex.features.splice(index, 1);
-        setActiveHexes(new Map(newActiveHexes));
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
@@ -105,11 +132,11 @@ const ScenarioDesigner: React.FC = () => {
   const handleToggleDoor = (index: number) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
-      if (hex && hex.features[index].type === HexFeatureType.DOOR) {
+      if (hex && hex.features && hex.features[index].type === HexFeatureType.DOOR) {
         hex.features[index].isOpen = !hex.features[index].isOpen;
-        setActiveHexes(new Map(newActiveHexes));
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
@@ -117,23 +144,26 @@ const ScenarioDesigner: React.FC = () => {
   const handleToggleTrigger = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
       if (hex) {
+        if (!hex.triggers) {
+          hex.triggers = [];
+        }
         const triggerIndex = hex.triggers.findIndex(t => t.type === TriggerType.ON_ENTER);
         if (triggerIndex > -1) {
           hex.triggers.splice(triggerIndex, 1);
         } else {
           hex.triggers.push({ type: TriggerType.ON_ENTER });
         }
-        setActiveHexes(new Map(newActiveHexes));
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
 
   const handleTogglePlayerStart = () => {
     if (selectedHex) {
-      const newPlayerStartPositions = { ...playerStartPositions };
+      const newPlayerStartPositions = { ...scenarioState.playerStartPositions };
       const positions = newPlayerStartPositions[selectedPlayerCount];
       const index = positions.findIndex(p => p.q === selectedHex.q && p.r === selectedHex.r);
       if (index > -1) {
@@ -141,18 +171,18 @@ const ScenarioDesigner: React.FC = () => {
       } else {
         positions.push(selectedHex);
       }
-      setPlayerStartPositions(newPlayerStartPositions);
+      setScenarioState({ ...scenarioState, playerStartPositions: newPlayerStartPositions });
     }
   };
 
   const handleTerrainChange = (terrain: TerrainType) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
       if (hex) {
         hex.terrain = terrain;
-        setActiveHexes(newActiveHexes);
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
@@ -160,11 +190,11 @@ const ScenarioDesigner: React.FC = () => {
   const handleToggleLoot = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
       if (hex) {
         hex.hasLoot = !hex.hasLoot;
-        setActiveHexes(newActiveHexes);
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
@@ -172,28 +202,28 @@ const ScenarioDesigner: React.FC = () => {
   const handleToggleTreasure = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(activeHexes);
+      const newActiveHexes = new Map(scenarioState.activeHexes);
       const hex = newActiveHexes.get(key);
       if (hex) {
         hex.hasTreasure = !hex.hasTreasure;
-        setActiveHexes(newActiveHexes);
+        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
       }
     }
   };
 
   const handleSaveToServer = async () => {
-    if (!scenarioName) {
+    if (!scenarioState.name) {
       alert('Please enter a name for the scenario.');
       return;
     }
 
     const scenarioData = {
-      name: scenarioName,
-      difficulty: scenarioDifficulty,
-      objectivePrimary: scenarioObjective,
-      mapLayout: Array.from(activeHexes.values()),
-      monsterGroups: monsterGroups,
-      playerStartPositions: playerStartPositions,
+      name: scenarioState.name,
+      difficulty: scenarioState.difficulty,
+      objectivePrimary: scenarioState.objective,
+      mapLayout: Array.from(scenarioState.activeHexes.values()),
+      monsterGroups: scenarioState.monsterGroups,
+      playerStartPositions: scenarioState.playerStartPositions,
     };
 
     try {
@@ -250,12 +280,12 @@ const ScenarioDesigner: React.FC = () => {
   useEffect(() => {
     if (gridRef.current) {
       gridRef.current.initializeBoard({
-        tiles: Array.from(activeHexes.values()),
+        tiles: Array.from(scenarioState.activeHexes.values()),
         characters: [],
         monsters: [],
       });
     }
-  }, [activeHexes]);
+  }, [scenarioState.activeHexes]);
 
   useEffect(() => {
     fetch('/api/monsters')
@@ -263,28 +293,15 @@ const ScenarioDesigner: React.FC = () => {
       .then((data) => {
         setMonsterTypes(data.monsterTypes);
       });
-
-    const savedState = localStorage.getItem('scenarioDesignerState');
-    if (savedState) {
-      const parsedState = JSON.parse(savedState);
-      setScenarioName(parsedState.name || '');
-      setScenarioDifficulty(parsedState.difficulty || 1);
-      setScenarioObjective(parsedState.objective || '');
-      setActiveHexes(new Map(parsedState.activeHexes || []));
-      setPlayerStartPositions(parsedState.playerStartPositions || []);
-    }
   }, []);
 
   useEffect(() => {
-    const scenarioState = {
-      name: scenarioName,
-      difficulty: scenarioDifficulty,
-      objective: scenarioObjective,
-      activeHexes: Array.from(activeHexes.entries()),
-      playerStartPositions,
+    const scenarioStateToSave = {
+      ...scenarioState,
+      activeHexes: Array.from(scenarioState.activeHexes.entries()),
     };
-    localStorage.setItem('scenarioDesignerState', JSON.stringify(scenarioState));
-  }, [scenarioName, scenarioDifficulty, scenarioObjective, activeHexes, playerStartPositions]);
+    localStorage.setItem('scenarioDesignerState', JSON.stringify(scenarioStateToSave));
+  }, [scenarioState]);
 
   return (
     <div>
@@ -298,15 +315,15 @@ const ScenarioDesigner: React.FC = () => {
         <h2>Scenario Settings</h2>
         <label>
           Name:
-          <input type="text" value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} />
+          <input type="text" value={scenarioState.name} onChange={(e) => setScenarioState({ ...scenarioState, name: e.target.value })} />
         </label>
         <label>
           Difficulty:
-          <input type="number" min="1" max="5" value={scenarioDifficulty} onChange={(e) => setScenarioDifficulty(parseInt(e.target.value))} />
+          <input type="number" min="1" max="5" value={scenarioState.difficulty} onChange={(e) => setScenarioState({ ...scenarioState, difficulty: parseInt(e.target.value) })} />
         </label>
         <label>
           Objective:
-          <input type="text" value={scenarioObjective} onChange={(e) => setScenarioObjective(e.target.value)} />
+          <input type="text" value={scenarioState.objective} onChange={(e) => setScenarioState({ ...scenarioState, objective: e.target.value })} />
         </label>
         <hr />
         {selectedHex && (
@@ -315,7 +332,7 @@ const ScenarioDesigner: React.FC = () => {
             <button onClick={handleDeleteHex}>Delete Hex</button>
             <div>
               <h4>Terrain</h4>
-              <select value={activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
+              <select value={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
                 {Object.values(TerrainType).map((type) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
@@ -324,7 +341,7 @@ const ScenarioDesigner: React.FC = () => {
             <div>
               <h4>Features</h4>
               <ul>
-                {activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.features.map((feature, index) => (
+                {scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.features?.map((feature, index) => (
                   <li key={index}>
                     {feature.type}
                     <button onClick={() => handleRemoveFeature(index)}>Remove</button>
@@ -353,7 +370,7 @@ const ScenarioDesigner: React.FC = () => {
               <label>
                 <input
                   type="checkbox"
-                  checked={activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.hasLoot}
+                  checked={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.hasLoot}
                   onChange={handleToggleLoot}
                 />
                 Has Loot
@@ -361,7 +378,7 @@ const ScenarioDesigner: React.FC = () => {
               <label>
                 <input
                   type="checkbox"
-                  checked={activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.hasTreasure}
+                  checked={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.hasTreasure}
                   onChange={handleToggleTreasure}
                 />
                 Has Treasure
@@ -387,7 +404,7 @@ const ScenarioDesigner: React.FC = () => {
               <label>
                 <input
                   type="checkbox"
-                  checked={playerStartPositions[selectedPlayerCount].some(p => p.q === selectedHex.q && p.r === selectedHex.r)}
+                  checked={scenarioState.playerStartPositions[selectedPlayerCount].some(p => p.q === selectedHex.q && p.r === selectedHex.r)}
                   onChange={handleTogglePlayerStart}
                 />
                 Player Start Position
@@ -395,7 +412,7 @@ const ScenarioDesigner: React.FC = () => {
               <label>
                 <input
                   type="checkbox"
-                  checked={activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.triggers.some(t => t.type === TriggerType.ON_ENTER)}
+                  checked={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.triggers?.some(t => t.type === TriggerType.ON_ENTER)}
                   onChange={handleToggleTrigger}
                 />
                 onEnter Trigger

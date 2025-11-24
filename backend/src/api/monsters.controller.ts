@@ -1,4 +1,3 @@
-
 import { Controller, Get } from '@nestjs/common';
 import { MonsterService } from '../services/monster.service';
 

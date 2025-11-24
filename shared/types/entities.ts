@@ -196,9 +196,9 @@ export interface Scenario {
 export interface HexTile {
   coordinates: AxialCoordinates;
   terrain: TerrainType;
-  features: HexFeature[];
-  triggers: Trigger[];
-  occupiedBy: string | null; // Entity UUID
+  features?: HexFeature[];
+  triggers?: Trigger[];
+  occupiedBy?: string; // Entity UUID
   hasLoot: boolean;
   hasTreasure: boolean;
 }

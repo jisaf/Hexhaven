@@ -6,7 +6,14 @@
  * - GET /api/scenarios/:id - Get scenario details
  */
 
-import { Controller, Get, Post, Body, Param, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  NotFoundException,
+} from '@nestjs/common';
 import { ScenarioService } from '../services/scenario.service';
 import { Scenario } from '../../../shared/types/entities';
 

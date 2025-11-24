@@ -1,7 +1,7 @@
-
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import * as path from 'path';
+import { MonsterType } from '../../../shared/types/entities';
 
 @Injectable()
 export class MonsterService {
@@ -12,10 +12,10 @@ export class MonsterService {
     'monster-types.json',
   );
 
-  async getAvailableMonsterTypes(): Promise<any[]> {
+  async getAvailableMonsterTypes(): Promise<MonsterType[]> {
     try {
-      const data = await fs.readFile(this.monsterTypesPath, 'utf-8');
-      const json = JSON.parse(data);
+      const data = await fs.promises.readFile(this.monsterTypesPath, 'utf-8');
+      const json = JSON.parse(data) as { monsterTypes: MonsterType[] };
       return json.monsterTypes || [];
     } catch (error) {
       console.error('Error reading monster types:', error);
