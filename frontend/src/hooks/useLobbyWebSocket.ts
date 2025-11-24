@@ -83,8 +83,6 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
     // Log the API configuration for debugging
     logApiConfig();
 
-    const wsUrl = getWebSocketUrl();
-    websocketService.connect(wsUrl);
 
     // Setup event listeners
     websocketService.on('room_joined', handleRoomJoined);

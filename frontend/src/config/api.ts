@@ -6,8 +6,9 @@
  */
 
 /**
- * Get the base URL for API requests
- * Uses the same host as the frontend, just changes the path to /api
+ * Get the base URL for API requests.
+ * In development, this will be a relative path that the Vite proxy will handle.
+ * In production, it will be an absolute path on the same host.
  */
 export function getApiUrl(): string {
   // Check for explicit environment variable first
@@ -15,18 +16,14 @@ export function getApiUrl(): string {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Auto-detect based on current location
-  const { protocol, hostname, port } = window.location;
-
-  // In development, the backend runs on port 3000
-  // In production with nginx, it's on the same host with /api path
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Local development
-    return `${protocol}//localhost:3000/api`;
-  } else {
-    // Production or remote access - use same host with /api path
-    return `${protocol}//${hostname}${port ? `:${port}` : ''}/api`;
+  // In development, the Vite proxy is active.
+  if (import.meta.env.DEV) {
+    return '/api'; // Use the proxy
   }
+
+  // In production, the API is on the same host.
+  const { protocol, hostname, port } = window.location;
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}/api`;
 }
 
 /**

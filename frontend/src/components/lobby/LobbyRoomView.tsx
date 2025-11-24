@@ -7,7 +7,6 @@
 import { useTranslation } from 'react-i18next';
 import { PlayerList, type Player } from '../PlayerList';
 import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
-import { ScenarioSelectionPanel } from '../ScenarioSelectionPanel';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
 import styles from './LobbyRoomView.module.css';
 
@@ -18,12 +17,10 @@ interface LobbyRoomViewProps {
   isHost: boolean;
   selectedCharacter: CharacterClass | undefined;
   disabledClasses: CharacterClass[];
-  selectedScenario: string;
   canStartGame: boolean;
   allPlayersReady: boolean;
   error: string | null;
   onSelectCharacter: (characterClass: CharacterClass) => void;
-  onSelectScenario: (scenarioId: string) => void;
   onStartGame: () => void;
 }
 
@@ -34,12 +31,10 @@ export function LobbyRoomView({
   isHost,
   selectedCharacter,
   disabledClasses,
-  selectedScenario,
   canStartGame,
   allPlayersReady,
   error,
   onSelectCharacter,
-  onSelectScenario,
   onStartGame,
 }: LobbyRoomViewProps) {
   const { t } = useTranslation('lobby');
@@ -98,23 +93,16 @@ export function LobbyRoomView({
         </div>
 
         <div className={styles.roomSection}>
-          <CharacterSelect
-            selectedClass={selectedCharacter}
-            disabledClasses={disabledClasses}
-            onSelect={onSelectCharacter}
-          />
+          {!isHost && (
+            <CharacterSelect
+              selectedClass={selectedCharacter}
+              disabledClasses={disabledClasses}
+              onSelect={onSelectCharacter}
+            />
+          )}
         </div>
       </div>
 
-      {/* Scenario Selection (US5 - Host Only) */}
-      {isHost && (
-        <div className={styles.scenarioSection}>
-          <ScenarioSelectionPanel
-            selectedScenarioId={selectedScenario}
-            onSelectScenario={onSelectScenario}
-          />
-        </div>
-      )}
     </div>
   );
 }

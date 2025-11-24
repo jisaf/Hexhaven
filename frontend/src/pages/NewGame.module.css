@@ -1,0 +1,97 @@
+.page {
+  padding: 1rem;
+}
+
+.layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Desktop layout */
+@media (min-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr 300px; /* Main content and a sidebar */
+  }
+
+  .mainContent {
+    /* This will be the container for the two panels */
+  }
+
+  .hiddenMobile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .sidebar {
+    order: 1;
+  }
+}
+
+/* Mobile layout */
+@media (max-width: 767px) {
+  .mainContent {
+    /* Tabs will handle the layout here */
+  }
+
+  .sidebar {
+    margin-top: 1.5rem;
+  }
+}
+
+.mainContent {
+  position: relative;
+}
+
+.startGameSection {
+  position: absolute;
+  top: 0;
+  right: 0;
+  text-align: right;
+}
+
+.startButton {
+  background-color: #c9a444;
+  color: #0d1a2e;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-family: 'MedievalSharp', serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.startButton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.startButton:hover:not(:disabled) {
+  background-color: #f0e6d2;
+}
+
+.startHint {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.hiddenMobile {
+  display: none;
+}
+
+.hiddenDesktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hiddenMobile {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  .hiddenDesktop {
+    display: block;
+  }
+}

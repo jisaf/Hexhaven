@@ -39,9 +39,6 @@ export function useWebSocket(url?: string) {
    * Connect to WebSocket on mount
    */
   useEffect(() => {
-    const wsUrl = url || getWebSocketUrl();
-    websocketService.connect(wsUrl);
-
     // Setup connection event listeners
     websocketService.on('ws_connected', handleConnect);
     websocketService.on('ws_disconnected', handleDisconnect);
@@ -60,7 +57,6 @@ export function useWebSocket(url?: string) {
       websocketService.off('ws_disconnected', handleDisconnect);
       websocketService.off('ws_reconnecting', handleReconnecting);
       websocketService.off('ws_reconnected', handleReconnected);
-      websocketService.disconnect();
     };
   }, [url, handleConnect, handleDisconnect, handleReconnecting, handleReconnected]);
 
@@ -68,10 +64,10 @@ export function useWebSocket(url?: string) {
    * Manually reconnect
    */
   const reconnect = useCallback(() => {
-    const wsUrl = url || getWebSocketUrl();
-    websocketService.disconnect();
-    websocketService.connect(wsUrl);
-  }, [url]);
+    // Reconnect is now handled by the service, just trigger it.
+    // The service knows the last URL it connected to.
+    websocketService.reconnect();
+  }, []);
 
   return {
     connectionStatus,

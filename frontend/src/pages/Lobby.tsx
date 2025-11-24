@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
-import { NicknameInput } from '../components/NicknameInput';
 import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
 import { DebugConsole } from '../components/DebugConsole';
@@ -37,7 +36,7 @@ import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './Lobby.module.css';
 
-type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
+type LobbyMode = 'initial' | 'creating' | 'joining' | 'in-room';
 
 interface GameRoom {
   roomCode: string;
@@ -63,10 +62,9 @@ export function Lobby() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
-  const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
 
   // Use custom hooks
-  const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
+  const { activeRooms, loadingRooms, myRooms, isLoading, error, joinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
 
   // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
@@ -143,28 +141,21 @@ export function Lobby() {
     onError: handleWebSocketError,
   });
 
+  const handleSelectCharacter = (characterClass: CharacterClass) => {
+    websocketService.selectCharacter(characterClass);
+  };
+
   // Room creation flow (T067)
   const handleCreateRoom = () => {
-    const storedNickname = getPlayerNickname();
-    if (storedNickname) {
-      proceedWithRoomCreation(storedNickname);
-    } else {
-      setMode('nickname-for-create');
+    navigate('/new-game');
+  };
+
+  const handleStartGame = () => {
+    if (isCurrentPlayerHost) {
+      websocketService.emit('start_game', {});
     }
   };
 
-  const handleNicknameSubmit = (submittedNickname: string) => {
-    proceedWithRoomCreation(submittedNickname);
-  };
-
-  const proceedWithRoomCreation = async (playerNickname: string) => {
-    try {
-      await createRoom(playerNickname);
-      setMode('creating');
-    } catch (err) {
-      console.error('Room creation error:', err);
-    }
-  };
 
   // Room join flow (T068)
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
@@ -186,31 +177,6 @@ export function Lobby() {
     }
   };
 
-  // Character selection (T069)
-  const handleSelectCharacter = (characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-    websocketService.selectCharacter(characterClass);
-  };
-
-  // Scenario selection (US5 - T179)
-  const handleSelectScenario = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
-    websocketService.selectScenario(scenarioId);
-  };
-
-  // Game start (T070 - host only)
-  const handleStartGame = () => {
-    if (!isCurrentPlayerHost) {
-      return;
-    }
-
-    if (players.length < 1) {
-      setError(t('needAtLeastOnePlayer', { ns: 'lobby' }));
-      return;
-    }
-
-    websocketService.startGame(selectedScenario);
-  };
 
   // Get disabled character classes using utility
   const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
@@ -254,36 +220,6 @@ export function Lobby() {
           />
         )}
 
-        {mode === 'nickname-for-create' && (
-          <div className={styles.nicknameMode}>
-            <button
-              className={styles.backButton}
-              onClick={() => {
-                setMode('initial');
-                setError(null);
-              }}
-            >
-              ← {t('back')}
-            </button>
-
-            <div className={styles.nicknameContent}>
-              <h2>{t('enterNicknameTitle', { ns: 'lobby' })}</h2>
-              <p className={styles.nicknameInstruction}>
-                {t('nicknameInstruction', { ns: 'lobby' })}
-              </p>
-
-              <NicknameInput
-                onSubmit={handleNicknameSubmit}
-                onCancel={() => setMode('initial')}
-                isLoading={isLoading}
-                error={error || undefined}
-                initialValue={getPlayerNickname() || ''}
-                showCancel={true}
-              />
-            </div>
-          </div>
-        )}
-
         {mode === 'joining' && !room && (
           <div className={styles.joinMode}>
             <button
@@ -320,12 +256,10 @@ export function Lobby() {
             isHost={isCurrentPlayerHost}
             selectedCharacter={selectedCharacter}
             disabledClasses={disabledClasses}
-            selectedScenario={selectedScenario}
             canStartGame={canStartGame}
             allPlayersReady={playersReady}
             error={error}
             onSelectCharacter={handleSelectCharacter}
-            onSelectScenario={handleSelectScenario}
             onStartGame={handleStartGame}
           />
         )}

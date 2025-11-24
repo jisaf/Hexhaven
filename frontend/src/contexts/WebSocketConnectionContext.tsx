@@ -17,6 +17,7 @@ interface PlayerConnectionEvent {
 
 interface WebSocketConnectionContextType {
   // Connection status
+  isConnected: boolean;
   connectionStatus: ConnectionStatus;
   isReconnecting: boolean;
   reconnectAttempts: number;
@@ -121,6 +122,9 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
     websocketService.on('player_disconnected', handlePlayerDisconnected);
     websocketService.on('player_reconnected', handlePlayerReconnected);
 
+    // Synchronize initial state
+    setConnectionStatus(websocketService.getConnectionStatus());
+
     // Cleanup
     return () => {
       websocketService.off('ws_connected', handleConnected);
@@ -142,6 +146,7 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
   }, []);
 
   const value: WebSocketConnectionContextType = {
+    isConnected: connectionStatus === 'connected',
     connectionStatus,
     isReconnecting: connectionStatus === 'reconnecting',
     reconnectAttempts,
