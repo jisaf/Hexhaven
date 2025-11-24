@@ -57,6 +57,7 @@ export function GameBoard() {
 
   // State
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  const [selectedHex, setSelectedHex] = useState<Axial | null>(null);
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
@@ -81,17 +82,35 @@ export function GameBoard() {
   // Use custom hooks
   useRoomSession();
 
-  // Memoize callbacks to prevent infinite re-renders
+  const { hexGridReady, initializeBoard, moveCharacter, deselectAll, showSelectedHex, clearSelectedHex } = useHexGrid(containerRef, {
+    onHexClick: (hex) => handleHexClick(hex),
+    onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
+    onMonsterSelect: (monsterId) => handleMonsterSelectClick(monsterId),
+  });
+
   const handleHexClick = useCallback((hex: Axial) => {
+    addLog(`Hex clicked: q=${hex.q}, r=${hex.r}`);
     if (!selectedCharacterId || !isMyTurn) return;
-    websocketService.moveCharacter(hex);
-  }, [selectedCharacterId, isMyTurn]);
+
+    if (selectedHex && selectedHex.q === hex.q && selectedHex.r === hex.r) {
+      addLog('Hex re-clicked. Confirming move.');
+      websocketService.moveCharacter(hex);
+      setSelectedHex(null);
+      clearSelectedHex();
+    } else {
+      addLog('Hex selected as destination.');
+      setSelectedHex(hex);
+      showSelectedHex(hex);
+    }
+  }, [selectedCharacterId, isMyTurn, addLog, selectedHex, showSelectedHex, clearSelectedHex]);
 
   const handleCharacterSelectClick = useCallback((characterId: string) => {
     if (isMyTurn) {
       setSelectedCharacterId(characterId);
+      setSelectedHex(null);
+      clearSelectedHex();
     }
-  }, [isMyTurn]);
+  }, [isMyTurn, clearSelectedHex]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
     if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
@@ -101,12 +120,6 @@ export function GameBoard() {
     }
   }, [attackMode, isMyTurn, attackableTargets]);
 
-  // HexGrid hook
-  const { hexGridReady, initializeBoard, moveCharacter, deselectAll } = useHexGrid(containerRef, {
-    onHexClick: handleHexClick,
-    onCharacterSelect: handleCharacterSelectClick,
-    onMonsterSelect: handleMonsterSelectClick,
-  });
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
@@ -143,12 +156,14 @@ export function GameBoard() {
   }, []);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
-    moveCharacter(data.characterId, data.toHex);
+    moveCharacter(data.characterId, data.toHex, data.movementPath);
     const charName = data.characterId === myCharacterId ? 'You' : 'Opponent';
     addLog(`${charName} moved.`);
     deselectAll();
     setSelectedCharacterId(null);
-  }, [moveCharacter, deselectAll, addLog, myCharacterId]);
+    setSelectedHex(null);
+    clearSelectedHex();
+  }, [moveCharacter, deselectAll, addLog, myCharacterId, clearSelectedHex]);
 
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
