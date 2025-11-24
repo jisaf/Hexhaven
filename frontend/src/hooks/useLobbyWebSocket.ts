@@ -15,8 +15,6 @@ import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
 import type { RoomJoinedPayload, GameStartedPayload } from '../../../shared/types/events';
 
-import type { CharacterClass } from '../components/CharacterSelect';
-
 interface LobbyWebSocketHandlers {
   onRoomJoined: (data: RoomJoinedData) => void;
   onPlayerJoined: (player: Player) => void;

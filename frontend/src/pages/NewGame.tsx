@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { RoomJoinedPayload } from '../../../shared/types/events';
 import { CharacterSelect } from '../components/CharacterSelect';
 import { PlayerList } from '../components/PlayerList';
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
@@ -25,6 +26,13 @@ export function NewGame() {
 
   useEffect(() => {
     const playerNickname = getPlayerNickname();
+    if (!playerNickname) {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const playerNickname = getPlayerNickname();
     const playerUUID = getPlayerUUID();
     if (playerNickname && playerUUID) {
       setPlayers([
@@ -33,13 +41,14 @@ export function NewGame() {
           nickname: playerNickname,
           isHost: true,
           isReady: false,
+          connectionStatus: 'connected',
         },
       ]);
     }
   }, [setPlayers]);
 
   useEffect(() => {
-    const handleRoomJoined = (data: { roomCode: string }) => {
+    const handleRoomJoined = (data: RoomJoinedPayload) => {
       roomSessionManager.onRoomJoined(data);
       navigate(`/game/${data.roomCode}`);
     };
@@ -54,7 +63,7 @@ export function NewGame() {
   const handleStartGame = () => {
     const playerNickname = getPlayerNickname();
     if (selectedScenario && selectedCharacter && playerNickname) {
-      websocketService.createRoom({
+      websocketService.emit('create_room', {
         playerNickname,
         scenarioId: selectedScenario,
         characterClass: selectedCharacter,
