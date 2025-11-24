@@ -122,6 +122,9 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
     websocketService.on('player_disconnected', handlePlayerDisconnected);
     websocketService.on('player_reconnected', handlePlayerReconnected);
 
+    // Synchronize initial state
+    setConnectionStatus(websocketService.getConnectionStatus());
+
     // Cleanup
     return () => {
       websocketService.off('ws_connected', handleConnected);
