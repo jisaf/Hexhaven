@@ -54,8 +54,8 @@ export function NewGame() {
       navigate('/'); // Navigate to lobby to wait for players
     };
 
-    const handleError = (message: string) => {
-      setError(message);
+    const handleError = (data: { message: string }) => {
+      setError(data.message);
     };
 
     websocketService.on('room_joined', handleRoomJoined);
@@ -84,6 +84,7 @@ export function NewGame() {
   // Switch to character tab when scenario is selected for the first time
   useEffect(() => {
     if (selectedScenario && !selectedCharacter) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(1);
     }
   }, [selectedScenario, selectedCharacter]);

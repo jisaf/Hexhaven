@@ -33,7 +33,7 @@ export const NewGameProvider: React.FC<{ children: React.ReactNode }> = ({ child
         )
       );
     },
-    [players]
+    []
   );
 
   const value = {
