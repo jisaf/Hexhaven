@@ -246,6 +246,71 @@ export class GameGateway
   }
 
   /**
+   * Create a new game room
+   */
+  @SubscribeMessage('create_room')
+  async handleCreateRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      playerNickname: string;
+      playerUUID: string;
+      scenarioId: string;
+      characterClass: string;
+    },
+  ): Promise<void> {
+    try {
+      this.logger.log(`Create room request: ${JSON.stringify(payload)}`);
+      const { playerNickname, playerUUID, scenarioId, characterClass } =
+        payload;
+
+      // Create the host player instance
+      const hostPlayer = Player.create(playerUUID, playerNickname);
+
+      // Create a new room with the host player
+      const room = roomService.createRoom(hostPlayer);
+      const roomCode = room.roomCode;
+
+      this.logger.log(`Room ${roomCode} created for player ${playerNickname}`);
+
+      // Select character for the host
+      hostPlayer.selectCharacter(characterClass as CharacterClass);
+
+      // Associate socket with player
+      this.socketToPlayer.set(client.id, playerUUID);
+      this.playerToSocket.set(playerUUID, client.id);
+
+      // Join Socket.io room
+      await client.join(roomCode);
+
+      // Send success response back to the creator
+      const roomJoinedPayload: RoomJoinedPayload = {
+        roomId: room.id,
+        roomCode: room.roomCode,
+        roomStatus: room.status,
+        players: room.players.map((p) => ({
+          id: p.uuid,
+          nickname: p.nickname,
+          isHost: p.isHost,
+          characterClass: p.characterClass || undefined,
+        })),
+        scenarioId: scenarioId,
+      };
+
+      client.emit('room_joined', roomJoinedPayload);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Create room error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'CREATE_ROOM_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
    * Join a game room
    */
   @SubscribeMessage('join_room')

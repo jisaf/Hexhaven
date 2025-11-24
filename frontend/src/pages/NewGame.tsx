@@ -52,11 +52,13 @@ export function NewGame() {
 
   useEffect(() => {
     const handleRoomJoined = (data: RoomJoinedPayload) => {
+      console.log('[NewGame] Received room_joined event:', data);
       roomSessionManager.onRoomJoined(data);
       navigate('/'); // Navigate to lobby to wait for players
     };
 
     const handleError = (data: { message: string }) => {
+      console.error('[NewGame] Received error event:', data);
       setError(data.message);
     };
 
@@ -72,11 +74,16 @@ export function NewGame() {
   const handleStartGame = () => {
     const playerNickname = getPlayerNickname();
     if (selectedScenario && selectedCharacter && playerNickname) {
-      websocketService.emit('create_room', {
-        playerNickname,
+      const playerUUID = getPlayerUUID()!;
+
+      const payload = {
+        playerUUID,
+        playerNickname: playerNickname,
         scenarioId: selectedScenario,
         characterClass: selectedCharacter,
-      });
+      };
+      console.log('[NewGame] Emitting create_room event with payload:', payload);
+      websocketService.emit('create_room', payload);
     }
   };
 
