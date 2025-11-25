@@ -1,0 +1,15 @@
+{
+  "monsterTypes": [
+    { "type": "Bandit Guard", "isElite": false },
+    { "type": "Bandit Archer", "isElite": false },
+    { "type": "Living Bones", "isElite": false },
+    { "type": "Living Bones", "isElite": true },
+    { "type": "Inox Guard", "isElite": false },
+    { "type": "Inox Shaman", "isElite": true },
+    { "type": "Vermling Scout", "isElite": false },
+    { "type": "Vermling Shaman", "isElite": false },
+    { "type": "Flame Demon", "isElite": false },
+    { "type": "Frost Demon", "isElite": false },
+    { "type": "Earth Demon", "isElite": true }
+  ]
+}

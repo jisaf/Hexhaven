@@ -30,12 +30,20 @@ interface MonsterStats {
 @Injectable()
 export class ScenarioService {
   private scenarios: Scenario[] | null = null;
+  private scenariosFilePath: string | null = null;
 
   /**
    * Load all scenarios from JSON file (lazy load)
    */
-  private loadScenariosFromFile(): Scenario[] {
+  private async loadScenariosFromFile(): Promise<Scenario[]> {
     if (this.scenarios) {
+      return this.scenarios;
+    }
+
+    if(this.scenariosFilePath) {
+      const fileContent = await fs.promises.readFile(this.scenariosFilePath, 'utf-8');
+      const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
+      this.scenarios = data.scenarios;
       return this.scenarios;
     }
 
@@ -53,12 +61,11 @@ export class ScenarioService {
       ];
 
       let fileContent: string | null = null;
-      let successfulPath: string | null = null;
 
       for (const scenariosPath of possiblePaths) {
         try {
-          fileContent = fs.readFileSync(scenariosPath, 'utf-8');
-          successfulPath = scenariosPath;
+          fileContent = await fs.promises.readFile(scenariosPath, 'utf-8');
+          this.scenariosFilePath = scenariosPath;
           break;
         } catch {
           // Try next path
@@ -72,7 +79,7 @@ export class ScenarioService {
 
       const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
       this.scenarios = data.scenarios;
-      console.log(`Successfully loaded scenarios from: ${successfulPath}`);
+      console.log(`Successfully loaded scenarios from: ${this.scenariosFilePath}`);
       return this.scenarios;
     } catch (error) {
       console.error('Failed to load scenarios.json:', error);
@@ -83,9 +90,8 @@ export class ScenarioService {
   /**
    * Load scenario by ID
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   async loadScenario(scenarioId: string): Promise<Scenario | null> {
-    const scenarios = this.loadScenariosFromFile();
+    const scenarios = await this.loadScenariosFromFile();
     const scenario = scenarios.find((s) => s.id === scenarioId);
     return scenario || null;
   }
@@ -363,15 +369,45 @@ export class ScenarioService {
   /**
    * Get available scenarios list
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   async getAvailableScenarios(): Promise<
     Array<{ id: string; name: string; difficulty: number }>
   > {
-    const scenarios = this.loadScenariosFromFile();
+    const scenarios = await this.loadScenariosFromFile();
     return scenarios.map((s) => ({
       id: s.id,
       name: s.name,
       difficulty: s.difficulty,
     }));
+  }
+
+  async saveScenario(scenarioData: Omit<Scenario, 'id'>): Promise<Scenario> {
+    const scenarios = await this.loadScenariosFromFile();
+    if (!this.scenariosFilePath) {
+      throw new Error('Scenario file path not found, cannot save.');
+    }
+
+    const maxId = scenarios.reduce((max, s) => {
+      const idNum = parseInt(s.id.replace('scenario-', ''));
+      return idNum > max ? idNum : max;
+    }, 0);
+    const newId = `scenario-${maxId + 1}`;
+    const newScenario: Scenario = {
+      id: newId,
+      ...scenarioData,
+    };
+
+    scenarios.push(newScenario);
+
+    const dataToWrite = JSON.stringify({ scenarios }, null, 2);
+
+    try {
+      await fs.promises.writeFile(this.scenariosFilePath, dataToWrite, 'utf-8');
+      // Invalidate cache
+      this.scenarios = null;
+      return newScenario;
+    } catch (error) {
+      console.error('Failed to save scenario:', error);
+      throw new Error('Could not save scenario.');
+    }
   }
 }
