@@ -201,38 +201,8 @@ export class HexGrid {
       }
     }
 
-    // Force a synchronous render to update transforms
-    this.app.renderer.render(this.app.stage);
-
-    // Get the bounds of all tiles
-    const bounds = this.tilesLayer.getBounds();
-    console.log('🗺️ Tile bounds:', {
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: bounds.height,
-      screenWidth: this.options.width,
-      screenHeight: this.options.height
-    });
-
-    if (bounds.width > 0 && bounds.height > 0) {
-      // Calculate center point of the map
-      const centerX = bounds.x + bounds.width / 2;
-      const centerY = bounds.y + bounds.height / 2;
-      console.log('🎯 Map center:', { centerX, centerY });
-
-      // Calculate optimal zoom to fit the map with comfortable margins
-      const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-      const zoom = this.getOptimalZoom(boundsRect);
-      console.log('🔍 Calculated zoom:', zoom);
-
-      // Center the viewport on the map center, then apply zoom
-      // Don't use clamp during initialization - it can interfere with centering
-      this.viewport.moveCenter(centerX, centerY);
-      this.viewport.setZoom(zoom, true);
-
-      console.log('✅ Viewport positioned - center:', this.viewport.center, 'scale:', this.viewport.scale);
-    }
+    // Center and zoom the map to fit the new layout
+    this.fitAndCenterMap();
   }
 
   /**
@@ -590,10 +560,42 @@ export class HexGrid {
    * Resize the canvas (US3 - T133)
    */
   public resize(width: number, height: number): void {
+    // Update renderer and viewport dimensions
     this.app.renderer.resize(width, height);
-
-    // Update viewport screen dimensions
     this.viewport.resize(width, height);
+
+    // Recalculate and apply the optimal zoom and center for the new size
+    this.fitAndCenterMap();
+  }
+
+  /**
+   * Encapsulated logic to fit and center the map within the viewport.
+   * This ensures the map is always framed correctly on initial load and resize.
+   */
+  private fitAndCenterMap(): void {
+    // If layers haven't been created or there are no tiles, exit.
+    if (!this.tilesLayer || this.tiles.size === 0) {
+      return;
+    }
+
+    // Force a synchronous render to ensure bounds are up-to-date before measuring.
+    this.app.renderer.render(this.app.stage);
+
+    // Get the collective bounds of all tiles.
+    const bounds = this.tilesLayer.getBounds();
+
+    if (bounds.width > 0 && bounds.height > 0) {
+      // Calculate the geometric center of the map.
+      const centerX = bounds.x + bounds.width / 2;
+      const centerY = bounds.y + bounds.height / 2;
+
+      // Determine the optimal zoom level to fit the map with a margin.
+      const zoom = this.getOptimalZoom(bounds);
+
+      // Apply the new center and zoom to the viewport.
+      this.viewport.moveCenter(centerX, centerY);
+      this.viewport.setZoom(zoom, true); // Animate the transition for a smoother user experience.
+    }
   }
 
   /**

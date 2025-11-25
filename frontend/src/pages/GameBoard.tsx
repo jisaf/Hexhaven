@@ -217,31 +217,6 @@ export function GameBoard() {
     }
   }, [playerHand]);
 
-  // T200: Fullscreen management
-  useEffect(() => {
-    const enterFullscreen = () => {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(err => {
-          console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        });
-      }
-    };
-
-    const exitFullscreen = () => {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    };
-
-    // Enter fullscreen only in landscape
-    if (window.matchMedia('(orientation: landscape)').matches) {
-      enterFullscreen();
-    }
-
-    // Cleanup on component unmount
-    return () => exitFullscreen();
-  }, []);
-
   // Render game data when HexGrid is ready
   useEffect(() => {
     if (hexGridReady && gameData) {
@@ -301,13 +276,17 @@ export function GameBoard() {
   return (
     <div className={styles.gameBoardPage}>
       {/* HUD */}
-      <GameHUD
-        logs={logs}
-        connectionStatus={connectionStatus}
-        onBackToLobby={handleBackToLobby}
-      />
+      <div className={styles.hudWrapper}>
+        <GameHUD
+          logs={logs}
+          connectionStatus={connectionStatus}
+          onBackToLobby={handleBackToLobby}
+        />
+      </div>
 
       <div ref={containerRef} className={styles.gameContainer} />
+
+      <div className={styles.bottomPlaceholder} />
 
       {/* T111: Card Selection Panel */}
       {showCardSelection && (
@@ -327,13 +306,6 @@ export function GameBoard() {
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
-
-      {/* T200: Orientation warning */}
-      <div className={styles.orientationWarning}>
-        <div className={styles.orientationWarningContent}>
-          <p>Please rotate your device to landscape mode to play.</p>
-        </div>
-      </div>
     </div>
   );
 }
