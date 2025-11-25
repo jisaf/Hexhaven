@@ -157,6 +157,7 @@ export function GameBoard() {
       }
 
       setGameData(data);
+      setCurrentRound(1); // Start with Round 1
 
       // Acknowledge the event was processed successfully on the client.
       if (ackCallback) {
@@ -294,22 +295,21 @@ export function GameBoard() {
       <div ref={containerRef} className={styles.gameContainer} />
 
       <div className={styles.rightPanel}>
-        {turnOrder.length > 0 && (
+        {currentRound > 0 && (
           <TurnOrder
             turnOrder={turnOrder}
             currentTurnEntityId={currentTurnEntityId}
             currentRound={currentRound}
           />
         )}
-      </div>
-      <div className={styles.hudWrapper}>
+        <div className={styles.hudWrapper}>
           <GameHUD
             logs={logs}
-            connectionStatus={connectionStatus}
+            connectionStatus={connection,
             onBackToLobby={handleBackToLobby}
           />
         </div>
-
+      </div>
 
       <div className={styles.bottomPlaceholder} />
 
