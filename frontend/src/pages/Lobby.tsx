@@ -35,16 +35,20 @@ import { useRoomSession } from '../hooks/useRoomSession';
 import {
   getPlayerUUID,
   getPlayerNickname,
-  savePlayerNickname,
-  saveLastRoomCode,
-  getOrCreatePlayerUUID,
 } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
-import { getApiUrl } from '../config/api';
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
+
+interface RoomJoinedData {
+  roomCode: string;
+  roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
+  players: Player[];
+  playerId?: string;
+  isHost?: boolean;
+}
 
 export function Lobby() {
   const navigate = useNavigate();
@@ -114,8 +118,7 @@ export function Lobby() {
   }, [sessionState.status, sessionState.roomCode, navigate]);
 
   // WebSocket event handlers
-  const handleRoomJoined = useCallback((data: any) => {
-    roomSessionManager.onRoomJoined(data);
+  const handleRoomJoined = useCallback((data: RoomJoinedData) => {
     const uuid = getPlayerUUID();
     if (uuid) {
       setCurrentPlayerId(uuid);
@@ -125,17 +128,10 @@ export function Lobby() {
     }
   }, []);
 
-  const handlePlayerJoined = useCallback((player: Player) => {
-    roomSessionManager.onPlayerJoined(player);
-  }, []);
-
-  const handlePlayerLeft = useCallback((playerId: string) => {
-    roomSessionManager.onPlayerLeft(playerId);
-  }, []);
-
+  const handlePlayerJoined = useCallback(() => { /* No longer needed */ }, []);
+  const handlePlayerLeft = useCallback(() => { /* No longer needed */ }, []);
   const handleCharacterSelected = useCallback(
     (playerId: string, characterClass: CharacterClass) => {
-      roomSessionManager.onCharacterSelected(playerId, characterClass);
       if (playerId === currentPlayerId) {
         setSelectedCharacter(characterClass);
       }

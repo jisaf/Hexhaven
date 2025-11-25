@@ -65,7 +65,7 @@ export interface RoomSessionState {
 /**
  * Room joined event data (from backend)
  */
-interface RoomJoinedPayload {
+export interface RoomJoinedPayload {
   roomId: string;
   roomCode: string;
   roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
@@ -248,7 +248,11 @@ class RoomSessionManager {
 
     this.state.roomCode = data.roomCode;
     this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
-    this.state.players = data.players;
+    this.state.players = data.players.map(p => ({
+      ...p,
+      connectionStatus: 'connected',
+      isReady: false,
+    }));
 
     const playerUUID = getPlayerUUID();
     const currentPlayer = data.players.find((p) => p.id === playerUUID);

@@ -68,8 +68,8 @@ export function GameBoard() {
   }, []);
 
   // Card selection state (T111, T181)
-  const [showCardSelection, setShowCardSelection] = useState(false);
   const [playerHand, setPlayerHand] = useState<AbilityCard[]>([]);
+  const showCardSelection = playerHand.length > 0;
   const [selectedTopAction, setSelectedTopAction] = useState<AbilityCard | null>(null);
   const [selectedBottomAction, setSelectedBottomAction] = useState<AbilityCard | null>(null);
 
@@ -186,21 +186,17 @@ export function GameBoard() {
       const playerUUID = websocketService.getPlayerUUID();
       const myCharacter = gameData.characters.find(char => char.playerId === playerUUID);
       if (myCharacter) {
-        setMyCharacterId(myCharacter.id);
-        const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
-        if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-          setPlayerHand(characterWithDeck.abilityDeck);
-        }
+        queueMicrotask(() => {
+          setMyCharacterId(myCharacter.id);
+          const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+          if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+            setPlayerHand(characterWithDeck.abilityDeck);
+          }
+        });
       }
     }
   }, [gameData]);
 
-  // T111: Effect to show card selection only after hand is populated
-  useEffect(() => {
-    if (playerHand.length > 0) {
-      setShowCardSelection(true);
-    }
-  }, [playerHand]);
 
   // T200: Fullscreen management
   useEffect(() => {
@@ -265,9 +261,11 @@ export function GameBoard() {
     if (selectedTopAction && selectedBottomAction) {
       websocketService.selectCards(selectedTopAction.id, selectedBottomAction.id);
       addLog('Cards selected.');
-      setShowCardSelection(false);
-      setSelectedTopAction(null);
-      setSelectedBottomAction(null);
+      queueMicrotask(() => {
+        setPlayerHand([]);
+        setSelectedTopAction(null);
+        setSelectedBottomAction(null);
+      });
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 
