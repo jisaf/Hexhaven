@@ -244,3 +244,13 @@ export interface Progression {
   unlockedPerks: string[];
   completedScenarios: string[];
 }
+
+export interface TurnEntity {
+  entityId: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
+  name: string;
+  characterClass?: CharacterClass;
+  isDead?: boolean;
+  isExhausted?: boolean;
+}

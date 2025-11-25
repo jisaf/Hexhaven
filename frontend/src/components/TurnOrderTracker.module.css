@@ -1,0 +1,43 @@
+.tracker {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 200px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 5px;
+  padding: 10px;
+  color: #fff;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.turnList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.turnItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s;
+}
+
+.turnItem.active {
+  background-color: #c9a444;
+  color: #0d1a2e;
+}
+
+.initiative {
+  font-weight: bold;
+}
+
+.name {
+  font-style: italic;
+}

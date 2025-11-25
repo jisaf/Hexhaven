@@ -1332,10 +1332,10 @@ export class GameGateway
    * End current entity's turn (US2 - T097)
    */
   @SubscribeMessage('end_turn')
-  handleEndTurn(
+  async handleEndTurn(
     @ConnectedSocket() client: Socket,
     @MessageBody() _payload: EndTurnPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -1433,11 +1433,7 @@ export class GameGateway
 
         // If next entity is a monster, activate monster AI
         if (nextEntity.entityType === 'monster') {
-          // Simplified: just advance turn automatically for now
-          // In full implementation, would call activateMonster()
-          this.logger.log(
-            `Monster turn: ${nextEntity.entityId} (AI not fully implemented)`,
-          );
+          await this.activateMonster(nextEntity.entityId, room.roomCode);
         }
 
         // Check scenario completion after turn advancement

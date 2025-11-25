@@ -53,6 +53,7 @@ interface RoomJoinedEventData {
 }
 
 export function Lobby() {
+  console.log('Lobby component mounted');
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
 

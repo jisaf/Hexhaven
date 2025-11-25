@@ -26,15 +26,23 @@ export class AbilityCardService {
     }
 
     try {
-      // Construct a robust path to the data file.
-      // This is more reliable than trying multiple relative paths.
-      const dataFilePath = path.resolve(
-        process.cwd(),
-        'backend',
-        'src',
-        'data',
-        'ability-cards.json'
-      );
+      // Diagnostic logging to debug file path issues
+      console.log(`[AbilityCardService] process.cwd(): ${process.cwd()}`);
+      console.log(`[AbilityCardService] __dirname: ${__dirname}`);
+
+      const path1 = path.join(process.cwd(), 'dist', 'backend', 'src', 'data', 'ability-cards.json');
+      const path2 = path.join(__dirname, '..', 'data', 'ability-cards.json');
+      const path3 = path.resolve('backend', 'src', 'data', 'ability-cards.json');
+
+
+      console.log(`[AbilityCardService] Path 1 (from cwd + dist): ${path1}`);
+      console.log(`[AbilityCardService] Path 1 exists: ${fs.existsSync(path1)}`);
+      console.log(`[AbilityCardService] Path 2 (from __dirname): ${path2}`);
+      console.log(`[AbilityCardService] Path 2 exists: ${fs.existsSync(path2)}`);
+      console.log(`[AbilityCardService] Path 3 (resolve from backend/src): ${path3}`);
+      console.log(`[AbilityCardService] Path 3 exists: ${fs.existsSync(path3)}`);
+
+      const dataFilePath = path2; // Let's try __dirname path first
 
       if (!fs.existsSync(dataFilePath)) {
          throw new Error(`Ability cards data file not found at ${dataFilePath}`);
