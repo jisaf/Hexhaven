@@ -198,31 +198,6 @@ export function GameBoard() {
   }, [gameData]);
 
 
-  // T200: Fullscreen management
-  useEffect(() => {
-    const enterFullscreen = () => {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(err => {
-          console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-        });
-      }
-    };
-
-    const exitFullscreen = () => {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    };
-
-    // Enter fullscreen only in landscape
-    if (window.matchMedia('(orientation: landscape)').matches) {
-      enterFullscreen();
-    }
-
-    // Cleanup on component unmount
-    return () => exitFullscreen();
-  }, []);
-
   // Render game data when HexGrid is ready
   useEffect(() => {
     if (hexGridReady && gameData) {
