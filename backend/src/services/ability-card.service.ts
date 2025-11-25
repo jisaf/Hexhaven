@@ -26,42 +26,26 @@ export class AbilityCardService {
     }
 
     try {
-      // Try multiple possible paths for ability-cards.json
-      const possiblePaths = [
-        // Development path: backend/src/data/ability-cards.json
-        path.join(__dirname, '../data/ability-cards.json'),
-        // Production path in dist: backend/dist/data/ability-cards.json
-        path.join(__dirname, '../../../data/ability-cards.json'),
-        // Alternative production path
-        path.join(process.cwd(), 'backend/dist/data/ability-cards.json'),
-        // Root dist path (monorepo structure)
-        path.join(process.cwd(), 'dist/data/ability-cards.json'),
-      ];
+      // Construct a robust path to the data file.
+      // This is more reliable than trying multiple relative paths.
+      const dataFilePath = path.resolve(
+        process.cwd(),
+        'backend',
+        'src',
+        'data',
+        'ability-cards.json'
+      );
 
-      let fileContent: string | null = null;
-      let successfulPath: string | null = null;
-
-      for (const cardsPath of possiblePaths) {
-        try {
-          fileContent = fs.readFileSync(cardsPath, 'utf-8');
-          successfulPath = cardsPath;
-          break;
-        } catch {
-          // Try next path
-          continue;
-        }
+      if (!fs.existsSync(dataFilePath)) {
+         throw new Error(`Ability cards data file not found at ${dataFilePath}`);
       }
 
-      if (!fileContent) {
-        throw new Error(
-          'ability-cards.json not found in any expected location',
-        );
-      }
+      const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
 
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
       console.log(
-        `✅ Loaded ${this.abilityCards.length} ability cards from ${successfulPath}`,
+        `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
       );
       return this.abilityCards;
     } catch (error) {

@@ -270,11 +270,12 @@ export class HexGrid {
   /**
    * Move character to a new hex (with animation)
    */
-  public async moveCharacter(characterId: string, targetHex: Axial): Promise<void> {
+  public async moveCharacter(characterId: string, targetHex: Axial, movementPath?: Axial[]): Promise<void> {
     const sprite = this.characters.get(characterId);
 
     if (sprite) {
-      await sprite.animateMoveTo(targetHex);
+      const path = movementPath && movementPath.length > 0 ? movementPath : [targetHex];
+      await sprite.animateMoveTo(path);
     }
   }
 
@@ -486,6 +487,20 @@ export class HexGrid {
    */
   public clearHighlights(): void {
     this.movementHighlight.clear();
+  }
+
+  /**
+   * Highlight a single hex as the selected destination
+   */
+  public showSelectedHex(hex: Axial): void {
+    this.movementHighlight.showSelected(hex);
+  }
+
+  /**
+   * Clear the selected destination hex highlight
+   */
+  public clearSelectedHex(): void {
+    this.movementHighlight.clearSelected();
   }
 
   /**
