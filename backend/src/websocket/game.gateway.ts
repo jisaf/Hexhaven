@@ -695,14 +695,13 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = [];
-      for (const c of characters) {
+      const charactersWithDecks = characters.map((c: any) => {
         const charData = c.toJSON();
         // Get ability deck for this character class
-        const abilityDeck = await this.abilityCardService.getCardsByClass(
+        const abilityDeck = this.abilityCardService.getCardsByClass(
           charData.characterClass,
         );
-        charactersWithDecks.push({
+        return {
           id: charData.id,
           playerId: charData.playerId,
           classType: charData.characterClass,
@@ -712,8 +711,8 @@ export class GameGateway
           conditions: charData.conditions,
           isExhausted: charData.exhausted,
           abilityDeck, // Include ability deck for card selection
-        });
-      }
+        };
+      });
 
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
@@ -888,10 +887,10 @@ export class GameGateway
    * Select two ability cards for the round (US2 - T097)
    */
   @SubscribeMessage('select_cards')
-  async handleSelectCards(
+  handleSelectCards(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCardsPayload,
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -920,7 +919,7 @@ export class GameGateway
       }
 
       // Validate cards are in player's hand (belong to character class)
-      const validation = await this.abilityCardService.validateCardSelection(
+      const validation = this.abilityCardService.validateCardSelection(
         payload.topCardId,
         payload.bottomCardId,
         character.characterClass,

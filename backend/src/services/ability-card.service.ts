@@ -20,22 +20,27 @@ export class AbilityCardService {
   /**
    * Load all ability cards from JSON file (lazy load)
    */
-  private async loadAbilityCardsFromFile(): Promise<AbilityCard[]> {
+  private loadAbilityCardsFromFile(): AbilityCard[] {
     if (this.abilityCards) {
       return this.abilityCards;
     }
 
     try {
-      // Resolve path relative to the current module file.
-      // This works in both development (`src`) and production (`dist`).
-      const dataFilePath = path.join(__dirname, '..', 'data', 'ability-cards.json');
-
+      // Construct a robust path to the data file.
+      const dataFilePath = path.join(
+        process.cwd(),
+        'dist',
+        'backend',
+        'src',
+        'data',
+        'ability-cards.json'
+      );
 
       if (!fs.existsSync(dataFilePath)) {
          throw new Error(`Ability cards data file not found at ${dataFilePath}`);
       }
 
-      const fileContent = await fs.promises.readFile(dataFilePath, 'utf-8');
+      const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
 
       const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
       this.abilityCards = data.abilityCards;
@@ -45,7 +50,6 @@ export class AbilityCardService {
       return this.abilityCards;
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);
-      this.abilityCards = []; // Ensure we don't retry on subsequent calls
       return [];
     }
   }
@@ -53,27 +57,27 @@ export class AbilityCardService {
   /**
    * Get ability card by ID
    */
-  async getCardById(cardId: string): Promise<AbilityCard | null> {
-    const cards = await this.loadAbilityCardsFromFile();
+  getCardById(cardId: string): AbilityCard | null {
+    const cards = this.loadAbilityCardsFromFile();
     return cards.find((c) => c.id === cardId) || null;
   }
 
   /**
    * Get all ability cards for a character class
    */
-  async getCardsByClass(characterClass: CharacterClass): Promise<AbilityCard[]> {
-    const cards = await this.loadAbilityCardsFromFile();
+  getCardsByClass(characterClass: CharacterClass): AbilityCard[] {
+    const cards = this.loadAbilityCardsFromFile();
     return cards.filter((c) => c.characterClass === characterClass);
   }
 
   /**
    * Get cards by class and level (cards available at or below character level)
    */
-  async getCardsByClassAndLevel(
+  getCardsByClassAndLevel(
     characterClass: CharacterClass,
     level: number,
-  ): Promise<AbilityCard[]> {
-    const cards = await this.getCardsByClass(characterClass);
+  ): AbilityCard[] {
+    const cards = this.getCardsByClass(characterClass);
     return cards.filter(
       (c) => c.level === 1 || (typeof c.level === 'number' && c.level <= level),
     );
@@ -82,11 +86,11 @@ export class AbilityCardService {
   /**
    * Validate that a card belongs to a character class
    */
-  async validateCardForClass(
+  validateCardForClass(
     cardId: string,
     characterClass: CharacterClass,
-  ): Promise<boolean> {
-    const card = await this.getCardById(cardId);
+  ): boolean {
+    const card = this.getCardById(cardId);
     if (!card) {
       return false;
     }
@@ -96,26 +100,26 @@ export class AbilityCardService {
   /**
    * Validate that both cards are valid and belong to the character
    */
-  async validateCardSelection(
+  validateCardSelection(
     topCardId: string,
     bottomCardId: string,
     characterClass: CharacterClass,
-  ): Promise<{
+  ): {
     valid: boolean;
     errors: string[];
     topCard?: AbilityCard;
     bottomCard?: AbilityCard;
-  }> {
+  } {
     const errors: string[] = [];
 
     // Check top card exists
-    const topCard = await this.getCardById(topCardId);
+    const topCard = this.getCardById(topCardId);
     if (!topCard) {
       errors.push(`Top card not found: ${topCardId}`);
     }
 
     // Check bottom card exists
-    const bottomCard = await this.getCardById(bottomCardId);
+    const bottomCard = this.getCardById(bottomCardId);
     if (!bottomCard) {
       errors.push(`Bottom card not found: ${bottomCardId}`);
     }
@@ -147,8 +151,8 @@ export class AbilityCardService {
   /**
    * Get initiative value from a card
    */
-  async getCardInitiative(cardId: string): Promise<number | null> {
-    const card = await this.getCardById(cardId);
+  getCardInitiative(cardId: string): number | null {
+    const card = this.getCardById(cardId);
     return card ? card.initiative : null;
   }
 }
