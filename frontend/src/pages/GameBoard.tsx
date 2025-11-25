@@ -28,7 +28,8 @@ import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
-import type { GameStartedPayload } from '../../../shared/types/events';
+import type { GameStartedPayload, TurnEntity } from '../../../shared/types/events';
+import TurnOrder from '../components/TurnOrder';
 import styles from './GameBoard.module.css';
 
 export function GameBoard() {
@@ -62,6 +63,9 @@ export function GameBoard() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const [logs, setLogs] = useState<string[]>([]);
   const [gameData, setGameData] = useState<GameStartedPayload | null>(null);
+  const [turnOrder, setTurnOrder] = useState<TurnEntity[]>([]);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [currentTurnEntityId, setCurrentTurnEntityId] = useState<string | null>(null);
 
   // T200: Action Log
   const addLog = useCallback((message: string) => {
@@ -172,9 +176,16 @@ export function GameBoard() {
     addLog(`${charName} moved.`);
   }, [moveCharacter, addLog, myCharacterId]);
 
+  const handleRoundStarted = useCallback((data: { roundNumber: number; turnOrder: TurnEntity[] }) => {
+    setTurnOrder(data.turnOrder);
+    setCurrentRound(data.roundNumber);
+    addLog(`Round ${data.roundNumber} has started.`);
+  }, [addLog]);
+
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
     setIsMyTurn(myTurn);
+    setCurrentTurnEntityId(data.entityId);
 
     if (myTurn) {
       addLog('Your turn has started.');
@@ -202,10 +213,11 @@ export function GameBoard() {
   const gameWebSocketHandlers = useMemo(() => ({
     onGameStarted: handleGameStarted,
     onCharacterMoved: handleCharacterMoved,
+    onRoundStarted: handleRoundStarted,
     onTurnStarted: handleTurnStarted,
     onGameStateUpdate: handleGameStateUpdate,
     onConnectionStatusChange: handleConnectionStatusChange,
-  }), [handleGameStarted, handleCharacterMoved, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
+  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
@@ -281,16 +293,25 @@ export function GameBoard() {
     <div className={gameBoardClass}>
       <div ref={containerRef} className={styles.gameContainer} />
 
-      <div className={styles.bottomPlaceholder} />
-
-      {/* HUD */}
-      <div className={styles.hudWrapper}>
-        <GameHUD
-          logs={logs}
-          connectionStatus={connectionStatus}
-          onBackToLobby={handleBackToLobby}
-        />
+      <div className={styles.rightPanel}>
+        {turnOrder.length > 0 && (
+          <TurnOrder
+            turnOrder={turnOrder}
+            currentTurnEntityId={currentTurnEntityId}
+            currentRound={currentRound}
+          />
+        )}
       </div>
+      <div className={styles.hudWrapper}>
+          <GameHUD
+            logs={logs}
+            connectionStatus={connectionStatus}
+            onBackToLobby={handleBackToLobby}
+          />
+        </div>
+
+
+      <div className={styles.bottomPlaceholder} />
 
       {/* T111: Card Selection Panel */}
       {showCardSelection && (

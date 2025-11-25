@@ -1,0 +1,65 @@
+.turnOrderContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background-color: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-family: var(--font-family-body);
+}
+
+.roundCounter {
+  font-family: var(--font-family-headings);
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--color-primary);
+}
+
+.turnOrderList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.turnOrderItem {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: var(--color-background-tertiary);
+  transition: background-color 0.2s ease;
+}
+
+.turnOrderItem.activeTurn {
+  background-color: var(--color-primary);
+  color: var(--color-background-primary);
+}
+
+.portrait {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  border: 2px solid var(--color-border-light);
+}
+
+.portrait.character {
+  background-color: var(--color-accent-blue);
+}
+
+.portrait.monster {
+  background-color: var(--color-accent-red);
+}
+
+.name {
+  font-weight: normal;
+}
+
+.activeTurn .name {
+  font-weight: bold;
+}
