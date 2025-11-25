@@ -264,16 +264,22 @@ export function GameBoard() {
     navigate('/');
   };
 
-  return (
-    <div className={styles.gameBoardPage}>
-      {/* HUD */}
-      <GameHUD
-        logs={logs}
-        connectionStatus={connectionStatus}
-        onBackToLobby={handleBackToLobby}
-      />
+  const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
 
+  return (
+    <div className={gameBoardClass}>
       <div ref={containerRef} className={styles.gameContainer} />
+
+      <div className={styles.bottomPlaceholder} />
+
+      {/* HUD */}
+      <div className={styles.hudWrapper}>
+        <GameHUD
+          logs={logs}
+          connectionStatus={connectionStatus}
+          onBackToLobby={handleBackToLobby}
+        />
+      </div>
 
       {/* T111: Card Selection Panel */}
       {showCardSelection && (
@@ -293,13 +299,6 @@ export function GameBoard() {
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
-
-      {/* T200: Orientation warning */}
-      <div className={styles.orientationWarning}>
-        <div className={styles.orientationWarningContent}>
-          <p>Please rotate your device to landscape mode to play.</p>
-        </div>
-      </div>
     </div>
   );
 }
