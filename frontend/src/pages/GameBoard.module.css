@@ -119,7 +119,7 @@
   }
 
   .hudWrapper {
-    position: relative; /* Stays in the flex flow */
+    position: static; /* Stays in the flex flow */
     flex: 1; /* 25% */
     background-color: #1a2b42; /* Darker blue for info section */
     overflow-y: auto;
