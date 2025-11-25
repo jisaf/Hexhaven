@@ -163,3 +163,39 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+@media (orientation: portrait) {
+  .card-selection-panel {
+    height: 50vh; /* Cover bottom half of the screen */
+    min-height: 0;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .selection-instructions {
+    position: static;
+    max-width: 100%;
+    text-align: center;
+    padding: 4px;
+    border: none;
+    background: none;
+  }
+
+  .selection-instructions h3 {
+    font-size: 16px;
+  }
+
+  .selection-instructions p {
+    font-size: 12px;
+  }
+
+  .cards-container {
+    padding: 0;
+  }
+
+  .card-selection-panel.portrait .card-wrapper {
+    /* Make cards smaller in portrait */
+    --card-width: 120px;
+    --card-height: 170px;
+  }
+}

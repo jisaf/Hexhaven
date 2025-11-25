@@ -23,7 +23,10 @@ export function useHexGrid(
   const [hexGridReady, setHexGridReady] = useState(false);
   const ackCallbackRef = useRef<((ack: boolean) => void) | null>(null);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   // Initialize hex grid
   useEffect(() => {

@@ -260,3 +260,78 @@
     min-height: 400px;
   }
 }
+
+/* Compact card styles for portrait mode */
+.portrait .ability-card {
+  width: 120px;
+  height: 180px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.portrait .card-header {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+}
+
+.portrait .card-name {
+  font-size: 10px;
+}
+
+.portrait .card-initiative {
+  font-size: 10px;
+  padding: 2px 4px;
+}
+
+.portrait .card-section {
+  padding: 4px;
+  margin: 2px 0;
+}
+
+.portrait .section-label {
+  font-size: 8px;
+  margin-bottom: 4px;
+}
+
+.portrait .action-main {
+  gap: 4px;
+}
+
+.portrait .action-icon {
+  font-size: 16px;
+}
+
+.portrait .action-value {
+  font-size: 14px;
+}
+
+.portrait .action-range {
+  font-size: 10px;
+}
+
+.portrait .action-element {
+  font-size: 10px;
+  padding: 2px 4px;
+  gap: 4px;
+}
+
+.portrait .element-icon {
+  font-size: 12px;
+}
+
+.portrait .card-footer {
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.portrait .card-level {
+  font-size: 10px;
+}
+
+.portrait .selection-indicator {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  top: -8px;
+  right: -8px;
+}
