@@ -316,6 +316,14 @@ export class HexTile extends PIXI.Container {
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
     this.addChildAt(this.background, 0);
+
+    // Toggle visibility of all children except the background itself.
+    // This will hide the border and any feature/loot icons.
+    this.children.forEach(child => {
+      if (child !== this.background) {
+        child.visible = !enabled;
+      }
+    });
   }
 
   /**
