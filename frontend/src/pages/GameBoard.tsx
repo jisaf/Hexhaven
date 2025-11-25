@@ -61,7 +61,6 @@ export function GameBoard() {
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const [logs, setLogs] = useState<string[]>([]);
-  const [gameData, setGameData] = useState<GameStartedPayload | null>(null);
 
   // T200: Action Log
   const addLog = useCallback((message: string) => {
@@ -79,7 +78,8 @@ export function GameBoard() {
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Use custom hooks
-  useRoomSession();
+  const sessionState = useRoomSession();
+  const gameData = sessionState.gameState;
 
   const { hexGridReady, initializeBoard, moveCharacter, deselectAll, showSelectedHex, clearSelectedHex } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
@@ -133,37 +133,8 @@ export function GameBoard() {
 
 
   // Event handlers for WebSocket
-  const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
-    console.log('handleGameStarted called with data:', data);
-
-    try {
-      // Find my character
-      const playerUUID = websocketService.getPlayerUUID();
-      const myCharacter = data.characters.find(char => char.playerId === playerUUID);
-
-      if (myCharacter) {
-        setMyCharacterId(myCharacter.id);
-
-        // Load ability deck (if available in extended character data)
-        const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
-        if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-          setPlayerHand(characterWithDeck.abilityDeck);
-          // Do not set showCardSelection here directly to avoid race condition
-        }
-      }
-
-      setGameData(data);
-
-      // Acknowledge the event was processed successfully on the client.
-      if (ackCallback) {
-        ackCallback(true);
-      }
-    } catch (error) {
-      console.error('❌ Error processing game_started event:', error);
-      if (ackCallback) {
-        ackCallback(false);
-      }
-    }
+  const handleGameStarted = useCallback((data: GameStartedPayload) => {
+    roomSessionManager.onGameStarted(data);
   }, []);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
@@ -209,6 +180,20 @@ export function GameBoard() {
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
+
+  useEffect(() => {
+    if (gameData) {
+      const playerUUID = websocketService.getPlayerUUID();
+      const myCharacter = gameData.characters.find(char => char.playerId === playerUUID);
+      if (myCharacter) {
+        setMyCharacterId(myCharacter.id);
+        const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+        if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+          setPlayerHand(characterWithDeck.abilityDeck);
+        }
+      }
+    }
+  }, [gameData]);
 
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {

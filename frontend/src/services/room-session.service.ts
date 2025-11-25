@@ -21,7 +21,15 @@
  */
 
 import { websocketService } from './websocket.service';
-import { getLastRoomCode, getPlayerNickname, getPlayerUUID } from '../utils/storage';
+import {
+  getLastRoomCode,
+  getPlayerNickname,
+  getPlayerUUID,
+  getOrCreatePlayerUUID,
+  saveLastRoomCode,
+  savePlayerNickname,
+} from '../utils/storage';
+import { getApiUrl } from '../config/api';
 import type { GameStartedPayload } from '../../../shared/types/events';
 
 /**
@@ -43,10 +51,13 @@ export type PlayerRole = 'host' | 'player' | null;
 /**
  * Room session state
  */
+import type { Player } from '../components/PlayerList';
+
 export interface RoomSessionState {
   roomCode: string | null;
   status: RoomStatus;
   playerRole: PlayerRole;
+  players: Player[];
   gameState: GameStartedPayload | null;
   lastJoinIntent: JoinIntent | null;
 }
@@ -81,6 +92,7 @@ class RoomSessionManager {
     roomCode: null,
     status: 'disconnected',
     playerRole: null,
+    players: [],
     gameState: null,
     lastJoinIntent: null,
   };
@@ -234,11 +246,10 @@ class RoomSessionManager {
   public onRoomJoined(data: RoomJoinedPayload): void {
     console.log('[RoomSessionManager] onRoomJoined:', data);
 
-    // Update room code and status
     this.state.roomCode = data.roomCode;
     this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
+    this.state.players = data.players;
 
-    // Determine player role
     const playerUUID = getPlayerUUID();
     const currentPlayer = data.players.find((p) => p.id === playerUUID);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
@@ -248,6 +259,48 @@ class RoomSessionManager {
     );
 
     this.emitStateUpdate();
+  }
+
+  public onPlayerJoined(player: Player): void {
+    this.state.players.push(player);
+    this.emitStateUpdate();
+  }
+
+  public onPlayerLeft(playerId: string): void {
+    this.state.players = this.state.players.filter(p => p.id !== playerId);
+    this.emitStateUpdate();
+  }
+
+  public onCharacterSelected(playerId: string, characterClass: string): void {
+    this.state.players = this.state.players.map(p =>
+      p.id === playerId ? { ...p, characterClass, isReady: true } : p
+    );
+    this.emitStateUpdate();
+  }
+
+  public async createRoom(nickname: string): Promise<void> {
+    const uuid = getOrCreatePlayerUUID();
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid, nickname }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create room');
+    }
+
+    const data = await response.json();
+    saveLastRoomCode(data.room.roomCode);
+    savePlayerNickname(nickname);
+    await this.ensureJoined('create');
+  }
+
+  public async joinRoom(roomCode: string, nickname: string): Promise<void> {
+    savePlayerNickname(nickname);
+    saveLastRoomCode(roomCode);
+    await this.ensureJoined('join');
   }
 
   /**
@@ -288,6 +341,7 @@ class RoomSessionManager {
       roomCode: null,
       status: 'disconnected',
       playerRole: null,
+      players: [],
       gameState: null,
       lastJoinIntent: null,
     };
@@ -308,6 +362,7 @@ class RoomSessionManager {
       roomCode: null,
       status: 'disconnected',
       playerRole: null,
+      players: [],
       gameState: null,
       lastJoinIntent: null,
     };
