@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
 import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
-import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
+import { FlyoutPanel, type FlyoutPanelProps } from '../components/ScenarioDesigner/FlyoutPanel';
 
 interface ScenarioState {
   name: string;
@@ -43,6 +43,22 @@ const ScenarioDesigner: React.FC = () => {
   const [selectedFeatureType, setSelectedFeatureType] = useState<string>('');
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HexGrid | null>(null);
+
+  const handleReset = useCallback(() => {
+    setScenarioState({
+      name: '',
+      difficulty: 1,
+      objective: '',
+      activeHexes: new Map(),
+      playerStartPositions: { 2: [], 3: [], 4: [] },
+      monsterGroups: [],
+    });
+    // Optional: Also clear any visual state in HexGrid if needed
+    if (gridRef.current) {
+      gridRef.current.clearBoard();
+    }
+    setIsPanelOpen(false);
+  }, []);
 
   const handleHexClick = useCallback((hex: AxialCoordinates) => {
     const key = `${hex.q},${hex.r}`;
@@ -319,7 +335,7 @@ const ScenarioDesigner: React.FC = () => {
         <button onClick={handleSaveToServer}>Save to Server</button>
       </div>
       <h1>Scenario Designer</h1>
-      <FlyoutPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)}>
+      <FlyoutPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onReset={handleReset}>
         <h2>Scenario Settings</h2>
         <label>
           Name:
