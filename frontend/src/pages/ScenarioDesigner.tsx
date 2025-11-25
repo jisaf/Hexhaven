@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
 import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
-import { FlyoutPanel, type FlyoutPanelProps } from '../components/ScenarioDesigner/FlyoutPanel';
+import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
 
 interface ScenarioState {
   name: string;
