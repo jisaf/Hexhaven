@@ -695,13 +695,14 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = characters.map((c: any) => {
+      const charactersWithDecks = [];
+      for (const c of characters) {
         const charData = c.toJSON();
         // Get ability deck for this character class
-        const abilityDeck = this.abilityCardService.getCardsByClass(
+        const abilityDeck = await this.abilityCardService.getCardsByClass(
           charData.characterClass,
         );
-        return {
+        charactersWithDecks.push({
           id: charData.id,
           playerId: charData.playerId,
           classType: charData.characterClass,
@@ -711,8 +712,8 @@ export class GameGateway
           conditions: charData.conditions,
           isExhausted: charData.exhausted,
           abilityDeck, // Include ability deck for card selection
-        };
-      });
+        });
+      }
 
       // Broadcast game started to all players
       const gameStartedPayload: GameStartedPayload = {
@@ -887,10 +888,10 @@ export class GameGateway
    * Select two ability cards for the round (US2 - T097)
    */
   @SubscribeMessage('select_cards')
-  handleSelectCards(
+  async handleSelectCards(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCardsPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -919,7 +920,7 @@ export class GameGateway
       }
 
       // Validate cards are in player's hand (belong to character class)
-      const validation = this.abilityCardService.validateCardSelection(
+      const validation = await this.abilityCardService.validateCardSelection(
         payload.topCardId,
         payload.bottomCardId,
         character.characterClass,
@@ -1332,10 +1333,10 @@ export class GameGateway
    * End current entity's turn (US2 - T097)
    */
   @SubscribeMessage('end_turn')
-  handleEndTurn(
+  async handleEndTurn(
     @ConnectedSocket() client: Socket,
     @MessageBody() _payload: EndTurnPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -1433,11 +1434,7 @@ export class GameGateway
 
         // If next entity is a monster, activate monster AI
         if (nextEntity.entityType === 'monster') {
-          // Simplified: just advance turn automatically for now
-          // In full implementation, would call activateMonster()
-          this.logger.log(
-            `Monster turn: ${nextEntity.entityId} (AI not fully implemented)`,
-          );
+          await this.activateMonster(nextEntity.entityId, room.roomCode);
         }
 
         // Check scenario completion after turn advancement
