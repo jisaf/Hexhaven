@@ -590,7 +590,8 @@ export class HexGrid {
       const centerY = bounds.y + bounds.height / 2;
 
       // Determine the optimal zoom level to fit the map with a margin.
-      const zoom = this.getOptimalZoom(bounds);
+      const boundsRect = new PIXI.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+      const zoom = this.getOptimalZoom(boundsRect);
 
       // Apply the new center and zoom to the viewport.
       this.viewport.moveCenter(centerX, centerY);

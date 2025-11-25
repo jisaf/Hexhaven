@@ -124,4 +124,9 @@
     background-color: #1a2b42; /* Darker blue for info section */
     overflow-y: auto;
   }
+
+  .cardSelectionActive .hudWrapper,
+  .cardSelectionActive .bottomPlaceholder {
+    display: none;
+  }
 }

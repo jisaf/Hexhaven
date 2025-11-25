@@ -213,7 +213,9 @@ export function GameBoard() {
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {
     if (playerHand.length > 0) {
-      setShowCardSelection(true);
+        queueMicrotask(() => {
+            setShowCardSelection(true);
+        });
     }
   }, [playerHand]);
 
@@ -273,8 +275,14 @@ export function GameBoard() {
     navigate('/');
   };
 
+  const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
+
   return (
-    <div className={styles.gameBoardPage}>
+    <div className={gameBoardClass}>
+      <div ref={containerRef} className={styles.gameContainer} />
+
+      <div className={styles.bottomPlaceholder} />
+
       {/* HUD */}
       <div className={styles.hudWrapper}>
         <GameHUD
@@ -283,10 +291,6 @@ export function GameBoard() {
           onBackToLobby={handleBackToLobby}
         />
       </div>
-
-      <div ref={containerRef} className={styles.gameContainer} />
-
-      <div className={styles.bottomPlaceholder} />
 
       {/* T111: Card Selection Panel */}
       {showCardSelection && (

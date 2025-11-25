@@ -10,7 +10,9 @@ export function useMediaQuery(query: string): boolean {
     mediaQueryList.addEventListener('change', listener);
 
     // Re-check on mount in case the query has changed
-    setMatches(mediaQueryList.matches);
+    queueMicrotask(() => {
+        setMatches(mediaQueryList.matches);
+    });
 
     return () => {
       mediaQueryList.removeEventListener('change', listener);
