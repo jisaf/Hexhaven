@@ -232,6 +232,8 @@ export class Scenario {
         mapLayout.push({
           coordinates: { q, r },
           terrain,
+          features: [],
+          triggers: [],
           occupiedBy: null,
           hasLoot: false,
           hasTreasure: false,
@@ -299,6 +301,8 @@ export class Scenario {
         mapLayout.push({
           coordinates: { q, r },
           terrain,
+          features: [],
+          triggers: [],
           occupiedBy: null,
           hasLoot: Math.random() > 0.95,
           hasTreasure: false,

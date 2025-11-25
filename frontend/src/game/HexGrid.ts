@@ -19,7 +19,7 @@ import { MonsterSprite } from './MonsterSprite';
 import { MovementHighlight } from './MovementHighlight';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
 import { type Axial, axialKey, screenToAxial, hexRangeReachable, axialToScreen } from './hex-utils';
-import type { Monster } from '../../../shared/types/entities';
+import type { Monster, HexTile as SharedHexTile } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
   width: number;
@@ -31,7 +31,7 @@ export interface HexGridOptions {
 }
 
 export interface GameBoardData {
-  tiles: HexTileData[];
+  tiles: SharedHexTile[];
   characters: CharacterData[];
   monsters?: Monster[];
 }
@@ -41,6 +41,7 @@ export class HexGrid {
   private container: HTMLElement;
 
   // Layers
+  private placeholderLayer!: PIXI.Container;
   private tilesLayer!: PIXI.Container;
   private highlightsLayer!: PIXI.Container;
   private entitiesLayer!: PIXI.Container;
@@ -57,6 +58,7 @@ export class HexGrid {
   private selectedCharacterId: string | null = null;
   private selectedMonsterId: string | null = null;
   private options: HexGridOptions;
+  private isDragging: boolean = false;
 
   // Viewport for pan/zoom (US3 - T133)
   private viewport!: Viewport;
@@ -139,11 +141,13 @@ export class HexGrid {
     this.viewport.moveCenter(0, 0);
 
     // Create layers
+    this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
     this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
+    this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
     this.viewport.addChild(this.lootLayer);
@@ -157,9 +161,11 @@ export class HexGrid {
     this.lootTokenPool = new LootTokenPool(this.lootLayer);
 
     // Setup background click handler
-    this.app.stage.eventMode = 'static';
-    this.app.stage.hitArea = new PIXI.Rectangle(0, 0, this.options.width, this.options.height);
-    this.app.stage.on('pointerdown', this.handleBackgroundClick.bind(this));
+    this.viewport.eventMode = 'static';
+    this.viewport.hitArea = new PIXI.Rectangle(0, 0, worldWidth, worldHeight);
+    this.viewport.on('pointerdown', this.handleBackgroundClick.bind(this));
+    this.viewport.on('drag-start', () => this.isDragging = true);
+    this.viewport.on('drag-end', () => this.isDragging = false);
   }
 
   /**
@@ -172,7 +178,10 @@ export class HexGrid {
     for (const tileData of data.tiles) {
       const tile = new HexTile(tileData, {
         interactive: true,
-        onClick: this.handleHexClick.bind(this)
+        onClick: (e: PIXI.FederatedPointerEvent, hex: Axial) => {
+          e.stopPropagation();
+          this.handleHexClick(hex);
+        }
       });
 
       const key = axialKey(tileData.coordinates);
@@ -398,12 +407,8 @@ export class HexGrid {
    * Handle hex click (for movement)
    */
   private handleHexClick(hex: Axial): void {
-    if (this.selectedCharacterId) {
-      // Check if hex is in movement range
-      // For now, just notify parent - actual validation happens on server
-      if (this.options.onHexClick) {
-        this.options.onHexClick(hex);
-      }
+    if (this.options.onHexClick) {
+      this.options.onHexClick(hex);
     }
   }
 
@@ -411,8 +416,17 @@ export class HexGrid {
    * Handle background click (deselect)
    */
   private handleBackgroundClick(event: PIXI.FederatedPointerEvent): void {
+    if (this.isDragging) {
+      return;
+    }
+
+    if (this.options.onHexClick) {
+      const hex = this.getHexAtScreenPosition(event.global.x, event.global.y);
+      this.options.onHexClick(hex);
+    }
+
     // Only deselect if clicking on stage (not on entities or tiles)
-    if (event.target === this.app.stage) {
+    if (event.target === this.viewport) {
       this.deselectAll();
     }
   }
@@ -694,6 +708,69 @@ export class HexGrid {
   /**
    * Destroy and cleanup
    */
+  public drawPlaceholderGrid(width: number, height: number): void {
+    this.placeholderLayer.removeChildren();
+    const graphics = new PIXI.Graphics();
+    graphics.lineStyle(1, 0x555555, 0.5);
+
+    for (let r = 0; r < height; r++) {
+      for (let q = 0; q < width; q++) {
+        const hex = { q, r };
+        const pos = axialToScreen(hex);
+        this.drawHexagon(graphics, pos.x, pos.y, 48);
+      }
+    }
+    this.placeholderLayer.addChild(graphics);
+  }
+
+  private drawHexagon(graphic: PIXI.Graphics, x: number, y: number, size: number): void {
+    const angles = [30, 90, 150, 210, 270, 330];
+    const points: Array<{ x: number; y: number }> = [];
+
+    for (const angle of angles) {
+      const rad = (Math.PI / 180) * angle;
+      points.push({
+        x: x + size * Math.cos(rad),
+        y: y + size * Math.sin(rad)
+      });
+    }
+
+    graphic.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      graphic.lineTo(points[i].x, points[i].y);
+    }
+
+    graphic.closePath();
+  }
+
+  public setBackgroundImage(imageUrl: string): void {
+    const sprite = PIXI.Sprite.from(imageUrl);
+    sprite.width = this.app.screen.width;
+    sprite.height = this.app.screen.height;
+    this.app.stage.addChildAt(sprite, 0);
+  }
+
+  public async exportToPng(): Promise<void> {
+    // Set tiles to export mode (green)
+    this.tiles.forEach(tile => tile.setExportMode(true));
+    this.app.render();
+
+    // Extract only the tiles layer, which has a transparent background
+    const dataUrl = await this.app.renderer.extract.base64(this.tilesLayer);
+    const link = document.createElement('a');
+    link.download = 'scenario-map.png';
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Revert tiles to their normal appearance
+    this.tiles.forEach(tile => tile.setExportMode(false));
+    this.app.render();
+  }
+
+
   public destroy(): void {
     // Only destroy if app was initialized
     if (!this.app) return;

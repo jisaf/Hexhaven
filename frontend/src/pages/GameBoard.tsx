@@ -16,13 +16,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
-import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard, Monster } from '../../../shared/types/entities';
+import type { AbilityCard, Monster, HexTile, TerrainType } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
@@ -246,8 +245,19 @@ export function GameBoard() {
   // Render game data when HexGrid is ready
   useEffect(() => {
     if (hexGridReady && gameData) {
+      // Data from the backend (originating from JSON) will have string enums
+      // and may be missing optional fields if they are empty. We map the data
+      // here to ensure it conforms to the strict HexTile interface used in the
+      // frontend renderer.
+      const typedTiles: HexTile[] = gameData.mapLayout.map(tile => ({
+        ...tile,
+        terrain: tile.terrain as TerrainType, // Cast string to enum
+        features: (tile as HexTile).features ?? [], // Add missing optional fields
+        triggers: (tile as HexTile).triggers ?? [],
+      }));
+
       const boardData: GameBoardData = {
-        tiles: gameData.mapLayout as HexTileData[],
+        tiles: typedTiles,
         characters: gameData.characters as CharacterData[],
         monsters: (gameData.monsters as Monster[]) || [],
       };
@@ -255,6 +265,7 @@ export function GameBoard() {
       initializeBoard(boardData);
     }
   }, [hexGridReady, gameData, initializeBoard]);
+
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((card: AbilityCard) => {

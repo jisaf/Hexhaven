@@ -5,9 +5,8 @@
 
 import { useEffect, useRef } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
-import type { HexTileData } from '../game/HexTile';
 import type { CharacterData } from '../game/CharacterSprite';
-import type { Monster } from '../../../shared/types/entities';
+import { type Monster, TerrainType } from '../../../shared/types/entities';
 
 export function HexMapDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,23 +41,23 @@ export function HexMapDemo() {
         // Hardcoded test data
         const testData: GameBoardData = {
           tiles: [
-            { coordinates: { q: 0, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: -1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: -1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 0 }, terrain: 'obstacle', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 0 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 1 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 0, r: 3 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 1, r: 3 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 2, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: false },
-            { coordinates: { q: 3, r: 2 }, terrain: 'normal', occupiedBy: undefined, hasLoot: false, hasTreasure: true },
-          ] as HexTileData[],
+            { coordinates: { q: 0, r: 0 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 0 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: -1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: -1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 0 }, terrain: TerrainType.OBSTACLE, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 0 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 2 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 2 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 1 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 0, r: 3 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 1, r: 3 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 2, r: 2 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: false },
+            { coordinates: { q: 3, r: 2 }, terrain: TerrainType.NORMAL, features: [], triggers: [], occupiedBy: null, hasLoot: false, hasTreasure: true },
+          ],
           characters: [
             {
               id: 'demo-char-1',
@@ -128,7 +127,7 @@ export function HexMapDemo() {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: 'vw', height: '100vh', background: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
       <header style={{ padding: '16px', background: '#2c2c2c', color: '#fff', borderBottom: '2px solid #333' }}>
         <h1 style={{ margin: 0, fontSize: '20px' }}>Hex Map Demo (Standalone)</h1>
         <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#888' }}>

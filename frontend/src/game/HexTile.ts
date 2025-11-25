@@ -10,31 +10,23 @@
 
 import * as PIXI from 'pixi.js';
 import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
+import { TerrainType, type HexTile as HexTileData, HexFeatureType, type HexFeature } from '../../../shared/types/entities';
 
-export type TerrainType = 'normal' | 'obstacle' | 'difficult' | 'hazardous';
-
-export interface HexTileData {
-  coordinates: Axial;
-  terrain: TerrainType;
-  occupiedBy?: string; // Entity ID
-  hasLoot?: boolean;
-  hasTreasure?: boolean;
-}
+export type { HexTileData };
 
 export interface HexTileOptions {
   interactive?: boolean;
-  onClick?: (hex: Axial) => void;
+  onClick?: (event: PIXI.FederatedPointerEvent, hex: Axial) => void;
   onHover?: (hex: Axial) => void;
   onHoverEnd?: () => void;
 }
 
 export class HexTile extends PIXI.Container {
   public readonly coordinates: Axial;
-  public readonly terrain: TerrainType;
+  public terrain: TerrainType;
 
   private background: PIXI.Graphics;
   private border: PIXI.Graphics;
-  private icon?: PIXI.Graphics;
   private options: HexTileOptions;
   private _isHovered: boolean = false;
   private _isSelected: boolean = false;
@@ -58,20 +50,8 @@ export class HexTile extends PIXI.Container {
     this.addChild(this.border);
 
     // Add icons for special tiles
-    if (data.terrain === 'obstacle') {
-      this.icon = this.createObstacleIcon();
-      this.addChild(this.icon);
-    }
+    this.updateData(data);
 
-    if (data.hasLoot) {
-      const lootIcon = this.createLootIcon();
-      this.addChild(lootIcon);
-    }
-
-    if (data.hasTreasure) {
-      const treasureIcon = this.createTreasureIcon();
-      this.addChild(treasureIcon);
-    }
 
     // Setup interactivity
     if (options.interactive) {
@@ -101,22 +81,6 @@ export class HexTile extends PIXI.Container {
 
     graphic.lineStyle(2, 0x444444, 1);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE);
-
-    return graphic;
-  }
-
-  /**
-   * Create obstacle icon (X pattern)
-   */
-  private createObstacleIcon(): PIXI.Graphics {
-    const graphic = new PIXI.Graphics();
-    const size = HEX_SIZE * 0.5;
-
-    graphic.lineStyle(4, 0x000000, 0.6);
-    graphic.moveTo(-size, -size);
-    graphic.lineTo(size, size);
-    graphic.moveTo(size, -size);
-    graphic.lineTo(-size, size);
 
     return graphic;
   }
@@ -154,6 +118,32 @@ export class HexTile extends PIXI.Container {
     return graphic;
   }
 
+  private createFeatureIcon(feature: HexFeature): PIXI.Graphics {
+    const graphic = new PIXI.Graphics();
+    switch (feature.type) {
+      case HexFeatureType.TRAP:
+        graphic.lineStyle(2, 0xff0000, 1);
+        graphic.drawCircle(0, 0, 15);
+        graphic.moveTo(-10, -10);
+        graphic.lineTo(10, 10);
+        graphic.moveTo(10, -10);
+        graphic.lineTo(-10, 10);
+        break;
+      case HexFeatureType.DOOR:
+        graphic.beginFill(feature.isOpen ? 0x00ff00 : 0x8B4513, 1);
+        graphic.drawRect(-15, -5, 30, 10);
+        graphic.endFill();
+        break;
+      case HexFeatureType.WALL:
+        graphic.beginFill(0x808080, 1);
+        graphic.drawRect(-20, -2, 40, 4);
+        graphic.endFill();
+        break;
+      // Add cases for other feature types here
+    }
+    return graphic;
+  }
+
   /**
    * Setup interactive behaviors
    */
@@ -162,9 +152,9 @@ export class HexTile extends PIXI.Container {
     this.cursor = 'pointer';
 
     // Click/tap handler
-    this.on('pointerdown', () => {
+    this.on('pointerdown', (e) => {
       if (this.options.onClick && this.terrain !== 'obstacle') {
-        this.options.onClick(this.coordinates);
+        this.options.onClick(e, this.coordinates);
       }
     });
 
@@ -225,13 +215,13 @@ export class HexTile extends PIXI.Container {
    */
   private getTerrainColor(terrain: TerrainType): number {
     switch (terrain) {
-      case 'normal':
+      case TerrainType.NORMAL:
         return 0xE8DCC0;  // Tan/beige
-      case 'obstacle':
+      case TerrainType.OBSTACLE:
         return 0x8B7355;  // Dark brown
-      case 'difficult':
+      case TerrainType.DIFFICULT:
         return 0xA0826D;  // Medium brown
-      case 'hazardous':
+      case TerrainType.HAZARDOUS:
         return 0xCD5C5C;  // Red-ish
       default:
         return 0xE8DCC0;
@@ -266,36 +256,74 @@ export class HexTile extends PIXI.Container {
    * Update tile data (for dynamic changes)
    */
   public updateData(data: Partial<HexTileData>): void {
+    // Update terrain
+    if (data.terrain) {
+      this.terrain = data.terrain;
+      this.background.destroy();
+      this.background = this.createBackground();
+      this.addChildAt(this.background, 0);
+    }
+
+    // Clear existing feature icons
+    this.children.filter(child => child.name === 'feature').forEach(child => {
+        this.removeChild(child);
+        child.destroy();
+    });
+
+    if (data.features) {
+        data.features.forEach(feature => {
+            const featureIcon = this.createFeatureIcon(feature);
+            featureIcon.name = 'feature';
+            this.addChild(featureIcon);
+        });
+    }
+
+
     // Update icons if loot/treasure status changed
-    if (data.hasLoot !== undefined) {
-      // Remove existing loot icons
-      const existingLoot = this.children.find(child => child.name === 'loot');
-      if (existingLoot) {
-        this.removeChild(existingLoot);
-      }
-
-      // Add new loot icon if needed
-      if (data.hasLoot) {
-        const lootIcon = this.createLootIcon();
-        lootIcon.name = 'loot';
-        this.addChild(lootIcon);
-      }
+    // Remove existing loot icons
+    const existingLoot = this.children.find(child => child.name === 'loot');
+    if (existingLoot) {
+      this.removeChild(existingLoot);
+      existingLoot.destroy();
+    }
+    // Add new loot icon if needed
+    if (data.hasLoot) {
+      const lootIcon = this.createLootIcon();
+      lootIcon.name = 'loot';
+      this.addChild(lootIcon);
     }
 
-    if (data.hasTreasure !== undefined) {
-      // Remove existing treasure icons
-      const existingTreasure = this.children.find(child => child.name === 'treasure');
-      if (existingTreasure) {
-        this.removeChild(existingTreasure);
-      }
-
-      // Add new treasure icon if needed
-      if (data.hasTreasure) {
-        const treasureIcon = this.createTreasureIcon();
-        treasureIcon.name = 'treasure';
-        this.addChild(treasureIcon);
-      }
+    // Remove existing treasure icons
+    const existingTreasure = this.children.find(child => child.name === 'treasure');
+    if (existingTreasure) {
+      this.removeChild(existingTreasure);
+      existingTreasure.destroy();
     }
+
+    // Add new treasure icon if needed
+    if (data.hasTreasure) {
+      const treasureIcon = this.createTreasureIcon();
+      treasureIcon.name = 'treasure';
+      this.addChild(treasureIcon);
+    }
+  }
+
+  public setExportMode(enabled: boolean): void {
+    const color = enabled ? 0x00ff00 : this.getTerrainColor(this.terrain);
+    this.background.destroy();
+    this.background = new PIXI.Graphics();
+    this.background.beginFill(color, 1);
+    this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
+    this.background.endFill();
+    this.addChildAt(this.background, 0);
+
+    // Toggle visibility of all children except the background itself.
+    // This will hide the border and any feature/loot icons.
+    this.children.forEach(child => {
+      if (child !== this.background) {
+        child.visible = !enabled;
+      }
+    });
   }
 
   /**
