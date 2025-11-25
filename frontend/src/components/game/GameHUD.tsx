@@ -7,9 +7,11 @@ interface GameHUDProps {
   logs: string[];
   connectionStatus: ConnectionStatus;
   onBackToLobby: () => void;
+  isMyTurn: boolean;
+  onEndTurn: () => void;
 }
 
-export function GameHUD({ logs, connectionStatus, onBackToLobby }: GameHUDProps) {
+export function GameHUD({ logs, connectionStatus, onBackToLobby, isMyTurn, onEndTurn }: GameHUDProps) {
   const statusClassName = styles[connectionStatus] || '';
 
   return (
@@ -27,6 +29,13 @@ export function GameHUD({ logs, connectionStatus, onBackToLobby }: GameHUDProps)
           </p>
         ))}
       </div>
+      {isMyTurn && (
+        <div className={styles.actionsContainer}>
+          <button onClick={onEndTurn} className={styles.endTurnButton}>
+            End Turn
+          </button>
+        </div>
+      )}
     </div>
   );
 }

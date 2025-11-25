@@ -15,7 +15,7 @@ import {
   AxialCoordinates,
   Condition,
 } from '../../../shared/types/entities';
-
+import { PathfindingService } from './pathfinding.service';
 @Injectable()
 export class MonsterAIService {
   /**
@@ -26,9 +26,9 @@ export class MonsterAIService {
     // Filter out invisible and exhausted characters
     const validTargets = characters.filter(
       (char) =>
-        !char.isExhausted &&
+        !char.exhausted &&
         !char.conditions.includes(Condition.INVISIBLE) &&
-        char.currentHex !== null,
+        char.position !== null,
     );
 
     if (validTargets.length === 0) {
@@ -42,7 +42,7 @@ export class MonsterAIService {
     for (const char of validTargets) {
       const distance = this.calculateHexDistance(
         monster.currentHex,
-        char.currentHex!,
+        char.position,
       );
 
       if (distance < closestDistance) {
@@ -86,48 +86,29 @@ export class MonsterAIService {
     focusTarget: Character,
     obstacles: AxialCoordinates[],
   ): AxialCoordinates | null {
-    if (!focusTarget.currentHex) {
+    if (!focusTarget.position) {
       return null;
     }
-
-    const distance = this.calculateHexDistance(
-      monster.currentHex,
-      focusTarget.currentHex,
-    );
 
     // If already in attack range, don't move
-    if (this.isInRange(monster, focusTarget.currentHex)) {
+    if (this.isInRange(monster, focusTarget.position)) {
       return null;
     }
 
-    // Get adjacent hexes and filter by movement
-    const adjacentHexes = this.getAdjacentHexes(monster.currentHex);
+    const pathfindingService = new PathfindingService();
+    const path = pathfindingService.findPath(
+      monster.currentHex,
+      focusTarget.position,
+      new Map(
+        obstacles.map((o) => [`${o.q},${o.r}`, { terrain: 'obstacle' }]),
+      ),
+    );
 
-    // Filter out obstacles (unless monster has flying)
-    const hasFlying = monster.specialAbilities.includes('Flying');
-    const validHexes = adjacentHexes.filter((hex) => {
-      if (!hasFlying) {
-        return !obstacles.some((obs) => obs.q === hex.q && obs.r === hex.r);
-      }
-      return true;
-    });
-
-    // Find hex that gets closest to target
-    let bestHex: AxialCoordinates | null = null;
-    let bestDistance = distance;
-
-    for (const hex of validHexes) {
-      const newDistance = this.calculateHexDistance(
-        hex,
-        focusTarget.currentHex,
-      );
-      if (newDistance < bestDistance) {
-        bestDistance = newDistance;
-        bestHex = hex;
-      }
+    if (path && path.length > 1) {
+      return path[1];
     }
 
-    return bestHex;
+    return null;
   }
 
   /**
@@ -183,13 +164,6 @@ export class MonsterAIService {
    * Get character's initiative from active cards
    */
   private getCharacterInitiative(character: Character): number {
-    // Default to high initiative if no cards selected
-    if (!character.activeCards) {
-      return 99;
-    }
-
-    // In real implementation, would look up card initiatives
-    // For now, return a default value
-    return 50;
+    return character.selectedCards?.initiative ?? 99;
   }
 }

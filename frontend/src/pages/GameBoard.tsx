@@ -289,6 +289,8 @@ export function GameBoard() {
           logs={logs}
           connectionStatus={connectionStatus}
           onBackToLobby={handleBackToLobby}
+          isMyTurn={isMyTurn}
+          onEndTurn={() => websocketService.endTurn()}
         />
       </div>
 

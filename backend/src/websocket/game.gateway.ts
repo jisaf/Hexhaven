@@ -1433,11 +1433,7 @@ export class GameGateway
 
         // If next entity is a monster, activate monster AI
         if (nextEntity.entityType === 'monster') {
-          // Simplified: just advance turn automatically for now
-          // In full implementation, would call activateMonster()
-          this.logger.log(
-            `Monster turn: ${nextEntity.entityId} (AI not fully implemented)`,
-          );
+          this.activateMonster(nextEntity.entityId, room.roomCode);
         }
 
         // Check scenario completion after turn advancement
@@ -1625,22 +1621,22 @@ export class GameGateway
 
     // Broadcast turn started for next entity
     const turnStartedPayload: TurnStartedPayload = {
-      entityId: nextEntity.id,
-      entityType: nextEntity.type,
+      entityId: nextEntity.entityId,
+      entityType: nextEntity.entityType,
       turnIndex: currentIndex,
     };
 
     this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 
     this.logger.log(
-      `Advanced to next turn in room ${roomCode}: ${nextEntity.id} (${nextEntity.type})`,
+      `Advanced to next turn in room ${roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
     );
 
     // If next entity is also a monster, activate it automatically
-    if (nextEntity.type === 'monster') {
+    if (nextEntity.entityType === 'monster') {
       // Use setTimeout to avoid deep recursion
       setTimeout(() => {
-        this.activateMonster(nextEntity.id, roomCode).catch((error) => {
+        this.activateMonster(nextEntity.entityId, roomCode).catch((error) => {
           this.logger.error(
             `Auto-activation error: ${error instanceof Error ? error.message : String(error)}`,
           );
