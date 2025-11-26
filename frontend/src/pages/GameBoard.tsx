@@ -27,6 +27,7 @@ import { TerrainType, Condition } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
+import { DebugConsole } from '../components/DebugConsole';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
@@ -614,6 +615,8 @@ export function GameBoard() {
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
+
+      <DebugConsole />
     </div>
   );
 }
