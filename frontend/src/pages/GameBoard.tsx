@@ -138,22 +138,33 @@ export function GameBoard() {
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
-    console.log('handleGameStarted called with data:', data);
+    console.log('🎮 handleGameStarted called with data:', data);
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
+      console.log('🔍 Looking for character with playerUUID:', playerUUID);
       const myCharacter = data.characters.find(char => char.playerId === playerUUID);
+      console.log('👤 Found my character:', myCharacter);
 
       if (myCharacter) {
         setMyCharacterId(myCharacter.id);
 
         // Load ability deck (if available in extended character data)
         const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+        console.log('🎴 Character abilityDeck:', characterWithDeck.abilityDeck);
+        console.log('🎴 abilityDeck is array?', Array.isArray(characterWithDeck.abilityDeck));
+        console.log('🎴 abilityDeck length:', characterWithDeck.abilityDeck?.length);
+
         if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+          console.log('✅ Setting playerHand with', characterWithDeck.abilityDeck.length, 'cards');
           setPlayerHand(characterWithDeck.abilityDeck);
           // Do not set showCardSelection here directly to avoid race condition
+        } else {
+          console.warn('⚠️ No abilityDeck found or not an array');
         }
+      } else {
+        console.warn('⚠️ My character not found in game_started payload');
       }
 
       setGameData(data);
@@ -231,10 +242,15 @@ export function GameBoard() {
 
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {
+    console.log('🎴 playerHand changed, length:', playerHand.length);
     if (playerHand.length > 0) {
+        console.log('✅ playerHand has cards, will show card selection panel');
         queueMicrotask(() => {
+            console.log('🎴 Setting showCardSelection to true');
             setShowCardSelection(true);
         });
+    } else {
+        console.log('⚠️ playerHand is empty, not showing card selection');
     }
   }, [playerHand]);
 
