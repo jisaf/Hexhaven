@@ -40,8 +40,11 @@ export class ScenarioService {
       return this.scenarios;
     }
 
-    if(this.scenariosFilePath) {
-      const fileContent = await fs.promises.readFile(this.scenariosFilePath, 'utf-8');
+    if (this.scenariosFilePath) {
+      const fileContent = await fs.promises.readFile(
+        this.scenariosFilePath,
+        'utf-8',
+      );
       const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
       this.scenarios = data.scenarios;
       return this.scenarios;
@@ -79,7 +82,9 @@ export class ScenarioService {
 
       const data = JSON.parse(fileContent) as { scenarios: Scenario[] };
       this.scenarios = data.scenarios;
-      console.log(`Successfully loaded scenarios from: ${this.scenariosFilePath}`);
+      console.log(
+        `Successfully loaded scenarios from: ${this.scenariosFilePath}`,
+      );
       return this.scenarios;
     } catch (error) {
       console.error('Failed to load scenarios.json:', error);
