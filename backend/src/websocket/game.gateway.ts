@@ -940,9 +940,11 @@ export class GameGateway
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
         characterId: character.id,
+        characterName: character.characterClass,
         fromHex,
         toHex: payload.targetHex,
         movementPath: path,
+        distance: path.length > 0 ? path.length - 1 : 0,
       };
 
       this.server
@@ -1297,10 +1299,15 @@ export class GameGateway
         targetDead = target.isDead;
       }
 
+      const targetName = isMonsterTarget ? target.monsterType : target.characterClass;
+
       // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
         attackerId: attacker.id,
+        attackerName: attacker.characterClass,
         targetId: payload.targetId,
+        targetName,
+        baseDamage: baseAttack,
         damage,
         modifier: modifierCard.modifier,
         effects: modifierCard.effects || [],
@@ -1778,6 +1785,8 @@ export class GameGateway
         'MonsterAI',
       );
 
+      const originalHex = { ...monster.currentHex };
+
       // Determine movement (use mapped target for MonsterAI service)
       const movementHex = this.monsterAIService.determineMovement(
         monster,
@@ -1786,13 +1795,20 @@ export class GameGateway
         occupiedHexes,
       );
 
+      let movementDistance = 0;
       // Apply movement if determined
-      if (movementHex) {
+      if (movementHex && hexMap) {
+        const path = this.pathfindingService.findPath(
+          originalHex,
+          movementHex,
+          hexMap,
+        );
+        movementDistance = path && path.length > 0 ? path.length - 1 : 0;
         monster.currentHex = movementHex;
         this.emitDebugLog(
           roomCode,
           'info',
-          `Monster moved from (${monster.currentHex.q}, ${monster.currentHex.r}) to (${movementHex.q}, ${movementHex.r})`,
+          `Monster moved ${movementDistance} hexes to (${movementHex.q}, ${movementHex.r})`,
           'MonsterAI',
         );
       } else {
@@ -1876,8 +1892,10 @@ export class GameGateway
 
         attackResult = {
           targetId: focusTargetId,
+          baseDamage,
           damage: actualDamage,
           modifier: modifierCard.modifier,
+          effects: modifierCard.effects || [],
         };
 
         // Check if target is dead/exhausted
@@ -1899,11 +1917,16 @@ export class GameGateway
         );
       }
 
+      const monsterName = monster.isElite ? `Elite ${monster.monsterType}` : monster.monsterType;
+
       // Broadcast monster activation
       const monsterActivatedPayload: MonsterActivatedPayload = {
         monsterId,
+        monsterName,
         focusTarget: focusTargetId,
+        focusTargetName: focusTarget.characterClass,
         movement: movementHex || monster.currentHex, // Use current hex if no movement
+        movementDistance,
         attack: attackResult,
       };
 

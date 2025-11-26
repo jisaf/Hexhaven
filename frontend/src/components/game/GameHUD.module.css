@@ -120,3 +120,31 @@
     border-top: 1px solid #c9a444; /* Add a top border for separation */
   }
 }
+
+/* Log Colors */
+.red {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+.blue {
+  color: #5ea9dd;
+  font-weight: bold;
+}
+.gold {
+  color: #f1c40f;
+}
+.green {
+  color: #2ecc71;
+}
+.orange {
+  color: #e67e22;
+}
+.lightgreen {
+  color: #82e0aa;
+}
+.lightblue {
+  color: #a9cce3;
+}
+.white {
+  color: #f7f9f9;
+}
