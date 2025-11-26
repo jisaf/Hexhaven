@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
 import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
+import { usePrevious } from '../hooks/usePrevious';
 
 interface ScenarioState {
   name: string;
@@ -301,15 +302,38 @@ const ScenarioDesigner: React.FC = () => {
     };
   }, [handleHexClick]);
 
+  const prevActiveHexes = usePrevious(scenarioState.activeHexes);
+
+  // Effect to handle adding, updating, and removing hexes efficiently
   useEffect(() => {
-    if (gridRef.current) {
-      gridRef.current.initializeBoard({
+    const grid = gridRef.current;
+    if (grid && prevActiveHexes) {
+      const currentKeys = new Set(scenarioState.activeHexes.keys());
+      const prevKeys = new Set(prevActiveHexes.keys());
+
+      // Add or update tiles
+      for (const key of currentKeys) {
+        if (!prevKeys.has(key) || scenarioState.activeHexes.get(key) !== prevActiveHexes.get(key)) {
+          grid.addOrUpdateTile(scenarioState.activeHexes.get(key)!);
+        }
+      }
+
+      // Remove tiles
+      for (const key of prevKeys) {
+        if (!currentKeys.has(key)) {
+          const [q, r] = key.split(',').map(Number);
+          grid.removeTile({ q, r });
+        }
+      }
+    } else if (grid) {
+      // Handle the initial render case where prevActiveHexes is undefined
+      grid.initializeBoard({
         tiles: Array.from(scenarioState.activeHexes.values()),
         characters: [],
         monsters: [],
       });
     }
-  }, [scenarioState.activeHexes]);
+  }, [scenarioState.activeHexes, prevActiveHexes]);
 
   useEffect(() => {
     fetch('/api/monsters')
