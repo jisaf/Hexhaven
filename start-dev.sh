@@ -104,7 +104,7 @@ echo "Waiting for initial TypeScript compilation..."
 sleep 5
 
 # Start backend with nodemon watching the dist directory
-npx nodemon --watch dist/backend/src --exec "node dist/backend/src/main.js" &
+npx nodemon --watch dist --exec "node dist/main.js" &
 BACKEND_PID=$!
 
 # Give backend a moment to start

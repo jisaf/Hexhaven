@@ -89,6 +89,7 @@ export class GameGateway
   private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
+  private readonly currentRound = new Map<string, number>(); // roomCode -> current round
   private readonly roomMaps = new Map<string, Map<string, any>>(); // roomCode -> hex map
   private readonly roomLootTokens = new Map<string, any[]>(); // roomCode -> loot tokens
   private readonly roomMonsterInitiatives = new Map<
@@ -374,6 +375,18 @@ export class GameGateway
           const turnOrder = this.roomTurnOrder.get(roomCode);
           const currentTurnIdx = this.currentTurnIndex.get(roomCode) || 0;
           if (turnOrder && turnOrder.length > 0) {
+            const roundNumber = this.currentRound.get(roomCode) || 1;
+            const roundStartedPayload: any = {
+              roundNumber,
+              turnOrder: turnOrder.map(({ entityId, name, entityType, initiative }) => ({
+                entityId,
+                name,
+                entityType,
+                initiative,
+              })),
+            };
+            client.emit('round_started', roundStartedPayload);
+
             const currentEntity = turnOrder[currentTurnIdx];
             const turnStartedPayload: TurnStartedPayload = {
               entityId: currentEntity.entityId,
@@ -688,6 +701,9 @@ export class GameGateway
 
       // Initialize empty loot tokens array for this room
       this.roomLootTokens.set(room.roomCode, []);
+
+      // Initialize round counter
+      this.currentRound.set(room.roomCode, 0);
 
       // Note: Game is already started by roomService.startGame() on line 533
       this.logger.log(
@@ -1037,19 +1053,35 @@ export class GameGateway
     this.roomTurnOrder.set(roomCode, turnOrder);
     this.currentTurnIndex.set(roomCode, 0);
 
-    // Broadcast turn started for first entity
+    // Increment round number
+    const roundNumber = (this.currentRound.get(roomCode) || 0) + 1;
+    this.currentRound.set(roomCode, roundNumber);
+
+    // Broadcast round started with turn order
     if (turnOrder.length > 0) {
+      const roundStartedPayload: any = {
+        roundNumber,
+        turnOrder: turnOrder.map(({ entityId, name, entityType, initiative }) => ({
+          entityId,
+          name,
+          entityType,
+          initiative,
+        })),
+      };
+
+      this.server.to(roomCode).emit('round_started', roundStartedPayload);
+
+      // Also send turn_started for the first entity
       const firstEntity = turnOrder[0];
       const turnStartedPayload: TurnStartedPayload = {
         entityId: firstEntity.entityId,
         entityType: firstEntity.entityType,
         turnIndex: 0,
       };
-
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 
       this.logger.log(
-        `Round started in room ${roomCode}, first turn: ${firstEntity.entityId} (initiative: ${firstEntity.initiative})`,
+        `Round ${roundNumber} started in room ${roomCode}, first turn: ${turnOrder[0].entityId} (initiative: ${turnOrder[0].initiative})`,
       );
     }
   }
