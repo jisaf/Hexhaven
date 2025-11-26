@@ -183,6 +183,11 @@ export function GameBoard() {
     addLog(`Round ${data.roundNumber} has started.`);
   }, [addLog]);
 
+  const handleRoundEnded = useCallback((data: { roundNumber: number }) => {
+    addLog(`Round ${data.roundNumber} has ended. Select cards for next round.`);
+    setShowCardSelection(true);
+  }, [addLog]);
+
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
     setIsMyTurn(myTurn);
@@ -215,10 +220,11 @@ export function GameBoard() {
     onGameStarted: handleGameStarted,
     onCharacterMoved: handleCharacterMoved,
     onRoundStarted: handleRoundStarted,
+    onRoundEnded: handleRoundEnded,
     onTurnStarted: handleTurnStarted,
     onGameStateUpdate: handleGameStateUpdate,
     onConnectionStatusChange: handleConnectionStatusChange,
-  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
+  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
