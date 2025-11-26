@@ -197,13 +197,32 @@ export function GameBoard() {
       setSelectedCharacterId(characterId);
       setSelectedHex(null);
 
-      // Determine movement points from the selected card
-      // This assumes the bottom action is always the move action for now
-      const moveValue = selectedBottomAction?.bottomAction.type === 'move'
-        ? selectedBottomAction.bottomAction.value || 0
-        : 0;
+      // Debug: Log the full card structure
+      console.log('🃏 Selected cards:', {
+        topAction: selectedTopAction,
+        bottomAction: selectedBottomAction
+      });
 
-      console.log('📊 Selected bottom action:', selectedBottomAction?.name, 'Move value:', moveValue);
+      // Determine movement points from either top or bottom action
+      // Check both actions to find which one is the move action
+      let moveValue = 0;
+      let moveSource = 'none';
+
+      if (selectedBottomAction?.bottomAction?.type === 'move') {
+        moveValue = selectedBottomAction.bottomAction.value || 0;
+        moveSource = 'bottom';
+      } else if (selectedTopAction?.topAction?.type === 'move') {
+        moveValue = selectedTopAction.topAction.value || 0;
+        moveSource = 'top';
+      }
+
+      console.log('📊 Move action details:', {
+        source: moveSource,
+        topActionType: selectedTopAction?.topAction?.type,
+        bottomActionType: selectedBottomAction?.bottomAction?.type,
+        moveValue: moveValue
+      });
+
       setCurrentMovementPoints(moveValue);
 
       // Calculate and show movement range
