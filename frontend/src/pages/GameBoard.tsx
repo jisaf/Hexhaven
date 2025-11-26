@@ -305,7 +305,7 @@ export function GameBoard() {
         <div className={styles.hudWrapper}>
           <GameHUD
             logs={logs}
-            connectionStatus={connection,
+            connectionStatus={connectionStatus}
             onBackToLobby={handleBackToLobby}
           />
         </div>
