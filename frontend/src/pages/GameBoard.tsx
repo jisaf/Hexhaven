@@ -139,32 +139,36 @@ export function GameBoard() {
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
     console.log('🎮 handleGameStarted called with data:', data);
+    addLog('DEBUG: game_started event received');
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
-      console.log('🔍 Looking for character with playerUUID:', playerUUID);
+      addLog(`DEBUG: Looking for UUID: ${playerUUID.substring(0, 8)}...`);
       const myCharacter = data.characters.find(char => char.playerId === playerUUID);
-      console.log('👤 Found my character:', myCharacter);
 
       if (myCharacter) {
+        addLog(`DEBUG: Found character ID: ${myCharacter.id}`);
         setMyCharacterId(myCharacter.id);
 
         // Load ability deck (if available in extended character data)
         const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
-        console.log('🎴 Character abilityDeck:', characterWithDeck.abilityDeck);
-        console.log('🎴 abilityDeck is array?', Array.isArray(characterWithDeck.abilityDeck));
-        console.log('🎴 abilityDeck length:', characterWithDeck.abilityDeck?.length);
+        const deckLength = characterWithDeck.abilityDeck?.length || 0;
+        const isArray = Array.isArray(characterWithDeck.abilityDeck);
+
+        addLog(`DEBUG: abilityDeck exists: ${!!characterWithDeck.abilityDeck}`);
+        addLog(`DEBUG: abilityDeck is array: ${isArray}`);
+        addLog(`DEBUG: abilityDeck length: ${deckLength}`);
 
         if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-          console.log('✅ Setting playerHand with', characterWithDeck.abilityDeck.length, 'cards');
+          addLog(`DEBUG: Setting playerHand with ${deckLength} cards`);
           setPlayerHand(characterWithDeck.abilityDeck);
           // Do not set showCardSelection here directly to avoid race condition
         } else {
-          console.warn('⚠️ No abilityDeck found or not an array');
+          addLog('ERROR: No abilityDeck found or not array');
         }
       } else {
-        console.warn('⚠️ My character not found in game_started payload');
+        addLog('ERROR: Character not found in payload');
       }
 
       setGameData(data);
@@ -175,12 +179,14 @@ export function GameBoard() {
         ackCallback(true);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`ERROR: game_started failed: ${errorMsg}`);
       console.error('❌ Error processing game_started event:', error);
       if (ackCallback) {
         ackCallback(false);
       }
     }
-  }, []);
+  }, [addLog]);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
     moveCharacter(data.characterId, data.toHex, data.movementPath);
@@ -242,17 +248,17 @@ export function GameBoard() {
 
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {
-    console.log('🎴 playerHand changed, length:', playerHand.length);
+    addLog(`DEBUG: playerHand changed, length: ${playerHand.length}`);
     if (playerHand.length > 0) {
-        console.log('✅ playerHand has cards, will show card selection panel');
+        addLog('DEBUG: playerHand has cards, showing card selection');
         queueMicrotask(() => {
-            console.log('🎴 Setting showCardSelection to true');
+            addLog('DEBUG: Setting showCardSelection=true');
             setShowCardSelection(true);
         });
     } else {
-        console.log('⚠️ playerHand is empty, not showing card selection');
+        addLog('DEBUG: playerHand empty, not showing cards');
     }
-  }, [playerHand]);
+  }, [playerHand, addLog]);
 
   // Render game data when HexGrid is ready
   useEffect(() => {
