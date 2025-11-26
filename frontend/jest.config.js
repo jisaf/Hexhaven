@@ -41,7 +41,8 @@ export default {
     '^@shared/(.*)$': '<rootDir>/../shared/$1',
 
     // Style files
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.module\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
 
     // Asset files
     '\\.(jpg|jpeg|png|gif|svg|webp|avif)$': '<rootDir>/tests/__mocks__/fileMock.js',
