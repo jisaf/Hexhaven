@@ -20,6 +20,7 @@ import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
+import { hexRangeReachable } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster, HexTile, TerrainType } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
@@ -66,6 +67,7 @@ export function GameBoard() {
   const [turnOrder, setTurnOrder] = useState<TurnEntity[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentTurnEntityId, setCurrentTurnEntityId] = useState<string | null>(null);
+  const [currentMovementPoints, setCurrentMovementPoints] = useState(0);
 
   // T200: Action Log
   const addLog = useCallback((message: string) => {
@@ -90,13 +92,16 @@ export function GameBoard() {
     initializeBoard,
     moveCharacter,
     deselectAll,
-    showSelectedHex,
-    clearSelectedHex,
+    showMovementRange,
+    clearMovementRange,
+    getCharacter,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    isHexBlocked,
+    setSelectedHex: highlightSelectedHex,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
@@ -118,26 +123,50 @@ export function GameBoard() {
         addLog(`CONFIRM MOVE: Clicked ${clickedHexCoords} matches selected ${selectedHexCoords}.`);
         websocketService.moveCharacter(hex);
         setSelectedHex(null);
-        clearSelectedHex();
+        clearMovementRange();
       } else {
         addLog(`CHANGE DESTINATION: Old=${selectedHexCoords}, New=${clickedHexCoords}.`);
         setSelectedHex(hex);
-        showSelectedHex(hex);
       }
     } else {
       addLog(`SET DESTINATION: ${clickedHexCoords}.`);
       setSelectedHex(hex);
-      showSelectedHex(hex);
     }
-  }, [selectedCharacterId, isMyTurn, addLog, selectedHex, showSelectedHex, clearSelectedHex]);
+  }, [selectedCharacterId, isMyTurn, addLog, selectedHex, clearMovementRange]);
+
+  // Effect to sync the selected hex highlight with the state
+  useEffect(() => {
+    highlightSelectedHex(selectedHex);
+  }, [selectedHex, highlightSelectedHex]);
 
   const handleCharacterSelectClick = useCallback((characterId: string) => {
     if (isMyTurn) {
       setSelectedCharacterId(characterId);
       setSelectedHex(null);
-      clearSelectedHex();
+
+      // Determine movement points from the selected card
+      // This assumes the bottom action is always the move action for now
+      const moveValue = selectedBottomAction?.bottomAction.type === 'move'
+        ? selectedBottomAction.bottomAction.value || 0
+        : 0;
+
+      setCurrentMovementPoints(moveValue);
+
+      // Calculate and show movement range
+      const character = getCharacter(characterId);
+      if (character && moveValue > 0) {
+        const data = character.getData();
+        const reachableHexes = hexRangeReachable(
+          data.currentHex,
+          moveValue,
+          isHexBlocked
+        );
+        showMovementRange(reachableHexes);
+      } else {
+        clearMovementRange();
+      }
     }
-  }, [isMyTurn, clearSelectedHex]);
+  }, [isMyTurn, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
     if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
@@ -211,7 +240,25 @@ export function GameBoard() {
     moveCharacter(data.characterId, data.toHex, data.movementPath);
     const charName = data.characterId === myCharacterId ? 'You' : 'Opponent';
     addLog(`${charName} moved.`);
-  }, [moveCharacter, addLog, myCharacterId]);
+
+    // Update movement points and refresh highlights
+    const movedDistance = data.movementPath.length > 0 ? data.movementPath.length - 1 : 0;
+    const remainingMoves = currentMovementPoints - movedDistance;
+    setCurrentMovementPoints(remainingMoves);
+    setSelectedHex(null); // Clear selected hex after move
+
+    const character = getCharacter(data.characterId);
+    if (character && remainingMoves > 0) {
+      const reachableHexes = hexRangeReachable(
+        data.toHex,
+        remainingMoves,
+        isHexBlocked
+      );
+      showMovementRange(reachableHexes);
+    } else {
+      clearMovementRange();
+    }
+  }, [moveCharacter, addLog, myCharacterId, currentMovementPoints, getCharacter, showMovementRange, clearMovementRange]);
 
   const handleRoundStarted = useCallback((data: { roundNumber: number; turnOrder: TurnEntity[] }) => {
     setTurnOrder(data.turnOrder);
