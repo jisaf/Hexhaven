@@ -1299,7 +1299,9 @@ export class GameGateway
         targetDead = target.isDead;
       }
 
-      const targetName = isMonsterTarget ? target.monsterType : target.characterClass;
+      const targetName = isMonsterTarget
+        ? target.monsterType
+        : target.characterClass;
 
       // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
@@ -1917,7 +1919,9 @@ export class GameGateway
         );
       }
 
-      const monsterName = monster.isElite ? `Elite ${monster.monsterType}` : monster.monsterType;
+      const monsterName = monster.isElite
+        ? `Elite ${monster.monsterType}`
+        : monster.monsterType;
 
       // Broadcast monster activation
       const monsterActivatedPayload: MonsterActivatedPayload = {

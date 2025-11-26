@@ -35,10 +35,16 @@ import styles from './GameBoard.module.css';
 
 // Helper to format modifier value into a string like "+1", "-2"
 const formatModifier = (modifier: number | 'null' | 'x2'): string => {
-  if (typeof modifier === 'number') {
-    return modifier > 0 ? `+${modifier}` : `${modifier}`;
+  if (modifier === 'x2') {
+    return ', x2 modifier';
   }
-  return modifier;
+  if (modifier === 'null') {
+    return ' (null modifier)';
+  }
+  if (typeof modifier === 'number') {
+    return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+  }
+  return '';
 };
 
 // Helper to get color for a given effect
@@ -263,21 +269,32 @@ export function GameBoard() {
     // Attack
     if (data.attack) {
       const { targetId, baseDamage, damage, modifier, effects } = data.attack;
-      logParts.push({ text: ' attacked ' });
-      logParts.push({ text: data.focusTargetName, color: 'lightblue' });
-      logParts.push({ text: ' for ' });
-      logParts.push({ text: `${damage}`, color: 'red' });
-      logParts.push({ text: ` (${baseDamage}${formatModifier(modifier)})` });
 
-      // Effects
-      if (effects.length > 0) {
-        logParts.push({ text: ' and applied ' });
-        effects.forEach((effect, i) => {
-          logParts.push({ text: effect, color: getEffectColor(effect) });
-          if (i < effects.length - 1) {
-            logParts.push({ text: ' and ' });
-          }
-        });
+      if (modifier === 'null') {
+        logParts.push({ text: "'s attack missed " });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: formatModifier(modifier) });
+      } else {
+        logParts.push({ text: ' attacked ' });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: ' for ' });
+        logParts.push({ text: `${damage}`, color: 'red' });
+        if (modifier === 'x2') {
+          logParts.push({ text: ` (${baseDamage} base${formatModifier(modifier)})` });
+        } else {
+          logParts.push({ text: ` (${baseDamage}${formatModifier(modifier)})` });
+        }
+
+        // Effects
+        if (effects.length > 0) {
+          logParts.push({ text: ' and applied ' });
+          effects.forEach((effect, i) => {
+            logParts.push({ text: effect, color: getEffectColor(effect) });
+            if (i < effects.length - 1) {
+              logParts.push({ text: ' and ' });
+            }
+          });
+        }
       }
       logParts.push({ text: '.' });
 
@@ -303,20 +320,31 @@ export function GameBoard() {
   const handleAttackResolved = useCallback((data: AttackResolvedPayload) => {
     const logParts: LogMessagePart[] = [];
     logParts.push({ text: data.attackerName, color: 'lightblue' });
-    logParts.push({ text: ' attacked ' });
-    logParts.push({ text: data.targetName, color: 'orange' });
-    logParts.push({ text: ' for ' });
-    logParts.push({ text: `${data.damage}`, color: 'red' });
-    logParts.push({ text: ` (${data.baseDamage}${formatModifier(data.modifier)})` });
 
-    if (data.effects.length > 0) {
-      logParts.push({ text: ' and applied ' });
-      data.effects.forEach((effect, i) => {
-        logParts.push({ text: effect, color: getEffectColor(effect) });
-        if (i < data.effects.length - 1) {
-          logParts.push({ text: ' and ' });
-        }
-      });
+    if (data.modifier === 'null') {
+      logParts.push({ text: "'s attack missed " });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: formatModifier(data.modifier) });
+    } else {
+      logParts.push({ text: ' attacked ' });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: ' for ' });
+      logParts.push({ text: `${data.damage}`, color: 'red' });
+      if (data.modifier === 'x2') {
+        logParts.push({ text: ` (${data.baseDamage} base${formatModifier(data.modifier)})` });
+      } else {
+        logParts.push({ text: ` (${data.baseDamage}${formatModifier(data.modifier)})` });
+      }
+
+      if (data.effects.length > 0) {
+        logParts.push({ text: ' and applied ' });
+        data.effects.forEach((effect, i) => {
+          logParts.push({ text: effect, color: getEffectColor(effect) });
+          if (i < data.effects.length - 1) {
+            logParts.push({ text: ' and ' });
+          }
+        });
+      }
     }
     logParts.push({ text: '.' });
     addLog(logParts);
