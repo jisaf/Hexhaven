@@ -41,8 +41,7 @@ export default {
     '^@shared/(.*)$': '<rootDir>/../shared/$1',
 
     // Style files
-    '\\.module\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/styleMock.js',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
 
     // Asset files
     '\\.(jpg|jpeg|png|gif|svg|webp|avif)$': '<rootDir>/tests/__mocks__/fileMock.js',
@@ -53,6 +52,7 @@ export default {
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
 
   // Coverage collection
   collectCoverageFrom: [
