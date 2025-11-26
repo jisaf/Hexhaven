@@ -1506,25 +1506,48 @@ export class GameGateway
     roomCode: string,
   ): Promise<void> {
     try {
-      this.logger.log(`Activating monster ${monsterId}`);
+      this.logger.log(`🤖 [MonsterAI] Activating monster ${monsterId} in room ${roomCode}`);
 
       // Get monster from room state
       const monsters = this.roomMonsters.get(roomCode) || [];
+      this.logger.log(`🤖 [MonsterAI] Found ${monsters.length} monsters in room`);
+
       const monster = monsters.find((m: any) => m.id === monsterId);
       if (!monster) {
+        this.logger.error(`🤖 [MonsterAI] Monster ${monsterId} not found in room ${roomCode}`);
+        this.logger.error(`🤖 [MonsterAI] Available monsters: ${monsters.map((m: any) => m.id).join(', ')}`);
         throw new Error(`Monster ${monsterId} not found in room ${roomCode}`);
       }
+
+      this.logger.log(`🤖 [MonsterAI] Monster found: ${monster.monsterType} at (${monster.currentHex.q}, ${monster.currentHex.r})`);
+      this.logger.log(`🤖 [MonsterAI] Monster stats: attack=${monster.attack}, range=${monster.range}, movement=${monster.movement}`);
 
       // Get room and all characters
       const room = roomService.getRoom(roomCode);
       if (!room) {
+        this.logger.error(`🤖 [MonsterAI] Room ${roomCode} not found`);
         throw new Error(`Room ${roomCode} not found`);
       }
 
-      // Get all characters in room (cast to any to bypass type mismatch)
-      const characters = room.players
+      this.logger.log(`🤖 [MonsterAI] Room has ${room.players.length} players`);
+
+      // Get all characters in room and map to expected format
+      const characterModels = room.players
         .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
         .filter((c: any) => c !== null);
+
+      this.logger.log(`🤖 [MonsterAI] Found ${characterModels.length} characters`);
+
+      // Map Character model properties to match the shared Character interface
+      // Character model uses 'position', but MonsterAIService expects 'currentHex'
+      const characters = characterModels.map((c: any) => ({
+        ...c,
+        currentHex: c.position, // Map position to currentHex
+      }));
+
+      characters.forEach((c: any) => {
+        this.logger.log(`🤖 [MonsterAI] - Character ${c.id}: ${c.characterClass} at (${c.currentHex.q}, ${c.currentHex.r}), exhausted: ${c.exhausted}`);
+      });
 
       // Use MonsterAIService to determine focus target
       const focusTargetId = this.monsterAIService.selectFocusTarget(
@@ -1533,18 +1556,22 @@ export class GameGateway
       );
 
       if (!focusTargetId) {
-        this.logger.log(`No valid focus target for monster ${monsterId}`);
+        this.logger.log(`🤖 [MonsterAI] No valid focus target for monster ${monsterId}`);
         // No target, skip activation and advance turn
         this.advanceTurnAfterMonsterActivation(roomCode);
         return;
       }
 
+      this.logger.log(`🤖 [MonsterAI] Focus target selected: ${focusTargetId}`);
+
       const focusTarget = characters.find((c: any) => c.id === focusTargetId);
       if (!focusTarget) {
-        this.logger.error(`Focus target ${focusTargetId} not found`);
+        this.logger.error(`🤖 [MonsterAI] Focus target ${focusTargetId} not found in character list`);
         this.advanceTurnAfterMonsterActivation(roomCode);
         return;
       }
+
+      this.logger.log(`🤖 [MonsterAI] Focus target found: ${focusTarget.characterClass} at (${focusTarget.currentHex.q}, ${focusTarget.currentHex.r})`);
 
       // Get hex map and obstacles for movement calculation
       const hexMap = this.roomMaps.get(roomCode);
@@ -1557,6 +1584,8 @@ export class GameGateway
         });
       }
 
+      this.logger.log(`🤖 [MonsterAI] Found ${obstacles.length} obstacles on map`);
+
       // Determine movement
       const movementHex = this.monsterAIService.determineMovement(
         monster,
@@ -1568,8 +1597,10 @@ export class GameGateway
       if (movementHex) {
         monster.currentHex = movementHex;
         this.logger.log(
-          `Monster ${monsterId} moved to (${movementHex.q}, ${movementHex.r})`,
+          `🤖 [MonsterAI] Monster ${monsterId} moved to (${movementHex.q}, ${movementHex.r})`,
         );
+      } else {
+        this.logger.log(`🤖 [MonsterAI] Monster ${monsterId} did not move (already in optimal position or blocked)`);
       }
 
       // Check if monster should attack
@@ -1578,11 +1609,16 @@ export class GameGateway
         focusTarget as any,
       );
 
+      this.logger.log(`🤖 [MonsterAI] Should attack: ${shouldAttack}`);
+
       let attackResult = null;
       if (shouldAttack) {
+        this.logger.log(`🤖 [MonsterAI] Monster is in range, performing attack...`);
+
         // Draw attack modifier card
         const modifierDeck = this.modifierDecks.get(roomCode);
         if (!modifierDeck) {
+          this.logger.error(`🤖 [MonsterAI] Modifier deck not found for room ${roomCode}`);
           throw new Error(`Modifier deck not found for room ${roomCode}`);
         }
 
@@ -1600,11 +1636,13 @@ export class GameGateway
           modifierCard,
         );
 
+        this.logger.log(`🤖 [MonsterAI] Base damage: ${baseDamage}, Modifier: ${modifierCard.modifier}, Final damage: ${finalDamage}`);
+
         // Apply damage to target
         const actualDamage = (focusTarget as any).takeDamage(finalDamage);
 
         this.logger.log(
-          `Monster ${monsterId} attacked ${focusTargetId} for ${actualDamage} damage`,
+          `🤖 [MonsterAI] Monster ${monsterId} attacked ${focusTargetId} for ${actualDamage} damage`,
         );
 
         attackResult = {
@@ -1615,9 +1653,11 @@ export class GameGateway
 
         // Check if target is dead/exhausted
         if ((focusTarget as any).isDead) {
-          this.logger.log(`Character ${focusTargetId} was killed`);
+          this.logger.log(`🤖 [MonsterAI] Character ${focusTargetId} was killed`);
           // In real implementation, would handle character death/exhaustion
         }
+      } else {
+        this.logger.log(`🤖 [MonsterAI] Monster is out of range, no attack performed`);
       }
 
       // Broadcast monster activation
@@ -1628,18 +1668,26 @@ export class GameGateway
         attack: attackResult,
       };
 
+      this.logger.log(`🤖 [MonsterAI] Broadcasting monster_activated event to room ${roomCode}`);
+
       this.server
         .to(roomCode)
         .emit('monster_activated', monsterActivatedPayload);
 
       // Automatically advance to next turn
+      this.logger.log(`🤖 [MonsterAI] Advancing turn after monster activation`);
       this.advanceTurnAfterMonsterActivation(roomCode);
 
-      this.logger.log(`Monster ${monsterId} activated`);
+      this.logger.log(`🤖 [MonsterAI] ✅ Monster ${monsterId} activation complete`);
     } catch (error) {
       this.logger.error(
-        `Monster activation error: ${error instanceof Error ? error.message : String(error)}`,
+        `🤖 [MonsterAI] ❌ Monster activation error: ${error instanceof Error ? error.message : String(error)}`,
       );
+      this.logger.error(
+        `🤖 [MonsterAI] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`,
+      );
+      // Still advance turn even on error to prevent game from hanging
+      this.advanceTurnAfterMonsterActivation(roomCode);
     }
   }
 
