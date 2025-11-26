@@ -248,16 +248,17 @@ export function GameBoard() {
 
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {
-    addLog(`DEBUG: playerHand changed, length: ${playerHand.length}`);
-    if (playerHand.length > 0) {
+    // Wrap all state updates in queueMicrotask to avoid cascading renders
+    queueMicrotask(() => {
+      addLog(`DEBUG: playerHand changed, length: ${playerHand.length}`);
+      if (playerHand.length > 0) {
         addLog('DEBUG: playerHand has cards, showing card selection');
-        queueMicrotask(() => {
-            addLog('DEBUG: Setting showCardSelection=true');
-            setShowCardSelection(true);
-        });
-    } else {
+        addLog('DEBUG: Setting showCardSelection=true');
+        setShowCardSelection(true);
+      } else {
         addLog('DEBUG: playerHand empty, not showing cards');
-    }
+      }
+    });
   }, [playerHand, addLog]);
 
   // Render game data when HexGrid is ready
