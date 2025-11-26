@@ -144,6 +144,13 @@ export function GameBoard() {
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
+      if (!playerUUID) {
+        addLog('ERROR: No playerUUID found');
+        if (ackCallback) {
+          ackCallback(false);
+        }
+        return;
+      }
       addLog(`DEBUG: Looking for UUID: ${playerUUID.substring(0, 8)}...`);
       const myCharacter = data.characters.find(char => char.playerId === playerUUID);
 
