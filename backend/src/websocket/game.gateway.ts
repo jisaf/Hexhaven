@@ -1165,6 +1165,50 @@ export class GameGateway
   }
 
   /**
+   * Get valid attack targets for a character
+   */
+  @SubscribeMessage('get_valid_attack_targets')
+  handleGetValidAttackTargets(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { range: number },
+  ): { validTargets: any[] } {
+    const playerUUID = this.socketToPlayer.get(client.id);
+    if (!playerUUID) {
+      throw new Error('Player not authenticated');
+    }
+
+    const roomData = this.getRoomFromSocket(client);
+    if (!roomData) {
+      throw new Error('Player not in any room or room not found');
+    }
+
+    const { room } = roomData;
+    const character = characterService.getCharacterByPlayerId(playerUUID);
+    if (!character) {
+      throw new Error('Character not found');
+    }
+
+    const monsters = this.roomMonsters.get(room.roomCode) || [];
+    const hexMap = this.roomMaps.get(room.roomCode);
+    if (!hexMap) {
+      throw new Error('Map not found');
+    }
+
+    const validTargets = monsters
+      .filter((monster: any) => !monster.isDead)
+      .filter((monster: any) => {
+        const distance = this.pathfindingService.calculateDistance(
+          character.position,
+          monster.currentHex,
+        );
+        return distance <= payload.range;
+      })
+      .map((monster: any) => monster.currentHex);
+
+    return { validTargets };
+  }
+
+  /**
    * Attack a target (monster or character) (US2 - T097)
    */
   @SubscribeMessage('attack_target')

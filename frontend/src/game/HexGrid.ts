@@ -467,6 +467,20 @@ export class HexGrid {
   }
 
   /**
+   * Show attack highlights on specific hexes
+   */
+  public showAttackHighlights(hexes: Axial[]): void {
+    this.movementHighlight.showAttackRange(hexes);
+  }
+
+  /**
+   * Clear only attack highlights
+   */
+  public clearAttackHighlights(): void {
+    this.movementHighlight.clearType('attack');
+  }
+
+  /**
    * Clear all highlights
    */
   public clearHighlights(): void {

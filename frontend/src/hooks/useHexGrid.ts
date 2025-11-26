@@ -237,6 +237,18 @@ export function useHexGrid(
     }
   }, []);
 
+  const showAttackHighlights = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showAttackHighlights(hexes);
+    }
+  }, []);
+
+  const clearAttackHighlights = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearAttackHighlights();
+    }
+  }, []);
+
   return {
     hexGridRef,
     hexGridReady,
@@ -250,5 +262,7 @@ export function useHexGrid(
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    showAttackHighlights,
+    clearAttackHighlights,
   };
 }

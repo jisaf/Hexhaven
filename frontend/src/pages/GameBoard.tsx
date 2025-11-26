@@ -66,6 +66,7 @@ export function GameBoard() {
   const [turnOrder, setTurnOrder] = useState<TurnEntity[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentTurnEntityId, setCurrentTurnEntityId] = useState<string | null>(null);
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
 
   // T200: Action Log
   const addLog = useCallback((message: string) => {
@@ -78,12 +79,29 @@ export function GameBoard() {
   const [selectedTopAction, setSelectedTopAction] = useState<AbilityCard | null>(null);
   const [selectedBottomAction, setSelectedBottomAction] = useState<AbilityCard | null>(null);
 
-  // Attack targeting state (T115)
-  const [attackMode, setAttackMode] = useState(false);
-  const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
 
   // Use custom hooks
-  useRoomSession();
+  const roomSession = useRoomSession();
+
+  // Effect to handle active action changes (e.g., showing highlights)
+  useEffect(() => {
+    const activeAction = roomSessionManager.getState().activeAction;
+    if (activeAction) {
+      const card = playerHand.find(c => c.id === activeAction.cardId);
+      if (card) {
+        const action = activeAction.actionType === 'top' ? card.topAction : card.bottomAction;
+        if (action.type === 'attack') {
+          const fetchTargets = async () => {
+            const { validTargets } = await websocketService.getValidAttackTargets(action.range);
+            showAttackHighlights(validTargets);
+          };
+          fetchTargets();
+        }
+      }
+    } else {
+      clearAttackHighlights();
+    }
+  }, [roomSession.activeAction, playerHand, showAttackHighlights, clearAttackHighlights]);
 
   const {
     hexGridReady,
@@ -97,6 +115,8 @@ export function GameBoard() {
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    showAttackHighlights,
+    clearAttackHighlights,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
@@ -140,12 +160,18 @@ export function GameBoard() {
   }, [isMyTurn, clearSelectedHex]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
-    if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
+    if (!isMyTurn || !roomSession.activeAction) return;
+
+    if (selectedTargetId === monsterId) {
+      // Confirm attack
       websocketService.attackTarget(monsterId);
-      setAttackMode(false);
-      setAttackableTargets([]);
+      setSelectedTargetId(null);
+      roomSessionManager.advanceAction();
+    } else {
+      // Select target
+      setSelectedTargetId(monsterId);
     }
-  }, [attackMode, isMyTurn, attackableTargets]);
+  }, [isMyTurn, roomSession.activeAction, selectedTargetId]);
 
 
   // Event handlers for WebSocket
@@ -420,6 +446,10 @@ export function GameBoard() {
     }
   }, [isMyTurn, addLog]);
 
+  const handleSkipAction = useCallback(() => {
+    roomSessionManager.advanceAction();
+  }, []);
+
   const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
 
   return (
@@ -439,8 +469,10 @@ export function GameBoard() {
             logs={logs}
             connectionStatus={connectionStatus}
             isMyTurn={isMyTurn}
+            isActionActive={!!roomSession.activeAction}
             onBackToLobby={handleBackToLobby}
             onEndTurn={handleEndTurn}
+            onSkipAction={handleSkipAction}
           />
         </div>
       </div>
@@ -460,8 +492,8 @@ export function GameBoard() {
       )}
 
       <GameHints
-        attackMode={attackMode}
-        showMovementHint={selectedCharacterId !== null && isMyTurn && !attackMode}
+        attackMode={false}
+        showMovementHint={selectedCharacterId !== null && isMyTurn}
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />

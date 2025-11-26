@@ -63,6 +63,7 @@ export class MovementHighlight {
           lineColor: 0xff0000
         });
 
+        highlight.name = 'attack';
         this.highlights.set(key, highlight);
         this.container.addChild(highlight);
       }

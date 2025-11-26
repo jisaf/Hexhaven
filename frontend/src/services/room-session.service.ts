@@ -43,12 +43,19 @@ export type PlayerRole = 'host' | 'player' | null;
 /**
  * Room session state
  */
+export interface ActiveActionState {
+  cardId: string;
+  actionType: 'top' | 'bottom';
+  actionIndex: number;
+}
+
 export interface RoomSessionState {
   roomCode: string | null;
   status: RoomStatus;
   playerRole: PlayerRole;
   gameState: GameStartedPayload | null;
   lastJoinIntent: JoinIntent | null;
+  activeAction: ActiveActionState | null;
 }
 
 /**
@@ -83,6 +90,7 @@ class RoomSessionManager {
     playerRole: null,
     gameState: null,
     lastJoinIntent: null,
+    activeAction: null,
   };
 
   // Prevents duplicate joins within same session
@@ -328,6 +336,41 @@ class RoomSessionManager {
     this.state.status = 'lobby';
 
     this.emitStateUpdate();
+  }
+
+  /**
+   * Set the active action for the current player
+   */
+  public setActiveAction(cardId: string, actionType: 'top' | 'bottom'): void {
+    console.log(`[RoomSessionManager] Setting active action: cardId=${cardId}, type=${actionType}`);
+    this.state.activeAction = {
+      cardId,
+      actionType,
+      actionIndex: 0,
+    };
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Advance to the next action on the current card
+   */
+  public advanceAction(): void {
+    if (this.state.activeAction) {
+      this.state.activeAction.actionIndex++;
+      console.log(`[RoomSessionManager] Advancing action to index: ${this.state.activeAction.actionIndex}`);
+      this.emitStateUpdate();
+    }
+  }
+
+  /**
+   * Clear the active action
+   */
+  public clearActiveAction(): void {
+    if (this.state.activeAction) {
+      console.log('[RoomSessionManager] Clearing active action');
+      this.state.activeAction = null;
+      this.emitStateUpdate();
+    }
   }
 }
 

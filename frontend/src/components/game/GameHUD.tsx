@@ -7,11 +7,21 @@ interface GameHUDProps {
   logs: string[];
   connectionStatus: ConnectionStatus;
   isMyTurn: boolean;
+  isActionActive: boolean;
   onBackToLobby: () => void;
   onEndTurn: () => void;
+  onSkipAction: () => void;
 }
 
-export function GameHUD({ logs, connectionStatus, isMyTurn, onBackToLobby, onEndTurn }: GameHUDProps) {
+export function GameHUD({
+  logs,
+  connectionStatus,
+  isMyTurn,
+  isActionActive,
+  onBackToLobby,
+  onEndTurn,
+  onSkipAction,
+}: GameHUDProps) {
   const statusClassName = styles[connectionStatus] || '';
 
   return (
@@ -20,6 +30,16 @@ export function GameHUD({ logs, connectionStatus, isMyTurn, onBackToLobby, onEnd
         <button onClick={onBackToLobby} className={styles.backButton} aria-label="Back to Lobby">
           <FaSignOutAlt />
         </button>
+        {isActionActive && (
+          <button
+            onClick={onSkipAction}
+            className={styles.skipButton}
+            disabled={!isMyTurn}
+            aria-label="Skip Action"
+          >
+            Skip
+          </button>
+        )}
         <button
           onClick={onEndTurn}
           className={styles.endTurnButton}

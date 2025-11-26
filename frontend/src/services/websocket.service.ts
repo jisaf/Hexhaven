@@ -395,6 +395,17 @@ class WebSocketService {
   }
 
   /**
+   * Get valid attack targets
+   */
+  getValidAttackTargets(range: number): Promise<{ validTargets: { q: number; r: number }[] }> {
+    return new Promise((resolve) => {
+      this.socket?.emit('get_valid_attack_targets', { range }, (response: { validTargets: { q: number; r: number }[] }) => {
+        resolve(response);
+      });
+    });
+  }
+
+  /**
    * Attack target
    */
   attackTarget(targetId: string): void {

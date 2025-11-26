@@ -210,13 +210,20 @@ export class PathfindingService {
   }
 
   /**
-   * Heuristic function for A* (Manhattan distance for hex grids)
+   * Calculate distance between two hexes (Manhattan distance for hex grids)
    */
-  heuristic(hex1: AxialCoordinates, hex2: AxialCoordinates): number {
+  calculateDistance(hex1: AxialCoordinates, hex2: AxialCoordinates): number {
     const dq = Math.abs(hex1.q - hex2.q);
     const dr = Math.abs(hex1.r - hex2.r);
     const ds = Math.abs(hex1.q + hex1.r - (hex2.q + hex2.r));
     return Math.max(dq, dr, ds);
+  }
+
+  /**
+   * Heuristic function for A* (Manhattan distance for hex grids)
+   */
+  heuristic(hex1: AxialCoordinates, hex2: AxialCoordinates): number {
+    return this.calculateDistance(hex1, hex2);
   }
 
   /**

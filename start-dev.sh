@@ -41,22 +41,6 @@ else
     echo "Backend dependencies already installed"
 fi
 
-# Generate Prisma Client
-echo "Generating Prisma Client..."
-npm run prisma:generate
-
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL database to start..."
-while ! nc -z localhost 5432; do
-  echo -n "."
-  sleep 1
-done
-echo -e "\n${GREEN}Database is ready!${NC}"
-
-# Run migrations (create if needed)
-echo "Running database migrations..."
-npm run prisma:migrate:deploy 2>/dev/null || npm run prisma:migrate
-
 cd ..
 
 # Frontend setup
