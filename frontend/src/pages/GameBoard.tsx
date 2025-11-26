@@ -288,6 +288,14 @@ export function GameBoard() {
     navigate('/');
   };
 
+  const handleEndTurn = useCallback(() => {
+    if (isMyTurn) {
+      websocketService.endTurn();
+      addLog('Turn ended.');
+      setIsMyTurn(false);
+    }
+  }, [isMyTurn, addLog]);
+
   const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
 
   return (
@@ -306,7 +314,9 @@ export function GameBoard() {
           <GameHUD
             logs={logs}
             connectionStatus={connectionStatus}
+            isMyTurn={isMyTurn}
             onBackToLobby={handleBackToLobby}
+            onEndTurn={handleEndTurn}
           />
         </div>
       </div>
