@@ -11,7 +11,7 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import type { Axial } from '../game/hex-utils';
-import type { GameStartedPayload, RoundEndedPayload } from '../../../shared/types/events';
+import type { GameStartedPayload, RoundEndedPayload, DebugLogPayload } from '../../../shared/types/events';
 
 interface GameWebSocketHandlers {
   onGameStarted: (data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => void;
@@ -99,6 +99,26 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     handlersRef.current.onConnectionStatusChange('reconnecting');
   }, []);
 
+  const handleDebugLog = useCallback((data: DebugLogPayload) => {
+    // Route debug logs to console so DebugConsole component picks them up
+    const logPrefix = data.category ? `[${data.category}] ` : '';
+    const logMessage = `${logPrefix}${data.message}`;
+
+    switch (data.level) {
+      case 'error':
+        console.error(logMessage, data.data || '');
+        break;
+      case 'warn':
+        console.warn(logMessage, data.data || '');
+        break;
+      case 'info':
+        console.info(logMessage, data.data || '');
+        break;
+      default:
+        console.log(logMessage, data.data || '');
+    }
+  }, []);
+
   // Setup WebSocket event listeners and ensure joined to room
   useEffect(() => {
     console.log('🔧 Setting up WebSocket listeners and ensuring room join');
@@ -119,6 +139,7 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     websocketService.on('round_ended', handleRoundEnded);
     websocketService.on('turn_started', handleTurnStarted);
     websocketService.on('game_state_update', handleGameStateUpdate);
+    websocketService.on('debug_log', handleDebugLog);
     console.log('✅ All event listeners registered');
 
     // Step 2: Get room info from localStorage
@@ -158,6 +179,7 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
       websocketService.off('round_ended');
       websocketService.off('turn_started');
       websocketService.off('game_state_update');
+      websocketService.off('debug_log');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]); // Only navigate can change, handlers are in ref to prevent re-registration

@@ -48,6 +48,7 @@ import type {
   LootCollectedPayload,
   ScenarioCompletedPayload,
   ErrorPayload,
+  DebugLogPayload,
 } from '../../../shared/types/events';
 import {
   ConnectionStatus,
@@ -122,6 +123,40 @@ export class GameGateway
     }
 
     return { room, roomCode };
+  }
+
+  /**
+   * Emit debug log to room for DebugConsole display
+   */
+  private emitDebugLog(
+    roomCode: string,
+    level: 'log' | 'error' | 'warn' | 'info',
+    message: string,
+    category?: string,
+    data?: any,
+  ): void {
+    const payload: DebugLogPayload = {
+      level,
+      message,
+      category,
+      data,
+    };
+    this.server.to(roomCode).emit('debug_log', payload);
+    // Also log to server console
+    const logMessage = `[${category || 'Debug'}] ${message}`;
+    switch (level) {
+      case 'error':
+        this.logger.error(logMessage);
+        break;
+      case 'warn':
+        this.logger.warn(logMessage);
+        break;
+      case 'info':
+      case 'log':
+      default:
+        this.logger.log(logMessage);
+        break;
+    }
   }
 
   /**
@@ -1516,44 +1551,62 @@ export class GameGateway
 
       // Get monster from room state
       const monsters = this.roomMonsters.get(roomCode) || [];
-      this.logger.log(
-        `🤖 [MonsterAI] Found ${monsters.length} monsters in room`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Found ${monsters.length} monsters in room`,
+        'MonsterAI',
       );
 
       const monster = monsters.find((m: any) => m.id === monsterId);
       if (!monster) {
-        this.logger.error(
-          `🤖 [MonsterAI] Monster ${monsterId} not found in room ${roomCode}`,
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Monster ${monsterId} not found in room ${roomCode}`,
+          'MonsterAI',
         );
-        this.logger.error(
-          `🤖 [MonsterAI] Available monsters: ${monsters.map((m: any) => m.id as string).join(', ')}`,
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Available monsters: ${monsters.map((m: any) => m.id as string).join(', ')}`,
+          'MonsterAI',
         );
         throw new Error(`Monster ${monsterId} not found in room ${roomCode}`);
       }
 
-      this.logger.log(
-        `🤖 [MonsterAI] Monster found: ${monster.monsterType} at (${monster.currentHex.q}, ${monster.currentHex.r})`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Monster found: ${monster.monsterType} at (${monster.currentHex.q}, ${monster.currentHex.r})`,
+        'MonsterAI',
       );
-      this.logger.log(
-        `🤖 [MonsterAI] Monster stats: attack=${monster.attack}, range=${monster.range}, movement=${monster.movement}`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Monster stats: attack=${monster.attack}, range=${monster.range}, movement=${monster.movement}`,
+        'MonsterAI',
       );
 
       // Get room and all characters
       const room = roomService.getRoom(roomCode);
       if (!room) {
-        this.logger.error(`🤖 [MonsterAI] Room ${roomCode} not found`);
+        this.emitDebugLog(roomCode, 'error', `Room ${roomCode} not found`, 'MonsterAI');
         throw new Error(`Room ${roomCode} not found`);
       }
 
-      this.logger.log(`🤖 [MonsterAI] Room has ${room.players.length} players`);
+      this.emitDebugLog(roomCode, 'info', `Room has ${room.players.length} players`, 'MonsterAI');
 
       // Get all characters in room and map to expected format
       const characterModels = room.players
         .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
         .filter((c: any) => c !== null);
 
-      this.logger.log(
-        `🤖 [MonsterAI] Found ${characterModels.length} characters`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Found ${characterModels.length} characters`,
+        'MonsterAI',
       );
 
       // Map Character model properties to match the shared Character interface
@@ -1565,8 +1618,11 @@ export class GameGateway
       }));
 
       characters.forEach((c: any) => {
-        this.logger.log(
-          `🤖 [MonsterAI] - Character ${c.id}: ${c.characterClass} at (${c.currentHex.q}, ${c.currentHex.r}), exhausted: ${c.exhausted}`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Character ${c.id}: ${c.characterClass} at (${c.currentHex.q}, ${c.currentHex.r}), exhausted: ${c.exhausted}`,
+          'MonsterAI',
         );
       });
 
@@ -1577,27 +1633,41 @@ export class GameGateway
       );
 
       if (!focusTargetId) {
-        this.logger.log(
-          `🤖 [MonsterAI] No valid focus target for monster ${monsterId}`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `No valid focus target for monster ${monsterId}`,
+          'MonsterAI',
         );
         // No target, skip activation and advance turn
         this.advanceTurnAfterMonsterActivation(roomCode);
         return;
       }
 
-      this.logger.log(`🤖 [MonsterAI] Focus target selected: ${focusTargetId}`);
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Focus target selected: ${focusTargetId}`,
+        'MonsterAI',
+      );
 
       const focusTarget = characters.find((c: any) => c.id === focusTargetId);
       if (!focusTarget) {
-        this.logger.error(
-          `🤖 [MonsterAI] Focus target ${focusTargetId} not found in character list`,
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Focus target ${focusTargetId} not found in character list`,
+          'MonsterAI',
         );
         this.advanceTurnAfterMonsterActivation(roomCode);
         return;
       }
 
-      this.logger.log(
-        `🤖 [MonsterAI] Focus target found: ${focusTarget.characterClass} at (${focusTarget.currentHex.q}, ${focusTarget.currentHex.r})`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Focus target found: ${focusTarget.characterClass} at (${focusTarget.currentHex.q}, ${focusTarget.currentHex.r})`,
+        'MonsterAI',
       );
 
       // Get hex map and obstacles for movement calculation
@@ -1611,8 +1681,36 @@ export class GameGateway
         });
       }
 
-      this.logger.log(
-        `🤖 [MonsterAI] Found ${obstacles.length} obstacles on map`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Found ${obstacles.length} obstacles on map`,
+        'MonsterAI',
+      );
+
+      // Collect all occupied hexes (from characters and other monsters)
+      // Characters/monsters can move through allies but cannot stop on same hex
+      const occupiedHexes: any[] = [];
+
+      // Add all character positions (excluding focus target since we might want to move adjacent)
+      characters.forEach((c: any) => {
+        if (c.currentHex) {
+          occupiedHexes.push(c.currentHex);
+        }
+      });
+
+      // Add all other monster positions (excluding current monster)
+      monsters.forEach((m: any) => {
+        if (m.id !== monsterId && m.currentHex) {
+          occupiedHexes.push(m.currentHex);
+        }
+      });
+
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Found ${occupiedHexes.length} occupied hexes (characters + other monsters)`,
+        'MonsterAI',
       );
 
       // Determine movement
@@ -1620,17 +1718,24 @@ export class GameGateway
         monster,
         focusTarget,
         obstacles,
+        occupiedHexes,
       );
 
       // Apply movement if determined
       if (movementHex) {
         monster.currentHex = movementHex;
-        this.logger.log(
-          `🤖 [MonsterAI] Monster ${monsterId} moved to (${movementHex.q}, ${movementHex.r})`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster moved from (${monster.currentHex.q}, ${monster.currentHex.r}) to (${movementHex.q}, ${movementHex.r})`,
+          'MonsterAI',
         );
       } else {
-        this.logger.log(
-          `🤖 [MonsterAI] Monster ${monsterId} did not move (already in optimal position or blocked)`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster did not move (already in optimal position or blocked)`,
+          'MonsterAI',
         );
       }
 
@@ -1640,19 +1745,35 @@ export class GameGateway
         focusTarget,
       );
 
-      this.logger.log(`🤖 [MonsterAI] Should attack: ${shouldAttack}`);
+      const currentDistance = this.monsterAIService.calculateHexDistance(
+        monster.currentHex,
+        focusTarget.currentHex,
+      );
+
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Distance to target: ${currentDistance}, Attack range: ${monster.range}, Should attack: ${shouldAttack}`,
+        'MonsterAI',
+      );
 
       let attackResult = null;
       if (shouldAttack) {
-        this.logger.log(
-          `🤖 [MonsterAI] Monster is in range, performing attack...`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster is in range, performing attack...`,
+          'MonsterAI',
         );
 
         // Draw attack modifier card
         const modifierDeck = this.modifierDecks.get(roomCode);
         if (!modifierDeck) {
-          this.logger.error(
-            `🤖 [MonsterAI] Modifier deck not found for room ${roomCode}`,
+          this.emitDebugLog(
+            roomCode,
+            'error',
+            `Modifier deck not found for room ${roomCode}`,
+            'MonsterAI',
           );
           throw new Error(`Modifier deck not found for room ${roomCode}`);
         }
@@ -1671,15 +1792,21 @@ export class GameGateway
           modifierCard,
         );
 
-        this.logger.log(
-          `🤖 [MonsterAI] Base damage: ${baseDamage}, Modifier: ${modifierCard.modifier}, Final damage: ${finalDamage}`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Base damage: ${baseDamage}, Modifier: ${modifierCard.modifier}, Final damage: ${finalDamage}`,
+          'MonsterAI',
         );
 
         // Apply damage to target
         const actualDamage = focusTarget.takeDamage(finalDamage);
 
-        this.logger.log(
-          `🤖 [MonsterAI] Monster ${monsterId} attacked ${focusTargetId} for ${actualDamage} damage`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster attacked ${focusTarget.characterClass} for ${actualDamage} damage (HP: ${focusTarget.currentHealth}/${focusTarget.maxHealth})`,
+          'MonsterAI',
         );
 
         attackResult = {
@@ -1690,14 +1817,20 @@ export class GameGateway
 
         // Check if target is dead/exhausted
         if (focusTarget.isDead) {
-          this.logger.log(
-            `🤖 [MonsterAI] Character ${focusTargetId} was killed`,
+          this.emitDebugLog(
+            roomCode,
+            'warn',
+            `Character ${focusTarget.characterClass} was killed`,
+            'MonsterAI',
           );
           // In real implementation, would handle character death/exhaustion
         }
       } else {
-        this.logger.log(
-          `🤖 [MonsterAI] Monster is out of range, no attack performed`,
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster is out of range, no attack performed`,
+          'MonsterAI',
         );
       }
 
@@ -1709,8 +1842,11 @@ export class GameGateway
         attack: attackResult,
       };
 
-      this.logger.log(
-        `🤖 [MonsterAI] Broadcasting monster_activated event to room ${roomCode}`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Broadcasting monster_activated event to room ${roomCode}`,
+        'MonsterAI',
       );
 
       this.server
@@ -1718,18 +1854,32 @@ export class GameGateway
         .emit('monster_activated', monsterActivatedPayload);
 
       // Automatically advance to next turn
-      this.logger.log(`🤖 [MonsterAI] Advancing turn after monster activation`);
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Advancing turn after monster activation`,
+        'MonsterAI',
+      );
       this.advanceTurnAfterMonsterActivation(roomCode);
 
-      this.logger.log(
-        `🤖 [MonsterAI] ✅ Monster ${monsterId} activation complete`,
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `✅ Monster ${monster.monsterType} activation complete`,
+        'MonsterAI',
       );
     } catch (error) {
-      this.logger.error(
-        `🤖 [MonsterAI] ❌ Monster activation error: ${error instanceof Error ? error.message : String(error)}`,
+      this.emitDebugLog(
+        roomCode,
+        'error',
+        `❌ Monster activation error: ${error instanceof Error ? error.message : String(error)}`,
+        'MonsterAI',
       );
-      this.logger.error(
-        `🤖 [MonsterAI] Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`,
+      this.emitDebugLog(
+        roomCode,
+        'error',
+        `Stack trace: ${error instanceof Error ? error.stack : 'No stack trace'}`,
+        'MonsterAI',
       );
       // Still advance turn even on error to prevent game from hanging
       this.advanceTurnAfterMonsterActivation(roomCode);

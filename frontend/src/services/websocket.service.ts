@@ -16,7 +16,8 @@ import type {
   PlayerReconnectedPayload,
   CharacterSelectedPayload,
   RoundEndedPayload,
-  TurnEntity
+  TurnEntity,
+  DebugLogPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -82,6 +83,9 @@ export interface WebSocketEvents {
 
   // State updates
   game_state_update: (data: { gameState: Record<string, unknown> }) => void;
+
+  // Debug logging
+  debug_log: (data: DebugLogPayload) => void;
 
   // Errors
   error: (data: { message: string; code?: string }) => void;
