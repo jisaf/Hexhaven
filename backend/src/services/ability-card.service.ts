@@ -26,12 +26,11 @@ export class AbilityCardService {
     }
 
     try {
-      // Construct a robust path to the data file.
-      // This is more reliable than trying multiple relative paths.
+      // Construct path relative to the service file location
+      // __dirname will be backend/dist/services when compiled
       const dataFilePath = path.resolve(
-        process.cwd(),
-        'backend',
-        'src',
+        __dirname,
+        '..',
         'data',
         'ability-cards.json'
       );
