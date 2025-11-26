@@ -21,16 +21,48 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard, Monster, HexTile, TerrainType } from '../../../shared/types/entities';
+import type { AbilityCard, Monster, HexTile, LogMessage, LogMessagePart } from '../../../shared/types/entities';
+import { TerrainType, Condition } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
-import type { GameStartedPayload, TurnEntity } from '../../../shared/types/events';
+import type { GameStartedPayload, TurnEntity, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload } from '../../../shared/types/events';
 import TurnOrder from '../components/TurnOrder';
 import styles from './GameBoard.module.css';
+
+// Helper to format modifier value into a string like "+1", "-2"
+const formatModifier = (modifier: number | 'null' | 'x2'): string => {
+  if (modifier === 'x2') {
+    return ', x2 modifier';
+  }
+  if (modifier === 'null') {
+    return ' (null modifier)';
+  }
+  if (typeof modifier === 'number') {
+    return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+  }
+  return '';
+};
+
+// Helper to get color for a given effect
+const getEffectColor = (effect: string) => {
+  switch (effect.toLowerCase()) {
+    case Condition.POISON:
+      return 'green';
+    case Condition.WOUND:
+      return 'orange';
+    case Condition.STUN:
+      return 'lightblue';
+    case Condition.IMMOBILIZE:
+    case Condition.DISARM:
+      return 'white';
+    default:
+      return 'lightgreen';
+  }
+};
 
 export function GameBoard() {
   const navigate = useNavigate();
@@ -61,15 +93,19 @@ export function GameBoard() {
   const [myCharacterId, setMyCharacterId] = useState<string | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<LogMessage[]>([]);
   const [gameData, setGameData] = useState<GameStartedPayload | null>(null);
   const [turnOrder, setTurnOrder] = useState<TurnEntity[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentTurnEntityId, setCurrentTurnEntityId] = useState<string | null>(null);
 
   // T200: Action Log
-  const addLog = useCallback((message: string) => {
-    setLogs(prevLogs => [...prevLogs, message].slice(-5)); // Keep last 5 logs
+  const addLog = useCallback((parts: LogMessagePart[]) => {
+    const newLog: LogMessage = {
+      id: `${Date.now()}-${Math.random()}`,
+      parts,
+    };
+    setLogs(prevLogs => [...prevLogs, newLog].slice(-10)); // Keep last 10 logs
   }, []);
 
   // Card selection state (T111, T181)
@@ -104,32 +140,19 @@ export function GameBoard() {
   });
 
   const handleHexClick = useCallback((hex: Axial) => {
-    const clickedHexCoords = `q=${hex.q}, r=${hex.r}`;
-    addLog(`Hex clicked: ${clickedHexCoords}`);
-
     if (!selectedCharacterId || !isMyTurn) {
-      addLog('Move ignored: Not player turn or no character selected.');
       return;
     }
 
-    if (selectedHex) {
-      const selectedHexCoords = `q=${selectedHex.q}, r=${selectedHex.r}`;
-      if (selectedHex.q === hex.q && selectedHex.r === hex.r) {
-        addLog(`CONFIRM MOVE: Clicked ${clickedHexCoords} matches selected ${selectedHexCoords}.`);
-        websocketService.moveCharacter(hex);
-        setSelectedHex(null);
-        clearSelectedHex();
-      } else {
-        addLog(`CHANGE DESTINATION: Old=${selectedHexCoords}, New=${clickedHexCoords}.`);
-        setSelectedHex(hex);
-        showSelectedHex(hex);
-      }
+    if (selectedHex && selectedHex.q === hex.q && selectedHex.r === hex.r) {
+      websocketService.moveCharacter(hex);
+      setSelectedHex(null);
+      clearSelectedHex();
     } else {
-      addLog(`SET DESTINATION: ${clickedHexCoords}.`);
       setSelectedHex(hex);
       showSelectedHex(hex);
     }
-  }, [selectedCharacterId, isMyTurn, addLog, selectedHex, showSelectedHex, clearSelectedHex]);
+  }, [selectedCharacterId, isMyTurn, selectedHex, showSelectedHex, clearSelectedHex]);
 
   const handleCharacterSelectClick = useCallback((characterId: string) => {
     if (isMyTurn) {
@@ -150,77 +173,54 @@ export function GameBoard() {
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
-    console.log('🎮 handleGameStarted called with data:', data);
-    addLog('DEBUG: game_started event received');
+    addLog([{ text: `Scenario started: ${data.scenarioName}` }]);
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
       if (!playerUUID) {
-        addLog('ERROR: No playerUUID found');
-        if (ackCallback) {
-          ackCallback(false);
-        }
+        if (ackCallback) ackCallback(false);
         return;
       }
-      addLog(`DEBUG: Looking for UUID: ${playerUUID.substring(0, 8)}...`);
-      const myCharacter = data.characters.find(char => char.playerId === playerUUID);
 
+      const myCharacter = data.characters.find(char => char.playerId === playerUUID);
       if (myCharacter) {
-        addLog(`DEBUG: Found character ID: ${myCharacter.id}`);
         setMyCharacterId(myCharacter.id);
 
-        // Load ability deck (if available in extended character data)
         const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
-        const deckLength = characterWithDeck.abilityDeck?.length || 0;
-        const isArray = Array.isArray(characterWithDeck.abilityDeck);
-
-        addLog(`DEBUG: abilityDeck exists: ${!!characterWithDeck.abilityDeck}`);
-        addLog(`DEBUG: abilityDeck is array: ${isArray}`);
-        addLog(`DEBUG: abilityDeck length: ${deckLength}`);
-
         if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-          addLog(`DEBUG: Setting playerHand with ${deckLength} cards`);
           setPlayerHand(characterWithDeck.abilityDeck);
-          // Do not set showCardSelection here directly to avoid race condition
-        } else {
-          addLog('ERROR: No abilityDeck found or not array');
         }
-      } else {
-        addLog('ERROR: Character not found in payload');
       }
 
       setGameData(data);
-      setCurrentRound(1); // Start with Round 1
+      setCurrentRound(1);
 
-      // Acknowledge the event was processed successfully on the client.
-      if (ackCallback) {
-        ackCallback(true);
-      }
+      if (ackCallback) ackCallback(true);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      addLog(`ERROR: game_started failed: ${errorMsg}`);
       console.error('❌ Error processing game_started event:', error);
-      if (ackCallback) {
-        ackCallback(false);
-      }
+      if (ackCallback) ackCallback(false);
     }
   }, [addLog]);
 
-  const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
+  const handleCharacterMoved = useCallback((data: CharacterMovedPayload) => {
     moveCharacter(data.characterId, data.toHex, data.movementPath);
-    const charName = data.characterId === myCharacterId ? 'You' : 'Opponent';
-    addLog(`${charName} moved.`);
-  }, [moveCharacter, addLog, myCharacterId]);
+    addLog([
+      { text: data.characterName, color: 'lightblue' },
+      { text: ` moved ` },
+      { text: `${data.distance}`, color: 'blue' },
+      { text: ` hexes.` }
+    ]);
+  }, [moveCharacter, addLog]);
 
   const handleRoundStarted = useCallback((data: { roundNumber: number; turnOrder: TurnEntity[] }) => {
     setTurnOrder(data.turnOrder);
     setCurrentRound(data.roundNumber);
-    addLog(`Round ${data.roundNumber} has started.`);
+    addLog([{ text: `Round ${data.roundNumber} has started.` }]);
   }, [addLog]);
 
   const handleRoundEnded = useCallback((data: { roundNumber: number }) => {
-    addLog(`Round ${data.roundNumber} has ended. Select cards for next round.`);
+    addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
     setShowCardSelection(true);
   }, [addLog]);
 
@@ -229,19 +229,20 @@ export function GameBoard() {
     setIsMyTurn(myTurn);
     setCurrentTurnEntityId(data.entityId);
 
+    const turnOrderEntry = turnOrder.find(t => t.entityId === data.entityId);
+    const entityName = turnOrderEntry ? turnOrderEntry.name : (data.entityType === 'monster' ? 'Monster' : 'Character');
+
     if (myTurn) {
-      addLog('Your turn has started.');
-    } else if (data.entityType === 'character') {
-      addLog("Opponent's turn.");
+      addLog([{ text: 'Your turn has started.', color: 'gold' }]);
     } else {
-      addLog('Monster turn.');
+      addLog([{ text: `${entityName}'s turn.` }]);
     }
 
     if (!myTurn) {
       deselectAll();
       setSelectedCharacterId(null);
     }
-  }, [myCharacterId, deselectAll, addLog]);
+  }, [myCharacterId, deselectAll, addLog, turnOrder]);
 
   const handleGameStateUpdate = useCallback((data: { gameState: unknown }) => {
     console.log('Game state update:', data);
@@ -251,51 +252,104 @@ export function GameBoard() {
     setConnectionStatus(status);
   }, []);
 
-  const handleMonsterActivated = useCallback((data: {
-    monsterId: string;
-    focusTarget: string;
-    movement: Axial;
-    attack: { targetId: string; damage: number; modifier: number | 'null' | 'x2' } | null;
-  }) => {
-    addLog(`Monster activated and moved`);
+  const handleMonsterActivated = useCallback((data: MonsterActivatedPayload) => {
+    const logParts: LogMessagePart[] = [{ text: data.monsterName, color: 'orange' }];
 
-    // Update monster position
-    updateMonsterPosition(data.monsterId, data.movement);
-
-    // Handle attack damage
-    if (data.attack && gameData) {
-      const targetCharacter = gameData.characters.find(c => c.id === data.attack!.targetId);
-
-      if (targetCharacter) {
-        const newHealth = Math.max(0, targetCharacter.health - data.attack.damage);
-        addLog(`Monster attacked for ${data.attack.damage} damage`);
-
-        updateCharacterHealth(data.attack.targetId, newHealth);
-
-        if (newHealth <= 0) {
-          addLog(`Character was killed!`);
-          removeCharacter(data.attack.targetId);
-        }
-
-        // Update gameData to keep it in sync
-        targetCharacter.health = newHealth;
+    // Movement
+    if (data.movementDistance > 0) {
+      logParts.push({ text: ' moved ' });
+      logParts.push({ text: `${data.movementDistance}`, color: 'blue' });
+      logParts.push({ text: ' hexes' });
+      if (data.attack) {
+        logParts.push({ text: ' and' });
       }
     }
+    updateMonsterPosition(data.monsterId, data.movement);
+
+    // Attack
+    if (data.attack) {
+      const { targetId, baseDamage, damage, modifier, effects } = data.attack;
+
+      if (modifier === 'null') {
+        logParts.push({ text: "'s attack missed " });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: formatModifier(modifier) });
+      } else {
+        logParts.push({ text: ' attacked ' });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: ' for ' });
+        logParts.push({ text: `${damage}`, color: 'red' });
+        if (modifier === 'x2') {
+          logParts.push({ text: ` (${baseDamage} base${formatModifier(modifier)})` });
+        } else {
+          logParts.push({ text: ` (${baseDamage}${formatModifier(modifier)})` });
+        }
+
+        // Effects
+        if (effects.length > 0) {
+          logParts.push({ text: ' and applied ' });
+          effects.forEach((effect, i) => {
+            logParts.push({ text: effect, color: getEffectColor(effect) });
+            if (i < effects.length - 1) {
+              logParts.push({ text: ' and ' });
+            }
+          });
+        }
+      }
+      logParts.push({ text: '.' });
+
+      if (gameData) {
+        const targetCharacter = gameData.characters.find(c => c.id === targetId);
+        if (targetCharacter) {
+          const newHealth = Math.max(0, targetCharacter.health - damage);
+          updateCharacterHealth(targetId, newHealth);
+          if (newHealth <= 0) {
+            addLog([{ text: `${data.focusTargetName} was killed!`, color: 'red' }]);
+            removeCharacter(targetId);
+          }
+          targetCharacter.health = newHealth;
+        }
+      }
+    } else {
+      logParts.push({ text: '.' });
+    }
+    addLog(logParts);
   }, [addLog, updateMonsterPosition, gameData, updateCharacterHealth, removeCharacter]);
 
-  const handleAttackResolved = useCallback((data: {
-    attackerId: string;
-    targetId: string;
-    damage: number;
-    modifier: number | 'null' | 'x2';
-    effects: string[];
-    targetHealth: number;
-    targetDead: boolean;
-  }) => {
-    addLog(`Attack resolved: ${data.damage} damage to ${data.targetId}`);
 
-    // Update target health (could be character or monster)
-    // Check if target is in gameData
+  const handleAttackResolved = useCallback((data: AttackResolvedPayload) => {
+    const logParts: LogMessagePart[] = [];
+    logParts.push({ text: data.attackerName, color: 'lightblue' });
+
+    if (data.modifier === 'null') {
+      logParts.push({ text: "'s attack missed " });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: formatModifier(data.modifier) });
+    } else {
+      logParts.push({ text: ' attacked ' });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: ' for ' });
+      logParts.push({ text: `${data.damage}`, color: 'red' });
+      if (data.modifier === 'x2') {
+        logParts.push({ text: ` (${data.baseDamage} base${formatModifier(data.modifier)})` });
+      } else {
+        logParts.push({ text: ` (${data.baseDamage}${formatModifier(data.modifier)})` });
+      }
+
+      if (data.effects.length > 0) {
+        logParts.push({ text: ' and applied ' });
+        data.effects.forEach((effect, i) => {
+          logParts.push({ text: effect, color: getEffectColor(effect) });
+          if (i < data.effects.length - 1) {
+            logParts.push({ text: ' and ' });
+          }
+        });
+      }
+    }
+    logParts.push({ text: '.' });
+    addLog(logParts);
+
+    // Update target health
     if (gameData) {
       const isCharacter = gameData.characters.some(c => c.id === data.targetId);
       const isMonster = gameData.monsters.some(m => m.id === data.targetId);
@@ -303,18 +357,19 @@ export function GameBoard() {
       if (isCharacter) {
         updateCharacterHealth(data.targetId, data.targetHealth);
         if (data.targetDead) {
-          addLog(`Character ${data.targetId} was killed!`);
+          addLog([{ text: `${data.targetName} was killed!`, color: 'red' }]);
           removeCharacter(data.targetId);
         }
       } else if (isMonster) {
         updateMonsterHealth(data.targetId, data.targetHealth);
         if (data.targetDead) {
-          addLog(`Monster ${data.targetId} was killed!`);
+          addLog([{ text: `${data.targetName} was killed!`, color: 'red' }]);
           removeMonster(data.targetId);
         }
       }
     }
   }, [addLog, gameData, updateCharacterHealth, updateMonsterHealth, removeCharacter, removeMonster]);
+
 
   // Memoize handlers object to prevent useGameWebSocket's useEffect from running on every render
   const gameWebSocketHandlers = useMemo(() => ({
@@ -336,16 +391,11 @@ export function GameBoard() {
   useEffect(() => {
     // Wrap all state updates in queueMicrotask to avoid cascading renders
     queueMicrotask(() => {
-      addLog(`DEBUG: playerHand changed, length: ${playerHand.length}`);
       if (playerHand.length > 0) {
-        addLog('DEBUG: playerHand has cards, showing card selection');
-        addLog('DEBUG: Setting showCardSelection=true');
         setShowCardSelection(true);
-      } else {
-        addLog('DEBUG: playerHand empty, not showing cards');
       }
     });
-  }, [playerHand, addLog]);
+  }, [playerHand]);
 
   // Render game data when HexGrid is ready
   useEffect(() => {
@@ -374,29 +424,25 @@ export function GameBoard() {
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((card: AbilityCard) => {
-    addLog(`DEBUG: Card selected: ${card.name}`);
     if (!selectedTopAction) {
-      addLog(`DEBUG: Setting as TOP action`);
       setSelectedTopAction(card);
     } else if (!selectedBottomAction && card.id !== selectedTopAction.id) {
-      addLog(`DEBUG: Setting as BOTTOM action`);
       setSelectedBottomAction(card);
-    } else {
-      addLog(`DEBUG: Card selection ignored (both slots filled or same card)`);
     }
-  }, [selectedTopAction, selectedBottomAction, addLog]);
+  }, [selectedTopAction, selectedBottomAction]);
 
   const handleConfirmCardSelection = useCallback(() => {
-    addLog(`DEBUG: Confirm clicked. Top: ${selectedTopAction?.name || 'none'}, Bottom: ${selectedBottomAction?.name || 'none'}`);
     if (selectedTopAction && selectedBottomAction) {
-      addLog(`DEBUG: Emitting select_cards event`);
       websocketService.selectCards(selectedTopAction.id, selectedBottomAction.id);
-      addLog(`Cards selected: ${selectedTopAction.name} (top) and ${selectedBottomAction.name} (bottom)`);
+      addLog([
+          { text: 'Cards selected: '},
+          { text: selectedTopAction.name, color: 'white' },
+          { text: ' and ' },
+          { text: selectedBottomAction.name, color: 'white' }
+      ]);
       setShowCardSelection(false);
       setSelectedTopAction(null);
       setSelectedBottomAction(null);
-    } else {
-      addLog('ERROR: Cannot confirm - need both top and bottom cards');
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 
@@ -415,7 +461,7 @@ export function GameBoard() {
   const handleEndTurn = useCallback(() => {
     if (isMyTurn) {
       websocketService.endTurn();
-      addLog('Turn ended.');
+      addLog([{ text: 'Turn ended.' }]);
       setIsMyTurn(false);
     }
   }, [isMyTurn, addLog]);

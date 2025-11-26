@@ -1,10 +1,11 @@
 import { FaSignOutAlt } from 'react-icons/fa';
 import styles from './GameHUD.module.css';
+import type { LogMessage } from '../../../../shared/types';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
 
 interface GameHUDProps {
-  logs: string[];
+  logs: LogMessage[];
   connectionStatus: ConnectionStatus;
   isMyTurn: boolean;
   onBackToLobby: () => void;
@@ -31,9 +32,13 @@ export function GameHUD({ logs, connectionStatus, isMyTurn, onBackToLobby, onEnd
         <div className={`${styles.statusDot} ${statusClassName}`} />
       </div>
       <div className={styles.logContainer}>
-        {logs.map((log, index) => (
-          <p key={index} className={styles.logMessage}>
-            {log}
+        {logs.map((log) => (
+          <p key={log.id} className={styles.logMessage}>
+            {log.parts.map((part, partIndex) => (
+              <span key={partIndex} className={part.color ? styles[part.color] : ''}>
+                {part.text}
+              </span>
+            ))}
           </p>
         ))}
       </div>
