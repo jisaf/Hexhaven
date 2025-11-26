@@ -36,6 +36,12 @@ export interface GameBoardData {
   monsters?: Monster[];
 }
 
+interface ClickedEvent {
+  screen: PIXI.Point;
+  world: PIXI.Point;
+  viewport: Viewport;
+}
+
 export class HexGrid {
   private app!: PIXI.Application;
   private container: HTMLElement;
@@ -393,15 +399,9 @@ export class HexGrid {
    * Handle viewport click for creating new hexes or deselecting.
    * The 'clicked' event only fires if the viewport is not dragged.
    */
-  private handleViewportClicked(event: PIXI.FederatedPointerEvent): void {
-    // Check if the click was on an existing entity or tile
-    // If so, their own handlers should have stopped propagation
-    if (event.propagationStopped) {
-      return;
-    }
-
+  private handleViewportClicked(event: ClickedEvent): void {
     if (this.options.onHexClick) {
-      const hex = this.getHexAtScreenPosition(event.global.x, event.global.y);
+      const hex = screenToAxial(event.world);
       this.options.onHexClick(hex);
     }
 
