@@ -35,6 +35,8 @@ jobs:
           ssh-keyscan -H ${{ env.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
 
       - name: Run deployment script
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           ./scripts/deploy-prod.sh ~/.ssh/deploy_key
 
