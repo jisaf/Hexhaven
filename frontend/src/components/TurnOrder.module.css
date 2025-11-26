@@ -63,3 +63,9 @@
 .activeTurn .name {
   font-weight: bold;
 }
+
+.guidingMessage {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

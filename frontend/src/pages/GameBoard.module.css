@@ -22,6 +22,10 @@
   .hudWrapper {
     margin-top: auto;
   }
+
+  .cardSelectionActive .rightPanel {
+    display: none;
+  }
 }
 
 .gameContainer {
@@ -144,6 +148,7 @@
     overflow-y: auto;
   }
 
+  .cardSelectionActive .rightPanel,
   .cardSelectionActive .hudWrapper,
   .cardSelectionActive .bottomPlaceholder {
     display: none;
