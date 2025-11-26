@@ -18,7 +18,7 @@ import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
 import { HighlightManager } from './HighlightManager';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
-import { type Axial, axialKey, screenToAxial, hexRangeReachable, axialToScreen } from './hex-utils';
+import { type Axial, axialKey, screenToAxial, axialToScreen } from './hex-utils';
 import type { Monster, HexTile as SharedHexTile } from '../../../shared/types/entities';
 
 export interface HexGridOptions {

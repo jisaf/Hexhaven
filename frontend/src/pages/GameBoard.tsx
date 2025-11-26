@@ -166,7 +166,7 @@ export function GameBoard() {
         clearMovementRange();
       }
     }
-  }, [isMyTurn, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange]);
+  }, [isMyTurn, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
     if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
@@ -258,7 +258,7 @@ export function GameBoard() {
     } else {
       clearMovementRange();
     }
-  }, [moveCharacter, addLog, myCharacterId, currentMovementPoints, getCharacter, showMovementRange, clearMovementRange]);
+  }, [moveCharacter, addLog, myCharacterId, currentMovementPoints, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
   const handleRoundStarted = useCallback((data: { roundNumber: number; turnOrder: TurnEntity[] }) => {
     setTurnOrder(data.turnOrder);
