@@ -27,10 +27,11 @@ export class AbilityCardService {
 
     try {
       // Construct path relative to the service file location
-      // __dirname will be backend/dist/services when compiled
+      // __dirname will be backend/dist/backend/src/services when compiled
+      // Need to go up 3 levels to reach backend/dist/
       const dataFilePath = path.resolve(
         __dirname,
-        '..',
+        '../../..',
         'data',
         'ability-cards.json'
       );
