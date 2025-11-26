@@ -85,7 +85,19 @@ export function GameBoard() {
   // Use custom hooks
   useRoomSession();
 
-  const { hexGridReady, initializeBoard, moveCharacter, deselectAll, showSelectedHex, clearSelectedHex } = useHexGrid(containerRef, {
+  const {
+    hexGridReady,
+    initializeBoard,
+    moveCharacter,
+    deselectAll,
+    showSelectedHex,
+    clearSelectedHex,
+    updateMonsterPosition,
+    updateCharacterHealth,
+    updateMonsterHealth,
+    removeCharacter,
+    removeMonster,
+  } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
     onMonsterSelect: (monsterId) => handleMonsterSelectClick(monsterId),
@@ -239,6 +251,71 @@ export function GameBoard() {
     setConnectionStatus(status);
   }, []);
 
+  const handleMonsterActivated = useCallback((data: {
+    monsterId: string;
+    focusTarget: string;
+    movement: Axial;
+    attack: { targetId: string; damage: number; modifier: number | 'null' | 'x2' } | null;
+  }) => {
+    addLog(`Monster activated and moved`);
+
+    // Update monster position
+    updateMonsterPosition(data.monsterId, data.movement);
+
+    // Handle attack damage
+    if (data.attack && gameData) {
+      const targetCharacter = gameData.characters.find(c => c.id === data.attack!.targetId);
+
+      if (targetCharacter) {
+        const newHealth = Math.max(0, targetCharacter.health - data.attack.damage);
+        addLog(`Monster attacked for ${data.attack.damage} damage`);
+
+        updateCharacterHealth(data.attack.targetId, newHealth);
+
+        if (newHealth <= 0) {
+          addLog(`Character was killed!`);
+          removeCharacter(data.attack.targetId);
+        }
+
+        // Update gameData to keep it in sync
+        targetCharacter.health = newHealth;
+      }
+    }
+  }, [addLog, updateMonsterPosition, gameData, updateCharacterHealth, removeCharacter]);
+
+  const handleAttackResolved = useCallback((data: {
+    attackerId: string;
+    targetId: string;
+    damage: number;
+    modifier: number | 'null' | 'x2';
+    effects: string[];
+    targetHealth: number;
+    targetDead: boolean;
+  }) => {
+    addLog(`Attack resolved: ${data.damage} damage to ${data.targetId}`);
+
+    // Update target health (could be character or monster)
+    // Check if target is in gameData
+    if (gameData) {
+      const isCharacter = gameData.characters.some(c => c.id === data.targetId);
+      const isMonster = gameData.monsters.some(m => m.id === data.targetId);
+
+      if (isCharacter) {
+        updateCharacterHealth(data.targetId, data.targetHealth);
+        if (data.targetDead) {
+          addLog(`Character ${data.targetId} was killed!`);
+          removeCharacter(data.targetId);
+        }
+      } else if (isMonster) {
+        updateMonsterHealth(data.targetId, data.targetHealth);
+        if (data.targetDead) {
+          addLog(`Monster ${data.targetId} was killed!`);
+          removeMonster(data.targetId);
+        }
+      }
+    }
+  }, [addLog, gameData, updateCharacterHealth, updateMonsterHealth, removeCharacter, removeMonster]);
+
   // Memoize handlers object to prevent useGameWebSocket's useEffect from running on every render
   const gameWebSocketHandlers = useMemo(() => ({
     onGameStarted: handleGameStarted,
@@ -248,7 +325,9 @@ export function GameBoard() {
     onTurnStarted: handleTurnStarted,
     onGameStateUpdate: handleGameStateUpdate,
     onConnectionStatusChange: handleConnectionStatusChange,
-  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
+    onMonsterActivated: handleMonsterActivated,
+    onAttackResolved: handleAttackResolved,
+  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange, handleMonsterActivated, handleAttackResolved]);
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);

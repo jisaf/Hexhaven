@@ -62,6 +62,9 @@ export interface WebSocketEvents {
     targetId: string;
     damage: number;
     modifier: number | 'null' | 'x2';
+    effects: string[];
+    targetHealth: number;
+    targetDead: boolean;
   }) => void;
 
   // Loot
@@ -73,7 +76,16 @@ export interface WebSocketEvents {
   }) => void;
 
   // Monster AI
-  monster_activated: (data: { monsterId: string; actions: { type: string; target?: string }[] }) => void;
+  monster_activated: (data: {
+    monsterId: string;
+    focusTarget: string;
+    movement: { q: number; r: number };
+    attack: {
+      targetId: string;
+      damage: number;
+      modifier: number | 'null' | 'x2';
+    } | null;
+  }) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
