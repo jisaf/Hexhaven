@@ -5,7 +5,7 @@
  * Manages different types of highlights:
  * - Movement range (green)
  * - Attack range (red)
- * - Selected path (yellow)
+ * - Selected destination (blue)
  */
 
 import { type Axial, axialKey } from './hex-utils';
@@ -69,7 +69,7 @@ export class HighlightManager {
     if (this.selectedHexKey) {
         const newTile = this.tiles.get(this.selectedHexKey);
         if (newTile) {
-            newTile.setHighlight(0xffff00); // Yellow
+            newTile.setHighlight(0x0099ff); // Blue
         }
     }
   }
