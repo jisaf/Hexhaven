@@ -6,10 +6,12 @@ type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
 interface GameHUDProps {
   logs: string[];
   connectionStatus: ConnectionStatus;
+  isMyTurn: boolean;
   onBackToLobby: () => void;
+  onEndTurn: () => void;
 }
 
-export function GameHUD({ logs, connectionStatus, onBackToLobby }: GameHUDProps) {
+export function GameHUD({ logs, connectionStatus, isMyTurn, onBackToLobby, onEndTurn }: GameHUDProps) {
   const statusClassName = styles[connectionStatus] || '';
 
   return (
@@ -17,6 +19,14 @@ export function GameHUD({ logs, connectionStatus, onBackToLobby }: GameHUDProps)
       <div className={styles.hudHeader}>
         <button onClick={onBackToLobby} className={styles.backButton} aria-label="Back to Lobby">
           <FaSignOutAlt />
+        </button>
+        <button
+          onClick={onEndTurn}
+          className={styles.endTurnButton}
+          disabled={!isMyTurn}
+          aria-label="End Turn"
+        >
+          End Turn
         </button>
         <div className={`${styles.statusDot} ${statusClassName}`} />
       </div>

@@ -11,11 +11,13 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
 import type { Axial } from '../game/hex-utils';
-import type { GameStartedPayload } from '../../../shared/types/events';
+import type { GameStartedPayload, RoundEndedPayload } from '../../../shared/types/events';
 
 interface GameWebSocketHandlers {
   onGameStarted: (data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => void;
   onCharacterMoved: (data: CharacterMovedData) => void;
+  onRoundStarted: (data: RoundStartedData) => void;
+  onRoundEnded: (data: RoundEndedPayload) => void;
   onTurnStarted: (data: TurnStartedData) => void;
   onGameStateUpdate: (data: { gameState: unknown }) => void;
   onConnectionStatusChange: (status: 'connected' | 'disconnected' | 'reconnecting') => void;
@@ -32,6 +34,18 @@ interface TurnStartedData {
   turnIndex: number;
   entityId: string;
   entityType: 'character' | 'monster';
+}
+
+interface RoundStartedData {
+  roundNumber: number;
+  turnOrder: TurnEntity[];
+}
+
+interface TurnEntity {
+  entityId: string;
+  name: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
 }
 
 export function useGameWebSocket(handlers: GameWebSocketHandlers) {
@@ -51,6 +65,16 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
 
   const handleCharacterMoved = useCallback((data: CharacterMovedData) => {
     handlersRef.current.onCharacterMoved(data);
+  }, []);
+
+  const handleRoundStarted = useCallback((data: RoundStartedData) => {
+    console.log('handleRoundStarted called with data:', data);
+    handlersRef.current.onRoundStarted(data);
+  }, []);
+
+  const handleRoundEnded = useCallback((data: RoundEndedPayload) => {
+    console.log('handleRoundEnded called with data:', data);
+    handlersRef.current.onRoundEnded(data);
   }, []);
 
   const handleTurnStarted = useCallback((data: TurnStartedData) => {
@@ -91,6 +115,8 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     console.log('✅ Registering game_started event listener');
     websocketService.on('game_started', handleGameStarted);
     websocketService.on('character_moved', handleCharacterMoved);
+    websocketService.on('round_started', handleRoundStarted);
+    websocketService.on('round_ended', handleRoundEnded);
     websocketService.on('turn_started', handleTurnStarted);
     websocketService.on('game_state_update', handleGameStateUpdate);
     console.log('✅ All event listeners registered');
@@ -128,6 +154,8 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
       websocketService.off('ws_reconnecting');
       websocketService.off('game_started');
       websocketService.off('character_moved');
+      websocketService.off('round_started');
+      websocketService.off('round_ended');
       websocketService.off('turn_started');
       websocketService.off('game_state_update');
     };

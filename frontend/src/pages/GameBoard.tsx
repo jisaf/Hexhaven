@@ -138,22 +138,44 @@ export function GameBoard() {
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
-    console.log('handleGameStarted called with data:', data);
+    console.log('🎮 handleGameStarted called with data:', data);
+    addLog('DEBUG: game_started event received');
 
     try {
       // Find my character
       const playerUUID = websocketService.getPlayerUUID();
+      if (!playerUUID) {
+        addLog('ERROR: No playerUUID found');
+        if (ackCallback) {
+          ackCallback(false);
+        }
+        return;
+      }
+      addLog(`DEBUG: Looking for UUID: ${playerUUID.substring(0, 8)}...`);
       const myCharacter = data.characters.find(char => char.playerId === playerUUID);
 
       if (myCharacter) {
+        addLog(`DEBUG: Found character ID: ${myCharacter.id}`);
         setMyCharacterId(myCharacter.id);
 
         // Load ability deck (if available in extended character data)
         const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+        const deckLength = characterWithDeck.abilityDeck?.length || 0;
+        const isArray = Array.isArray(characterWithDeck.abilityDeck);
+
+        addLog(`DEBUG: abilityDeck exists: ${!!characterWithDeck.abilityDeck}`);
+        addLog(`DEBUG: abilityDeck is array: ${isArray}`);
+        addLog(`DEBUG: abilityDeck length: ${deckLength}`);
+
         if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+          addLog(`DEBUG: Setting playerHand with ${deckLength} cards`);
           setPlayerHand(characterWithDeck.abilityDeck);
           // Do not set showCardSelection here directly to avoid race condition
+        } else {
+          addLog('ERROR: No abilityDeck found or not array');
         }
+      } else {
+        addLog('ERROR: Character not found in payload');
       }
 
       setGameData(data);
@@ -164,12 +186,14 @@ export function GameBoard() {
         ackCallback(true);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`ERROR: game_started failed: ${errorMsg}`);
       console.error('❌ Error processing game_started event:', error);
       if (ackCallback) {
         ackCallback(false);
       }
     }
-  }, []);
+  }, [addLog]);
 
   const handleCharacterMoved = useCallback((data: { characterId: string; fromHex: Axial; toHex: Axial; movementPath: Axial[] }) => {
     moveCharacter(data.characterId, data.toHex, data.movementPath);
@@ -181,6 +205,11 @@ export function GameBoard() {
     setTurnOrder(data.turnOrder);
     setCurrentRound(data.roundNumber);
     addLog(`Round ${data.roundNumber} has started.`);
+  }, [addLog]);
+
+  const handleRoundEnded = useCallback((data: { roundNumber: number }) => {
+    addLog(`Round ${data.roundNumber} has ended. Select cards for next round.`);
+    setShowCardSelection(true);
   }, [addLog]);
 
   const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
@@ -215,22 +244,29 @@ export function GameBoard() {
     onGameStarted: handleGameStarted,
     onCharacterMoved: handleCharacterMoved,
     onRoundStarted: handleRoundStarted,
+    onRoundEnded: handleRoundEnded,
     onTurnStarted: handleTurnStarted,
     onGameStateUpdate: handleGameStateUpdate,
     onConnectionStatusChange: handleConnectionStatusChange,
-  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
+  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange]);
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
 
   // T111: Effect to show card selection only after hand is populated
   useEffect(() => {
-    if (playerHand.length > 0) {
-        queueMicrotask(() => {
-            setShowCardSelection(true);
-        });
-    }
-  }, [playerHand]);
+    // Wrap all state updates in queueMicrotask to avoid cascading renders
+    queueMicrotask(() => {
+      addLog(`DEBUG: playerHand changed, length: ${playerHand.length}`);
+      if (playerHand.length > 0) {
+        addLog('DEBUG: playerHand has cards, showing card selection');
+        addLog('DEBUG: Setting showCardSelection=true');
+        setShowCardSelection(true);
+      } else {
+        addLog('DEBUG: playerHand empty, not showing cards');
+      }
+    });
+  }, [playerHand, addLog]);
 
   // Render game data when HexGrid is ready
   useEffect(() => {
@@ -259,20 +295,29 @@ export function GameBoard() {
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((card: AbilityCard) => {
+    addLog(`DEBUG: Card selected: ${card.name}`);
     if (!selectedTopAction) {
+      addLog(`DEBUG: Setting as TOP action`);
       setSelectedTopAction(card);
     } else if (!selectedBottomAction && card.id !== selectedTopAction.id) {
+      addLog(`DEBUG: Setting as BOTTOM action`);
       setSelectedBottomAction(card);
+    } else {
+      addLog(`DEBUG: Card selection ignored (both slots filled or same card)`);
     }
-  }, [selectedTopAction, selectedBottomAction]);
+  }, [selectedTopAction, selectedBottomAction, addLog]);
 
   const handleConfirmCardSelection = useCallback(() => {
+    addLog(`DEBUG: Confirm clicked. Top: ${selectedTopAction?.name || 'none'}, Bottom: ${selectedBottomAction?.name || 'none'}`);
     if (selectedTopAction && selectedBottomAction) {
+      addLog(`DEBUG: Emitting select_cards event`);
       websocketService.selectCards(selectedTopAction.id, selectedBottomAction.id);
-      addLog('Cards selected.');
+      addLog(`Cards selected: ${selectedTopAction.name} (top) and ${selectedBottomAction.name} (bottom)`);
       setShowCardSelection(false);
       setSelectedTopAction(null);
       setSelectedBottomAction(null);
+    } else {
+      addLog('ERROR: Cannot confirm - need both top and bottom cards');
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 
@@ -287,6 +332,14 @@ export function GameBoard() {
     // Navigate to lobby - cleanup will happen automatically when Lobby page mounts
     navigate('/');
   };
+
+  const handleEndTurn = useCallback(() => {
+    if (isMyTurn) {
+      websocketService.endTurn();
+      addLog('Turn ended.');
+      setIsMyTurn(false);
+    }
+  }, [isMyTurn, addLog]);
 
   const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
 
@@ -306,7 +359,9 @@ export function GameBoard() {
           <GameHUD
             logs={logs}
             connectionStatus={connectionStatus}
+            isMyTurn={isMyTurn}
             onBackToLobby={handleBackToLobby}
+            onEndTurn={handleEndTurn}
           />
         </div>
       </div>
