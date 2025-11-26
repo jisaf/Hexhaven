@@ -21,7 +21,8 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard, Monster, HexTile, TerrainType, LogMessage, LogMessagePart, Condition } from '../../../shared/types/entities';
+import type { AbilityCard, Monster, HexTile, LogMessage, LogMessagePart } from '../../../shared/types/entities';
+import { TerrainType, Condition } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
@@ -217,13 +218,13 @@ export function GameBoard() {
     setShowCardSelection(true);
   }, [addLog]);
 
-  const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster', name: string }) => {
+  const handleTurnStarted = useCallback((data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }) => {
     const myTurn = data.entityType === 'character' && data.entityId === myCharacterId;
     setIsMyTurn(myTurn);
     setCurrentTurnEntityId(data.entityId);
 
     const turnOrderEntry = turnOrder.find(t => t.entityId === data.entityId);
-    const entityName = turnOrderEntry ? turnOrderEntry.name : 'Unknown';
+    const entityName = turnOrderEntry ? turnOrderEntry.name : (data.entityType === 'monster' ? 'Monster' : 'Character');
 
     if (myTurn) {
       addLog([{ text: 'Your turn has started.', color: 'gold' }]);
