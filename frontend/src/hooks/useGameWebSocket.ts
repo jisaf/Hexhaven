@@ -83,16 +83,16 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     console.log('📡 Registering WebSocket event listeners...');
 
     // Connection status
-    websocketService.on('ws_connected', handleWsConnected);
-    websocketService.on('ws_disconnected', handleWsDisconnected);
-    websocketService.on('ws_reconnecting', handleWsReconnecting);
+    const unsubscribeWsConnected = websocketService.on('ws_connected', handleWsConnected);
+    const unsubscribeWsDisconnected = websocketService.on('ws_disconnected', handleWsDisconnected);
+    const unsubscribeWsReconnecting = websocketService.on('ws_reconnecting', handleWsReconnecting);
 
     // Game events
     console.log('✅ Registering game_started event listener');
-    websocketService.on('game_started', handleGameStarted);
-    websocketService.on('character_moved', handleCharacterMoved);
-    websocketService.on('turn_started', handleTurnStarted);
-    websocketService.on('game_state_update', handleGameStateUpdate);
+    const unsubscribeGameStarted = websocketService.on('game_started', handleGameStarted);
+    const unsubscribeCharacterMoved = websocketService.on('character_moved', handleCharacterMoved);
+    const unsubscribeTurnStarted = websocketService.on('turn_started', handleTurnStarted);
+    const unsubscribeGameStateUpdate = websocketService.on('game_state_update', handleGameStateUpdate);
     console.log('✅ All event listeners registered');
 
     // Step 2: Get room info from localStorage
@@ -123,13 +123,13 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     // Cleanup
     return () => {
       console.log('🧹 Cleaning up WebSocket listeners');
-      websocketService.off('ws_connected');
-      websocketService.off('ws_disconnected');
-      websocketService.off('ws_reconnecting');
-      websocketService.off('game_started');
-      websocketService.off('character_moved');
-      websocketService.off('turn_started');
-      websocketService.off('game_state_update');
+      unsubscribeWsConnected();
+      unsubscribeWsDisconnected();
+      unsubscribeWsReconnecting();
+      unsubscribeGameStarted();
+      unsubscribeCharacterMoved();
+      unsubscribeTurnStarted();
+      unsubscribeGameStateUpdate();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]); // Only navigate can change, handlers are in ref to prevent re-registration

@@ -110,3 +110,29 @@ The proposed refactoring of the WebSocket system will have a positive impact on 
 -   **State Management**: A stable, persistent connection makes client-side state management simpler. There will be fewer edge cases related to synchronizing state after a reconnect, as the connection will rarely be dropped during normal navigation.
 -   **Backend State**: The changes are primarily on the frontend and will not require significant modifications to the backend gateway. However, a more stable client will reduce the frequency of disconnect/reconnect cycles, which may slightly reduce the load on the backend's session management logic.
 -   **User Experience**: The most significant impact will be a vastly improved user experience. The application will feel more responsive and reliable, with fewer confusing disconnects or failures to load.
+
+## 6. Implementation Plan
+
+The recommendations in this document were implemented by completing the migration to a centralized `RoomSessionManager` service. This service acts as the single source of truth for all room-joining logic and session-related state.
+
+The implementation followed these steps:
+
+1.  **Refactor `Lobby.tsx`**: The `Lobby` component was refactored to be fully driven by the `RoomSessionManager`. This involved:
+    *   Removing the `useRoomManagement` custom hook, which previously handled room creation and joining via REST API calls.
+    *   Eliminating local component state for room and player data, instead subscribing to the state provided by the `useRoomSession` hook.
+    *   Integrating the REST API calls for room creation directly into the component, which then calls `roomSessionManager.ensureJoined()` to handle the WebSocket connection.
+
+2.  **Refactor `GameBoard.tsx`**: The `GameBoard` component was refactored to rely entirely on the `RoomSessionManager` for its state. This involved:
+    *   Removing the local `gameData` state.
+    *   Using `sessionState.gameState` from the `useRoomSession` hook as the single source of truth.
+    *   Simplifying the `useGameWebSocket` hook's `onGameStarted` handler to only call `roomSessionManager.onGameStarted()`, delegating all state management to the service.
+
+3.  **Confirm Application-Level Connection**: Verified that the WebSocket connection is established at the application level and is not tied to any specific component's lifecycle, as recommended. The `websocket.service.ts` had already been correctly modified to prevent component-level disconnects.
+
+## 7. Cleanup Tasks
+
+As part of the refactoring, several redundant pieces of code were identified and removed, simplifying the codebase and completing the centralization of the WebSocket logic.
+
+-   **Deleted `useRoomManagement.ts` hook**: This custom hook became entirely redundant after its responsibilities were moved into the `Lobby.tsx` component and the `RoomSessionManager`. The file `frontend/src/hooks/useRoomManagement.ts` was deleted.
+-   **Removed Local State from `Lobby.tsx`**: The `useState` variables for `room` and `players` were removed from the `Lobby` component, as this state is now managed by the `RoomSessionManager`.
+-   **Removed Local State from `GameBoard.tsx`**: The `useState` variable for `gameData` was removed from the `GameBoard` component. The component now correctly sources this data from the `RoomSessionManager`.

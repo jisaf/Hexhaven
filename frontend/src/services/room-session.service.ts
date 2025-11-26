@@ -21,7 +21,15 @@
  */
 
 import { websocketService } from './websocket.service';
-import { getLastRoomCode, getPlayerNickname, getPlayerUUID } from '../utils/storage';
+import {
+  getLastRoomCode,
+  getPlayerNickname,
+  getPlayerUUID,
+  getOrCreatePlayerUUID,
+  saveLastRoomCode,
+  savePlayerNickname,
+} from '../utils/storage';
+import { getApiUrl } from '../config/api';
 import type { GameStartedPayload } from '../../../shared/types/events';
 
 /**
@@ -43,18 +51,22 @@ export type PlayerRole = 'host' | 'player' | null;
 /**
  * Room session state
  */
+import type { Player } from '../components/PlayerList';
+
 export interface RoomSessionState {
   roomCode: string | null;
   status: RoomStatus;
   playerRole: PlayerRole;
+  players: Player[];
   gameState: GameStartedPayload | null;
   lastJoinIntent: JoinIntent | null;
+  error: { message: string } | null;
 }
 
 /**
  * Room joined event data (from backend)
  */
-interface RoomJoinedPayload {
+export interface RoomJoinedPayload {
   roomId: string;
   roomCode: string;
   roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
@@ -81,12 +93,15 @@ class RoomSessionManager {
     roomCode: null,
     status: 'disconnected',
     playerRole: null,
+    players: [],
     gameState: null,
     lastJoinIntent: null,
+    error: null,
   };
 
   // Prevents duplicate joins within same session
   private hasJoinedInSession = false;
+  private joinInProgress = false;
 
   // Subscription callbacks
   private subscribers: Set<StateUpdateCallback> = new Set();
@@ -166,23 +181,29 @@ class RoomSessionManager {
    * @throws Error if room data is missing or connection fails
    */
   public async ensureJoined(intent: JoinIntent): Promise<void> {
-    console.log(`[RoomSessionManager] ensureJoined called with intent: ${intent}`);
-
-    // Prevent duplicate joins in same session
-    if (this.hasJoinedInSession && this.state.status !== 'disconnected') {
-      // Special case: Allow 'refresh' intent if we're in an active game but missing game state
-      // This happens when navigating to /game after Lobby has unmounted
-      if (intent === 'refresh' && this.state.status === 'active' && !this.state.gameState) {
-        console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
-      } else {
-        console.log(
-          `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
-        );
-        return;
-      }
+    if (this.joinInProgress) {
+      console.warn('[RoomSessionManager] Join already in progress, skipping request');
+      return;
     }
+    this.joinInProgress = true;
 
     try {
+      console.log(`[RoomSessionManager] ensureJoined called with intent: ${intent}`);
+
+      // Prevent duplicate joins in same session
+      if (this.hasJoinedInSession && this.state.status !== 'disconnected') {
+        // Special case: Allow 'refresh' intent if we're in an active game but missing game state
+        // This happens when navigating to /game after Lobby has unmounted
+        if (intent === 'refresh' && this.state.status === 'active' && !this.state.gameState) {
+          console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
+        } else {
+          console.log(
+            `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
+          );
+          return;
+        }
+      }
+
       // Get room info from state or localStorage
       // When creating a new room, always use fresh roomCode from localStorage
       // to avoid using stale roomCode from previous game session
@@ -219,11 +240,14 @@ class RoomSessionManager {
         `[RoomSessionManager] ✅ join_room emitted with intent: ${intent}, roomCode: ${roomCode}`
       );
     } catch (error) {
-      // On error, mark as disconnected and re-throw
-      console.error('[RoomSessionManager] ❌ Error in ensureJoined:', error);
+      // On error, mark as disconnected and set error state
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('[RoomSessionManager] ❌ Error in ensureJoined:', errorMessage);
       this.state.status = 'disconnected';
+      this.state.error = { message: errorMessage };
       this.emitStateUpdate();
-      throw error;
+    } finally {
+      this.joinInProgress = false;
     }
   }
 
@@ -234,11 +258,14 @@ class RoomSessionManager {
   public onRoomJoined(data: RoomJoinedPayload): void {
     console.log('[RoomSessionManager] onRoomJoined:', data);
 
-    // Update room code and status
     this.state.roomCode = data.roomCode;
     this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
+    this.state.players = data.players.map(p => ({
+      ...p,
+      connectionStatus: 'connected',
+      isReady: false,
+    }));
 
-    // Determine player role
     const playerUUID = getPlayerUUID();
     const currentPlayer = data.players.find((p) => p.id === playerUUID);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
@@ -248,6 +275,48 @@ class RoomSessionManager {
     );
 
     this.emitStateUpdate();
+  }
+
+  public onPlayerJoined(player: Player): void {
+    this.state.players.push(player);
+    this.emitStateUpdate();
+  }
+
+  public onPlayerLeft(playerId: string): void {
+    this.state.players = this.state.players.filter(p => p.id !== playerId);
+    this.emitStateUpdate();
+  }
+
+  public onCharacterSelected(playerId: string, characterClass: string): void {
+    this.state.players = this.state.players.map(p =>
+      p.id === playerId ? { ...p, characterClass, isReady: true } : p
+    );
+    this.emitStateUpdate();
+  }
+
+  public async createRoom(nickname: string): Promise<void> {
+    const uuid = getOrCreatePlayerUUID();
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid, nickname }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create room');
+    }
+
+    const data = await response.json();
+    saveLastRoomCode(data.room.roomCode);
+    savePlayerNickname(nickname);
+    await this.ensureJoined('create');
+  }
+
+  public async joinRoom(roomCode: string, nickname: string): Promise<void> {
+    savePlayerNickname(nickname);
+    saveLastRoomCode(roomCode);
+    await this.ensureJoined('join');
   }
 
   /**
@@ -288,8 +357,10 @@ class RoomSessionManager {
       roomCode: null,
       status: 'disconnected',
       playerRole: null,
+      players: [],
       gameState: null,
       lastJoinIntent: null,
+      error: null,
     };
 
     this.hasJoinedInSession = false;
@@ -308,8 +379,10 @@ class RoomSessionManager {
       roomCode: null,
       status: 'disconnected',
       playerRole: null,
+      players: [],
       gameState: null,
       lastJoinIntent: null,
+      error: null,
     };
 
     this.hasJoinedInSession = false;

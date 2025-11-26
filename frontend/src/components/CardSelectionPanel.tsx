@@ -15,6 +15,8 @@ interface CardSelectionPanelProps {
   disabled?: boolean;
 }
 
+import { useMediaQuery } from '../hooks/useMediaQuery';
+
 export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   cards,
   onCardSelect,
@@ -26,9 +28,10 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const isPortrait = useMediaQuery('(orientation: portrait)');
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
-  const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''}`;
+  const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''} ${isPortrait ? 'portrait' : ''}`;
 
   return (
     <div className={panelClassName}>

@@ -231,26 +231,22 @@ class WebSocketService {
   /**
    * Register event handler (supports acknowledgment callbacks)
    * Queues handlers if socket not connected yet - they'll be registered on connection
+   * @returns An unsubscribe function
    */
-  on<T extends EventName>(event: T, handler: EventHandler<T>): void {
-    // Store handler for internal tracking (even if socket not connected yet)
+  on<T extends EventName>(event: T, handler: EventHandler<T>): () => void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
-      console.log(`📝 Creating new handler set for event: ${event}`);
     }
     this.eventHandlers.get(event)!.add(handler);
-    console.log(`📝 Added handler for "${event}" (total: ${this.eventHandlers.get(event)!.size})`);
 
-    // If socket is connected and this event hasn't been registered yet, register it now
     if (this.socket && !this.registeredEvents.has(event)) {
-      console.log(`   Socket connected, registering "${event}" immediately`);
       this.registerEventWithSocket(event);
-    } else if (!this.socket) {
-      console.log(`   Socket not connected, "${event}" will be registered on connect`);
-    } else {
-      console.log(`   "${event}" already registered with Socket.IO`);
     }
-    // Otherwise, handler will be registered when socket connects (see setupConnectionHandlers)
+
+    // Return an unsubscribe function
+    return () => {
+      this.off(event, handler);
+    };
   }
 
   /**
@@ -294,17 +290,15 @@ class WebSocketService {
   /**
    * Unregister event handler
    */
-  off<T extends EventName>(event: T, handler?: EventHandler<T>): void {
-    if (!this.socket) return;
-
-    if (handler) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.socket.off(event, handler as any);
-      this.eventHandlers.get(event)?.delete(handler);
-    } else {
-      this.socket.off(event);
-      this.eventHandlers.delete(event);
-      this.registeredEvents.delete(event); // Fix: Also remove from registeredEvents
+  off<T extends EventName>(event: T, handler: EventHandler<T>): void {
+    const handlers = this.eventHandlers.get(event);
+    if (handlers) {
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        this.eventHandlers.delete(event);
+        this.registeredEvents.delete(event);
+        this.socket?.off(event);
+      }
     }
   }
 

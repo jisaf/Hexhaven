@@ -7,8 +7,28 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { RoomWithPlayers } from '../../hooks/useRoomManagement';
 import styles from './MyRoomsList.module.css';
+
+export interface RoomWithPlayers {
+  room: {
+    id: string;
+    roomCode: string;
+    status: string;
+    scenarioId?: string;
+    playerCount: number;
+    createdAt: string;
+    updatedAt: string;
+    expiresAt: string;
+  };
+  players: {
+    id: string;
+    uuid: string;
+    nickname: string;
+    isHost: boolean;
+    characterClass?: string;
+    connectionStatus: string;
+  }[];
+}
 
 interface MyRoomsListProps {
   rooms: RoomWithPlayers[];
@@ -32,7 +52,7 @@ export function MyRoomsList({ rooms }: MyRoomsListProps) {
       ) : (
         <div className={styles.roomsGrid}>
           {rooms.map(({ room, players }) => {
-            const isHost = players.find(p => p.isHost)?.nickname;
+            const isHost = players.find((p: { isHost: boolean; }) => p.isHost)?.nickname;
             const statusClass = room.status === 'active' ? styles.active : styles.lobby;
 
             return (

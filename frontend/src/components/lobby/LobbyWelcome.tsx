@@ -5,8 +5,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import type { ActiveRoom } from '../../hooks/useRoomManagement';
-import { ActiveRoomsList } from './ActiveRoomsList';
+import { ActiveRoomsList, type ActiveRoom } from './ActiveRoomsList';
 import styles from './LobbyWelcome.module.css';
 
 interface LobbyWelcomeProps {

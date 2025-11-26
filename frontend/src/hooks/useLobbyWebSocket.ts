@@ -8,7 +8,7 @@
 import { useEffect, useCallback } from 'react';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
-import { getWebSocketUrl, logApiConfig } from '../config/api';
+import { logApiConfig } from '../config/api';
 import { saveLastRoomCode } from '../utils/storage';
 import { transformPlayers, transformPlayer, type RawPlayerData } from '../utils/playerTransformers';
 import type { Player } from '../components/PlayerList';
@@ -83,26 +83,22 @@ export function useLobbyWebSocket(handlers: LobbyWebSocketHandlers) {
     // Log the API configuration for debugging
     logApiConfig();
 
-    const wsUrl = getWebSocketUrl();
-    websocketService.connect(wsUrl);
-
     // Setup event listeners
-    websocketService.on('room_joined', handleRoomJoined);
-    websocketService.on('player_joined', handlePlayerJoined);
-    websocketService.on('player_left', handlePlayerLeft);
-    websocketService.on('character_selected', handleCharacterSelected);
-    websocketService.on('game_started', handleGameStarted);
-    websocketService.on('error', handleError);
+    const unsubscribeRoomJoined = websocketService.on('room_joined', handleRoomJoined);
+    const unsubscribePlayerJoined = websocketService.on('player_joined', handlePlayerJoined);
+    const unsubscribePlayerLeft = websocketService.on('player_left', handlePlayerLeft);
+    const unsubscribeCharacterSelected = websocketService.on('character_selected', handleCharacterSelected);
+    const unsubscribeGameStarted = websocketService.on('game_started', handleGameStarted);
+    const unsubscribeError = websocketService.on('error', handleError);
 
     return () => {
       // Cleanup on unmount only
-      websocketService.off('room_joined');
-      websocketService.off('player_joined');
-      websocketService.off('player_left');
-      websocketService.off('character_selected');
-      websocketService.off('game_started');
-      websocketService.off('error');
+      unsubscribeRoomJoined();
+      unsubscribePlayerJoined();
+      unsubscribePlayerLeft();
+      unsubscribeCharacterSelected();
+      unsubscribeGameStarted();
+      unsubscribeError();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount/unmount to prevent handler leaks
+  }, [handleRoomJoined, handlePlayerJoined, handlePlayerLeft, handleCharacterSelected, handleGameStarted, handleError]);
 }

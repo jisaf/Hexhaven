@@ -5,7 +5,10 @@
  * Includes WebSocket connection management and reconnection UI (US4).
  */
 
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { websocketService } from './services/websocket.service';
+import { getWebSocketUrl } from './config/api';
 import { Lobby } from './pages/Lobby';
 import { GameBoard } from './pages/GameBoard';
 import { HexMapDemo } from './pages/HexMapDemo';
@@ -74,6 +77,15 @@ function ConnectionUI() {
 }
 
 function App() {
+  useEffect(() => {
+    const wsUrl = getWebSocketUrl();
+    websocketService.connect(wsUrl);
+
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
+
   return (
     <WebSocketConnectionProvider>
       <BrowserRouter>

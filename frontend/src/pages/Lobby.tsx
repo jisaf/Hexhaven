@@ -31,20 +31,18 @@ import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
-import { useRoomManagement } from '../hooks/useRoomManagement';
 import { useRoomSession } from '../hooks/useRoomSession';
-import { getPlayerUUID, getPlayerNickname } from '../utils/storage';
+import {
+  getPlayerUUID,
+  getPlayerNickname,
+} from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
+import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
-interface GameRoom {
-  roomCode: string;
-  status: 'lobby' | 'active' | 'completed' | 'abandoned';
-}
-
-interface RoomJoinedEventData {
+interface RoomJoinedData {
   roomCode: string;
   roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
   players: Player[];
@@ -58,81 +56,92 @@ export function Lobby() {
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
-  const [room, setRoom] = useState<GameRoom | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  const [isHost, setIsHost] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Use custom hooks
-  const { activeRooms, loadingRooms, myRooms, isLoading, error, createRoom, joinRoom, setError } = useRoomManagement({ mode });
   const sessionState = useRoomSession();
+  const room = sessionState.roomCode ? { roomCode: sessionState.roomCode, status: sessionState.status } : null;
+  const players = sessionState.players;
+
+  const [activeRooms, setActiveRooms] = useState([]);
+  const [myRooms, setMyRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+
+  const fetchActiveRooms = useCallback(async () => {
+    setLoadingRooms(true);
+    try {
+      const rooms = await apiFetchActiveRooms();
+      setActiveRooms(rooms);
+    } catch (err) {
+      console.error('Failed to fetch active rooms:', err);
+      setError('Failed to fetch active rooms.');
+    } finally {
+      setLoadingRooms(false);
+    }
+  }, []);
+
+  const fetchMyRooms = useCallback(async () => {
+    try {
+      const rooms = await apiFetchMyRooms();
+      setMyRooms(rooms);
+    } catch (err) {
+      console.error('Failed to fetch my rooms:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveRooms();
+    fetchMyRooms();
+    const interval = setInterval(fetchActiveRooms, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, [fetchActiveRooms, fetchMyRooms]);
 
   // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
-  // This handles ALL navigation methods: back button, direct URL, "Back to Lobby" button, etc.
   useEffect(() => {
     console.log('[Lobby] Component mounted - resetting room session for clean state');
     roomSessionManager.switchRoom();
-    // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Navigate to game when room status becomes active (only when creating/joining)
+  // Navigate to game when room status becomes active
   useEffect(() => {
-    if (sessionState.status === 'active' && sessionState.roomCode && mode !== 'initial') {
+    if (sessionState.status === 'active' && sessionState.roomCode) {
       console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
       navigate(`/game/${sessionState.roomCode}`);
+    } else if (sessionState.status === 'lobby' && sessionState.roomCode) {
+      setMode('in-room');
     }
-  }, [sessionState.status, sessionState.roomCode, mode, navigate]);
+  }, [sessionState.status, sessionState.roomCode, navigate]);
 
   // WebSocket event handlers
-  const handleRoomJoined = useCallback((data: RoomJoinedEventData) => {
-    setRoom({ roomCode: data.roomCode, status: data.roomStatus });
-    setPlayers(data.players);
-
-    // Get current player ID from localStorage UUID
+  const handleRoomJoined = useCallback((data: RoomJoinedData) => {
     const uuid = getPlayerUUID();
     if (uuid) {
       setCurrentPlayerId(uuid);
-
-      // Find if this player is the host
-      const currentPlayer = data.players.find((p: Player) => p.id === uuid);
-      if (currentPlayer) {
-        setIsHost(currentPlayer.isHost);
-      }
     }
-
     if (data.roomStatus !== 'active') {
       setMode('in-room');
     }
   }, []);
 
-  const handlePlayerJoined = useCallback((player: Player) => {
-    setPlayers((prev) => [...prev, player]);
-  }, []);
-
-  const handlePlayerLeft = useCallback((playerId: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
-  }, []);
-
-  const handleCharacterSelected = useCallback((playerId: string, characterClass: CharacterClass) => {
-    setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === playerId
-          ? { ...p, characterClass, isReady: true }
-          : p
-      )
-    );
-
-    if (playerId === currentPlayerId) {
-      setSelectedCharacter(characterClass);
-    }
-  }, [currentPlayerId]);
+  const handlePlayerJoined = useCallback(() => { /* No longer needed */ }, []);
+  const handlePlayerLeft = useCallback(() => { /* No longer needed */ }, []);
+  const handleCharacterSelected = useCallback(
+    (playerId: string, characterClass: CharacterClass) => {
+      if (playerId === currentPlayerId) {
+        setSelectedCharacter(characterClass);
+      }
+    },
+    [currentPlayerId]
+  );
 
   const handleWebSocketError = useCallback((message: string) => {
     setError(message);
-  }, [setError]);
+  }, []);
 
   // Setup WebSocket listeners
   useLobbyWebSocket({
@@ -142,6 +151,30 @@ export function Lobby() {
     onCharacterSelected: handleCharacterSelected,
     onError: handleWebSocketError,
   });
+
+  const proceedWithRoomCreation = async (playerNickname: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await roomSessionManager.createRoom(playerNickname);
+      setMode('creating');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setIsLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await roomSessionManager.joinRoom(roomCode, playerNickname);
+      setMode('joining');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setIsLoading(false);
+    }
+  };
 
   // Room creation flow (T067)
   const handleCreateRoom = () => {
@@ -155,25 +188,6 @@ export function Lobby() {
 
   const handleNicknameSubmit = (submittedNickname: string) => {
     proceedWithRoomCreation(submittedNickname);
-  };
-
-  const proceedWithRoomCreation = async (playerNickname: string) => {
-    try {
-      await createRoom(playerNickname);
-      setMode('creating');
-    } catch (err) {
-      console.error('Room creation error:', err);
-    }
-  };
-
-  // Room join flow (T068)
-  const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
-    try {
-      await joinRoom(roomCode, playerNickname);
-      setMode('joining');
-    } catch (err) {
-      console.error('Room join error:', err);
-    }
   };
 
   // Quick join from active room list
@@ -215,9 +229,8 @@ export function Lobby() {
   // Get disabled character classes using utility
   const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
 
-  // Check if current player is host - use state or check players array
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
-  const isCurrentPlayerHost = isHost || isPlayerHost(currentPlayer);
+  const isCurrentPlayerHost = sessionState.playerRole === 'host' || isPlayerHost(currentPlayer);
 
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
