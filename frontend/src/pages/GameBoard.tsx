@@ -295,20 +295,29 @@ export function GameBoard() {
 
   // T111: Card selection handlers
   const handleCardSelect = useCallback((card: AbilityCard) => {
+    addLog(`DEBUG: Card selected: ${card.name}`);
     if (!selectedTopAction) {
+      addLog(`DEBUG: Setting as TOP action`);
       setSelectedTopAction(card);
     } else if (!selectedBottomAction && card.id !== selectedTopAction.id) {
+      addLog(`DEBUG: Setting as BOTTOM action`);
       setSelectedBottomAction(card);
+    } else {
+      addLog(`DEBUG: Card selection ignored (both slots filled or same card)`);
     }
-  }, [selectedTopAction, selectedBottomAction]);
+  }, [selectedTopAction, selectedBottomAction, addLog]);
 
   const handleConfirmCardSelection = useCallback(() => {
+    addLog(`DEBUG: Confirm clicked. Top: ${selectedTopAction?.name || 'none'}, Bottom: ${selectedBottomAction?.name || 'none'}`);
     if (selectedTopAction && selectedBottomAction) {
+      addLog(`DEBUG: Emitting select_cards event`);
       websocketService.selectCards(selectedTopAction.id, selectedBottomAction.id);
-      addLog('Cards selected.');
+      addLog(`Cards selected: ${selectedTopAction.name} (top) and ${selectedBottomAction.name} (bottom)`);
       setShowCardSelection(false);
       setSelectedTopAction(null);
       setSelectedBottomAction(null);
+    } else {
+      addLog('ERROR: Cannot confirm - need both top and bottom cards');
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 
