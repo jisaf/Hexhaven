@@ -232,6 +232,13 @@ export interface ErrorPayload {
   details?: any;
 }
 
+export interface DebugLogPayload {
+  level: 'log' | 'error' | 'warn' | 'info';
+  message: string;
+  category?: string; // e.g., 'MonsterAI', 'Combat', 'Movement'
+  data?: any;
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -282,4 +289,5 @@ export interface ServerEvents {
   player_reconnected: PlayerReconnectedPayload;
   game_state_update: GameStateUpdatePayload;
   error: ErrorPayload;
+  debug_log: DebugLogPayload;
 }

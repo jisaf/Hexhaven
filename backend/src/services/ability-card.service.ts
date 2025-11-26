@@ -33,11 +33,11 @@ export class AbilityCardService {
         __dirname,
         '../../..',
         'data',
-        'ability-cards.json'
+        'ability-cards.json',
       );
 
       if (!fs.existsSync(dataFilePath)) {
-         throw new Error(`Ability cards data file not found at ${dataFilePath}`);
+        throw new Error(`Ability cards data file not found at ${dataFilePath}`);
       }
 
       const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
