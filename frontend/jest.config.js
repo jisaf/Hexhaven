@@ -52,6 +52,7 @@ export default {
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
 
   // Coverage collection
   collectCoverageFrom: [

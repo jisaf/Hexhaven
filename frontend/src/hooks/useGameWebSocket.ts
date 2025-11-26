@@ -10,26 +10,25 @@ import { useNavigate } from 'react-router-dom';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
-import type { Axial } from '../game/hex-utils';
-import type { GameStartedPayload, RoundEndedPayload, DebugLogPayload } from '../../../shared/types/events';
+import type {
+  GameStartedPayload,
+  RoundEndedPayload,
+  DebugLogPayload,
+  CharacterMovedPayload,
+  MonsterActivatedPayload,
+  AttackResolvedPayload,
+} from '../../../shared/types/events';
 
 interface GameWebSocketHandlers {
   onGameStarted: (data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => void;
-  onCharacterMoved: (data: CharacterMovedData) => void;
+  onCharacterMoved: (data: CharacterMovedPayload) => void;
   onRoundStarted: (data: RoundStartedData) => void;
   onRoundEnded: (data: RoundEndedPayload) => void;
   onTurnStarted: (data: TurnStartedData) => void;
   onGameStateUpdate: (data: { gameState: unknown }) => void;
   onConnectionStatusChange: (status: 'connected' | 'disconnected' | 'reconnecting') => void;
-  onMonsterActivated: (data: MonsterActivatedData) => void;
-  onAttackResolved: (data: AttackResolvedData) => void;
-}
-
-interface CharacterMovedData {
-  characterId: string;
-  fromHex: Axial;
-  toHex: Axial;
-  movementPath: Axial[];
+  onMonsterActivated: (data: MonsterActivatedPayload) => void;
+  onAttackResolved: (data: AttackResolvedPayload) => void;
 }
 
 interface TurnStartedData {
@@ -50,27 +49,6 @@ interface TurnEntity {
   initiative: number;
 }
 
-interface MonsterActivatedData {
-  monsterId: string;
-  focusTarget: string;
-  movement: Axial;
-  attack: {
-    targetId: string;
-    damage: number;
-    modifier: number | 'null' | 'x2';
-  } | null;
-}
-
-interface AttackResolvedData {
-  attackerId: string;
-  targetId: string;
-  damage: number;
-  modifier: number | 'null' | 'x2';
-  effects: string[];
-  targetHealth: number;
-  targetDead: boolean;
-}
-
 export function useGameWebSocket(handlers: GameWebSocketHandlers) {
   const navigate = useNavigate();
   const hasEnsuredJoin = useRef(false); // Track if we've already called ensureJoined
@@ -86,7 +64,7 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     handlersRef.current.onGameStarted(data, ackCallback);
   }, []);
 
-  const handleCharacterMoved = useCallback((data: CharacterMovedData) => {
+  const handleCharacterMoved = useCallback((data: CharacterMovedPayload) => {
     handlersRef.current.onCharacterMoved(data);
   }, []);
 
@@ -142,12 +120,12 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     }
   }, []);
 
-  const handleMonsterActivated = useCallback((data: MonsterActivatedData) => {
+  const handleMonsterActivated = useCallback((data: MonsterActivatedPayload) => {
     console.log('handleMonsterActivated called with data:', data);
     handlersRef.current.onMonsterActivated(data);
   }, []);
 
-  const handleAttackResolved = useCallback((data: AttackResolvedData) => {
+  const handleAttackResolved = useCallback((data: AttackResolvedPayload) => {
     console.log('handleAttackResolved called with data:', data);
     handlersRef.current.onAttackResolved(data);
   }, []);
