@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
-import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
+import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities.ts';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
 import { usePrevious } from '../hooks/usePrevious';
 
