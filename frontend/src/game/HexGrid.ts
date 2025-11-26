@@ -36,12 +36,6 @@ export interface GameBoardData {
   monsters?: Monster[];
 }
 
-interface ClickedEvent {
-  screen: PIXI.Point;
-  world: PIXI.Point;
-  viewport: Viewport;
-}
-
 export class HexGrid {
   private app!: PIXI.Application;
   private container: HTMLElement;
@@ -169,23 +163,9 @@ export class HexGrid {
     // Setup background click handler
     this.viewport.eventMode = 'static';
     this.viewport.hitArea = new PIXI.Rectangle(0, 0, worldWidth, worldHeight);
-    this.viewport.on('clicked', this.handleViewportClicked.bind(this));
+    this.viewport.on('pointerdown', this.handleBackgroundClick.bind(this));
     this.viewport.on('drag-start', () => this.isDragging = true);
     this.viewport.on('drag-end', () => this.isDragging = false);
-  }
-
-  /**
-   * Initialize the game board with tiles and entities
-   */
-  private createTile(tileData: SharedHexTile): HexTile {
-    return new HexTile(tileData, {
-      interactive: true,
-      onClick: (e: PIXI.FederatedPointerEvent, hex: Axial) => {
-        if (this.isDragging) return;
-        e.stopPropagation();
-        this.handleHexClick(hex);
-      }
-    });
   }
 
   /**
@@ -196,7 +176,14 @@ export class HexGrid {
 
     // Create tiles
     for (const tileData of data.tiles) {
-      const tile = this.createTile(tileData);
+      const tile = new HexTile(tileData, {
+        interactive: true,
+        onClick: (e: PIXI.FederatedPointerEvent, hex: Axial) => {
+          e.stopPropagation();
+          this.handleHexClick(hex);
+        }
+      });
+
       const key = axialKey(tileData.coordinates);
       this.tiles.set(key, tile);
       this.tilesLayer.addChild(tile);
@@ -396,18 +383,23 @@ export class HexGrid {
   }
 
   /**
-   * Handle viewport click for creating new hexes or deselecting.
-   * The 'clicked' event only fires if the viewport is not dragged.
+   * Handle background click (deselect)
    */
-  private handleViewportClicked(event: ClickedEvent): void {
+  private handleBackgroundClick(event: PIXI.FederatedPointerEvent): void {
+    if (this.isDragging) {
+      return;
+    }
+
     if (this.options.onHexClick) {
-      const hex = screenToAxial(event.world);
+      const hex = this.getHexAtScreenPosition(event.global.x, event.global.y);
       this.options.onHexClick(hex);
     }
 
-    this.deselectAll();
+    // Only deselect if clicking on stage (not on entities or tiles)
+    if (event.target === this.viewport) {
+      this.deselectAll();
+    }
   }
-
 
   /**
    * Deselect all characters and monsters (User Story 2 - T114)
@@ -522,36 +514,6 @@ export class HexGrid {
   }
 
   /**
-   * Add or update a single tile on the board without a full redraw
-   */
-  public addOrUpdateTile(tileData: SharedHexTile): void {
-    const key = axialKey(tileData.coordinates);
-    let tile = this.tiles.get(key);
-
-    if (tile) {
-      tile.updateData(tileData);
-    } else {
-      tile = this.createTile(tileData);
-      this.tiles.set(key, tile);
-      this.tilesLayer.addChild(tile);
-    }
-  }
-
-  /**
-   * Remove a single tile from the board
-   */
-  public removeTile(hex: Axial): void {
-    const key = axialKey(hex);
-    const tile = this.tiles.get(key);
-
-    if (tile) {
-      this.tilesLayer.removeChild(tile);
-      tile.destroy();
-      this.tiles.delete(key);
-    }
-  }
-
-  /**
    * Get screen position for a hex
    */
   public getHexAtScreenPosition(x: number, y: number): Axial {
@@ -656,13 +618,6 @@ export class HexGrid {
    */
   public getApp(): PIXI.Application {
     return this.app;
-  }
-
-  /**
-   * Get the map of all current tiles
-   */
-  public getTiles(): Map<string, HexTile> {
-    return this.tiles;
   }
 
   /**

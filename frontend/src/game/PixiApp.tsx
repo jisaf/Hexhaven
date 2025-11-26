@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Application, Container, type ApplicationOptions } from 'pixi.js';
 
-export interface PixiAppProps {
+interface PixiAppProps {
   /**
    * Called when the PixiJS application is initialized
    * Use this to add your game objects to the stage
@@ -199,15 +199,6 @@ export function PixiApp({
   );
 }
 
-/**
- * Hook to access the PixiJS application instance
- * Use this within components that are children of PixiApp
- */
-export function usePixiApp(): Application | null {
-  // This would need a context provider to work properly
-  // For now, return null - implement with Context API if needed
-  return null;
-}
 
 /**
  * Object Pool Pattern for Mobile Performance (US3 - T142)

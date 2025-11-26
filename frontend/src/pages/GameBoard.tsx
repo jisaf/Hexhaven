@@ -83,26 +83,6 @@ export function GameBoard() {
   // Use custom hooks
   const roomSession = useRoomSession();
 
-  // Effect to handle active action changes (e.g., showing highlights)
-  useEffect(() => {
-    const activeAction = roomSessionManager.getState().activeAction;
-    if (activeAction) {
-      const card = playerHand.find(c => c.id === activeAction.cardId);
-      if (card) {
-        const action = activeAction.actionType === 'top' ? card.topAction : card.bottomAction;
-        if (action.type === 'attack') {
-          const fetchTargets = async () => {
-            const { validTargets } = await websocketService.getValidAttackTargets(action.range);
-            showAttackHighlights(validTargets);
-          };
-          fetchTargets();
-        }
-      }
-    } else {
-      clearAttackHighlights();
-    }
-  }, [roomSession.activeAction, playerHand, showAttackHighlights, clearAttackHighlights]);
-
   const {
     hexGridReady,
     initializeBoard,
@@ -122,6 +102,26 @@ export function GameBoard() {
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
     onMonsterSelect: (monsterId) => handleMonsterSelectClick(monsterId),
   });
+
+  // Effect to handle active action changes (e.g., showing highlights)
+  useEffect(() => {
+    const activeAction = roomSessionManager.getState().activeAction;
+    if (activeAction) {
+      const card = playerHand.find(c => c.id === activeAction.cardId);
+      if (card) {
+        const action = activeAction.actionType === 'top' ? card.topAction : card.bottomAction;
+        if (action.type === 'attack' && action.range !== undefined && typeof action.range === 'number') {
+          const fetchTargets = async () => {
+            const { validTargets } = await websocketService.getValidAttackTargets(action.range as number);
+            showAttackHighlights(validTargets);
+          };
+          fetchTargets();
+        }
+      }
+    } else {
+      clearAttackHighlights();
+    }
+  }, [roomSession.activeAction, playerHand, showAttackHighlights, clearAttackHighlights]);
 
   const handleHexClick = useCallback((hex: Axial) => {
     const clickedHexCoords = `q=${hex.q}, r=${hex.r}`;

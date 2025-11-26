@@ -96,15 +96,15 @@ export default defineConfig({
       command: 'cd ../backend && npm run start:prod',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 300 * 1000, // 5 minutes
+      timeout: 120 * 1000, // 2 minutes
       stdout: 'pipe',
       stderr: 'pipe'
     },
     {
-      command: 'VITE_URL=http://localhost:5173 npm run dev',
+      command: 'npm run dev',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
-      timeout: 300 * 1000, // 5 minutes
+      timeout: 120 * 1000, // 2 minutes
       stdout: 'pipe',
       stderr: 'pipe'
     }

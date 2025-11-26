@@ -54,7 +54,9 @@ import {
   ConnectionStatus,
   RoomStatus,
   type CharacterClass,
+  type Monster,
 } from '../../../shared/types/entities';
+import { Character } from '../models/character.model';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
@@ -87,7 +89,7 @@ export class GameGateway
 
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
-  private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
+  private readonly roomMonsters = new Map<string, Monster[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
@@ -1195,15 +1197,15 @@ export class GameGateway
     }
 
     const validTargets = monsters
-      .filter((monster: any) => !monster.isDead)
-      .filter((monster: any) => {
+      .filter((monster: Monster) => !monster.isDead)
+      .filter((monster: Monster) => {
         const distance = this.pathfindingService.calculateDistance(
           character.position,
           monster.currentHex,
         );
         return distance <= payload.range;
       })
-      .map((monster: any) => monster.currentHex);
+      .map((monster: Monster) => monster.currentHex);
 
     return { validTargets };
   }
@@ -1252,12 +1254,13 @@ export class GameGateway
 
       // Get target (check monsters first, then characters)
       const monsters = this.roomMonsters.get(room.roomCode) || [];
-      let target: any = monsters.find((m: any) => m.id === payload.targetId);
+      let target: Monster | Character | null =
+        monsters.find((m: Monster) => m.id === payload.targetId) || null;
       const isMonsterTarget = !!target;
 
       if (!target) {
         // Try to find as character
-        const targetPlayer = room.players.find((p: any) => {
+        const targetPlayer = room.players.find((p: Player) => {
           const char = characterService.getCharacterByPlayerId(p.uuid);
           return char && char.id === payload.targetId;
         });
@@ -1313,17 +1316,20 @@ export class GameGateway
       let targetDead = false;
 
       if (isMonsterTarget) {
-        target.health = Math.max(0, target.health - damage);
-        targetHealth = target.health;
-        targetDead = target.health === 0;
+        (target as Monster).health = Math.max(
+          0,
+          (target as Monster).health - damage,
+        );
+        targetHealth = (target as Monster).health;
+        targetDead = (target as Monster).health === 0;
         if (targetDead) {
-          target.isDead = true;
+          (target as Monster).isDead = true;
 
           // Spawn loot token when monster dies
           const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
           const lootToken = {
             id: `loot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            hexCoordinates: target.currentHex,
+            hexCoordinates: (target as Monster).currentHex,
             goldValue: 1 + Math.floor(Math.random() * 3), // 1-3 gold (simplified)
             collected: false,
           };
@@ -1331,14 +1337,14 @@ export class GameGateway
           this.roomLootTokens.set(room.roomCode, lootTokens);
 
           this.logger.log(
-            `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id}`,
+            `Loot spawned at (${(target as Monster).currentHex.q}, ${(target as Monster).currentHex.r}) for monster ${(target as Monster).id}`,
           );
         }
       } else {
         // Apply damage to character target
-        target.takeDamage(damage);
-        targetHealth = target.currentHealth;
-        targetDead = target.isDead;
+        (target as Character).takeDamage(damage);
+        targetHealth = (target as Character).currentHealth;
+        targetDead = (target as Character).isDead;
       }
 
       // Broadcast attack resolution

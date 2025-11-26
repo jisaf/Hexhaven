@@ -298,6 +298,7 @@ class RoomSessionManager {
       playerRole: null,
       gameState: null,
       lastJoinIntent: null,
+      activeAction: null,
     };
 
     this.hasJoinedInSession = false;
@@ -318,6 +319,7 @@ class RoomSessionManager {
       playerRole: null,
       gameState: null,
       lastJoinIntent: null,
+      activeAction: null,
     };
 
     this.hasJoinedInSession = false;

@@ -75,7 +75,6 @@ export function Lobby() {
     console.log('[Lobby] Component mounted - resetting room session for clean state');
     roomSessionManager.switchRoom();
     // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Navigate to game when room status becomes active (only when creating/joining)

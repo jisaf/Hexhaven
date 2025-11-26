@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { type Monster, TerrainType } from '../../../shared/types/entities.ts';
+import { type Monster, TerrainType } from '../../../shared/types/entities';
 
 export function HexMapDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
