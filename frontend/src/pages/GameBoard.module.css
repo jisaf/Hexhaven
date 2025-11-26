@@ -8,6 +8,26 @@
   font-family: 'Georgia', serif;
 }
 
+@media (orientation: landscape) {
+  .gameBoardPage {
+    flex-direction: row;
+  }
+
+  .rightPanel {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hudWrapper {
+    margin-top: auto;
+  }
+
+  .cardSelectionActive .rightPanel {
+    display: none;
+  }
+}
+
 .gameContainer {
   flex: 1;
   position: relative;
@@ -113,9 +133,12 @@
     min-height: 0;
   }
 
-  .bottomPlaceholder {
-    display: block;
+  .rightPanel {
     flex: 1; /* 25% */
+  }
+
+  .bottomPlaceholder {
+    display: none;
   }
 
   .hudWrapper {
@@ -125,8 +148,13 @@
     overflow-y: auto;
   }
 
+  .cardSelectionActive .rightPanel,
   .cardSelectionActive .hudWrapper,
   .cardSelectionActive .bottomPlaceholder {
     display: none;
   }
+}
+
+.rightPanel {
+  /* Common styles for both orientations */
 }

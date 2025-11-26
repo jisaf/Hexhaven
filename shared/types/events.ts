@@ -249,7 +249,20 @@ export interface ClientEvents {
   reconnect: ReconnectPayload;
 }
 
+export interface RoundStartedPayload {
+  roundNumber: number;
+  turnOrder: TurnEntity[];
+}
+
+export interface TurnEntity {
+  entityId: string;
+  name: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
+}
+
 export interface ServerEvents {
+  round_started: RoundStartedPayload;
   room_joined: RoomJoinedPayload;
   player_joined: PlayerJoinedPayload;
   player_left: PlayerLeftPayload;

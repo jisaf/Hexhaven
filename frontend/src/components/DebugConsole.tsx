@@ -250,6 +250,9 @@ export function DebugConsole() {
 
           {!isMinimized && (
             <div className="debug-filters">
+              <div className="branch-info">
+                Branch: {import.meta.env.VITE_BRANCH_NAME || 'local'}
+              </div>
               <div className="filter-label">Filters:</div>
               <button
                 onClick={() => toggleFilter('log')}
@@ -443,6 +446,14 @@ export function DebugConsole() {
           background: #111827;
           border-bottom: 1px solid #374151;
           flex-wrap: wrap;
+        }
+
+        .branch-info {
+          width: 100%;
+          text-align: right;
+          font-size: 8px;
+          color: #9ca3af;
+          margin-bottom: 8px;
         }
 
         .filter-label {
