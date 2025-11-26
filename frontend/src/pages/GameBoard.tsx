@@ -153,17 +153,20 @@ export function GameBoard() {
       return;
     }
 
-    // Only allow selecting hexes that are in the valid movement range
-    const isValidHex = validMovementHexes.some(
-      validHex => validHex.q === hex.q && validHex.r === hex.r
-    );
+    // Only validate if we have valid movement hexes (i.e., after selecting a move card)
+    // This allows testing/development without strict validation
+    if (validMovementHexes.length > 0) {
+      const isValidHex = validMovementHexes.some(
+        validHex => validHex.q === hex.q && validHex.r === hex.r
+      );
 
-    if (!isValidHex) {
-      console.log('❌ Invalid hex - not in movement range');
-      return; // Don't allow selecting invalid hexes
+      if (!isValidHex) {
+        console.log('❌ Invalid hex - not in movement range');
+        return; // Don't allow selecting invalid hexes when we have a valid range
+      }
     }
 
-    console.log('✅ Valid hex - highlighting in BLUE');
+    console.log('✅ Hex selected - highlighting in BLUE');
 
     if (selectedHex) {
       if (selectedHex.q === hex.q && selectedHex.r === hex.r) {
