@@ -1648,18 +1648,28 @@ export class GameGateway
       );
 
       // Map Character model properties to match the shared Character interface
-      // Character model uses 'position', but MonsterAIService expects 'currentHex'
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      // Character model uses getters and different property names:
+      // - 'position' -> 'currentHex'
+      // - 'exhausted' (getter) -> 'isExhausted'
+      // - 'conditions' (getter) -> 'conditions'
+      // - 'characterClass' -> 'classType'
+      // - 'currentHealth' -> 'health'
       const characters = characterModels.map((c: any) => ({
-        ...c,
-        currentHex: c.position, // Map position to currentHex
+        id: c.id,
+        playerId: c.playerId,
+        classType: c.characterClass,
+        health: c.currentHealth,
+        maxHealth: c.maxHealth,
+        currentHex: c.position,
+        conditions: c.conditions, // Getter
+        isExhausted: c.exhausted, // Getter
       }));
 
       characters.forEach((c: any) => {
         this.emitDebugLog(
           roomCode,
           'info',
-          `Character ${c.id}: ${c.characterClass} at (${c.currentHex.q}, ${c.currentHex.r}), exhausted: ${c.exhausted}`,
+          `Character ${c.id}: ${c.classType} at (${c.currentHex.q}, ${c.currentHex.r}), exhausted: ${c.isExhausted}`,
           'MonsterAI',
         );
       });
@@ -1689,8 +1699,10 @@ export class GameGateway
         'MonsterAI',
       );
 
-      const focusTarget = characters.find((c: any) => c.id === focusTargetId);
-      if (!focusTarget) {
+      const focusTargetMapped = characters.find(
+        (c: any) => c.id === focusTargetId,
+      );
+      if (!focusTargetMapped) {
         this.emitDebugLog(
           roomCode,
           'error',
@@ -1701,10 +1713,25 @@ export class GameGateway
         return;
       }
 
+      // Get the original Character model instance for method calls
+      const focusTarget = characterModels.find(
+        (c: any) => c.id === focusTargetId,
+      );
+      if (!focusTarget) {
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Focus target model ${focusTargetId} not found`,
+          'MonsterAI',
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
       this.emitDebugLog(
         roomCode,
         'info',
-        `Focus target found: ${focusTarget.characterClass} at (${focusTarget.currentHex.q}, ${focusTarget.currentHex.r})`,
+        `Focus target found: ${focusTargetMapped.classType} at (${focusTargetMapped.currentHex.q}, ${focusTargetMapped.currentHex.r})`,
         'MonsterAI',
       );
 
@@ -1751,10 +1778,10 @@ export class GameGateway
         'MonsterAI',
       );
 
-      // Determine movement
+      // Determine movement (use mapped target for MonsterAI service)
       const movementHex = this.monsterAIService.determineMovement(
         monster,
-        focusTarget,
+        focusTargetMapped as any,
         obstacles,
         occupiedHexes,
       );
@@ -1777,15 +1804,15 @@ export class GameGateway
         );
       }
 
-      // Check if monster should attack
+      // Check if monster should attack (use mapped target for MonsterAI service)
       const shouldAttack = this.monsterAIService.shouldAttack(
         monster,
-        focusTarget,
+        focusTargetMapped as any,
       );
 
       const currentDistance = this.monsterAIService.calculateHexDistance(
         monster.currentHex,
-        focusTarget.currentHex,
+        focusTargetMapped.currentHex,
       );
 
       this.emitDebugLog(
