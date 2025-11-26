@@ -1,66 +1,29 @@
 #!/bin/bash
+# Hexhaven Development Server Startup Script (Corrected)
+# This script sets up and runs both backend and frontend development servers.
+# It uses the in-memory data store and does not require a database connection.
 
-# Hexhaven Development Server Startup Script
-# This script sets up and runs both backend and frontend development servers
+set -e # Exit on error
 
-set -e  # Exit on error
-
-echo "🎮 Hexhaven Development Server Setup"
-echo "===================================="
+echo "🎮 Hexhaven Development Server Setup (In-Memory Mode)"
+echo "======================================================"
 
 # Colors for output
-RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Check if we're in the right directory
-if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
-    echo -e "${RED}Error: This script must be run from the Hexhaven root directory${NC}"
-    exit 1
-fi
-
-# Check if .env exists in backend
-if [ ! -f "backend/.env" ]; then
-    echo -e "${YELLOW}Warning: backend/.env not found${NC}"
-    echo "Creating backend/.env with default PostgreSQL connection..."
-    echo 'DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hexhaven?schema=public"' > backend/.env
-    echo -e "${YELLOW}Please update backend/.env with your actual database credentials if needed${NC}"
-fi
-
-# Backend setup
+# 1. Build the backend
 echo ""
-echo "📦 Setting up backend..."
+echo "📦 Building backend..."
 cd backend
-
-# Install backend dependencies if node_modules doesn't exist
-if [ ! -d "node_modules" ]; then
-    echo "Installing backend dependencies..."
-    npm install
-else
-    echo "Backend dependencies already installed"
-fi
-
+npm run build
 cd ..
+echo -e "${GREEN}✅ Backend built successfully.${NC}"
 
-# Frontend setup
+
+# 2. Start both servers
 echo ""
-echo "📦 Setting up frontend..."
-cd frontend
-
-# Install frontend dependencies if node_modules doesn't exist
-if [ ! -d "node_modules" ]; then
-    echo "Installing frontend dependencies..."
-    npm install
-else
-    echo "Frontend dependencies already installed"
-fi
-
-cd ..
-
-# Start both servers
-echo ""
-echo -e "${GREEN}✅ Setup complete! Starting development servers...${NC}"
+echo -e "${GREEN}🚀 Starting development servers...${NC}"
 echo ""
 echo "Backend will run on: http://localhost:3000"
 echo "Frontend will run on: http://localhost:5173"
@@ -77,18 +40,9 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Start backend in background
+# Start backend in background using the corrected script
 cd backend
-# Start tsc in watch mode
-npx tsc -w --preserveWatchOutput 2>&1 | sed 's/^/[TSC] /' &
-TSC_PID=$!
-
-# Wait for initial compilation
-echo "Waiting for initial TypeScript compilation..."
-sleep 5
-
-# Start backend with nodemon watching the dist directory
-npx nodemon --watch dist --exec "node dist/main.js" &
+npm run start:prod &
 BACKEND_PID=$!
 
 # Give backend a moment to start

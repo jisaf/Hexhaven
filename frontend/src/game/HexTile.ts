@@ -10,7 +10,7 @@
 
 import * as PIXI from 'pixi.js';
 import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
-import { TerrainType, type HexTile as HexTileData, HexFeatureType, type HexFeature } from '../../../shared/types/entities';
+import { TerrainType, type HexTile as HexTileData, HexFeatureType, type HexFeature } from '../../../shared/types/entities.ts';
 
 export type { HexTileData };
 
