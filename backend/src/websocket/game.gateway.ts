@@ -1083,6 +1083,15 @@ export class GameGateway
       this.logger.log(
         `Round ${roundNumber} started in room ${roomCode}, first turn: ${turnOrder[0].entityId} (initiative: ${turnOrder[0].initiative})`,
       );
+
+      // If the first turn is a monster, activate its AI immediately
+      if (firstEntity.entityType === 'monster') {
+        this.logger.log(`First turn is a monster, activating AI for: ${firstEntity.entityId}`);
+        // Use setTimeout to ensure turn_started event is processed first
+        setTimeout(() => {
+          this.activateMonster(firstEntity.entityId, roomCode);
+        }, 100);
+      }
     }
   }
 
