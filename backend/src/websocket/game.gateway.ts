@@ -906,6 +906,34 @@ export class GameGateway
         );
       }
 
+      // Check if target hex is occupied by a monster
+      const monsters = this.roomMonsters.get(room.roomCode) || [];
+      const isOccupiedByMonster = monsters.some(
+        (m: any) =>
+          m.currentHex.q === payload.targetHex.q &&
+          m.currentHex.r === payload.targetHex.r &&
+          !m.isDead,
+      );
+
+      if (isOccupiedByMonster) {
+        throw new Error('Target hex is occupied by a monster');
+      }
+
+      // Check if target hex is occupied by another character
+      const allCharacters = room.players
+        .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+        .filter((c: any) => c !== null && c.id !== character.id && !c.isDead);
+
+      const isOccupiedByCharacter = allCharacters.some(
+        (c: any) =>
+          c.position.q === payload.targetHex.q &&
+          c.position.r === payload.targetHex.r,
+      );
+
+      if (isOccupiedByCharacter) {
+        throw new Error('Target hex is occupied by another character');
+      }
+
       // Move character
       characterService.moveCharacter(character.id, payload.targetHex);
 
@@ -1591,11 +1619,21 @@ export class GameGateway
       // Get room and all characters
       const room = roomService.getRoom(roomCode);
       if (!room) {
-        this.emitDebugLog(roomCode, 'error', `Room ${roomCode} not found`, 'MonsterAI');
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Room ${roomCode} not found`,
+          'MonsterAI',
+        );
         throw new Error(`Room ${roomCode} not found`);
       }
 
-      this.emitDebugLog(roomCode, 'info', `Room has ${room.players.length} players`, 'MonsterAI');
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Room has ${room.players.length} players`,
+        'MonsterAI',
+      );
 
       // Get all characters in room and map to expected format
       const characterModels = room.players
