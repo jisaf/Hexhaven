@@ -6,8 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { type Monster, TerrainType, Condition, CharacterClass } from '../../../shared/types/entities.ts';
-import type { Character, TurnEntity } from '../../../shared/types/entities.ts';
+import { type Monster, TerrainType, Condition, CharacterClass, type Character, type TurnEntity } from '../../../shared/types/entities.ts';
 import TurnOrder from '../components/TurnOrder';
 
 const mockCharacters: Character[] = [

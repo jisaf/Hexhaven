@@ -587,6 +587,8 @@ export function GameBoard() {
             turnOrder={turnOrder}
             currentTurnEntityId={currentTurnEntityId}
             currentRound={currentRound}
+            characters={gameData?.characters || []}
+            monsters={gameData?.monsters || []}
           />
         )}
         <div className={styles.hudWrapper}>
