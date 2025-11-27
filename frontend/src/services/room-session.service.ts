@@ -106,6 +106,19 @@ class RoomSessionManager {
   // Subscription callbacks
   private subscribers: Set<StateUpdateCallback> = new Set();
 
+  constructor() {
+    this.setupWebSocketListeners();
+  }
+
+  private setupWebSocketListeners(): void {
+    websocketService.on('room_joined', this.onRoomJoined.bind(this));
+    websocketService.on('player_joined', (data) => this.onPlayerJoined(data.player));
+    websocketService.on('player_left', (data) => this.onPlayerLeft(data.playerId));
+    websocketService.on('character_selected', (data) => this.onCharacterSelected(data.playerId, data.characterClass));
+    websocketService.on('game_started', this.onGameStarted.bind(this));
+    websocketService.on('ws_disconnected', this.onDisconnected.bind(this));
+  }
+
   /**
    * Subscribe to session state changes
    * Returns unsubscribe function

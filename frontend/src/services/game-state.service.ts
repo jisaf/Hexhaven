@@ -1,0 +1,460 @@
+import { websocketService } from './websocket.service';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload } from '../../../shared/types';
+import { Condition } from '../../../shared/types';
+import type { AbilityCard } from '../../../shared/types/entities';
+import { Axial, hexRangeReachable } from '../utils/hex-utils';
+
+// Helper to format modifier value into a string like "+1", "-2"
+const formatModifier = (modifier: number | 'null' | 'x2'): string => {
+  if (modifier === 'x2') {
+    return ', x2 modifier';
+  }
+  if (modifier === 'null') {
+    return ' (null modifier)';
+  }
+  if (typeof modifier === 'number') {
+    return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+  }
+  return '';
+};
+
+// Helper to get color for a given effect
+const getEffectColor = (effect: string) => {
+  switch (effect.toLowerCase()) {
+    case Condition.POISON:
+      return 'green';
+    case Condition.WOUND:
+      return 'orange';
+    case Condition.STUN:
+      return 'lightblue';
+    case Condition.IMMOBILIZE:
+    case Condition.DISARM:
+      return 'white';
+    default:
+      return 'lightgreen';
+  }
+};
+
+const isHexBlocked = (hex: Axial, state: GameState): boolean => {
+    if (!state.gameData) return true;
+    const tile = state.gameData.mapLayout.find(t => t.coordinates.q === hex.q && t.coordinates.r === hex.r);
+    if (!tile) return true;
+    if (tile.terrain === 'obstacle') return true;
+
+    // check for characters
+    if (state.gameData.characters.some(c => c.currentHex?.q === hex.q && c.currentHex?.r === hex.r)) return true;
+
+    // check for monsters
+    if (state.gameData.monsters.some(m => m.currentHex.q === hex.q && m.currentHex.r === hex.r)) return true;
+
+    return false;
+}
+
+interface GameState {
+  // Core game data
+  gameData: GameStartedPayload | null;
+
+  // Turn management
+  currentRound: number;
+  turnOrder: TurnEntity[];
+  currentTurnEntityId: string | null;
+  isMyTurn: boolean;
+
+  // Player state
+  myCharacterId: string | null;
+  playerHand: AbilityCard[];
+  selectedTopAction: AbilityCard | null;
+  selectedBottomAction: AbilityCard | null;
+
+  // Movement state
+  selectedCharacterId: string | null;
+  selectedHex: Axial | null;
+  currentMovementPoints: number;
+  validMovementHexes: Axial[];
+
+  // Combat state
+  attackMode: boolean;
+  attackableTargets: string[];
+
+  // UI state
+  logs: LogMessage[];
+  connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
+  showCardSelection: boolean;
+}
+
+class GameStateManager {
+  private state: GameState = {
+    gameData: null,
+    currentRound: 0,
+    turnOrder: [],
+    currentTurnEntityId: null,
+    isMyTurn: false,
+    myCharacterId: null,
+    playerHand: [],
+    selectedTopAction: null,
+    selectedBottomAction: null,
+    selectedCharacterId: null,
+    selectedHex: null,
+    currentMovementPoints: 0,
+    validMovementHexes: [],
+    attackMode: false,
+    attackableTargets: [],
+    logs: [],
+    connectionStatus: 'connected',
+    showCardSelection: false,
+  };
+  private subscribers: Set<(state: GameState) => void> = new Set();
+
+  constructor() {
+    this.setupWebSocketListeners();
+  }
+
+  private addLog(parts: LogMessagePart[]) {
+    const newLog: LogMessage = {
+      id: `${Date.now()}-${Math.random()}`,
+      parts,
+    };
+    this.state.logs = [...this.state.logs, newLog].slice(-200);
+    this.emitStateUpdate();
+  }
+
+  private setupWebSocketListeners(): void {
+    websocketService.on('game_started', this.handleGameStarted.bind(this));
+    websocketService.on('character_moved', this.handleCharacterMoved.bind(this));
+    websocketService.on('round_started', this.handleRoundStarted.bind(this));
+    websocketService.on('round_ended', this.handleRoundEnded.bind(this));
+    websocketService.on('turn_started', this.handleTurnStarted.bind(this));
+    websocketService.on('monster_activated', this.handleMonsterActivated.bind(this));
+    websocketService.on('attack_resolved', this.handleAttackResolved.bind(this));
+    websocketService.on('ws_connected', () => {
+        this.state.connectionStatus = 'connected';
+        this.emitStateUpdate();
+    });
+    websocketService.on('ws_disconnected', () => {
+        this.state.connectionStatus = 'disconnected';
+        this.emitStateUpdate();
+    });
+    websocketService.on('ws_reconnecting', () => {
+        this.state.connectionStatus = 'reconnecting';
+        this.emitStateUpdate();
+    });
+  }
+
+  private handleGameStarted(data: GameStartedPayload): void {
+    this.addLog([{ text: `Scenario started: ${data.scenarioName}` }]);
+
+    const playerUUID = websocketService.getPlayerUUID();
+    if (!playerUUID) return;
+
+    const myCharacter = data.characters.find(char => char.playerId === playerUUID);
+    if (myCharacter) {
+      this.state.myCharacterId = myCharacter.id;
+      const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+      if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+        this.state.playerHand = characterWithDeck.abilityDeck;
+      }
+    }
+
+    this.state.gameData = data;
+    this.state.currentRound = 1;
+    if (this.state.playerHand.length > 0) {
+        this.state.showCardSelection = true;
+    }
+    this.emitStateUpdate();
+  }
+
+  private handleCharacterMoved(data: CharacterMovedPayload): void {
+    // NOTE: visual movement is handled by HexGrid events, this is for state and logs
+    this.addLog([
+      { text: data.characterName, color: 'lightblue' },
+      { text: ` moved ` },
+      { text: `${data.distance}`, color: 'blue' },
+      { text: ` hexes.` }
+    ]);
+
+    if (this.state.gameData) {
+        const char = this.state.gameData.characters.find(c => c.id === data.characterId);
+        if (char) {
+            char.currentHex = data.toHex;
+        }
+    }
+
+    const movedDistance = data.movementPath.length > 0 ? data.movementPath.length - 1 : 0;
+    const remainingMoves = this.state.currentMovementPoints - movedDistance;
+    this.state.currentMovementPoints = remainingMoves;
+    this.state.selectedHex = null; // Clear selected hex after move
+
+    if (remainingMoves > 0) {
+        this.state.validMovementHexes = hexRangeReachable(
+            data.toHex,
+            remainingMoves,
+            (hex) => isHexBlocked(hex, this.state)
+        );
+    } else {
+        this.state.validMovementHexes = [];
+    }
+
+    this.emitStateUpdate();
+  }
+
+  private handleRoundStarted(data: { roundNumber: number; turnOrder: TurnEntity[] }): void {
+    this.state.turnOrder = data.turnOrder;
+    this.state.currentRound = data.roundNumber;
+    this.addLog([{ text: `Round ${data.roundNumber} has started.` }]);
+    this.emitStateUpdate();
+  }
+
+  private handleRoundEnded(data: { roundNumber: number }): void {
+    this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
+    this.state.showCardSelection = true;
+    this.emitStateUpdate();
+  }
+
+    private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
+    const myTurn = data.entityType === 'character' && data.entityId === this.state.myCharacterId;
+    this.state.isMyTurn = myTurn;
+    this.state.currentTurnEntityId = data.entityId;
+
+    const turnOrderEntry = this.state.turnOrder.find(t => t.entityId === data.entityId);
+    const entityName = turnOrderEntry ? turnOrderEntry.name : (data.entityType === 'monster' ? 'Monster' : 'Character');
+
+    if (myTurn) {
+      this.addLog([{ text: 'Your turn has started.', color: 'gold' }]);
+    } else {
+      this.addLog([{ text: `${entityName}'s turn.` }]);
+    }
+    this.emitStateUpdate();
+  }
+
+  private handleMonsterActivated(data: MonsterActivatedPayload): void {
+     const logParts: LogMessagePart[] = [{ text: data.monsterName, color: 'orange' }];
+
+    // Movement
+    if (data.movementDistance > 0) {
+      logParts.push({ text: ' moved ' });
+      logParts.push({ text: `${data.movementDistance}`, color: 'blue' });
+      logParts.push({ text: ' hexes' });
+      if (data.attack) {
+        logParts.push({ text: ' and' });
+      }
+    }
+
+    // Attack
+    if (data.attack) {
+      const { targetId, baseDamage, damage, modifier, effects } = data.attack;
+
+      if (modifier === 'null') {
+        logParts.push({ text: "'s attack missed " });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: formatModifier(modifier) });
+      } else {
+        logParts.push({ text: ' attacked ' });
+        logParts.push({ text: data.focusTargetName, color: 'lightblue' });
+        logParts.push({ text: ' for ' });
+        logParts.push({ text: `${damage}`, color: 'red' });
+        if (modifier === 'x2') {
+          logParts.push({ text: ` (${baseDamage} base${formatModifier(modifier)})` });
+        } else {
+          logParts.push({ text: ` (${baseDamage}${formatModifier(modifier)})` });
+        }
+
+        if (effects.length > 0) {
+          logParts.push({ text: ' and applied ' });
+          effects.forEach((effect, i) => {
+            logParts.push({ text: effect, color: getEffectColor(effect) });
+            if (i < effects.length - 1) {
+              logParts.push({ text: ' and ' });
+            }
+          });
+        }
+      }
+      logParts.push({ text: '.' });
+
+      if (this.state.gameData) {
+        const targetCharacter = this.state.gameData.characters.find(c => c.id === targetId);
+        if (targetCharacter) {
+          targetCharacter.health = Math.max(0, targetCharacter.health - damage);
+        }
+      }
+    } else {
+      logParts.push({ text: '.' });
+    }
+    this.addLog(logParts);
+    this.emitStateUpdate();
+  }
+
+  private handleAttackResolved(data: AttackResolvedPayload): void {
+    const logParts: LogMessagePart[] = [];
+    logParts.push({ text: data.attackerName, color: 'lightblue' });
+
+    if (data.modifier === 'null') {
+      logParts.push({ text: "'s attack missed " });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: formatModifier(data.modifier) });
+    } else {
+      logParts.push({ text: ' attacked ' });
+      logParts.push({ text: data.targetName, color: 'orange' });
+      logParts.push({ text: ' for ' });
+      logParts.push({ text: `${data.damage}`, color: 'red' });
+      if (data.modifier === 'x2') {
+        logParts.push({ text: ` (${data.baseDamage} base${formatModifier(data.modifier)})` });
+      } else {
+        logParts.push({ text: ` (${data.baseDamage}${formatModifier(data.modifier)})` });
+      }
+
+      if (data.effects.length > 0) {
+        logParts.push({ text: ' and applied ' });
+        data.effects.forEach((effect, i) => {
+          logParts.push({ text: effect, color: getEffectColor(effect) });
+          if (i < data.effects.length - 1) {
+            logParts.push({ text: ' and ' });
+          }
+        });
+      }
+    }
+    logParts.push({ text: '.' });
+    this.addLog(logParts);
+
+    // Update target health in state
+    if (this.state.gameData) {
+      const isCharacter = this.state.gameData.characters.some(c => c.id === data.targetId);
+
+      if (isCharacter) {
+         const char = this.state.gameData.characters.find(c => c.id === data.targetId);
+         if(char) char.health = data.targetHealth;
+      } else {
+         const monster = this.state.gameData.monsters.find(m => m.id === data.targetId);
+         if(monster) monster.health = data.targetHealth;
+      }
+    }
+    this.emitStateUpdate();
+  }
+
+
+  private emitStateUpdate(): void {
+    this.subscribers.forEach(callback => callback({ ...this.state }));
+  }
+
+  public subscribe(callback: (state: GameState) => void): () => void {
+    this.subscribers.add(callback);
+    callback({ ...this.state }); // Immediately send the current state
+    return () => this.subscribers.delete(callback);
+  }
+
+  public getState(): GameState {
+    return { ...this.state };
+  }
+
+  //
+  // ============== PUBLIC ACTIONS ==============
+  //
+  public selectCard(card: AbilityCard): void {
+    if (!this.state.selectedTopAction) {
+      this.state.selectedTopAction = card;
+    } else if (!this.state.selectedBottomAction && card.id !== this.state.selectedTopAction.id) {
+      this.state.selectedBottomAction = card;
+    }
+    this.emitStateUpdate();
+  }
+
+  public confirmCardSelection(): void {
+    if (this.state.selectedTopAction && this.state.selectedBottomAction) {
+      websocketService.selectCards(this.state.selectedTopAction.id, this.state.selectedBottomAction.id);
+      this.addLog([
+          { text: 'Cards selected: '},
+          { text: this.state.selectedTopAction.name, color: 'white' },
+          { text: ' and ' },
+          { text: this.state.selectedBottomAction.name, color: 'white' }
+      ]);
+      this.state.showCardSelection = false;
+      this.emitStateUpdate();
+    }
+  }
+
+  public clearCardSelection(): void {
+    this.state.selectedTopAction = null;
+    this.state.selectedBottomAction = null;
+    this.emitStateUpdate();
+  }
+
+  public selectCharacter(characterId: string): void {
+      if (!this.state.isMyTurn) return;
+
+      this.state.selectedCharacterId = characterId;
+      this.state.selectedHex = null;
+
+      let moveValue = 0;
+      if (this.state.selectedBottomAction?.bottomAction?.type === 'move') {
+        moveValue = this.state.selectedBottomAction.bottomAction.value || 0;
+      } else if (this.state.selectedTopAction?.topAction?.type === 'move') {
+        moveValue = this.state.selectedTopAction.topAction.value || 0;
+      }
+
+      this.state.currentMovementPoints = moveValue;
+
+      const character = this.state.gameData?.characters.find(c => c.id === characterId);
+      if (character && character.currentHex && moveValue > 0) {
+        this.state.validMovementHexes = hexRangeReachable(
+          character.currentHex,
+          moveValue,
+          (hex) => isHexBlocked(hex, this.state)
+        );
+      } else {
+        this.state.validMovementHexes = [];
+      }
+
+      this.emitStateUpdate();
+  }
+
+  public selectHex(hex: Axial): void {
+      if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
+
+      // TODO: validate hex is in validMovementHexes
+
+      if (this.state.selectedHex && this.state.selectedHex.q === hex.q && this.state.selectedHex.r === hex.r) {
+          // double-click to confirm move
+          websocketService.moveCharacter(hex);
+          this.state.selectedHex = null;
+          this.state.validMovementHexes = [];
+      } else {
+          this.state.selectedHex = hex;
+      }
+      this.emitStateUpdate();
+  }
+
+  public endTurn(): void {
+      if(this.state.isMyTurn) {
+          websocketService.endTurn();
+          this.addLog([{text: 'Turn ended.'}]);
+          this.state.isMyTurn = false;
+          this.emitStateUpdate();
+      }
+  }
+
+
+  public reset(): void {
+    this.state = {
+        gameData: null,
+        currentRound: 0,
+        turnOrder: [],
+        currentTurnEntityId: null,
+        isMyTurn: false,
+        myCharacterId: null,
+        playerHand: [],
+        selectedTopAction: null,
+        selectedBottomAction: null,
+        selectedCharacterId: null,
+        selectedHex: null,
+        currentMovementPoints: 0,
+        validMovementHexes: [],
+        attackMode: false,
+        attackableTargets: [],
+        logs: [],
+        connectionStatus: 'connected',
+        showCardSelection: false,
+    };
+    this.emitStateUpdate();
+  }
+}
+
+export const gameStateManager = new GameStateManager();

@@ -29,7 +29,6 @@ import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
-import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { useRoomSession } from '../hooks/useRoomSession';
 import {
   getPlayerUUID,
@@ -115,41 +114,6 @@ export function Lobby() {
       setMode('in-room');
     }
   }, [sessionState.status, sessionState.roomCode, navigate]);
-
-  // WebSocket event handlers
-  const handleRoomJoined = useCallback((data: RoomJoinedData) => {
-    const uuid = getPlayerUUID();
-    if (uuid) {
-      setCurrentPlayerId(uuid);
-    }
-    if (data.roomStatus !== 'active') {
-      setMode('in-room');
-    }
-  }, []);
-
-  const handlePlayerJoined = useCallback(() => { /* No longer needed */ }, []);
-  const handlePlayerLeft = useCallback(() => { /* No longer needed */ }, []);
-  const handleCharacterSelected = useCallback(
-    (playerId: string, characterClass: CharacterClass) => {
-      if (playerId === currentPlayerId) {
-        setSelectedCharacter(characterClass);
-      }
-    },
-    [currentPlayerId]
-  );
-
-  const handleWebSocketError = useCallback((message: string) => {
-    setError(message);
-  }, []);
-
-  // Setup WebSocket listeners
-  useLobbyWebSocket({
-    onRoomJoined: handleRoomJoined,
-    onPlayerJoined: handlePlayerJoined,
-    onPlayerLeft: handlePlayerLeft,
-    onCharacterSelected: handleCharacterSelected,
-    onError: handleWebSocketError,
-  });
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
