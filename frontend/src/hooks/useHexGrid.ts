@@ -172,15 +172,21 @@ export function useHexGrid(
     }
   }, []);
 
-  const showSelectedHex = useCallback((hex: Axial) => {
+  const showMovementRange = useCallback((hexes: Axial[]) => {
     if (hexGridRef.current) {
-      hexGridRef.current.showSelectedHex(hex);
+      hexGridRef.current.showMovementRange(hexes);
     }
   }, []);
 
-  const clearSelectedHex = useCallback(() => {
+  const clearMovementRange = useCallback(() => {
     if (hexGridRef.current) {
-      hexGridRef.current.clearSelectedHex();
+      hexGridRef.current.clearMovementRange();
+    }
+  }, []);
+
+  const setSelectedHex = useCallback((hex: Axial | null) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.setSelectedHex(hex);
     }
   }, []);
 
@@ -237,18 +243,35 @@ export function useHexGrid(
     }
   }, []);
 
+  const getCharacter = useCallback((characterId: string) => {
+    if (hexGridRef.current) {
+      return hexGridRef.current.getCharacter(characterId);
+    }
+    return undefined;
+  }, []);
+
+  const isHexBlocked = useCallback((hex: Axial) => {
+    if (hexGridRef.current) {
+      return hexGridRef.current.isHexBlocked(hex);
+    }
+    return true; // Default to blocked if grid is not available
+  }, []);
+
   return {
     hexGridRef,
     hexGridReady,
     initializeBoard,
     moveCharacter,
     deselectAll,
-    showSelectedHex,
-    clearSelectedHex,
+    showMovementRange,
+    clearMovementRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    getCharacter,
+    isHexBlocked,
+    setSelectedHex,
   };
 }

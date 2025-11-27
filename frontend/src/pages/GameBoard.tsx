@@ -20,9 +20,10 @@ import type { CharacterData } from '../game/CharacterSprite';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import type { Axial } from '../game/hex-utils';
+import { hexRangeReachable } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard, Monster, HexTile, LogMessage, LogMessagePart } from '../../../shared/types/entities';
-import { TerrainType, Condition } from '../../../shared/types/entities';
+import type { AbilityCard, Monster, HexTile, LogMessage, LogMessagePart } from '../../../shared/types/entities.ts';
+import { TerrainType, Condition } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
@@ -98,6 +99,8 @@ export function GameBoard() {
   const [turnOrder, setTurnOrder] = useState<TurnEntity[]>([]);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentTurnEntityId, setCurrentTurnEntityId] = useState<string | null>(null);
+  const [currentMovementPoints, setCurrentMovementPoints] = useState(0);
+  const [validMovementHexes, setValidMovementHexes] = useState<Axial[]>([]);
 
   // T200: Action Log
   const addLog = useCallback((parts: LogMessagePart[]) => {
@@ -126,13 +129,16 @@ export function GameBoard() {
     initializeBoard,
     moveCharacter,
     deselectAll,
-    showSelectedHex,
-    clearSelectedHex,
+    showMovementRange,
+    clearMovementRange,
+    getCharacter,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    isHexBlocked,
+    setSelectedHex: highlightSelectedHex,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
@@ -140,27 +146,109 @@ export function GameBoard() {
   });
 
   const handleHexClick = useCallback((hex: Axial) => {
+    console.log('🖱️ Hex clicked:', hex, 'Valid hexes:', validMovementHexes.length);
+
     if (!selectedCharacterId || !isMyTurn) {
+      console.log('❌ Ignoring click - no character selected or not your turn');
       return;
     }
 
-    if (selectedHex && selectedHex.q === hex.q && selectedHex.r === hex.r) {
-      websocketService.moveCharacter(hex);
-      setSelectedHex(null);
-      clearSelectedHex();
-    } else {
-      setSelectedHex(hex);
-      showSelectedHex(hex);
+    // Only validate if we have valid movement hexes (i.e., after selecting a move card)
+    // This allows testing/development without strict validation
+    if (validMovementHexes.length > 0) {
+      const isValidHex = validMovementHexes.some(
+        validHex => validHex.q === hex.q && validHex.r === hex.r
+      );
+
+      if (!isValidHex) {
+        console.log('❌ Invalid hex - not in movement range');
+        return; // Don't allow selecting invalid hexes when we have a valid range
+      }
     }
-  }, [selectedCharacterId, isMyTurn, selectedHex, showSelectedHex, clearSelectedHex]);
+
+    console.log('✅ Hex selected - highlighting in BLUE');
+
+    if (selectedHex) {
+      if (selectedHex.q === hex.q && selectedHex.r === hex.r) {
+        console.log('🚀 Confirming move to', hex);
+        websocketService.moveCharacter(hex);
+        setSelectedHex(null);
+        clearMovementRange();
+        setValidMovementHexes([]);
+      } else {
+        console.log('🔄 Changing destination from', selectedHex, 'to', hex);
+        setSelectedHex(hex);
+      }
+    } else {
+      console.log('📍 First hex selection:', hex);
+      setSelectedHex(hex);
+    }
+  }, [selectedCharacterId, isMyTurn, selectedHex, validMovementHexes, clearMovementRange]);
+
+  // Effect to sync the selected hex highlight with the state
+  useEffect(() => {
+    highlightSelectedHex(selectedHex);
+  }, [selectedHex, highlightSelectedHex]);
 
   const handleCharacterSelectClick = useCallback((characterId: string) => {
+    console.log('🎯 Character selected:', characterId, 'isMyTurn:', isMyTurn);
+
     if (isMyTurn) {
       setSelectedCharacterId(characterId);
       setSelectedHex(null);
-      clearSelectedHex();
+
+      // Debug: Log the full card structure
+      console.log('🃏 Selected cards:', {
+        topAction: selectedTopAction,
+        bottomAction: selectedBottomAction
+      });
+
+      // Determine movement points from either top or bottom action
+      // Check both actions to find which one is the move action
+      let moveValue = 0;
+      let moveSource = 'none';
+
+      if (selectedBottomAction?.bottomAction?.type === 'move') {
+        moveValue = selectedBottomAction.bottomAction.value || 0;
+        moveSource = 'bottom';
+      } else if (selectedTopAction?.topAction?.type === 'move') {
+        moveValue = selectedTopAction.topAction.value || 0;
+        moveSource = 'top';
+      }
+
+      console.log('📊 Move action details:', {
+        source: moveSource,
+        topActionType: selectedTopAction?.topAction?.type,
+        bottomActionType: selectedBottomAction?.bottomAction?.type,
+        moveValue: moveValue
+      });
+
+      setCurrentMovementPoints(moveValue);
+
+      // Calculate and show movement range
+      const character = getCharacter(characterId);
+      if (character && moveValue > 0) {
+        const data = character.getData();
+        console.log('📍 Character position:', data.currentHex, 'Move range:', moveValue);
+
+        const reachableHexes = hexRangeReachable(
+          data.currentHex,
+          moveValue,
+          isHexBlocked
+        );
+
+        console.log('✅ Showing movement range:', reachableHexes.length, 'hexes in GREEN');
+        console.log('📋 Reachable hexes:', reachableHexes);
+
+        setValidMovementHexes(reachableHexes);
+        showMovementRange(reachableHexes);
+      } else {
+        console.log('❌ Not showing movement range - moveValue:', moveValue, 'character:', !!character);
+        setValidMovementHexes([]);
+        clearMovementRange();
+      }
     }
-  }, [isMyTurn, clearSelectedHex]);
+  }, [isMyTurn, selectedTopAction, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
     if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
@@ -211,7 +299,27 @@ export function GameBoard() {
       { text: `${data.distance}`, color: 'blue' },
       { text: ` hexes.` }
     ]);
-  }, [moveCharacter, addLog]);
+
+    // Update movement points and refresh highlights
+    const movedDistance = data.movementPath.length > 0 ? data.movementPath.length - 1 : 0;
+    const remainingMoves = currentMovementPoints - movedDistance;
+    setCurrentMovementPoints(remainingMoves);
+    setSelectedHex(null); // Clear selected hex after move
+
+    const character = getCharacter(data.characterId);
+    if (character && remainingMoves > 0) {
+      const reachableHexes = hexRangeReachable(
+        data.toHex,
+        remainingMoves,
+        isHexBlocked
+      );
+      setValidMovementHexes(reachableHexes);
+      showMovementRange(reachableHexes);
+    } else {
+      setValidMovementHexes([]);
+      clearMovementRange();
+    }
+  }, [moveCharacter, addLog, currentMovementPoints, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
   const handleRoundStarted = useCallback((data: { roundNumber: number; turnOrder: TurnEntity[] }) => {
     setTurnOrder(data.turnOrder);
@@ -441,8 +549,9 @@ export function GameBoard() {
           { text: selectedBottomAction.name, color: 'white' }
       ]);
       setShowCardSelection(false);
-      setSelectedTopAction(null);
-      setSelectedBottomAction(null);
+      // DON'T clear selected cards - they should stay selected for the round!
+      // setSelectedTopAction(null);
+      // setSelectedBottomAction(null);
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 

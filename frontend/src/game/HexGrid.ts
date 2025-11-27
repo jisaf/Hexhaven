@@ -16,9 +16,9 @@ import { Viewport } from 'pixi-viewport';
 import { HexTile, type HexTileData } from './HexTile';
 import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
-import { MovementHighlight } from './MovementHighlight';
+import { HighlightManager } from './HighlightManager';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
-import { type Axial, axialKey, screenToAxial, hexRangeReachable, axialToScreen } from './hex-utils';
+import { type Axial, axialKey, screenToAxial, axialToScreen } from './hex-utils';
 import type { Monster, HexTile as SharedHexTile } from '../../../shared/types/entities';
 
 export interface HexGridOptions {
@@ -57,7 +57,7 @@ export class HexGrid {
   private tiles!: Map<string, HexTile>;
   private characters!: Map<string, CharacterSprite>;
   private monsters!: Map<string, MonsterSprite>;
-  private movementHighlight!: MovementHighlight;
+  private highlightManager!: HighlightManager;
   private lootTokenPool!: LootTokenPool;
 
   // State
@@ -163,7 +163,7 @@ export class HexGrid {
     this.tiles = new Map();
     this.characters = new Map();
     this.monsters = new Map();
-    this.movementHighlight = new MovementHighlight(this.highlightsLayer);
+    this.highlightManager = new HighlightManager(this.tiles);
     this.lootTokenPool = new LootTokenPool(this.lootLayer);
 
     // Setup background click handler
@@ -268,6 +268,8 @@ export class HexGrid {
     if (sprite) {
       const path = movementPath && movementPath.length > 0 ? movementPath : [targetHex];
       await sprite.animateMoveTo(path);
+      // Update character's internal data with new position
+      sprite.updateData({ currentHex: targetHex });
     }
   }
 
@@ -321,6 +323,10 @@ export class HexGrid {
     return this.monsters.get(monsterId);
   }
 
+  public getCharacter(characterId: string): CharacterSprite | undefined {
+    return this.characters.get(characterId);
+  }
+
   /**
    * Handle character selection
    */
@@ -339,19 +345,6 @@ export class HexGrid {
 
     if (sprite) {
       sprite.setSelected(true);
-
-      // Show movement range
-      const data = sprite.getData();
-      const movementRange = 3; // TODO: Get from character's ability card
-
-      // Calculate reachable hexes (respecting obstacles)
-      const reachableHexes = hexRangeReachable(
-        data.currentHex,
-        movementRange,
-        (hex) => this.isHexBlocked(hex)
-      );
-
-      this.movementHighlight.showMovementRange(reachableHexes);
     }
 
     // Notify parent component
@@ -420,7 +413,7 @@ export class HexGrid {
       }
 
       this.selectedCharacterId = null;
-      this.movementHighlight.clear();
+      this.highlightManager.clearAll();
     }
 
     if (this.selectedMonsterId) {
@@ -436,7 +429,7 @@ export class HexGrid {
   /**
    * Check if a hex is blocked (obstacle or occupied)
    */
-  private isHexBlocked(hex: Axial): boolean {
+  public isHexBlocked(hex: Axial): boolean {
     const key = axialKey(hex);
     const tile = this.tiles.get(key);
 
@@ -468,31 +461,24 @@ export class HexGrid {
   }
 
   /**
-   * Highlight specific hexes (for abilities, range checks, etc.)
+   * Highlight hexes to show the valid movement range.
    */
-  public highlightHexes(hexes: Axial[], color: number, alpha: number): void {
-    this.movementHighlight.showMovementRange(hexes, color, alpha);
+  public showMovementRange(hexes: Axial[]): void {
+    this.highlightManager.showMovementRange(hexes);
   }
 
   /**
-   * Clear all highlights
+   * Clear all movement highlights.
    */
-  public clearHighlights(): void {
-    this.movementHighlight.clear();
+  public clearMovementRange(): void {
+    this.highlightManager.clearMovementRange();
   }
 
   /**
-   * Highlight a single hex as the selected destination
+   * Set the selected hex for highlighting.
    */
-  public showSelectedHex(hex: Axial): void {
-    this.movementHighlight.showSelected(hex);
-  }
-
-  /**
-   * Clear the selected destination hex highlight
-   */
-  public clearSelectedHex(): void {
-    this.movementHighlight.clearSelected();
+  public setSelectedHex(hex: Axial | null): void {
+    this.highlightManager.setSelectedHex(hex);
   }
 
   /**
@@ -586,8 +572,8 @@ export class HexGrid {
     }
 
     // Clear highlights
-    if (this.movementHighlight) {
-      this.movementHighlight.clear();
+    if (this.highlightManager) {
+      this.highlightManager.clearAll();
     }
 
     this.selectedCharacterId = null;
@@ -830,11 +816,11 @@ export class HexGrid {
     }
 
     try {
-      if (this.movementHighlight) {
-        this.movementHighlight.destroy();
+      if (this.highlightManager) {
+        this.highlightManager.destroy();
       }
     } catch (error) {
-      console.error('Error destroying movement highlight:', error);
+      console.error('Error destroying highlight manager:', error);
     }
 
     try {
