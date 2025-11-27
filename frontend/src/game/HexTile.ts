@@ -67,8 +67,18 @@ export class HexTile extends PIXI.Container {
   private createBackground(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
     const color = this.getTerrainColor(this.terrain);
+    let alpha;
 
-    graphic.beginFill(color, 1);
+    switch (this.terrain) {
+      case TerrainType.NORMAL:
+        alpha = 0.001; // Near-transparent for normal hexes
+        break;
+      default:
+        alpha = 0.25; // 75% transparent for non-standard terrain
+        break;
+    }
+
+    graphic.beginFill(color, alpha);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE - 2);
     graphic.endFill();
 
@@ -81,8 +91,10 @@ export class HexTile extends PIXI.Container {
   private createBorder(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
 
+    graphic.beginFill(0x000000, 0); // Transparent fill
     graphic.lineStyle(2, 0x444444, 1);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE);
+    graphic.endFill();
 
     return graphic;
   }
@@ -206,8 +218,10 @@ export class HexTile extends PIXI.Container {
     this.border.destroy();
 
     this.border = new PIXI.Graphics();
+    this.border.beginFill(0x000000, 0); // Transparent fill
     this.border.lineStyle(borderWidth, borderColor, 1);
     this.drawHexagon(this.border, 0, 0, HEX_SIZE);
+    this.border.endFill();
 
     this.addChildAt(this.border, 1); // Add above background
   }
@@ -311,12 +325,16 @@ export class HexTile extends PIXI.Container {
   }
 
   public setExportMode(enabled: boolean): void {
-    const color = enabled ? 0x00ff00 : this.getTerrainColor(this.terrain);
     this.background.destroy();
-    this.background = new PIXI.Graphics();
-    this.background.beginFill(color, 1);
-    this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
-    this.background.endFill();
+    if (enabled) {
+      this.background = new PIXI.Graphics();
+      this.background.beginFill(0x00ff00, 1); // Solid green for export
+      this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
+      this.background.endFill();
+    } else {
+      // When disabling, recreate the background with correct transparency
+      this.background = this.createBackground();
+    }
     this.addChildAt(this.background, 0);
 
     // Toggle visibility of all children except the background itself.
@@ -334,10 +352,19 @@ export class HexTile extends PIXI.Container {
    */
   public setHighlight(color: number | null): void {
     const newColor = color === null ? this.originalBackgroundColor : color;
+    let alpha;
 
-    // Redraw the background with the new color
+    if (color === null) {
+      // Revert to default transparency based on terrain type
+      alpha = this.terrain === TerrainType.NORMAL ? 0.001 : 0.25;
+    } else {
+      // Highlight with 50% opacity
+      alpha = 0.5;
+    }
+
+    // Redraw the background with the new color and alpha
     this.background.clear();
-    this.background.beginFill(newColor, 1);
+    this.background.beginFill(newColor, alpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
   }
