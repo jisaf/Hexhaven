@@ -191,6 +191,7 @@ export interface Scenario {
   objectivePrimary: string;
   objectiveSecondary?: string;
   treasures?: TreasureLocation[];
+  backgroundImageUrl?: string;
 }
 
 export interface HexTile {

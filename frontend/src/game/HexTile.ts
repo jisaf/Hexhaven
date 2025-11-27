@@ -68,7 +68,8 @@ export class HexTile extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const color = this.getTerrainColor(this.terrain);
 
-    graphic.beginFill(color, 1);
+    // Make transparent by default to allow background image to show through
+    graphic.beginFill(color, 0.001);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE - 2);
     graphic.endFill();
 
@@ -81,8 +82,10 @@ export class HexTile extends PIXI.Container {
   private createBorder(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
 
+    graphic.beginFill(0x000000, 0); // Transparent fill
     graphic.lineStyle(2, 0x444444, 1);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE);
+    graphic.endFill();
 
     return graphic;
   }
@@ -206,8 +209,10 @@ export class HexTile extends PIXI.Container {
     this.border.destroy();
 
     this.border = new PIXI.Graphics();
+    this.border.beginFill(0x000000, 0); // Transparent fill
     this.border.lineStyle(borderWidth, borderColor, 1);
     this.drawHexagon(this.border, 0, 0, HEX_SIZE);
+    this.border.endFill();
 
     this.addChildAt(this.border, 1); // Add above background
   }
@@ -334,10 +339,11 @@ export class HexTile extends PIXI.Container {
    */
   public setHighlight(color: number | null): void {
     const newColor = color === null ? this.originalBackgroundColor : color;
+    const alpha = color === null ? 0.001 : 0.5;
 
-    // Redraw the background with the new color
+    // Redraw the background with the new color and alpha
     this.background.clear();
-    this.background.beginFill(newColor, 1);
+    this.background.beginFill(newColor, alpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
   }
