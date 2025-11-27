@@ -1,8 +1,7 @@
 import { websocketService } from './websocket.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload } from '../../../shared/types';
-import { Condition } from '../../../shared/types';
-import type { AbilityCard } from '../../../shared/types/entities';
-import { Axial, hexRangeReachable } from '../utils/hex-utils';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard } from '../../../shared/types';
+import { hexRangeReachable } from '../game/hex-utils';
+import type { Axial } from '../game/hex-utils';
 
 // Helper to format modifier value into a string like "+1", "-2"
 const formatModifier = (modifier: number | 'null' | 'x2'): string => {
@@ -21,14 +20,14 @@ const formatModifier = (modifier: number | 'null' | 'x2'): string => {
 // Helper to get color for a given effect
 const getEffectColor = (effect: string) => {
   switch (effect.toLowerCase()) {
-    case Condition.POISON:
+    case 'poison':
       return 'green';
-    case Condition.WOUND:
+    case 'wound':
       return 'orange';
-    case Condition.STUN:
+    case 'stun':
       return 'lightblue';
-    case Condition.IMMOBILIZE:
-    case Condition.DISARM:
+    case 'immobilize':
+    case 'disarm':
       return 'white';
     default:
       return 'lightgreen';
@@ -188,7 +187,7 @@ class GameStateManager {
         this.state.validMovementHexes = hexRangeReachable(
             data.toHex,
             remainingMoves,
-            (hex) => isHexBlocked(hex, this.state)
+            (hex: Axial) => isHexBlocked(hex, this.state)
         );
     } else {
         this.state.validMovementHexes = [];
@@ -397,7 +396,7 @@ class GameStateManager {
         this.state.validMovementHexes = hexRangeReachable(
           character.currentHex,
           moveValue,
-          (hex) => isHexBlocked(hex, this.state)
+          (hex: Axial) => isHexBlocked(hex, this.state)
         );
       } else {
         this.state.validMovementHexes = [];

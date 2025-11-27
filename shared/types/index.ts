@@ -14,6 +14,7 @@ export type {
   TriggerType,
   Trigger,
   HexFeature,
+  Condition,
   ElementType,
   ElementState,
   Player,
@@ -37,7 +38,6 @@ export type {
   LogMessagePart,
   LogMessage,
   TurnEntity,
-  Condition
 } from './entities';
 export * from './events';
 export * from './game-state';

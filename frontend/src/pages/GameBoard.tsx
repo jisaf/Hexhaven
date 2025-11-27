@@ -13,17 +13,14 @@
  * - T071: Implement character movement (tap character → tap hex → emit move event)
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { gameStateManager } from '../services/game-state.service';
-import type { Axial } from '../game/hex-utils';
-import { hexRangeReachable } from '../game/hex-utils';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { AbilityCard, Monster, HexTile } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
@@ -57,9 +54,7 @@ export function GameBoard() {
   const {
     hexGridReady,
     initializeBoard,
-    isHexBlocked,
     showMovementRange,
-    clearMovementRange,
     setSelectedHex,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),

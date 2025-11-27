@@ -22,7 +22,6 @@ import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
@@ -31,7 +30,6 @@ import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
 import {
-  getPlayerUUID,
   getPlayerNickname,
 } from '../utils/storage';
 import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
@@ -40,21 +38,12 @@ import styles from './Lobby.module.css';
 
 type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
 
-interface RoomJoinedData {
-  roomCode: string;
-  roomStatus: 'lobby' | 'active' | 'completed' | 'abandoned';
-  players: Player[];
-  playerId?: string;
-  isHost?: boolean;
-}
-
 export function Lobby() {
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
@@ -102,7 +91,6 @@ export function Lobby() {
   useEffect(() => {
     console.log('[Lobby] Component mounted - resetting room session for clean state');
     roomSessionManager.switchRoom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Navigate to game when room status becomes active
@@ -190,6 +178,7 @@ export function Lobby() {
   };
 
   // Get disabled character classes using utility
+  const currentPlayerId = websocketService.getPlayerUUID();
   const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
 
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
