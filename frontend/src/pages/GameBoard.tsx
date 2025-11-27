@@ -27,7 +27,6 @@ import { TerrainType, Condition } from '../../../shared/types/entities';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
-import { DebugConsole } from '../components/DebugConsole';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
@@ -545,8 +544,9 @@ export function GameBoard() {
           { text: selectedBottomAction.name, color: 'white' }
       ]);
       setShowCardSelection(false);
-      setSelectedTopAction(null);
-      setSelectedBottomAction(null);
+      // DON'T clear selected cards - they should stay selected for the round!
+      // setSelectedTopAction(null);
+      // setSelectedBottomAction(null);
     }
   }, [selectedTopAction, selectedBottomAction, addLog]);
 
@@ -615,8 +615,6 @@ export function GameBoard() {
       />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
-
-      <DebugConsole />
     </div>
   );
 }
