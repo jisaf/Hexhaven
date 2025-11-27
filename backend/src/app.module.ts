@@ -5,6 +5,7 @@ import { HealthController } from './health.controller';
 import { GameGateway } from './websocket/game.gateway';
 import { RoomsController } from './api/rooms.controller';
 import { ScenariosController } from './api/scenarios.controller';
+import { UploadsController } from './api/uploads.controller';
 import { MonstersController } from './api/monsters.controller';
 import { ScenarioService } from './services/scenario.service';
 import { MonsterService } from './services/monster.service';
@@ -17,6 +18,7 @@ import { MonsterService } from './services/monster.service';
     RoomsController,
     ScenariosController,
     MonstersController,
+    UploadsController,
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [

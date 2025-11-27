@@ -10,6 +10,11 @@
       {
         "include": "data/**/*",
         "watchAssets": true
+      },
+      {
+        "include": "uploads/**/*",
+        "outDir": "dist/uploads",
+        "watchAssets": false
       }
     ]
   }
