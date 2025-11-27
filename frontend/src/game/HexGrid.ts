@@ -467,11 +467,19 @@ export class HexGrid {
     this.highlightManager.showMovementRange(hexes);
   }
 
+  public showAttackRange(hexes: Axial[]): void {
+    this.highlightManager.showAttackRange(hexes);
+  }
+
   /**
    * Clear all movement highlights.
    */
   public clearMovementRange(): void {
     this.highlightManager.clearMovementRange();
+  }
+
+  public clearAttackRange(): void {
+    this.highlightManager.clearAttackRange();
   }
 
   /**

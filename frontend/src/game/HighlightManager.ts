@@ -14,11 +14,13 @@ import type { HexTile } from './HexTile';
 export class HighlightManager {
   private tiles: Map<string, HexTile>;
   private highlightedMovementHexes: Set<string>;
+  private highlightedAttackHexes: Set<string>;
   private selectedHexKey: string | null = null;
 
   constructor(tiles: Map<string, HexTile>) {
     this.tiles = tiles;
     this.highlightedMovementHexes = new Set();
+    this.highlightedAttackHexes = new Set();
   }
 
   /**
@@ -52,6 +54,29 @@ export class HighlightManager {
     this.highlightedMovementHexes.clear();
   }
 
+  public showAttackRange(hexes: Axial[]): void {
+    this.clearAttackRange();
+    const color = 0xff0000; // Red
+    for (const hex of hexes) {
+      const key = axialKey(hex);
+      const tile = this.tiles.get(key);
+      if (tile) {
+        tile.setHighlight(color);
+        this.highlightedAttackHexes.add(key);
+      }
+    }
+  }
+
+  public clearAttackRange(): void {
+    for (const key of this.highlightedAttackHexes) {
+      const tile = this.tiles.get(key);
+      if (tile) {
+        tile.setHighlight(null);
+      }
+    }
+    this.highlightedAttackHexes.clear();
+  }
+
   public setSelectedHex(hex: Axial | null): void {
     // Clear previous selection
     if (this.selectedHexKey) {
@@ -81,8 +106,8 @@ export class HighlightManager {
    */
   public clearAll(): void {
     this.clearMovementRange();
+    this.clearAttackRange();
     this.setSelectedHex(null);
-    // Future: this.clearAttackRange();
     // Future: this.clearPath();
   }
 

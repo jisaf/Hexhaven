@@ -178,9 +178,21 @@ export function useHexGrid(
     }
   }, []);
 
+  const showAttackRange = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showAttackRange(hexes);
+    }
+  }, []);
+
   const clearMovementRange = useCallback(() => {
     if (hexGridRef.current) {
       hexGridRef.current.clearMovementRange();
+    }
+  }, []);
+
+  const clearAttackRange = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearAttackRange();
     }
   }, []);
 
@@ -264,7 +276,9 @@ export function useHexGrid(
     moveCharacter,
     deselectAll,
     showMovementRange,
+    showAttackRange,
     clearMovementRange,
+    clearAttackRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
