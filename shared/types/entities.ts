@@ -271,3 +271,24 @@ export interface Progression {
   unlockedPerks: string[];
   completedScenarios: string[];
 }
+
+// ========== LOGGING TYPES ==========
+
+export type LogColor = 'red' | 'blue' | 'gold' | 'green' | 'orange' | 'lightgreen' | 'lightblue' | 'white';
+
+export interface LogMessagePart {
+  text: string;
+  color?: LogColor;
+}
+
+export interface LogMessage {
+  id: string; // Unique ID for React key
+  parts: LogMessagePart[];
+}
+
+export interface TurnEntity {
+  entityId: string;
+  name: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
+}

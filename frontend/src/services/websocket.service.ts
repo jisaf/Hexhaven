@@ -14,7 +14,13 @@ import type {
   PlayerLeftPayload,
   PlayerDisconnectedPayload,
   PlayerReconnectedPayload,
-  CharacterSelectedPayload
+  CharacterSelectedPayload,
+  RoundEndedPayload,
+  TurnEntity,
+  DebugLogPayload,
+  CharacterMovedPayload,
+  AttackResolvedPayload,
+  MonsterActivatedPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -46,16 +52,15 @@ export interface WebSocketEvents {
   turn_order_determined: (data: { turnOrder: string[] }) => void;
   turn_started: (data: { entityId: string; entityType: 'character' | 'monster'; turnIndex: number }) => void;
 
+  // Round events
+  round_started: (data: { roundNumber: number; turnOrder: TurnEntity[] }) => void;
+  round_ended: (data: RoundEndedPayload) => void;
+
   // Movement
-  character_moved: (data: { characterId: string; fromHex: { q: number; r: number }; toHex: { q: number; r: number }; movementPath: { q: number; r: number }[] }) => void;
+  character_moved: (data: CharacterMovedPayload) => void;
 
   // Attack
-  attack_resolved: (data: {
-    attackerId: string;
-    targetId: string;
-    damage: number;
-    modifier: number | 'null' | 'x2';
-  }) => void;
+  attack_resolved: (data: AttackResolvedPayload) => void;
 
   // Loot
   loot_collected: (data: {
@@ -66,7 +71,7 @@ export interface WebSocketEvents {
   }) => void;
 
   // Monster AI
-  monster_activated: (data: { monsterId: string; actions: { type: string; target?: string }[] }) => void;
+  monster_activated: (data: MonsterActivatedPayload) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
@@ -76,6 +81,9 @@ export interface WebSocketEvents {
 
   // State updates
   game_state_update: (data: { gameState: Record<string, unknown> }) => void;
+
+  // Debug logging
+  debug_log: (data: DebugLogPayload) => void;
 
   // Errors
   error: (data: { message: string; code?: string }) => void;

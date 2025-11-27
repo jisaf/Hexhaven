@@ -85,6 +85,7 @@ export class MonsterAIService {
     monster: Monster,
     focusTarget: Character,
     obstacles: AxialCoordinates[],
+    occupiedHexes: AxialCoordinates[] = [],
   ): AxialCoordinates | null {
     if (!focusTarget.currentHex) {
       return null;
@@ -103,9 +104,18 @@ export class MonsterAIService {
     // Get adjacent hexes and filter by movement
     const adjacentHexes = this.getAdjacentHexes(monster.currentHex);
 
-    // Filter out obstacles (unless monster has flying)
+    // Filter out obstacles (unless monster has flying) AND occupied hexes
     const hasFlying = monster.specialAbilities.includes('Flying');
     const validHexes = adjacentHexes.filter((hex) => {
+      // Check if hex is occupied by another entity (can't stop here)
+      const isOccupied = occupiedHexes.some(
+        (occupied) => occupied.q === hex.q && occupied.r === hex.r,
+      );
+      if (isOccupied) {
+        return false;
+      }
+
+      // Check for terrain obstacles
       if (!hasFlying) {
         return !obstacles.some((obs) => obs.q === hex.q && obs.r === hex.r);
       }

@@ -10,28 +10,43 @@ import { useNavigate } from 'react-router-dom';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { getLastRoomCode, getPlayerUUID, getPlayerNickname } from '../utils/storage';
-import type { Axial } from '../game/hex-utils';
-import type { GameStartedPayload } from '../../../shared/types/events';
+import type {
+  GameStartedPayload,
+  RoundEndedPayload,
+  DebugLogPayload,
+  CharacterMovedPayload,
+  MonsterActivatedPayload,
+  AttackResolvedPayload,
+} from '../../../shared/types/events';
 
 interface GameWebSocketHandlers {
   onGameStarted: (data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => void;
-  onCharacterMoved: (data: CharacterMovedData) => void;
+  onCharacterMoved: (data: CharacterMovedPayload) => void;
+  onRoundStarted: (data: RoundStartedData) => void;
+  onRoundEnded: (data: RoundEndedPayload) => void;
   onTurnStarted: (data: TurnStartedData) => void;
   onGameStateUpdate: (data: { gameState: unknown }) => void;
   onConnectionStatusChange: (status: 'connected' | 'disconnected' | 'reconnecting') => void;
-}
-
-interface CharacterMovedData {
-  characterId: string;
-  fromHex: Axial;
-  toHex: Axial;
-  movementPath: Axial[];
+  onMonsterActivated: (data: MonsterActivatedPayload) => void;
+  onAttackResolved: (data: AttackResolvedPayload) => void;
 }
 
 interface TurnStartedData {
   turnIndex: number;
   entityId: string;
   entityType: 'character' | 'monster';
+}
+
+interface RoundStartedData {
+  roundNumber: number;
+  turnOrder: TurnEntity[];
+}
+
+interface TurnEntity {
+  entityId: string;
+  name: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
 }
 
 export function useGameWebSocket(handlers: GameWebSocketHandlers) {
@@ -49,8 +64,18 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     handlersRef.current.onGameStarted(data, ackCallback);
   }, []);
 
-  const handleCharacterMoved = useCallback((data: CharacterMovedData) => {
+  const handleCharacterMoved = useCallback((data: CharacterMovedPayload) => {
     handlersRef.current.onCharacterMoved(data);
+  }, []);
+
+  const handleRoundStarted = useCallback((data: RoundStartedData) => {
+    console.log('handleRoundStarted called with data:', data);
+    handlersRef.current.onRoundStarted(data);
+  }, []);
+
+  const handleRoundEnded = useCallback((data: RoundEndedPayload) => {
+    console.log('handleRoundEnded called with data:', data);
+    handlersRef.current.onRoundEnded(data);
   }, []);
 
   const handleTurnStarted = useCallback((data: TurnStartedData) => {
@@ -75,6 +100,36 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
     handlersRef.current.onConnectionStatusChange('reconnecting');
   }, []);
 
+  const handleDebugLog = useCallback((data: DebugLogPayload) => {
+    // Route debug logs to console so DebugConsole component picks them up
+    const logPrefix = data.category ? `[${data.category}] ` : '';
+    const logMessage = `${logPrefix}${data.message}`;
+
+    switch (data.level) {
+      case 'error':
+        console.error(logMessage, data.data || '');
+        break;
+      case 'warn':
+        console.warn(logMessage, data.data || '');
+        break;
+      case 'info':
+        console.info(logMessage, data.data || '');
+        break;
+      default:
+        console.log(logMessage, data.data || '');
+    }
+  }, []);
+
+  const handleMonsterActivated = useCallback((data: MonsterActivatedPayload) => {
+    console.log('handleMonsterActivated called with data:', data);
+    handlersRef.current.onMonsterActivated(data);
+  }, []);
+
+  const handleAttackResolved = useCallback((data: AttackResolvedPayload) => {
+    console.log('handleAttackResolved called with data:', data);
+    handlersRef.current.onAttackResolved(data);
+  }, []);
+
   // Setup WebSocket event listeners and ensure joined to room
   useEffect(() => {
     console.log('🔧 Setting up WebSocket listeners and ensuring room join');
@@ -89,10 +144,15 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
 
     // Game events
     console.log('✅ Registering game_started event listener');
-    const unsubscribeGameStarted = websocketService.on('game_started', handleGameStarted);
-    const unsubscribeCharacterMoved = websocketService.on('character_moved', handleCharacterMoved);
-    const unsubscribeTurnStarted = websocketService.on('turn_started', handleTurnStarted);
-    const unsubscribeGameStateUpdate = websocketService.on('game_state_update', handleGameStateUpdate);
+    websocketService.on('game_started', handleGameStarted);
+    websocketService.on('character_moved', handleCharacterMoved);
+    websocketService.on('round_started', handleRoundStarted);
+    websocketService.on('round_ended', handleRoundEnded);
+    websocketService.on('turn_started', handleTurnStarted);
+    websocketService.on('game_state_update', handleGameStateUpdate);
+    websocketService.on('debug_log', handleDebugLog);
+    websocketService.on('monster_activated', handleMonsterActivated);
+    websocketService.on('attack_resolved', handleAttackResolved);
     console.log('✅ All event listeners registered');
 
     // Step 2: Get room info from localStorage
@@ -126,10 +186,15 @@ export function useGameWebSocket(handlers: GameWebSocketHandlers) {
       unsubscribeWsConnected();
       unsubscribeWsDisconnected();
       unsubscribeWsReconnecting();
-      unsubscribeGameStarted();
-      unsubscribeCharacterMoved();
-      unsubscribeTurnStarted();
-      unsubscribeGameStateUpdate();
+      websocketService.off('game_started');
+      websocketService.off('character_moved');
+      websocketService.off('round_started');
+      websocketService.off('round_ended');
+      websocketService.off('turn_started');
+      websocketService.off('game_state_update');
+      websocketService.off('debug_log');
+      websocketService.off('monster_activated');
+      websocketService.off('attack_resolved');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]); // Only navigate can change, handlers are in ref to prevent re-registration

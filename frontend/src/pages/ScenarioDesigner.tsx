@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
-import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities';
+import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities.ts';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
+import { usePrevious } from '../hooks/usePrevious';
 
 interface ScenarioState {
   name: string;
@@ -126,16 +127,16 @@ const ScenarioDesigner: React.FC = () => {
     if (selectedHex && type) {
       setSelectedFeatureType(type);
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex) {
-        if (!hex.features) {
-          hex.features = [];
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex) {
+          const newFeature = { type, isOpen: type === HexFeatureType.DOOR ? false : undefined };
+          const newFeatures = [...(hex.features || []), newFeature];
+          newActiveHexes.set(key, { ...hex, features: newFeatures });
         }
-        const newFeature = { type, isOpen: type === HexFeatureType.DOOR ? false : undefined };
-        hex.features.push(newFeature);
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     } else {
       setSelectedFeatureType('');
     }
@@ -144,94 +145,111 @@ const ScenarioDesigner: React.FC = () => {
   const handleRemoveFeature = (index: number) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex && hex.features) {
-        hex.features.splice(index, 1);
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex && hex.features) {
+          const newFeatures = hex.features.filter((_, i) => i !== index);
+          newActiveHexes.set(key, { ...hex, features: newFeatures });
+        }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
   const handleToggleDoor = (index: number) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex && hex.features && hex.features[index].type === HexFeatureType.DOOR) {
-        hex.features[index].isOpen = !hex.features[index].isOpen;
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex && hex.features && hex.features[index].type === HexFeatureType.DOOR) {
+          const newFeatures = [...hex.features];
+          newFeatures[index] = { ...newFeatures[index], isOpen: !newFeatures[index].isOpen };
+          newActiveHexes.set(key, { ...hex, features: newFeatures });
+        }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
   const handleToggleTrigger = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex) {
-        if (!hex.triggers) {
-          hex.triggers = [];
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex) {
+          const newTriggers = [...(hex.triggers || [])];
+          const triggerIndex = newTriggers.findIndex(t => t.type === TriggerType.ON_ENTER);
+          if (triggerIndex > -1) {
+            newTriggers.splice(triggerIndex, 1);
+          } else {
+            newTriggers.push({ type: TriggerType.ON_ENTER });
+          }
+          newActiveHexes.set(key, { ...hex, triggers: newTriggers });
         }
-        const triggerIndex = hex.triggers.findIndex(t => t.type === TriggerType.ON_ENTER);
-        if (triggerIndex > -1) {
-          hex.triggers.splice(triggerIndex, 1);
-        } else {
-          hex.triggers.push({ type: TriggerType.ON_ENTER });
-        }
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
   const handleTogglePlayerStart = () => {
     if (selectedHex) {
-      const newPlayerStartPositions = { ...scenarioState.playerStartPositions };
-      const positions = newPlayerStartPositions[selectedPlayerCount];
-      const index = positions.findIndex(p => p.q === selectedHex.q && p.r === selectedHex.r);
-      if (index > -1) {
-        positions.splice(index, 1);
-      } else {
-        positions.push(selectedHex);
-      }
-      setScenarioState({ ...scenarioState, playerStartPositions: newPlayerStartPositions });
+      setScenarioState(prevState => {
+        const newPlayerStartPositions = { ...prevState.playerStartPositions };
+        const positions = [...newPlayerStartPositions[selectedPlayerCount]];
+        const index = positions.findIndex(p => p.q === selectedHex.q && p.r === selectedHex.r);
+        if (index > -1) {
+          positions.splice(index, 1);
+        } else {
+          positions.push(selectedHex);
+        }
+        newPlayerStartPositions[selectedPlayerCount] = positions;
+        return { ...prevState, playerStartPositions: newPlayerStartPositions };
+      });
     }
   };
 
   const handleTerrainChange = (terrain: TerrainType) => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex) {
-        hex.terrain = terrain;
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex) {
+          newActiveHexes.set(key, { ...hex, terrain });
+        }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
   const handleToggleLoot = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex) {
-        hex.hasLoot = !hex.hasLoot;
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex) {
+          newActiveHexes.set(key, { ...hex, hasLoot: !hex.hasLoot });
+        }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
   const handleToggleTreasure = () => {
     if (selectedHex) {
       const key = `${selectedHex.q},${selectedHex.r}`;
-      const newActiveHexes = new Map(scenarioState.activeHexes);
-      const hex = newActiveHexes.get(key);
-      if (hex) {
-        hex.hasTreasure = !hex.hasTreasure;
-        setScenarioState({ ...scenarioState, activeHexes: newActiveHexes });
-      }
+      setScenarioState(prevState => {
+        const newActiveHexes = new Map(prevState.activeHexes);
+        const hex = newActiveHexes.get(key);
+        if (hex) {
+          newActiveHexes.set(key, { ...hex, hasTreasure: !hex.hasTreasure });
+        }
+        return { ...prevState, activeHexes: newActiveHexes };
+      });
     }
   };
 
@@ -301,15 +319,38 @@ const ScenarioDesigner: React.FC = () => {
     };
   }, [handleHexClick]);
 
+  const prevActiveHexes = usePrevious(scenarioState.activeHexes);
+
+  // Effect to handle adding, updating, and removing hexes efficiently
   useEffect(() => {
-    if (gridRef.current) {
-      gridRef.current.initializeBoard({
+    const grid = gridRef.current;
+    if (grid && prevActiveHexes) {
+      const currentKeys = new Set(scenarioState.activeHexes.keys());
+      const prevKeys = new Set(prevActiveHexes.keys());
+
+      // Add or update tiles
+      for (const key of currentKeys) {
+        if (!prevKeys.has(key) || scenarioState.activeHexes.get(key) !== prevActiveHexes.get(key)) {
+          grid.addOrUpdateTile(scenarioState.activeHexes.get(key)!);
+        }
+      }
+
+      // Remove tiles
+      for (const key of prevKeys) {
+        if (!currentKeys.has(key)) {
+          const [q, r] = key.split(',').map(Number);
+          grid.removeTile({ q, r });
+        }
+      }
+    } else if (grid) {
+      // Handle the initial render case where prevActiveHexes is undefined
+      grid.initializeBoard({
         tiles: Array.from(scenarioState.activeHexes.values()),
         characters: [],
         monsters: [],
       });
     }
-  }, [scenarioState.activeHexes]);
+  }, [scenarioState.activeHexes, prevActiveHexes]);
 
   useEffect(() => {
     fetch('/api/monsters')

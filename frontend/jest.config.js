@@ -52,6 +52,7 @@ export default {
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
 
   // Coverage collection
   collectCoverageFrom: [
@@ -89,7 +90,9 @@ export default {
     '/coverage/',
     '/tests/__mocks__/',
     '/tests/setup.ts',
-    '/tests/e2e/'  // E2E tests run via Playwright, not Jest
+    '/tests/e2e/',  // E2E tests run via Playwright, not Jest
+    'playwright.*\\.config\\.ts$',  // Playwright config files
+    '^.*/screenshot\\.spec\\.ts$'  // Playwright screenshot tests
   ],
 
   // Clear mocks between tests

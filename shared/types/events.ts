@@ -150,14 +150,19 @@ export interface TurnStartedPayload {
 
 export interface CharacterMovedPayload {
   characterId: string;
+  characterName: string;
   fromHex: AxialCoordinates;
   toHex: AxialCoordinates;
   movementPath: AxialCoordinates[];
+  distance: number;
 }
 
 export interface AttackResolvedPayload {
   attackerId: string;
+  attackerName: string;
   targetId: string;
+  targetName: string;
+  baseDamage: number;
   damage: number;
   modifier: number | 'null' | 'x2';
   effects: string[];
@@ -167,12 +172,17 @@ export interface AttackResolvedPayload {
 
 export interface MonsterActivatedPayload {
   monsterId: string;
+  monsterName: string;
   focusTarget: string; // Character UUID
+  focusTargetName: string;
   movement: AxialCoordinates;
+  movementDistance: number;
   attack: {
     targetId: string;
+    baseDamage: number;
     damage: number;
     modifier: number | 'null' | 'x2';
+    effects: string[];
   } | null;
 }
 
@@ -232,6 +242,13 @@ export interface ErrorPayload {
   details?: any;
 }
 
+export interface DebugLogPayload {
+  level: 'log' | 'error' | 'warn' | 'info';
+  message: string;
+  category?: string; // e.g., 'MonsterAI', 'Combat', 'Movement'
+  data?: any;
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -282,4 +299,5 @@ export interface ServerEvents {
   player_reconnected: PlayerReconnectedPayload;
   game_state_update: GameStateUpdatePayload;
   error: ErrorPayload;
+  debug_log: DebugLogPayload;
 }

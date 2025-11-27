@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { Axial } from '../game/hex-utils';
+import { axialToScreen } from '../game/hex-utils';
 
 interface UseHexGridOptions {
   onHexClick: (hex: Axial) => void;
@@ -171,16 +172,89 @@ export function useHexGrid(
     }
   }, []);
 
-  const showSelectedHex = useCallback((hex: Axial) => {
+  const showMovementRange = useCallback((hexes: Axial[]) => {
     if (hexGridRef.current) {
-      hexGridRef.current.showSelectedHex(hex);
+      hexGridRef.current.showMovementRange(hexes);
     }
   }, []);
 
-  const clearSelectedHex = useCallback(() => {
+  const clearMovementRange = useCallback(() => {
     if (hexGridRef.current) {
-      hexGridRef.current.clearSelectedHex();
+      hexGridRef.current.clearMovementRange();
     }
+  }, []);
+
+  const setSelectedHex = useCallback((hex: Axial | null) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.setSelectedHex(hex);
+    }
+  }, []);
+
+  // Update monster position
+  const updateMonsterPosition = useCallback((monsterId: string, newHex: Axial) => {
+    if (hexGridRef.current) {
+      const monster = hexGridRef.current.getMonster(monsterId);
+      if (monster) {
+        const monsterData = monster.getMonster();
+        // Update monster with new position
+        const updatedMonster = { ...monsterData, currentHex: newHex };
+        hexGridRef.current.updateMonster(monsterId, updatedMonster);
+
+        // Update sprite position using proper hex-to-screen conversion
+        const sprite = hexGridRef.current.getMonster(monsterId);
+        if (sprite) {
+          const pos = axialToScreen(newHex);
+          sprite.position.set(pos.x, pos.y);
+        }
+      }
+    }
+  }, []);
+
+  // Update character health
+  const updateCharacterHealth = useCallback((characterId: string, health: number) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.updateCharacter(characterId, { health });
+    }
+  }, []);
+
+  // Update monster health
+  const updateMonsterHealth = useCallback((monsterId: string, health: number) => {
+    if (hexGridRef.current) {
+      const monster = hexGridRef.current.getMonster(monsterId);
+      if (monster) {
+        const monsterData = monster.getMonster();
+        const updatedMonster = { ...monsterData, health };
+        hexGridRef.current.updateMonster(monsterId, updatedMonster);
+      }
+    }
+  }, []);
+
+  // Remove character from board
+  const removeCharacter = useCallback((characterId: string) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.removeCharacter(characterId);
+    }
+  }, []);
+
+  // Remove monster from board
+  const removeMonster = useCallback((monsterId: string) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.removeMonster(monsterId);
+    }
+  }, []);
+
+  const getCharacter = useCallback((characterId: string) => {
+    if (hexGridRef.current) {
+      return hexGridRef.current.getCharacter(characterId);
+    }
+    return undefined;
+  }, []);
+
+  const isHexBlocked = useCallback((hex: Axial) => {
+    if (hexGridRef.current) {
+      return hexGridRef.current.isHexBlocked(hex);
+    }
+    return true; // Default to blocked if grid is not available
   }, []);
 
   return {
@@ -189,7 +263,15 @@ export function useHexGrid(
     initializeBoard,
     moveCharacter,
     deselectAll,
-    showSelectedHex,
-    clearSelectedHex,
+    showMovementRange,
+    clearMovementRange,
+    updateMonsterPosition,
+    updateCharacterHealth,
+    updateMonsterHealth,
+    removeCharacter,
+    removeMonster,
+    getCharacter,
+    isHexBlocked,
+    setSelectedHex,
   };
 }

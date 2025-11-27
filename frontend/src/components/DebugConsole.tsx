@@ -5,7 +5,8 @@
  * for debugging on mobile devices where developer tools aren't easily accessible.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { websocketService } from '../services/websocket.service';
 
 interface LogEntry {
   id: number;
@@ -28,6 +29,37 @@ export function DebugConsole() {
   });
   const logIdCounter = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Define addLog before useEffect hooks that depend on it
+  const addLog = useCallback((level: LogEntry['level'], args: unknown[]) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const message = args
+      .map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      })
+      .join(' ');
+
+    // Use queueMicrotask to avoid setState during render
+    queueMicrotask(() => {
+      setLogs(prev => [
+        ...prev,
+        {
+          id: logIdCounter.current++,
+          timestamp,
+          level,
+          message,
+          data: args.length === 1 && typeof args[0] === 'object' ? args[0] : null,
+        },
+      ]);
+    });
+  }, []);
 
   useEffect(() => {
     // Store original console methods
@@ -64,7 +96,23 @@ export function DebugConsole() {
       console.warn = originalWarn;
       console.info = originalInfo;
     };
-  }, []);
+  }, [addLog]);
+
+  // Listen for debug_log events from WebSocket
+  useEffect(() => {
+    const handleDebugLog = (data: { level: 'log' | 'error' | 'warn' | 'info'; message: string; category?: string; data?: unknown }) => {
+      const prefix = data.category ? `[${data.category}] ` : '';
+      const message = `${prefix}${data.message}`;
+      const args = data.data ? [message, data.data] : [message];
+      addLog(data.level, args);
+    };
+
+    websocketService.on('debug_log', handleDebugLog);
+
+    return () => {
+      websocketService.off('debug_log', handleDebugLog);
+    };
+  }, [addLog]);
 
   // Auto-scroll disabled - user can manually scroll to see new logs
   // useEffect(() => {
@@ -72,36 +120,6 @@ export function DebugConsole() {
   //     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   //   }
   // }, [logs, isOpen, isMinimized]);
-
-  const addLog = (level: LogEntry['level'], args: unknown[]) => {
-    const timestamp = new Date().toLocaleTimeString();
-    const message = args
-      .map(arg => {
-        if (typeof arg === 'object') {
-          try {
-            return JSON.stringify(arg, null, 2);
-          } catch {
-            return String(arg);
-          }
-        }
-        return String(arg);
-      })
-      .join(' ');
-
-    // Use queueMicrotask to avoid setState during render
-    queueMicrotask(() => {
-      setLogs(prev => [
-        ...prev,
-        {
-          id: logIdCounter.current++,
-          timestamp,
-          level,
-          message,
-          data: args.length === 1 && typeof args[0] === 'object' ? args[0] : null,
-        },
-      ]);
-    });
-  };
 
   const clearLogs = () => {
     setLogs([]);
@@ -250,6 +268,9 @@ export function DebugConsole() {
 
           {!isMinimized && (
             <div className="debug-filters">
+              <div className="branch-info">
+                Branch: {import.meta.env.VITE_BRANCH_NAME || 'local'}
+              </div>
               <div className="filter-label">Filters:</div>
               <button
                 onClick={() => toggleFilter('log')}
@@ -443,6 +464,14 @@ export function DebugConsole() {
           background: #111827;
           border-bottom: 1px solid #374151;
           flex-wrap: wrap;
+        }
+
+        .branch-info {
+          width: 100%;
+          text-align: right;
+          font-size: 8px;
+          color: #9ca3af;
+          margin-bottom: 8px;
         }
 
         .filter-label {

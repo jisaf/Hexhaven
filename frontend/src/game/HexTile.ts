@@ -10,7 +10,7 @@
 
 import * as PIXI from 'pixi.js';
 import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
-import { TerrainType, type HexTile as HexTileData, HexFeatureType, type HexFeature } from '../../../shared/types/entities';
+import { TerrainType, type HexTile as HexTileData, HexFeatureType, type HexFeature } from '../../../shared/types/entities.ts';
 
 export type { HexTileData };
 
@@ -30,6 +30,7 @@ export class HexTile extends PIXI.Container {
   private options: HexTileOptions;
   private _isHovered: boolean = false;
   private _isSelected: boolean = false;
+  private originalBackgroundColor: number;
 
   constructor(data: HexTileData, options: HexTileOptions = {}) {
     super();
@@ -45,6 +46,7 @@ export class HexTile extends PIXI.Container {
     // Create visual elements
     this.background = this.createBackground();
     this.border = this.createBorder();
+    this.originalBackgroundColor = this.getTerrainColor(this.terrain);
 
     this.addChild(this.background);
     this.addChild(this.border);
@@ -324,6 +326,20 @@ export class HexTile extends PIXI.Container {
         child.visible = !enabled;
       }
     });
+  }
+
+  /**
+   * Set the highlight color of the tile.
+   * Pass null to remove the highlight.
+   */
+  public setHighlight(color: number | null): void {
+    const newColor = color === null ? this.originalBackgroundColor : color;
+
+    // Redraw the background with the new color
+    this.background.clear();
+    this.background.beginFill(newColor, 1);
+    this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
+    this.background.endFill();
   }
 
   /**
