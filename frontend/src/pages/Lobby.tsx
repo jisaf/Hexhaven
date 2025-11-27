@@ -24,7 +24,6 @@ import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import type { Player } from '../components/PlayerList';
 import type { CharacterClass } from '../components/CharacterSelect';
-import { DebugConsole } from '../components/DebugConsole';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
@@ -226,7 +225,6 @@ export function Lobby() {
 
   return (
     <div className={styles.lobbyPage}>
-      <DebugConsole />
       <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
 
       <main className={styles.lobbyContent}>

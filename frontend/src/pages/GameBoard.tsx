@@ -229,12 +229,17 @@ export function GameBoard() {
       const character = getCharacter(characterId);
       if (character && moveValue > 0) {
         const data = character.getData();
+        console.log('📍 Character position:', data.currentHex, 'Move range:', moveValue);
+
         const reachableHexes = hexRangeReachable(
           data.currentHex,
           moveValue,
           isHexBlocked
         );
+
         console.log('✅ Showing movement range:', reachableHexes.length, 'hexes in GREEN');
+        console.log('📋 Reachable hexes:', reachableHexes);
+
         setValidMovementHexes(reachableHexes);
         showMovementRange(reachableHexes);
       } else {
