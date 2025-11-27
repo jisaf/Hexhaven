@@ -1,20 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from './TurnOrder.module.css';
-import type { Character, Monster } from '../../../shared/types/entities';
+import type { TurnEntity } from '../../../shared/types/entities';
 
-interface TurnEntity {
-  entityId: string;
-  name: string;
-  entityType: 'character' | 'monster';
-  initiative: number;
+// Define leaner types for the props
+interface TurnOrderCharacter {
+  id: string;
+  health: number;
+  maxHealth: number;
+  conditions: string[];
+}
+
+interface TurnOrderMonster {
+  id: string;
+  health: number;
+  maxHealth: number;
+  conditions: string[];
+  isElite: boolean;
 }
 
 interface TurnOrderProps {
   turnOrder: TurnEntity[];
   currentTurnEntityId: string | null;
   currentRound: number;
-  characters: Character[];
-  monsters: Monster[];
+  characters: TurnOrderCharacter[];
+  monsters: TurnOrderMonster[];
 }
 
 const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, currentRound, characters, monsters }) => {
@@ -51,7 +60,7 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
     <div className={`${styles.turnOrderContainer} ${selectedActorId ? styles.detailsVisible : ''}`}>
       <div className={styles.roundCounter}>
         <span className={styles.roundLabel}>R</span>
-        <span className_name={styles.roundNumber}>{currentRound}</span>
+        <span className={styles.roundNumber}>{currentRound}</span>
       </div>
 
       <div className={styles.actorsWrapper}>
@@ -62,7 +71,7 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
               : monsters.find(m => m.id === entity.entityId);
 
             const isCurrentTurn = entity.entityId === currentTurnEntityId;
-            const isElite = entity.entityType === 'monster' && (actorDetails as Monster)?.isElite;
+            const isElite = entity.entityType === 'monster' && (actorDetails as TurnOrderMonster)?.isElite;
             const isSelected = entity.entityId === selectedActorId;
 
             const itemClasses = [
@@ -75,7 +84,7 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
             return (
               <li
                 key={entity.entityId}
-                ref={el => actorRefs.current[index] = el}
+                ref={el => { actorRefs.current[index] = el; }}
                 className={itemClasses}
                 onClick={() => handleActorClick(entity.entityId, index)}
                 data-testid={`turn-order-item-${entity.entityId}`}

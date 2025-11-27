@@ -285,3 +285,10 @@ export interface LogMessage {
   id: string; // Unique ID for React key
   parts: LogMessagePart[];
 }
+
+export interface TurnEntity {
+  entityId: string;
+  name: string;
+  entityType: 'character' | 'monster';
+  initiative: number;
+}
