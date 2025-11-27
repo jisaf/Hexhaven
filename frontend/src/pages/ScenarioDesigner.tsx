@@ -12,6 +12,7 @@ interface ScenarioState {
   activeHexes: Map<string, HexTile>;
   playerStartPositions: Record<number, AxialCoordinates[]>;
   monsterGroups: MonsterGroup[];
+  backgroundImageUrl?: string;
 }
 
 const ScenarioDesigner: React.FC = () => {
@@ -26,6 +27,7 @@ const ScenarioDesigner: React.FC = () => {
         activeHexes: new Map(parsedState.activeHexes || []),
         playerStartPositions: parsedState.playerStartPositions || { 2: [], 3: [], 4: [] },
         monsterGroups: parsedState.monsterGroups || [],
+        backgroundImageUrl: parsedState.backgroundImageUrl || undefined,
       };
     }
     return {
@@ -35,6 +37,7 @@ const ScenarioDesigner: React.FC = () => {
       activeHexes: new Map(),
       playerStartPositions: { 2: [], 3: [], 4: [] },
       monsterGroups: [],
+      backgroundImageUrl: undefined,
     };
   });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -53,6 +56,7 @@ const ScenarioDesigner: React.FC = () => {
       activeHexes: new Map(),
       playerStartPositions: { 2: [], 3: [], 4: [] },
       monsterGroups: [],
+      backgroundImageUrl: undefined,
     });
     // Optional: Also clear any visual state in HexGrid if needed
     if (gridRef.current) {
@@ -266,6 +270,7 @@ const ScenarioDesigner: React.FC = () => {
       mapLayout: Array.from(scenarioState.activeHexes.values()),
       monsterGroups: scenarioState.monsterGroups,
       playerStartPositions: scenarioState.playerStartPositions,
+      backgroundImageUrl: scenarioState.backgroundImageUrl,
     };
 
     try {
@@ -294,10 +299,32 @@ const ScenarioDesigner: React.FC = () => {
     }
   };
 
-  const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0] && gridRef.current) {
-      const imageUrl = URL.createObjectURL(event.target.files[0]);
-      gridRef.current.setBackgroundImage(imageUrl);
+  const handleBackgroundImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/uploads/image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const imageUrl = data.url;
+          setScenarioState(prevState => ({ ...prevState, backgroundImageUrl: imageUrl }));
+          if (gridRef.current) {
+            gridRef.current.setBackgroundImage(imageUrl);
+          }
+        } else {
+          alert('Failed to upload background image.');
+        }
+      } catch (error) {
+        console.error('Error uploading background image:', error);
+        alert('An error occurred while uploading the background image.');
+      }
     }
   };
 
@@ -311,6 +338,9 @@ const ScenarioDesigner: React.FC = () => {
       grid.init().then(() => {
         grid.drawPlaceholderGrid(50, 50);
         gridRef.current = grid;
+        if (scenarioState.backgroundImageUrl) {
+          grid.setBackgroundImage(scenarioState.backgroundImageUrl);
+        }
       });
     }
 
@@ -397,7 +427,7 @@ const ScenarioDesigner: React.FC = () => {
             <button onClick={handleDeleteHex}>Delete Hex</button>
             <div>
               <h4>Terrain</h4>
-              <select value={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
+              <select data-testid="terrain-select" value={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
                 {Object.values(TerrainType).map((type) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
