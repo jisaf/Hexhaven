@@ -129,28 +129,34 @@
   }
 
   .gameContainer {
-    flex: 2; /* 50% */
-    min-height: 0;
+    height: 50vh;
   }
 
   .rightPanel {
-    flex: 1; /* 25% */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #0d1a2e;
+    z-index: 10;
   }
 
-  .bottomPlaceholder {
-    display: none;
-  }
-
-  .hudWrapper {
-    position: static; /* Stays in the flex flow */
-    flex: 1; /* 25% */
-    background-color: #1a2b42; /* Darker blue for info section */
+  .rightPanel > :first-child { /* TurnOrder */
+    height: 50%;
     overflow-y: auto;
   }
 
-  .cardSelectionActive .rightPanel,
-  .cardSelectionActive .hudWrapper,
-  .cardSelectionActive .bottomPlaceholder {
+  .hudWrapper {
+    position: static;
+    height: 50%;
+    overflow-y: auto;
+    border-top: 1px solid #c9a444;
+  }
+
+  .cardSelectionActive .rightPanel {
     display: none;
   }
 }
