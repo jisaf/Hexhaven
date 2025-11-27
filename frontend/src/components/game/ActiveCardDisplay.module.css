@@ -1,0 +1,72 @@
+.container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1000;
+}
+
+.cards {
+  display: flex;
+  gap: 20px;
+}
+
+.card {
+  width: 150px;
+  height: 200px;
+  background-color: #333;
+  border: 2px solid #555;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #f00;
+}
+
+.action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  text-align: center;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.action:first-child {
+  border-bottom: 2px solid #555;
+}
+
+.action:hover {
+  background-color: #444;
+}
+
+.card.disabled .action:hover {
+  background-color: #333;
+}
+
+.skipButton {
+  margin-top: 15px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #c9a444;
+  color: #0d1a2e;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.skipButton:hover {
+  background-color: #e6bf5a;
+}

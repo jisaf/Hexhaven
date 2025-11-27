@@ -46,6 +46,11 @@ export class Character {
     bottomCardId: string;
     initiative: number;
   };
+  private _usedTopAction: boolean;
+  private _usedBottomAction: boolean;
+  private _usedCardId: string | null;
+  private _activeCardId: string | null;
+  private _activeActionType: 'top' | 'bottom' | null;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -60,6 +65,11 @@ export class Character {
     this._exhausted = data.exhausted;
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
+    this._usedTopAction = false;
+    this._usedBottomAction = false;
+    this._usedCardId = null;
+    this._activeCardId = null;
+    this._activeActionType = null;
   }
 
   // Getters
@@ -123,6 +133,26 @@ export class Character {
     return this._updatedAt;
   }
 
+  get usedTopAction(): boolean {
+    return this._usedTopAction;
+  }
+
+  get usedBottomAction(): boolean {
+    return this._usedBottomAction;
+  }
+
+  get usedCardId(): string | null {
+    return this._usedCardId;
+  }
+
+  get activeCardId(): string | null {
+    return this._activeCardId;
+  }
+
+  get activeActionType(): 'top' | 'bottom' | null {
+    return this._activeActionType;
+  }
+
   get selectedCards():
     | { topCardId: string; bottomCardId: string; initiative: number }
     | undefined {
@@ -139,6 +169,53 @@ export class Character {
   }
 
   // Methods
+  initiateAction(cardId: string, actionType: 'top' | 'bottom'): void {
+    if (actionType === 'top' && this._usedTopAction) {
+      throw new Error('Top action has already been used this turn');
+    }
+    if (actionType === 'bottom' && this._usedBottomAction) {
+      throw new Error('Bottom action has already been used this turn');
+    }
+    if (this._usedCardId && this._usedCardId === cardId) {
+      throw new Error('You must choose an action from the other card');
+    }
+
+    this._activeCardId = cardId;
+    this._activeActionType = actionType;
+    this._updatedAt = new Date();
+  }
+
+  useAction(): void {
+    if (!this._activeActionType) {
+      throw new Error('No action is currently active');
+    }
+    this._usedCardId = this._activeCardId;
+    if (this._activeActionType === 'top') {
+      this._usedTopAction = true;
+    } else {
+      this._usedBottomAction = true;
+    }
+    this._activeCardId = null;
+    this._activeActionType = null;
+    this._updatedAt = new Date();
+  }
+
+  skipAction(): void {
+    this.useAction(); // Skipping is equivalent to using the action with no effect
+  }
+
+  endTurn(): void {
+    this._selectedCards = undefined;
+    this._usedTopAction = false;
+    this._usedBottomAction = false;
+    this._usedCardId = null;
+    this._activeCardId = null;
+    this._activeActionType = null;
+    // Note: Conditions are typically cleared at the end of the character's turn as well
+    // This logic can be expanded here
+    this._updatedAt = new Date();
+  }
+
   moveTo(position: AxialCoordinates): void {
     if (this.isImmobilized) {
       throw new Error('Character is immobilized and cannot move');
