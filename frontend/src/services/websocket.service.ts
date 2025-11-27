@@ -21,6 +21,7 @@ import type {
   CharacterMovedPayload,
   AttackResolvedPayload,
   MonsterActivatedPayload,
+  ActionInitiatedPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -72,6 +73,9 @@ export interface WebSocketEvents {
 
   // Monster AI
   monster_activated: (data: MonsterActivatedPayload) => void;
+
+  // Player Actions
+  action_initiated: (data: ActionInitiatedPayload) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
@@ -399,6 +403,14 @@ class WebSocketService {
    */
   endTurn(): void {
     this.emit('end_turn');
+  }
+
+  initiateAction(cardId: string, actionType: 'top' | 'bottom'): void {
+    this.emit('initiate_action', { cardId, actionType });
+  }
+
+  skipAction(): void {
+    this.emit('skip_action');
   }
 
   /**

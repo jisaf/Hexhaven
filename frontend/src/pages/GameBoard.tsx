@@ -25,13 +25,20 @@ import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { AbilityCard, Monster, HexTile, LogMessage, LogMessagePart } from '../../../shared/types/entities.ts';
 import { TerrainType, Condition } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
-import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useGameWebSocket } from '../hooks/useGameWebSocket';
 import { useHexGrid } from '../hooks/useHexGrid';
-import type { GameStartedPayload, TurnEntity, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload } from '../../../shared/types/events';
+import type {
+  GameStartedPayload,
+  TurnEntity,
+  CharacterMovedPayload,
+  AttackResolvedPayload,
+  MonsterActivatedPayload,
+  ActionInitiatedPayload,
+} from '../../../shared/types/events';
 import TurnOrder from '../components/TurnOrder';
+import { ActiveCardDisplay } from '../components/game/ActiveCardDisplay';
 import styles from './GameBoard.module.css';
 
 // Helper to format modifier value into a string like "+1", "-2"
@@ -120,6 +127,15 @@ export function GameBoard() {
   // Attack targeting state (T115)
   const [attackMode, setAttackMode] = useState(false);
   const [attackableTargets, setAttackableTargets] = useState<string[]>([]);
+  const [activeAction, setActiveAction] = useState<{
+    cardId: string;
+    actionType: 'top' | 'bottom';
+  } | null>(null);
+  const [usedActionTypes, setUsedActionTypes] = useState<{
+    top: boolean;
+    bottom: boolean;
+  }>({ top: false, bottom: false });
+  const [usedCardId, setUsedCardId] = useState<string | null>(null);
 
   // Use custom hooks
   useRoomSession();
@@ -139,6 +155,8 @@ export function GameBoard() {
     removeMonster,
     isHexBlocked,
     setSelectedHex: highlightSelectedHex,
+    showAttackRange,
+    clearAttackRange,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => handleHexClick(hex),
     onCharacterSelect: (characterId) => handleCharacterSelectClick(characterId),
@@ -171,7 +189,15 @@ export function GameBoard() {
     if (selectedHex) {
       if (selectedHex.q === hex.q && selectedHex.r === hex.r) {
         console.log('🚀 Confirming move to', hex);
-        websocketService.moveCharacter(hex);
+        if (activeAction) {
+          websocketService.moveCharacter(hex);
+          setUsedActionTypes((prev) => ({
+            ...prev,
+            [activeAction.actionType]: true,
+          }));
+          setUsedCardId(activeAction.cardId);
+          setActiveAction(null);
+        }
         setSelectedHex(null);
         clearMovementRange();
         setValidMovementHexes([]);
@@ -183,7 +209,14 @@ export function GameBoard() {
       console.log('📍 First hex selection:', hex);
       setSelectedHex(hex);
     }
-  }, [selectedCharacterId, isMyTurn, selectedHex, validMovementHexes, clearMovementRange]);
+  }, [
+    selectedCharacterId,
+    isMyTurn,
+    selectedHex,
+    validMovementHexes,
+    clearMovementRange,
+    activeAction,
+  ]);
 
   // Effect to sync the selected hex highlight with the state
   useEffect(() => {
@@ -250,14 +283,52 @@ export function GameBoard() {
     }
   }, [isMyTurn, selectedTopAction, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
-  const handleMonsterSelectClick = useCallback((monsterId: string) => {
-    if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
-      websocketService.attackTarget(monsterId);
-      setAttackMode(false);
-      setAttackableTargets([]);
-    }
-  }, [attackMode, isMyTurn, attackableTargets]);
+  const handleMonsterSelectClick = useCallback(
+    (monsterId: string) => {
+      if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
+        if (activeAction) {
+          websocketService.attackTarget(monsterId);
+          setUsedActionTypes((prev) => ({
+            ...prev,
+            [activeAction.actionType]: true,
+          }));
+          setUsedCardId(activeAction.cardId);
+          setActiveAction(null);
+        }
+        setAttackMode(false);
+        setAttackableTargets([]);
+        clearAttackRange();
+      }
+    },
+    [
+      attackMode,
+      isMyTurn,
+      attackableTargets,
+      activeAction,
+      clearAttackRange,
+    ],
+  );
 
+
+  const handleActionInitiated = useCallback(
+    (data: ActionInitiatedPayload) => {
+      clearMovementRange(); // Clear previous highlights
+
+      if (data.actionType === 'move' && data.validHexes) {
+        setAttackMode(false);
+        setValidMovementHexes(data.validHexes);
+        showMovementRange(data.validHexes); // Highlights in blue
+      } else if (data.actionType === 'attack' && data.validTargetIds) {
+        setAttackMode(true);
+        setAttackableTargets(data.validTargetIds);
+        const attackableHexes = data.validTargetIds
+          .map((id) => gameData?.monsters.find((m) => m.id === id)?.currentHex)
+          .filter((hex): hex is Axial => !!hex);
+        showAttackRange(attackableHexes);
+      }
+    },
+    [clearMovementRange, showMovementRange, showAttackRange, gameData],
+  );
 
   // Event handlers for WebSocket
   const handleGameStarted = useCallback((data: GameStartedPayload, ackCallback?: (ack: boolean) => void) => {
@@ -490,7 +561,8 @@ export function GameBoard() {
     onConnectionStatusChange: handleConnectionStatusChange,
     onMonsterActivated: handleMonsterActivated,
     onAttackResolved: handleAttackResolved,
-  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange, handleMonsterActivated, handleAttackResolved]);
+    onActionInitiated: handleActionInitiated,
+  }), [handleGameStarted, handleCharacterMoved, handleRoundStarted, handleRoundEnded, handleTurnStarted, handleGameStateUpdate, handleConnectionStatusChange, handleMonsterActivated, handleAttackResolved, handleActionInitiated]);
 
   // Setup WebSocket
   useGameWebSocket(gameWebSocketHandlers);
@@ -572,10 +644,40 @@ export function GameBoard() {
       websocketService.endTurn();
       addLog([{ text: 'Turn ended.' }]);
       setIsMyTurn(false);
+      setUsedActionTypes({ top: false, bottom: false });
+      setUsedCardId(null);
+      setActiveAction(null);
+      clearMovementRange();
     }
-  }, [isMyTurn, addLog]);
+  }, [isMyTurn, addLog, clearMovementRange]);
+
+  const handleActionSelect = useCallback(
+    (cardId: string, actionType: 'top' | 'bottom') => {
+      setActiveAction({ cardId, actionType });
+      websocketService.initiateAction(cardId, actionType);
+    },
+    [],
+  );
+
+  const handleSkipAction = useCallback(() => {
+    if (activeAction) {
+      websocketService.skipAction();
+      setUsedActionTypes((prev) => ({
+        ...prev,
+        [activeAction.actionType]: true,
+      }));
+      setUsedCardId(activeAction.cardId);
+      setActiveAction(null);
+      clearMovementRange();
+    }
+  }, [clearMovementRange, activeAction]);
 
   const gameBoardClass = `${styles.gameBoardPage} ${showCardSelection ? styles.cardSelectionActive : ''}`;
+
+  const cardsForTurn =
+    selectedTopAction && selectedBottomAction
+      ? [selectedTopAction, selectedBottomAction]
+      : null;
 
   return (
     <div className={gameBoardClass}>
@@ -596,6 +698,12 @@ export function GameBoard() {
             isMyTurn={isMyTurn}
             onBackToLobby={handleBackToLobby}
             onEndTurn={handleEndTurn}
+            cardsForTurn={cardsForTurn}
+            onActionSelect={handleActionSelect}
+            usedActionTypes={usedActionTypes}
+            usedCardId={usedCardId}
+            onSkipAction={handleSkipAction}
+            activeAction={activeAction}
           />
         </div>
       </div>
@@ -613,11 +721,6 @@ export function GameBoard() {
           selectedBottomAction={selectedBottomAction}
         />
       )}
-
-      <GameHints
-        attackMode={attackMode}
-        showMovementHint={selectedCharacterId !== null && isMyTurn && !attackMode}
-      />
 
       <ReconnectingOverlay show={connectionStatus === 'reconnecting'} />
     </div>

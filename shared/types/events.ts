@@ -52,6 +52,15 @@ export interface EndTurnPayload {
   // No additional data needed
 }
 
+export interface InitiateActionPayload {
+  cardId: string;
+  actionType: 'top' | 'bottom';
+}
+
+export interface SkipActionPayload {
+  // No additional data needed
+}
+
 export interface LongRestPayload {
   cardToLose: string; // AbilityCard UUID to permanently lose
 }
@@ -249,6 +258,13 @@ export interface DebugLogPayload {
   data?: any;
 }
 
+export interface ActionInitiatedPayload {
+  actionType: 'move' | 'attack';
+  validHexes?: AxialCoordinates[];
+  validTargetIds?: string[];
+}
+
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -261,6 +277,8 @@ export interface ClientEvents {
   use_ability: UseAbilityPayload;
   collect_loot: CollectLootPayload;
   end_turn: EndTurnPayload;
+  initiate_action: InitiateActionPayload;
+  skip_action: SkipActionPayload;
   long_rest: LongRestPayload;
   leave_room: LeaveRoomPayload;
   reconnect: ReconnectPayload;
@@ -300,4 +318,5 @@ export interface ServerEvents {
   game_state_update: GameStateUpdatePayload;
   error: ErrorPayload;
   debug_log: DebugLogPayload;
+  action_initiated: ActionInitiatedPayload;
 }

@@ -20,6 +20,7 @@ import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { sessionService } from '../services/session.service';
 import { Player } from '../models/player.model';
+import { Monster } from '../models/monster.model';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
@@ -36,6 +37,8 @@ import type {
   AttackTargetPayload,
   EndTurnPayload,
   CollectLootPayload,
+  InitiateActionPayload,
+  SkipActionPayload,
   RoomJoinedPayload,
   PlayerJoinedPayload,
   CharacterSelectedPayload,
@@ -47,6 +50,7 @@ import type {
   MonsterActivatedPayload,
   LootCollectedPayload,
   ScenarioCompletedPayload,
+  ActionInitiatedPayload,
   ErrorPayload,
   DebugLogPayload,
 } from '../../../shared/types/events';
@@ -87,7 +91,7 @@ export class GameGateway
 
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
-  private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
+  private readonly roomMonsters = new Map<string, Monster[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
@@ -888,9 +892,23 @@ export class GameGateway
       }
 
       // Get reachable hexes within movement range
+      // Get active card and action
+      if (!character.activeCardId) {
+        throw new Error('No active card for move action');
+      }
+      const card = this.abilityCardService.getCardById(character.activeCardId);
+      if (!card) throw new Error('Active card not found');
+      const action =
+        character.activeActionType === 'top'
+          ? card.topAction
+          : card.bottomAction;
+      if (!action || action.type !== 'move' || !action.value) {
+        throw new Error('Invalid move action');
+      }
+
       const reachableHexes = this.pathfindingService.getReachableHexes(
         fromHex,
-        character.movement,
+        action.value,
         hexMap,
       );
 
@@ -954,6 +972,9 @@ export class GameGateway
       this.logger.log(
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
       );
+
+      // Mark action as used
+      character.useAction();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1236,8 +1257,31 @@ export class GameGateway
         throw new Error('Target character is already dead');
       }
 
-      // Get attack value from attacker (simplified - using stats)
-      const baseAttack = attacker.attack;
+      // Get active card and action
+      if (!attacker.activeCardId) {
+        throw new Error('No active card for attack action');
+      }
+      const card = this.abilityCardService.getCardById(attacker.activeCardId);
+      if (!card) throw new Error('Active card not found');
+      const action =
+        attacker.activeActionType === 'top'
+          ? card.topAction
+          : card.bottomAction;
+      if (!action || action.type !== 'attack' || !action.value) {
+        throw new Error('Invalid attack action');
+      }
+
+      // Validate range
+      const distance = this.pathfindingService.heuristic(
+        attacker.position,
+        target.currentHex,
+      );
+      if (distance > (action.range || 1)) {
+        throw new Error('Target is out of range');
+      }
+
+      // Get attack value from card
+      const baseAttack = action.value;
 
       // Draw attack modifier card
       let modifierDeck = this.modifierDecks.get(room.roomCode);
@@ -1329,6 +1373,9 @@ export class GameGateway
       if (targetDead && isMonsterTarget) {
         this.checkScenarioCompletion(room.roomCode);
       }
+
+      // Mark action as used
+      attacker.useAction();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1447,6 +1494,117 @@ export class GameGateway
     }
   }
 
+  @SubscribeMessage('initiate_action')
+  handleInitiateAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: InitiateActionPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+      const { room } = roomData;
+
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      character.initiateAction(payload.cardId, payload.actionType);
+
+      const card = this.abilityCardService.getCardById(payload.cardId);
+      if (!card) {
+        throw new Error(`Card not found: ${payload.cardId}`);
+      }
+
+      const action =
+        payload.actionType === 'top' ? card.topAction : card.bottomAction;
+      if (!action) {
+        throw new Error(
+          `Action (${payload.actionType}) not found on card ${payload.cardId}`,
+        );
+      }
+
+      const hexMap = this.roomMaps.get(room.roomCode);
+      if (!hexMap) {
+        throw new Error('Map not initialized for this room');
+      }
+
+      const payloadToSend: ActionInitiatedPayload = {
+        actionType: action.type as 'move' | 'attack',
+        validHexes: [],
+        validTargetIds: [],
+      };
+
+      if (action.type === 'move' && action.value) {
+        payloadToSend.validHexes = this.pathfindingService.getReachableHexes(
+          character.position,
+          action.value,
+          hexMap,
+        );
+      } else if (action.type === 'attack') {
+        const monsters = this.roomMonsters.get(room.roomCode) || [];
+        const attackRange = action.range || 1; // Default to 1 for melee
+        payloadToSend.validTargetIds = monsters
+          .filter((m) => {
+            if (m.isDead) return false;
+            const distance = this.pathfindingService.heuristic(
+              character.position,
+              m.currentHex,
+            );
+            return distance <= attackRange;
+          })
+          .map((m) => m.id);
+      }
+
+      client.emit('action_initiated', payloadToSend);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Initiate action error: ${errorMessage}`);
+      client.emit('error', {
+        code: 'INITIATE_ACTION_ERROR',
+        message: errorMessage,
+      });
+    }
+  }
+
+  @SubscribeMessage('skip_action')
+  handleSkipAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() _payload: SkipActionPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      character.skipAction();
+
+      this.logger.log(`Player ${playerUUID} skipped their action`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Skip action error: ${errorMessage}`);
+      client.emit('error', {
+        code: 'SKIP_ACTION_ERROR',
+        message: errorMessage,
+      });
+    }
+  }
+
   /**
    * End current entity's turn (US2 - T097)
    */
@@ -1498,6 +1656,7 @@ export class GameGateway
       ) {
         throw new Error('It is not your turn');
       }
+      character.endTurn();
 
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(

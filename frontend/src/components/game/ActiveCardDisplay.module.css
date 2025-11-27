@@ -1,0 +1,53 @@
+.container {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  gap: 10px;
+}
+
+.cards {
+  display: flex;
+  gap: 10px;
+}
+
+.card {
+  width: 150px;
+  height: 200px;
+  background-color: #333;
+  border: 2px solid #555;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #f00;
+}
+
+.action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  text-align: center;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.action:first-child {
+  border-bottom: 2px solid #555;
+}
+
+.action:hover {
+  background-color: #444;
+}
+
+.card.disabled .action:hover {
+  background-color: #333;
+}
