@@ -81,6 +81,13 @@ interface GameState {
   showCardSelection: boolean;
 }
 
+interface VisualUpdateCallbacks {
+  moveCharacter?: (characterId: string, toHex: Axial, movementPath?: Axial[]) => void;
+  updateMonsterPosition?: (monsterId: string, newHex: Axial) => void;
+  updateCharacterHealth?: (characterId: string, health: number) => void;
+  updateMonsterHealth?: (monsterId: string, health: number) => void;
+}
+
 class GameStateManager {
   private state: GameState = {
     gameData: null,
@@ -103,9 +110,14 @@ class GameStateManager {
     showCardSelection: false,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
+  private visualCallbacks: VisualUpdateCallbacks = {};
 
   constructor() {
     this.setupWebSocketListeners();
+  }
+
+  public registerVisualCallbacks(callbacks: VisualUpdateCallbacks): void {
+    this.visualCallbacks = { ...this.visualCallbacks, ...callbacks };
   }
 
   private addLog(parts: LogMessagePart[]) {
@@ -163,7 +175,9 @@ class GameStateManager {
   }
 
   private handleCharacterMoved(data: CharacterMovedPayload): void {
-    // NOTE: visual movement is handled by HexGrid events, this is for state and logs
+    // Trigger visual update
+    this.visualCallbacks.moveCharacter?.(data.characterId, data.toHex, data.movementPath);
+
     this.addLog([
       { text: data.characterName, color: 'lightblue' },
       { text: ` moved ` },
@@ -236,6 +250,8 @@ class GameStateManager {
       if (data.attack) {
         logParts.push({ text: ' and' });
       }
+      // Trigger visual update for monster movement
+      this.visualCallbacks.updateMonsterPosition?.(data.monsterId, data.movement);
     }
 
     // Attack
@@ -272,7 +288,10 @@ class GameStateManager {
       if (this.state.gameData) {
         const targetCharacter = this.state.gameData.characters.find(c => c.id === targetId);
         if (targetCharacter) {
-          targetCharacter.health = Math.max(0, targetCharacter.health - damage);
+          const newHealth = Math.max(0, targetCharacter.health - damage);
+          targetCharacter.health = newHealth;
+          // Trigger visual update for character health
+          this.visualCallbacks.updateCharacterHealth?.(targetId, newHealth);
         }
       }
     } else {
@@ -314,16 +333,22 @@ class GameStateManager {
     logParts.push({ text: '.' });
     this.addLog(logParts);
 
-    // Update target health in state
+    // Update target health in state and trigger visual update
     if (this.state.gameData) {
       const isCharacter = this.state.gameData.characters.some(c => c.id === data.targetId);
 
       if (isCharacter) {
          const char = this.state.gameData.characters.find(c => c.id === data.targetId);
-         if(char) char.health = data.targetHealth;
+         if(char) {
+           char.health = data.targetHealth;
+           this.visualCallbacks.updateCharacterHealth?.(data.targetId, data.targetHealth);
+         }
       } else {
          const monster = this.state.gameData.monsters.find(m => m.id === data.targetId);
-         if(monster) monster.health = data.targetHealth;
+         if(monster) {
+           monster.health = data.targetHealth;
+           this.visualCallbacks.updateMonsterHealth?.(data.targetId, data.targetHealth);
+         }
       }
     }
     this.emitStateUpdate();
