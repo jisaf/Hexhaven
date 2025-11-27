@@ -268,6 +268,8 @@ export class HexGrid {
     if (sprite) {
       const path = movementPath && movementPath.length > 0 ? movementPath : [targetHex];
       await sprite.animateMoveTo(path);
+      // Update character's internal data with new position
+      sprite.updateData({ currentHex: targetHex });
     }
   }
 
