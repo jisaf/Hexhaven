@@ -20,7 +20,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
+  padding: 4px 8px;
   border-bottom: 1px solid rgba(201, 164, 68, 0.3);
 }
 
@@ -86,7 +86,7 @@
 .logContainer {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 4px 8px;
 }
 
 .logContainer::-webkit-scrollbar {
@@ -103,9 +103,9 @@
 }
 
 .logMessage {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   padding: 0;
-  font-size: 13px;
+  font-size: 10px;
   line-height: 1.4;
 }
 

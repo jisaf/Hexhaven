@@ -108,7 +108,7 @@ export function GameBoard() {
       id: `${Date.now()}-${Math.random()}`,
       parts,
     };
-    setLogs(prevLogs => [...prevLogs, newLog].slice(-10)); // Keep last 10 logs
+    setLogs(prevLogs => [...prevLogs, newLog].slice(-200)); // Keep last 200 logs
   }, []);
 
   // Card selection state (T111, T181)
