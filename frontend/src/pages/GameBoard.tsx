@@ -243,7 +243,7 @@ export function GameBoard() {
         clearMovementRange();
       }
     }
-  }, [isMyTurn, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
+  }, [isMyTurn, selectedTopAction, selectedBottomAction, getCharacter, showMovementRange, clearMovementRange, isHexBlocked]);
 
   const handleMonsterSelectClick = useCallback((monsterId: string) => {
     if (attackMode && isMyTurn && attackableTargets.includes(monsterId)) {
