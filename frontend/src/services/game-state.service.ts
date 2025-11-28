@@ -1,6 +1,6 @@
 import { websocketService } from './websocket.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard } from '../../../shared/types';
-import { hexRangeReachable } from '../game/hex-utils';
+import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
 // Helper to format modifier value into a string like "+1", "-2"
@@ -49,6 +49,28 @@ const isHexBlocked = (hex: Axial, state: GameState): boolean => {
     return false;
 }
 
+const hasAttackTarget = (hex: Axial, state: GameState, attackerId: string): boolean => {
+    if (!state.gameData) return false;
+
+    // Can target monsters (alive ones only)
+    if (state.gameData.monsters.some(m =>
+      m.currentHex.q === hex.q &&
+      m.currentHex.r === hex.r &&
+      m.health > 0
+    )) return true;
+
+    // Can target other characters (for friendly fire or special abilities)
+    // Exclude the attacker themselves
+    if (state.gameData.characters.some(c =>
+      c.id !== attackerId &&
+      c.currentHex?.q === hex.q &&
+      c.currentHex?.r === hex.r &&
+      !c.isExhausted
+    )) return true;
+
+    return false;
+}
+
 interface GameState {
   // Core game data
   gameData: GameStartedPayload | null;
@@ -74,6 +96,8 @@ interface GameState {
   // Combat state
   attackMode: boolean;
   attackableTargets: string[];
+  validAttackHexes: Axial[];
+  selectedAttackTarget: string | null;
 
   // UI state
   logs: LogMessage[];
@@ -105,6 +129,8 @@ class GameStateManager {
     validMovementHexes: [],
     attackMode: false,
     attackableTargets: [],
+    validAttackHexes: [],
+    selectedAttackTarget: null,
     logs: [],
     connectionStatus: 'connected',
     showCardSelection: false,
@@ -446,6 +472,45 @@ class GameStateManager {
       this.emitStateUpdate();
   }
 
+  public enterAttackMode(characterId: string, attackRange: number): void {
+      if (!this.state.isMyTurn) return;
+
+      this.state.attackMode = true;
+      this.state.selectedCharacterId = characterId;
+      this.state.selectedAttackTarget = null;
+
+      // Clear movement state when entering attack mode
+      this.state.selectedHex = null;
+      this.state.validMovementHexes = [];
+
+      const character = this.state.gameData?.characters.find(c => c.id === characterId);
+      if (character && character.currentHex && attackRange > 0) {
+        this.state.validAttackHexes = hexAttackRange(
+          character.currentHex,
+          attackRange,
+          (hex: Axial) => hasAttackTarget(hex, this.state, characterId)
+        );
+      } else {
+        this.state.validAttackHexes = [];
+      }
+
+      this.emitStateUpdate();
+  }
+
+  public exitAttackMode(): void {
+      this.state.attackMode = false;
+      this.state.validAttackHexes = [];
+      this.state.selectedAttackTarget = null;
+      this.emitStateUpdate();
+  }
+
+  public selectAttackTarget(targetId: string): void {
+      if (!this.state.attackMode || !this.state.isMyTurn) return;
+
+      this.state.selectedAttackTarget = targetId;
+      this.emitStateUpdate();
+  }
+
   public endTurn(): void {
       if(this.state.isMyTurn) {
           websocketService.endTurn();
@@ -473,6 +538,8 @@ class GameStateManager {
         validMovementHexes: [],
         attackMode: false,
         attackableTargets: [],
+        validAttackHexes: [],
+        selectedAttackTarget: null,
         logs: [],
         connectionStatus: 'connected',
         showCardSelection: false,

@@ -55,6 +55,8 @@ export function GameBoard() {
     hexGridReady,
     initializeBoard,
     showMovementRange,
+    showAttackRange,
+    clearAttackRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
@@ -63,7 +65,7 @@ export function GameBoard() {
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
-    onMonsterSelect: (id) => console.log('monster selected', id), // TODO: Connect to GameStateManager for attacks
+    onMonsterSelect: (id) => gameStateManager.selectAttackTarget(id),
   });
 
   // Register visual update callbacks with gameStateManager
@@ -89,6 +91,16 @@ export function GameBoard() {
         setSelectedHex(gameState.selectedHex);
     }
   }, [gameState.selectedHex, hexGridReady, setSelectedHex]);
+
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.attackMode && gameState.validAttackHexes.length > 0) {
+        showAttackRange(gameState.validAttackHexes);
+      } else {
+        clearAttackRange();
+      }
+    }
+  }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
 
 
   // Render game data when HexGrid is ready

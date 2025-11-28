@@ -172,6 +172,25 @@ export function hexRangeReachable(
 }
 
 /**
+ * Get all hexes within attack range
+ * Unlike hexRangeReachable, this ignores obstacles (attacks can go through walls)
+ * but filters to only hexes that contain valid targets
+ */
+export function hexAttackRange(
+  center: Axial,
+  range: number,
+  hasTarget: (hex: Axial) => boolean
+): Axial[] {
+  // Get all hexes in range using simple distance check (ignoring obstacles)
+  const allInRange = hexRange(center, range);
+
+  // Filter to only hexes with targets, excluding the center hex itself
+  return allInRange.filter(hex =>
+    !hexEqual(hex, center) && hasTarget(hex)
+  );
+}
+
+/**
  * Get the 6 neighboring hexes
  * Order: east, northeast, northwest, west, southwest, southeast
  */

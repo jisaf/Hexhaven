@@ -482,6 +482,20 @@ export class HexGrid {
   }
 
   /**
+   * Show attack range highlights (red hexes).
+   */
+  public showAttackRange(hexes: Axial[]): void {
+    this.highlightManager.showAttackRange(hexes);
+  }
+
+  /**
+   * Clear all attack highlights.
+   */
+  public clearAttackRange(): void {
+    this.highlightManager.clearAttackRange();
+  }
+
+  /**
    * Update tile data
    */
   public updateTile(hex: Axial, data: Partial<HexTileData>): void {

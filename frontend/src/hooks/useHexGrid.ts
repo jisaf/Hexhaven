@@ -190,6 +190,18 @@ export function useHexGrid(
     }
   }, []);
 
+  const showAttackRange = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showAttackRange(hexes);
+    }
+  }, []);
+
+  const clearAttackRange = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearAttackRange();
+    }
+  }, []);
+
   // Update monster position
   const updateMonsterPosition = useCallback((monsterId: string, newHex: Axial) => {
     if (hexGridRef.current) {
@@ -265,6 +277,8 @@ export function useHexGrid(
     deselectAll,
     showMovementRange,
     clearMovementRange,
+    showAttackRange,
+    clearAttackRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
