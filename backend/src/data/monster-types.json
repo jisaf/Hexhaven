@@ -3,13 +3,13 @@
     { "type": "Bandit Guard", "isElite": false, "avatar": "/assets/avatars/bandit-guard.png" },
     { "type": "Bandit Archer", "isElite": false, "avatar": "/assets/avatars/bandit-archer.png" },
     { "type": "Living Bones", "isElite": false, "avatar": "/assets/avatars/living-bones.png" },
-    { "type": "Living Bones", "isElite": true, "avatar": "/assets/avatars/living-bones.png" },
+    { "type": "Living Bones", "isElite": true, "avatar": "/assets/avatars/living-bones-elite.png" },
     { "type": "Inox Guard", "isElite": false, "avatar": "/assets/avatars/inox-guard.png" },
-    { "type": "Inox Shaman", "isElite": true, "avatar": "/assets/avatars/inox-shaman.png" },
+    { "type": "Inox Shaman", "isElite": true, "avatar": "/assets/avatars/inox-shaman-elite.png" },
     { "type": "Vermling Scout", "isElite": false, "avatar": "/assets/avatars/vermling-scout.png" },
     { "type": "Vermling Shaman", "isElite": false, "avatar": "/assets/avatars/vermling-shaman.png" },
     { "type": "Flame Demon", "isElite": false, "avatar": "/assets/avatars/flame-demon.png" },
     { "type": "Frost Demon", "isElite": false, "avatar": "/assets/avatars/frost-demon.png" },
-    { "type": "Earth Demon", "isElite": true, "avatar": "/assets/avatars/earth-demon.png" }
+    { "type": "Earth Demon", "isElite": true, "avatar": "/assets/avatars/earth-demon-elite.png" }
   ]
 }

@@ -8,7 +8,6 @@ interface TurnOrderCharacter {
   health: number;
   maxHealth: number;
   conditions: string[];
-  avatar?: string;
 }
 
 interface TurnOrderMonster {
@@ -17,7 +16,6 @@ interface TurnOrderMonster {
   maxHealth: number;
   conditions: string[];
   isElite: boolean;
-  avatar?: string;
 }
 
 interface TurnOrderProps {
@@ -91,15 +89,7 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
                 onClick={() => handleActorClick(entity.entityId, index)}
                 data-testid={`turn-order-item-${entity.entityId}`}
               >
-                <div className={`${styles.portrait} ${styles[entity.entityType]}`}>
-                  {actorDetails?.avatar ? (
-                    <img
-                      src={actorDetails.avatar}
-                      alt={entity.name}
-                      className={styles.avatar}
-                    />
-                  ) : null}
-                </div>
+                <div className={`${styles.portrait} ${styles[entity.entityType]}`}></div>
                 <span className={styles.name}>{entity.name}</span>
               </li>
             );

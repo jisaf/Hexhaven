@@ -18,6 +18,7 @@ export interface TurnEntity {
   isElite?: boolean;
   health?: number;
   maxHealth?: number;
+  avatar?: string;
 }
 
 interface TurnOrderDisplayProps {
@@ -31,7 +32,11 @@ export const TurnOrderDisplay: React.FC<TurnOrderDisplayProps> = ({
   currentTurnIndex,
   currentRound,
 }) => {
-  const getEntityIcon = (entity: TurnEntity): string => {
+  const renderEntityIcon = (entity: TurnEntity) => {
+    if (entity.avatar) {
+      return <img src={entity.avatar} alt={entity.name} className="entity-avatar" />;
+    }
+
     if (entity.type === 'character') {
       const classIcons: Record<string, string> = {
         'brute': '🗡️',
@@ -41,9 +46,9 @@ export const TurnOrderDisplay: React.FC<TurnOrderDisplayProps> = ({
         'cragheart': '🪨',
         'mindthief': '🧠',
       };
-      return classIcons[entity.characterClass || 'brute'];
+      return <div className="entity-icon-fallback">{classIcons[entity.characterClass || 'brute']}</div>;
     } else {
-      return entity.isElite ? '👹' : '👺';
+      return <div className="entity-icon-fallback">{entity.isElite ? '👹' : '👺'}</div>;
     }
   };
 
@@ -96,7 +101,7 @@ export const TurnOrderDisplay: React.FC<TurnOrderDisplayProps> = ({
                 )}
 
                 {/* Entity Icon */}
-                <div className="entity-icon">{getEntityIcon(entity)}</div>
+                <div className="entity-icon">{renderEntityIcon(entity)}</div>
 
                 {/* Entity Info */}
                 <div className="entity-info">
@@ -135,7 +140,7 @@ export const TurnOrderDisplay: React.FC<TurnOrderDisplayProps> = ({
       {/* Current Turn Banner */}
       {turnOrder[currentTurnIndex] && (
         <div className="current-turn-banner">
-          <span className="banner-icon">{getEntityIcon(turnOrder[currentTurnIndex])}</span>
+          <span className="banner-icon">{renderEntityIcon(turnOrder[currentTurnIndex])}</span>
           <span className="banner-text">
             {turnOrder[currentTurnIndex].name}'s Turn
           </span>
