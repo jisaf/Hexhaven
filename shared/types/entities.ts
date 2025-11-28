@@ -155,17 +155,87 @@ export interface Monster {
   isDead: boolean;
 }
 
+// ========== NEW MODULAR CARD STRUCTURE (IA Proposal B) ==========
+
+export enum ModuleType {
+  ICON_ACTION = 'icon_action',
+  TEXT = 'text',
+  SUMMON = 'summon',
+  HEX_TARGET = 'hex_target',
+}
+
+export enum ElementInfusionAction {
+  CREATE = 'create',
+  CONSUME = 'consume',
+}
+
+export interface ElementInfusion {
+  element: ElementType;
+  action: ElementInfusionAction;
+}
+
+export interface CardModule {
+  type: ModuleType;
+}
+
+export interface ActionBonus {
+  type: 'jump' | 'pierce' | 'range';
+  value?: number;
+}
+
+export interface IconActionModule extends CardModule {
+  type: ModuleType.ICON_ACTION;
+  action: string; // e.g., 'attack', 'move', 'heal'
+  value: number;
+  range?: number;
+  target?: number;
+  bonuses?: ActionBonus[];
+}
+
+export interface TextModule extends CardModule {
+  type: ModuleType.TEXT;
+  text: string; // e.g., '[Poison]', '[Wound]', 'UNIQUE'
+}
+
+export interface SummonModule extends CardModule {
+  type: ModuleType.SUMMON;
+  move: number;
+  attack: number;
+  range: number;
+  health: number;
+}
+
+export interface HexTargetModule extends CardModule {
+  type: ModuleType.HEX_TARGET;
+  pattern: string[][];
+}
+
+export interface AbilityRow {
+  modules: CardModule[];
+}
+
+export interface Ability {
+  rows: AbilityRow[];
+  xp?: number;
+  isLoss?: boolean;
+  elements?: ElementInfusion[];
+}
+
 export interface AbilityCard {
   id: string;
   characterClass: CharacterClass;
   name: string;
   level: number | 'X';
   initiative: number;
-  topAction: Action;
-  bottomAction: Action;
+  topAction: Ability;
+  bottomAction: Ability;
   imageUrl?: string;
 }
 
+/**
+ * @deprecated The old Action interface is replaced by the new modular structure.
+ * This will be removed once all card data and components are updated.
+ */
 export interface Action {
   type: 'move' | 'attack' | 'heal' | 'loot' | 'special';
   value?: number;

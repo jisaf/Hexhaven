@@ -4,19 +4,11 @@
  */
 
 export type {
+  // Interfaces and Type Aliases
   AxialCoordinates,
   CubeCoordinates,
-  RoomStatus,
-  ConnectionStatus,
-  CharacterClass,
-  TerrainType,
-  HexFeatureType,
-  TriggerType,
   Trigger,
   HexFeature,
-  Condition,
-  ElementType,
-  ElementState,
   Player,
   GameRoom,
   Character,
@@ -34,10 +26,33 @@ export type {
   LootToken,
   Account,
   Progression,
-  LogColor,
   LogMessagePart,
   LogMessage,
   TurnEntity,
+  LogColor,
+  // New Modular Card System Types
+  CardModule,
+  IconActionModule,
+  TextModule,
+  SummonModule,
+  Ability,
+  ElementInfusion as CardElementInfusion,
 } from './entities';
+
+export {
+  // Enums
+  RoomStatus,
+  ConnectionStatus,
+  CharacterClass,
+  TerrainType,
+  HexFeatureType,
+  TriggerType,
+  Condition,
+  ElementType,
+  ElementState,
+  ModuleType,
+  ElementInfusionAction,
+} from './entities';
+
 export * from './events';
 export * from './game-state';

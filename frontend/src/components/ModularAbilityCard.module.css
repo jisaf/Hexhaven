@@ -1,0 +1,133 @@
+
+.card {
+  display: flex;
+  width: 125px; /* Approx 7:5 ratio with 75px height */
+  height: 75px;
+  background-color: #0d1a2e;
+  border: 2px solid #6ab7ff;
+  border-radius: 8px;
+  font-family: 'Georgia', serif;
+  color: white;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px #c9a444;
+}
+
+.selected {
+  border-color: #c9a444;
+  box-shadow: 0 0 10px #c9a444;
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.topIndicator, .bottomIndicator {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #c9a444;
+  color: #0d1a2e;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.topIndicator {
+  top: -10px;
+}
+
+.bottomIndicator {
+  bottom: -10px;
+}
+
+.initiative {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-family: 'MedievalSharp', cursive;
+  font-size: 20px;
+  font-weight: bold;
+  width: 25px;
+  text-align: center;
+}
+
+.actions {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5px 0;
+  margin-left: 30px; /* Space for initiative */
+  height: 100%;
+  width: 100%;
+}
+
+.topAction, .bottomAction {
+  height: 50%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch; /* Make children fill height */
+}
+
+.abilityContent {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.row1, .row2 {
+  display: flex;
+  align-items: center;
+}
+
+.row1 {
+  height: 60%;
+}
+
+.row2 {
+  height: 40%;
+  font-size: 12px;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  width: 25px;
+  min-width: 25px;
+  background-color: #0a1424;
+}
+
+.lossIcon, .xpIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #0d1a2e;
+}
+
+.lossIcon {
+  background-color: #d9534f; /* Red */
+  border: 1px solid #d43f3a;
+}
+
+.xpIcon {
+  background-color: #5bc0de; /* Light blue */
+  border: 1px solid #46b8da;
+}

@@ -1,507 +1,300 @@
-{
-  "abilityCards": [
-    {
-      "id": "brute-trample",
-      "characterClass": "Brute",
-      "name": "Trample",
-      "level": 1,
-      "initiative": 72,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": ["Push 1 (all adjacent enemies)"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-eye-for-eye",
-      "characterClass": "Brute",
-      "name": "Eye for an Eye",
-      "level": 1,
-      "initiative": 51,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Retaliate 2 for the round"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Shield 1 for the round"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-balanced-measure",
-      "characterClass": "Brute",
-      "name": "Balanced Measure",
-      "level": 1,
-      "initiative": 20,
-      "topAction": {
-        "type": "attack",
-        "value": 4,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-overwhelming-assault",
-      "characterClass": "Brute",
-      "name": "Overwhelming Assault",
-      "level": 1,
-      "initiative": 65,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 0,
-        "effects": ["Target all adjacent enemies"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-shield-bash",
-      "characterClass": "Brute",
-      "name": "Shield Bash",
-      "level": 1,
-      "initiative": 15,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 0,
-        "effects": ["Push 1", "Stun"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-warding-strength",
-      "characterClass": "Brute",
-      "name": "Warding Strength",
-      "level": 1,
-      "initiative": 32,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": "light",
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Heal 2 self"],
-        "elementGenerate": null,
-        "elementConsume": "light",
-        "elementBonus": {
-          "effect": "Heal +2",
-          "value": 2
+[
+  {
+    "id": "brute-warding-strength",
+    "character": "Brute",
+    "name": "Warding Strength",
+    "initiative": 32,
+    "top": {
+      "rows": [
+        {
+          "modules": [
+            { "type": "icon_action", "action": "attack", "value": 3 },
+            { "type": "icon_action", "action": "push", "value": 2 }
+          ]
         }
-      }
+      ]
     },
-    {
-      "id": "brute-skewer",
-      "characterClass": "Brute",
-      "name": "Skewer",
-      "level": 1,
-      "initiative": 43,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 1,
-        "effects": ["Pull 1"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-spare-dagger",
-      "characterClass": "Brute",
-      "name": "Spare Dagger",
-      "level": 1,
-      "initiative": 27,
-      "topAction": {
-        "type": "attack",
-        "value": 1,
-        "range": 3,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-grab-and-go",
-      "characterClass": "Brute",
-      "name": "Grab and Go",
-      "level": 1,
-      "initiative": 64,
-      "topAction": {
-        "type": "loot",
-        "value": 1,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": ["Jump"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-leaping-cleave",
-      "characterClass": "Brute",
-      "name": "Leaping Cleave",
-      "level": 1,
-      "initiative": 54,
-      "topAction": {
-        "type": "attack",
-        "value": 4,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": ["Jump"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-ink-bomb",
-      "characterClass": "Tinkerer",
-      "name": "Ink Bomb",
-      "level": 1,
-      "initiative": 62,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 2,
-        "effects": ["Target all adjacent enemies", "Muddle"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-potent-potables",
-      "characterClass": "Tinkerer",
-      "name": "Potent Potables",
-      "level": 1,
-      "initiative": 21,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Heal 3"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Bless"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-enhancement-field",
-      "characterClass": "Tinkerer",
-      "name": "Enhancement Field",
-      "level": 1,
-      "initiative": 74,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Strengthen", "All allies within range"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-volatile-concoction",
-      "characterClass": "Tinkerer",
-      "name": "Volatile Concoction",
-      "level": 1,
-      "initiative": 47,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 3,
-        "effects": ["Wound"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 2,
-        "effects": ["Poison"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-crank-bow",
-      "characterClass": "Tinkerer",
-      "name": "Crank Bow",
-      "level": 1,
-      "initiative": 33,
-      "topAction": {
-        "type": "attack",
-        "value": 1,
-        "range": 3,
-        "effects": ["Attack 3 times"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-restorative-mist",
-      "characterClass": "Tinkerer",
-      "name": "Restorative Mist",
-      "level": 1,
-      "initiative": 24,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Heal 3", "All allies in range"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-gas-canister",
-      "characterClass": "Tinkerer",
-      "name": "Gas Canister",
-      "level": 1,
-      "initiative": 56,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 2,
-        "effects": ["Poison"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Create poison trap"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-micro-bots",
-      "characterClass": "Tinkerer",
-      "name": "Micro Bots",
-      "level": 1,
-      "initiative": 81,
-      "topAction": {
-        "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": ["Summon Micro Bot", "Move 3", "Attack 1"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-flamethrower",
-      "characterClass": "Tinkerer",
-      "name": "Flamethrower",
-      "level": 1,
-      "initiative": 68,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": ["Target all adjacent enemies"],
-        "elementGenerate": "fire",
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-reviving-ether",
-      "characterClass": "Tinkerer",
-      "name": "Reviving Ether",
-      "level": 1,
-      "initiative": 14,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 3,
-        "effects": ["Heal 6"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+    "bottom": {
+      "rows": [
+        {
+          "modules": [
+            { "type": "text", "text": "On the next six sources of damage from attacks targeting you, gain Shield 1." }
+          ]
+        }
+      ]
     }
-  ]
-}
+  },
+  {
+    "id": "brute-eye-for-an-eye",
+    "character": "Brute",
+    "name": "Eye for an Eye",
+    "initiative": 18,
+    "top": {
+      "rows": [
+        { "modules": [
+            { "type": "icon_action", "action": "retaliate", "value": 2 },
+            { "type": "text", "text": "Self" }
+        ]},
+        { "modules": [
+            { "type": "text", "text": "Gain XP each time you Retaliate this round." }
+        ]}
+      ]
+    },
+    "bottom": {
+      "rows": [
+        { "modules": [
+            { "type": "icon_action", "action": "heal", "value": 2 },
+            { "type": "text", "text": "Range 1" }
+        ]}
+      ]
+    }
+  },
+  {
+    "id": "brute-provoking-roar",
+    "character": "Brute",
+    "name": "Provoking Roar",
+    "initiative": 10,
+    "top": {
+      "rows": [
+        { "modules": [
+            { "type": "icon_action", "action": "attack", "value": 2 },
+            { "type": "icon_action", "action": "disarm" }
+        ]}
+      ]
+    },
+    "bottom": {
+      "rows": [
+        { "modules": [
+            { "type": "text", "text": "Any enemy who targets one of your adjacent allies with an attack this round targets you with that attack instead, regardless of the attack's range." }
+        ]}
+      ]
+    }
+  },
+  {
+    "id": "brute-grab-and-go",
+    "character": "Brute",
+    "name": "Grab and Go",
+    "initiative": 87,
+    "top": { "rows": [ { "modules": [ { "type": "icon_action", "action": "loot", "value": 1 } ] } ] },
+    "bottom": { "rows": [ { "modules": [ { "type": "icon_action", "action": "move", "value": 4 } ] } ] }
+  },
+  {
+    "id": "brute-trample",
+    "character": "Brute",
+    "name": "Trample",
+    "initiative": 72,
+    "top": {
+      "rows": [
+        { "modules": [
+            { "type": "icon_action", "action": "attack", "value": 3 },
+            { "type": "icon_action", "action": "pierce", "value": 2 }
+        ]}
+      ]
+    },
+    "bottom": {
+      "rows": [
+        { "modules": [
+            { "type": "icon_action", "action": "move", "value": 4, "bonuses": [{ "type": "jump" }] },
+            { "type": "icon_action", "action": "attack", "value": 2 }
+        ]},
+        { "modules": [ { "type": "text", "text": "Target all enemies moved through" } ]}
+      ]
+    }
+  },
+  {
+    "id": "brute-shield-bash",
+    "character": "Brute",
+    "name": "Shield Bash",
+    "initiative": 15,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 4 },
+                { "type": "icon_action", "action": "stun" }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "shield", "value": 1 },
+                { "type": "text", "text": "Self" }
+            ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-sweeping-blow",
+    "character": "Brute",
+    "name": "Sweeping Blow",
+    "initiative": 64,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 2 },
+                { "type": "hex_target", "pattern": [["_","t","_"], ["t","s","t"], ["_","t","_"]] }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "move", "value": 3 },
+                { "type": "icon_action", "action": "push", "value": 1 }
+            ]},
+            { "modules": [ { "type": "text", "text": "Target all adjacent enemies" } ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-leaping-cleave",
+    "character": "Brute",
+    "name": "Leaping Cleave",
+    "initiative": 54,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 3 },
+                { "type": "hex_target", "pattern": [["_","t"], ["s","t"], ["_","t"]] }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "move", "value": 3, "bonuses": [{ "type": "jump" }] }
+            ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-overwhelming-assault",
+    "character": "Brute",
+    "name": "Overwhelming Assault",
+    "initiative": 61,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 6 }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "move", "value": 3 },
+                { "type": "icon_action", "action": "push", "value": 2 }
+            ]},
+            { "modules": [ { "type": "text", "text": "Target one adjacent enemy" } ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-spare-dagger",
+    "character": "Brute",
+    "name": "Spare Dagger",
+    "initiative": 27,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 3, "bonuses": [{ "type": "range", "value": 3 }] }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [ { "type": "icon_action", "action": "attack", "value": 2 } ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-skewer",
+    "character": "Brute",
+    "name": "Skewer",
+    "initiative": 35,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 3 },
+                { "type": "hex_target", "pattern": [["s"],["t"],["t"]] }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [ { "type": "icon_action", "action": "move", "value": 6 } ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-balanced-measure",
+    "character": "Brute",
+    "name": "Balanced Measure",
+    "initiative": 77,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "text", "text": "Attack X, where X is the number of hexes you have moved so far this turn." }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "text", "text": "Move X, where X is the amount of damage you have inflicted so far this turn." }
+            ]}
+        ]
+    }
+  },
+  {
+    "id": "brute-wall-of-doom",
+    "character": "Brute",
+    "name": "Wall of Doom",
+    "initiative": 20,
+    "top": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "retaliate", "value": 2 },
+                { "type": "text", "text": "Self" }
+            ]},
+            { "modules": [
+                { "type": "icon_action", "action": "shield", "value": 2 },
+                { "type": "text", "text": "Self" }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "text", "text": "Add +1 Attack to all your attacks this round." }
+            ]}
+        ]
+    }
+  },
+  {
+    "id": "spellweaver-living-torch",
+    "character": "Spellweaver",
+    "name": "Living Torch",
+    "initiative": 86,
+    "top": {
+        "rows": [
+            { "modules": [
+                {
+                    "type": "summon",
+                    "move": 2,
+                    "attack": 2,
+                    "range": 2,
+                    "health": 3
+                }
+            ]}
+        ]
+    },
+    "bottom": {
+        "rows": [
+            { "modules": [
+                { "type": "icon_action", "action": "attack", "value": 3 }
+            ]}
+        ]
+    }
+  }
+]

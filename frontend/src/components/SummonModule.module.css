@@ -1,0 +1,12 @@
+.summonModule {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  font-size: 12px;
+}
+
+.summonModule span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

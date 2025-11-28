@@ -1,0 +1,30 @@
+.hexTargetModule {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 4px;
+}
+
+.hexRow {
+  display: flex;
+}
+
+.hex {
+  width: 12px;
+  height: 14px; /* Adjust for pointy-top hex aspect ratio */
+  background-color: #555;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  margin: 0 1px;
+}
+
+.s { /* Self */
+  background-color: #c9a444; /* Gold */
+}
+
+.t { /* Target */
+  background-color: #d9534f; /* Red */
+}
+
+._ { /* Empty */
+  background-color: transparent;
+}

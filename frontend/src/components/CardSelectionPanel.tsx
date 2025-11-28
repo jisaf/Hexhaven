@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
-import { AbilityCard } from './AbilityCard';
+import ModularAbilityCard from './ModularAbilityCard';
 import './CardSelectionPanel.css';
 import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
 
@@ -65,8 +65,9 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
               onMouseEnter={() => setFocusedId(card.id)}
               onMouseLeave={() => setFocusedId(null)}
             >
-              <AbilityCard
+              <ModularAbilityCard
                 card={card}
+                onClick={() => onCardSelect(card)}
                 isSelected={isSelected}
                 isTop={
                   card.id === selectedTopAction?.id
