@@ -24,7 +24,7 @@ describe('Character Data Loading (US5 - T166)', () => {
     characterData = JSON.parse(rawData);
     characters = Object.entries(characterData.characters).map(([classType, data]) => ({
         classType,
-        ...data,
+        ...(data as object),
       }));
   });
 
