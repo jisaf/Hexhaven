@@ -118,7 +118,11 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
-    navigate('/');
+    if (roomCode) {
+      navigate(`/lobby/${roomCode}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const gameBoardClass = `${styles.gameBoardPage} ${gameState.showCardSelection ? styles.cardSelectionActive : ''}`;

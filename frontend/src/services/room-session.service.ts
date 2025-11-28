@@ -418,13 +418,8 @@ class RoomSessionManager {
 
     this.hasJoinedInSession = false;
 
+    // Emit state update - game-state-service will listen and reset itself synchronously
     this.emitStateUpdate();
-
-    // Also reset game state (logs, turn order, etc.)
-    // Import is done lazily to avoid circular dependency
-    import('./game-state.service').then(({ gameStateManager }) => {
-      gameStateManager.reset();
-    });
   }
 
   /**

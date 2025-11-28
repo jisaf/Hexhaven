@@ -1,4 +1,5 @@
 import { websocketService } from './websocket.service';
+import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard } from '../../../shared/types';
 import { hexRangeReachable } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
@@ -482,3 +483,13 @@ class GameStateManager {
 }
 
 export const gameStateManager = new GameStateManager();
+
+// Subscribe to room session changes to reset game state when switching rooms
+roomSessionManager.subscribe((roomState) => {
+  // Reset game state when room switches (status becomes 'disconnected' with no room code)
+  // This happens SYNCHRONOUSLY when switchRoom() is called, before game_started event
+  if (roomState.status === 'disconnected' && roomState.roomCode === null) {
+    console.log('[GameStateManager] Room switched, resetting game state');
+    gameStateManager.reset();
+  }
+});
