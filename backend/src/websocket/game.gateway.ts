@@ -347,6 +347,18 @@ export class GameGateway
       this.socketToPlayer.set(client.id, playerUUID);
       this.playerToSocket.set(playerUUID, client.id);
 
+      // IMPORTANT: Leave all other game rooms before joining the new one
+      // This ensures getRoomFromSocket() always returns the correct current room
+      const currentRooms = Array.from(client.rooms).filter((r) => r !== client.id);
+      for (const oldRoomCode of currentRooms) {
+        if (oldRoomCode !== roomCode) {
+          this.logger.log(
+            `Player ${nickname} leaving old Socket.IO room ${oldRoomCode} before joining ${roomCode}`,
+          );
+          await client.leave(oldRoomCode);
+        }
+      }
+
       // Join Socket.io room
       await client.join(roomCode);
 
