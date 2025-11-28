@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
+import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import type { CharacterClass } from '../components/CharacterSelect';
@@ -87,10 +88,10 @@ export function Lobby() {
     return () => clearInterval(interval);
   }, [fetchActiveRooms, fetchMyRooms]);
 
-  // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
+  // CENTRALIZED CLEANUP: Reset all session state when arriving at lobby
   useEffect(() => {
-    console.log('[Lobby] Component mounted - resetting room session for clean state');
-    roomSessionManager.switchRoom();
+    console.log('[Lobby] Component mounted - resetting session for clean state');
+    gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
   }, []);
 
   // Navigate to game when room status becomes active
