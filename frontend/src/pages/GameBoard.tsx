@@ -63,6 +63,8 @@ export function GameBoard() {
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
+    removeMonster,
+    spawnLootToken,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
@@ -77,9 +79,11 @@ export function GameBoard() {
         updateMonsterPosition,
         updateCharacterHealth,
         updateMonsterHealth,
+        removeMonster,
+        spawnLootToken,
       });
     }
-  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth]);
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken]);
 
   useEffect(() => {
     if (hexGridReady) {

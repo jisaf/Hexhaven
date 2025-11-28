@@ -19,7 +19,7 @@ import { MonsterSprite } from './MonsterSprite';
 import { HighlightManager } from './HighlightManager';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
 import { type Axial, axialKey, screenToAxial, axialToScreen } from './hex-utils';
-import type { Monster, HexTile as SharedHexTile } from '../../../shared/types/entities';
+import type { Monster, HexTile as SharedHexTile, LootSpawnedPayload } from '../../../shared/types';
 
 export interface HexGridOptions {
   width: number;
@@ -718,9 +718,13 @@ export class HexGrid {
   /**
    * Spawn loot token on the board (US2 - T123)
    */
-  public spawnLootToken(lootData: LootTokenData): void {
+  public spawnLootToken(lootData: LootSpawnedPayload): void {
+    const tokenData: LootTokenData = {
+      ...lootData,
+      isCollected: false,
+    };
     const screenPos = axialToScreen(lootData.coordinates);
-    const token = this.lootTokenPool.addToken(lootData, new PIXI.Point(screenPos.x, screenPos.y));
+    const token = this.lootTokenPool.addToken(tokenData, new PIXI.Point(screenPos.x, screenPos.y));
 
     // Attach click handler if callback is provided
     if (this.options.onLootTokenClick) {

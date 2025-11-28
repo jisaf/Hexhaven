@@ -1,5 +1,5 @@
 import { websocketService } from './websocket.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload } from '../../../shared/types';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -110,6 +110,8 @@ interface VisualUpdateCallbacks {
   updateMonsterPosition?: (monsterId: string, newHex: Axial) => void;
   updateCharacterHealth?: (characterId: string, health: number) => void;
   updateMonsterHealth?: (monsterId: string, health: number) => void;
+  removeMonster?: (monsterId: string) => void;
+  spawnLootToken?: (lootData: LootSpawnedPayload) => void;
 }
 
 class GameStateManager {
@@ -163,6 +165,8 @@ class GameStateManager {
     websocketService.on('turn_started', this.handleTurnStarted.bind(this));
     websocketService.on('monster_activated', this.handleMonsterActivated.bind(this));
     websocketService.on('attack_resolved', this.handleAttackResolved.bind(this));
+    websocketService.on('monster_died', this.handleMonsterDied.bind(this));
+    websocketService.on('loot_spawned', this.handleLootSpawned.bind(this));
     websocketService.on('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -377,6 +381,20 @@ class GameStateManager {
          }
       }
     }
+    this.emitStateUpdate();
+  }
+
+  private handleMonsterDied(data: { monsterId: string; killerId: string }): void {
+    this.visualCallbacks.removeMonster?.(data.monsterId);
+    if (this.state.gameData) {
+      this.state.gameData.monsters = this.state.gameData.monsters.filter(m => m.id !== data.monsterId);
+    }
+    this.emitStateUpdate();
+  }
+
+  private handleLootSpawned(data: LootSpawnedPayload): void {
+    this.visualCallbacks.spawnLootToken?.(data);
+    this.addLog([{ text: 'Loot dropped!', color: 'gold' }]);
     this.emitStateUpdate();
   }
 
