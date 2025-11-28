@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IconActionModule as IconActionModuleProps } from '../../../shared/types';
+import type { IconActionModule as IconActionModuleProps } from '../../../shared/types';
 import styles from './IconActionModule.module.css';
 
 const IconActionModule: React.FC<IconActionModuleProps> = ({ action, value, range, target, bonuses }) => {

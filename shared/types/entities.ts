@@ -210,8 +210,10 @@ export interface HexTargetModule extends CardModule {
   pattern: string[][];
 }
 
+export type AnyCardModule = IconActionModule | TextModule | SummonModule | HexTargetModule;
+
 export interface AbilityRow {
-  modules: CardModule[];
+  modules: AnyCardModule[];
 }
 
 export interface Ability {

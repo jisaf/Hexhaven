@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextModule as TextModuleProps } from '../../../shared/types';
+import type { TextModule as TextModuleProps } from '../../../shared/types';
 import styles from './TextModule.module.css';
 
 const TextModule: React.FC<TextModuleProps> = ({ text }) => {

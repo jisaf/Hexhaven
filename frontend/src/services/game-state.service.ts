@@ -1,5 +1,5 @@
 import { websocketService } from './websocket.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, Ability } from '../../../shared/types';
 import { hexRangeReachable } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -407,12 +407,29 @@ class GameStateManager {
       this.state.selectedCharacterId = characterId;
       this.state.selectedHex = null;
 
+      const getMoveValueFromAbility = (ability: Ability | null | undefined): number => {
+        if (!ability) return 0;
+
+        for (const row of ability.rows) {
+          for (const module of row.modules) {
+            if (module.type === 'icon_action' && module.action === 'move' && module.value) {
+              return module.value;
+            }
+          }
+        }
+        return 0;
+      };
+
+
       let moveValue = 0;
-      if (this.state.selectedBottomAction?.bottomAction?.type === 'move') {
-        moveValue = this.state.selectedBottomAction.bottomAction.value || 0;
-      } else if (this.state.selectedTopAction?.topAction?.type === 'move') {
-        moveValue = this.state.selectedTopAction.topAction.value || 0;
-      }
+      // This logic assumes the player has selected which card half to use for movement.
+      // We check both the top and bottom actions of *both* selected cards.
+      // In Gloomhaven, you use one top and one bottom action, so this logic will need refinement
+      // once we track which specific action (top/bottom) is active.
+      const moveFromTopCard = getMoveValueFromAbility(this.state.selectedTopAction?.topAction) || getMoveValueFromAbility(this.state.selectedTopAction?.bottomAction);
+      const moveFromBottomCard = getMoveValueFromAbility(this.state.selectedBottomAction?.topAction) || getMoveValueFromAbility(this.state.selectedBottomAction?.bottomAction);
+
+      moveValue = moveFromTopCard || moveFromBottomCard;
 
       this.state.currentMovementPoints = moveValue;
 

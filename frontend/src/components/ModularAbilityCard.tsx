@@ -1,5 +1,6 @@
 import React from 'react';
-import { Ability, AbilityCard, CardModule, IconActionModule, ModuleType, SummonModule, TextModule, HexTargetModule } from '../../../shared/types';
+import type { Ability, AbilityCard, CardModule, IconActionModule, SummonModule, TextModule, HexTargetModule } from '../../../shared/types';
+import { ModuleType } from '../../../shared/types';
 import IconActionModuleComponent from './IconActionModule';
 import TextModuleComponent from './TextModule';
 import SummonModuleComponent from './SummonModule';

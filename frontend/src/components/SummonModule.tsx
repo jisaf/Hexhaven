@@ -1,5 +1,5 @@
 import React from 'react';
-import { SummonModule as SummonModuleProps } from '../../../shared/types';
+import type { SummonModule as SummonModuleProps } from '../../../shared/types';
 import styles from './SummonModule.module.css';
 
 const SummonModule: React.FC<SummonModuleProps> = ({ move, attack, range, health }) => {

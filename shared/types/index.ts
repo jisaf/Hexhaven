@@ -35,6 +35,8 @@ export type {
   IconActionModule,
   TextModule,
   SummonModule,
+  HexTargetModule,
+  AnyCardModule,
   Ability,
   ElementInfusion as CardElementInfusion,
 } from './entities';
