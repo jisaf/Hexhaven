@@ -34,6 +34,7 @@ export function GameBoard() {
   const navigate = useNavigate();
   const { roomCode } = useParams<{ roomCode: string }>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const previousRoomCodeRef = useRef<string | null>(null);
   const gameState = useGameState();
 
   // Redirect to lobby if no roomCode provided
@@ -43,12 +44,16 @@ export function GameBoard() {
     }
   }, [roomCode, navigate]);
 
-  // CENTRALIZED CLEANUP: Reset room session when navigating to different game
+  // CENTRALIZED CLEANUP: Reset state when switching to different game
   useEffect(() => {
-    if (roomCode) {
-      console.log('[GameBoard] Room code changed, resetting room session for:', roomCode);
+    if (roomCode && previousRoomCodeRef.current && roomCode !== previousRoomCodeRef.current) {
+      console.log('[GameBoard] Switching from', previousRoomCodeRef.current, 'to', roomCode, '- resetting state');
+      // switchRoom() now handles both room session AND game state reset
       roomSessionManager.switchRoom();
     }
+
+    // Update the ref to track the current room code
+    previousRoomCodeRef.current = roomCode || null;
   }, [roomCode]);
 
   const {

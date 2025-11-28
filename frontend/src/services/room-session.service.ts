@@ -399,6 +399,8 @@ class RoomSessionManager {
    * Switch to a different room (clears frontend state only)
    * Does NOT leave the room on backend to keep room in "My Rooms"
    * Backend room is left when actually joining a different room (see ensureJoined)
+   *
+   * IMPORTANT: Also notifies game state manager to reset
    */
   public switchRoom(): void {
     console.log('[RoomSessionManager] Switching room - clearing frontend state');
@@ -417,6 +419,12 @@ class RoomSessionManager {
     this.hasJoinedInSession = false;
 
     this.emitStateUpdate();
+
+    // Also reset game state (logs, turn order, etc.)
+    // Import is done lazily to avoid circular dependency
+    import('./game-state.service').then(({ gameStateManager }) => {
+      gameStateManager.reset();
+    });
   }
 
   /**
