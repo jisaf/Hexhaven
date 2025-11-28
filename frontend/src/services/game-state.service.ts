@@ -64,6 +64,8 @@ interface GameState {
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
   selectedBottomAction: AbilityCard | null;
+  activeCardId: string | null;
+  activeHalf: 'top' | 'bottom' | null;
 
   // Movement state
   selectedCharacterId: string | null;
@@ -99,6 +101,8 @@ class GameStateManager {
     playerHand: [],
     selectedTopAction: null,
     selectedBottomAction: null,
+    activeCardId: null,
+    activeHalf: null,
     selectedCharacterId: null,
     selectedHex: null,
     currentMovementPoints: 0,
@@ -401,18 +405,27 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
+  public setActiveAction(cardId: string, half: 'top' | 'bottom'): void {
+    if (!this.state.isMyTurn) return;
+
+    this.state.activeCardId = cardId;
+    this.state.activeHalf = half;
+    this.addLog([{ text: `Selected ${half} action of card ${cardId}.` }]); // Placeholder log
+    this.emitStateUpdate();
+  }
+
   public selectCharacter(characterId: string): void {
       if (!this.state.isMyTurn) return;
 
       this.state.selectedCharacterId = characterId;
       this.state.selectedHex = null;
 
-      const getMoveValueFromAbility = (ability: Ability | null | undefined): number => {
+      const getActionValue = (ability: Ability | null | undefined, actionType: string): number => {
         if (!ability) return 0;
 
         for (const row of ability.rows) {
           for (const module of row.modules) {
-            if (module.type === 'icon_action' && module.action === 'move' && module.value) {
+            if (module.type === 'icon_action' && module.action === actionType && module.value) {
               return module.value;
             }
           }
@@ -422,14 +435,16 @@ class GameStateManager {
 
 
       let moveValue = 0;
-      // This logic assumes the player has selected which card half to use for movement.
-      // We check both the top and bottom actions of *both* selected cards.
-      // In Gloomhaven, you use one top and one bottom action, so this logic will need refinement
-      // once we track which specific action (top/bottom) is active.
-      const moveFromTopCard = getMoveValueFromAbility(this.state.selectedTopAction?.topAction) || getMoveValueFromAbility(this.state.selectedTopAction?.bottomAction);
-      const moveFromBottomCard = getMoveValueFromAbility(this.state.selectedBottomAction?.topAction) || getMoveValueFromAbility(this.state.selectedBottomAction?.bottomAction);
+      if (this.state.activeCardId && this.state.activeHalf) {
+        const activeCard = [this.state.selectedTopAction, this.state.selectedBottomAction].find(
+          c => c?.id === this.state.activeCardId
+        );
 
-      moveValue = moveFromTopCard || moveFromBottomCard;
+        if (activeCard) {
+          const ability = this.state.activeHalf === 'top' ? activeCard.topAction : activeCard.bottomAction;
+          moveValue = getActionValue(ability, 'move');
+        }
+      }
 
       this.state.currentMovementPoints = moveValue;
 
@@ -472,6 +487,37 @@ class GameStateManager {
       }
   }
 
+  public initiateAttack(targetId: string): void {
+    if (!this.state.isMyTurn || !this.state.activeCardId) return;
+
+    // Additional logic to determine attack value from the active card can be added here.
+    // For now, we just emit the event.
+    websocketService.attackTarget(targetId);
+    this.addLog([{ text: `Attacking target ${targetId}.` }]); // Placeholder
+    this.emitStateUpdate();
+  }
+
+  public initiateHeal(targetId: string): void {
+    if (!this.state.isMyTurn || !this.state.activeCardId) return;
+
+    // In a real implementation, we'd get the heal value from the active card.
+    // e.g. const healValue = getActionValue(ability, 'heal');
+    console.log(`Healing target ${targetId}.`); // Placeholder
+    // websocketService.healTarget(targetId, healValue);
+    this.addLog([{ text: `Healing target ${targetId}.` }]); // Placeholder
+    this.emitStateUpdate();
+  }
+
+  public initiateLoot(): void {
+    if (!this.state.isMyTurn || !this.state.activeCardId) return;
+
+    // Similar to above, get loot value and call websocket service.
+    console.log('Looting.'); // Placeholder
+    // websocketService.loot();
+    this.addLog([{ text: 'Looting.' }]); // Placeholder
+    this.emitStateUpdate();
+  }
+
 
   public reset(): void {
     this.state = {
@@ -484,6 +530,8 @@ class GameStateManager {
         playerHand: [],
         selectedTopAction: null,
         selectedBottomAction: null,
+        activeCardId: null,
+        activeHalf: null,
         selectedCharacterId: null,
         selectedHex: null,
         currentMovementPoints: 0,

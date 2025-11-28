@@ -46,6 +46,10 @@ export class Character {
     bottomCardId: string;
     initiative: number;
   };
+  private _activeAction?: {
+    cardId: string;
+    half: 'top' | 'bottom';
+  };
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -135,6 +139,15 @@ export class Character {
       | undefined,
   ) {
     this._selectedCards = cards ? { ...cards } : undefined;
+    this._updatedAt = new Date();
+  }
+
+  get activeAction(): { cardId: string; half: 'top' | 'bottom' } | undefined {
+    return this._activeAction ? { ...this._activeAction } : undefined;
+  }
+
+  set activeAction(action: { cardId: string; half: 'top' | 'bottom' } | undefined) {
+    this._activeAction = action ? { ...action } : undefined;
     this._updatedAt = new Date();
   }
 

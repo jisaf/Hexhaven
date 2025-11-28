@@ -32,6 +32,11 @@ export interface SelectCardsPayload {
   bottomCardId: string;
 }
 
+export interface SelectActionPayload {
+  cardId: string;
+  half: 'top' | 'bottom';
+}
+
 export interface AttackTargetPayload {
   targetId: string; // Monster or Character UUID
   attackingCardId: string;
@@ -257,6 +262,7 @@ export interface ClientEvents {
   start_game: StartGamePayload;
   move_character: MoveCharacterPayload;
   select_cards: SelectCardsPayload;
+  select_action: SelectActionPayload;
   attack_target: AttackTargetPayload;
   use_ability: UseAbilityPayload;
   collect_loot: CollectLootPayload;

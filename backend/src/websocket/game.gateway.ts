@@ -33,6 +33,7 @@ import type {
   StartGamePayload,
   MoveCharacterPayload,
   SelectCardsPayload,
+  SelectActionPayload,
   AttackTargetPayload,
   EndTurnPayload,
   CollectLootPayload,
@@ -969,6 +970,47 @@ export class GameGateway
   /**
    * Select two ability cards for the round (US2 - T097)
    */
+  @SubscribeMessage('select_action')
+  handleSelectAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: SelectActionPayload,
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(`Select action request from ${playerUUID}: card ${payload.cardId}, ${payload.half}`);
+
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      character.activeAction = {
+        cardId: payload.cardId,
+        half: payload.half,
+      };
+
+      client.emit('action_selected', { success: true, cardId: payload.cardId, half: payload.half });
+
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Select action error: ${errorMessage}`);
+      client.emit('error', {
+        code: 'SELECT_ACTION_ERROR',
+        message: errorMessage,
+      });
+    }
+  }
+
   @SubscribeMessage('select_cards')
   handleSelectCards(
     @ConnectedSocket() client: Socket,

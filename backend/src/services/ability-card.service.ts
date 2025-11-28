@@ -8,66 +8,59 @@
  * - Validate card selections
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AbilityCard, CharacterClass } from '../../../shared/types/entities';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
 @Injectable()
-export class AbilityCardService {
-  private abilityCards: AbilityCard[] | null = null;
+export class AbilityCardService implements OnModuleInit {
+  private abilityCards: AbilityCard[] = [];
 
-  /**
-   * Load all ability cards from JSON file (lazy load)
-   */
-  private loadAbilityCardsFromFile(): AbilityCard[] {
-    if (this.abilityCards) {
-      return this.abilityCards;
-    }
+  async onModuleInit() {
+    await this.loadAbilityCardsFromFile();
+  }
 
+  private async loadAbilityCardsFromFile(): Promise<void> {
     try {
-      // Construct path relative to the service file location
-      // __dirname will be backend/dist/backend/src/services when compiled
-      // Need to go up 3 levels to reach backend/dist/
-      const dataFilePath = path.resolve(
-        __dirname,
-        '../../..',
-        'data',
-        'ability-cards.json',
-      );
+      const dataFilePath = path.join(process.cwd(), 'backend', 'src', 'data', 'ability-cards.json');
 
-      if (!fs.existsSync(dataFilePath)) {
-        throw new Error(`Ability cards data file not found at ${dataFilePath}`);
+      try {
+        const fileContent = await fs.readFile(dataFilePath, 'utf-8');
+        this.abilityCards = JSON.parse(fileContent) as AbilityCard[];
+        console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`);
+      } catch (error) {
+        // Fallback for compiled version in dist
+        const distDataFilePath = path.join(process.cwd(), 'dist', 'backend', 'src', 'data', 'ability-cards.json');
+        const fileContent = await fs.readFile(distDataFilePath, 'utf-8');
+        this.abilityCards = JSON.parse(fileContent) as AbilityCard[];
+        console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${distDataFilePath}`);
       }
-
-      const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
-
-      const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
-      this.abilityCards = data.abilityCards;
-      console.log(
-        `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
-      );
-      return this.abilityCards;
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);
-      return [];
+      this.abilityCards = [];
     }
+  }
+
+  /**
+   * Get all ability cards
+   */
+  findAll(): AbilityCard[] {
+    return this.abilityCards;
   }
 
   /**
    * Get ability card by ID
    */
   getCardById(cardId: string): AbilityCard | null {
-    const cards = this.loadAbilityCardsFromFile();
-    return cards.find((c) => c.id === cardId) || null;
+    return this.abilityCards.find((c) => c.id === cardId) || null;
   }
 
   /**
    * Get all ability cards for a character class
    */
   getCardsByClass(characterClass: CharacterClass): AbilityCard[] {
-    const cards = this.loadAbilityCardsFromFile();
-    return cards.filter((c) => c.characterClass === characterClass);
+    return this.abilityCards.filter((c) => c.characterClass === characterClass);
   }
 
   /**

@@ -389,6 +389,13 @@ class WebSocketService {
   }
 
   /**
+   * Select an action (top or bottom half of a card)
+   */
+  selectAction(cardId: string, half: 'top' | 'bottom'): void {
+    this.emit('select_action', { cardId, half });
+  }
+
+  /**
    * End turn
    */
   endTurn(): void {
