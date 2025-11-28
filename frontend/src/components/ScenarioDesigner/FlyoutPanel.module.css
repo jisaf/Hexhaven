@@ -42,4 +42,7 @@
 
 .content {
   margin-top: 40px;
+  height: calc(100% - 40px);
+  overflow-y: auto;
+  padding-right: 15px; /* Add some padding to avoid scrollbar overlapping content */
 }

@@ -9,7 +9,13 @@
     "assets": [
       {
         "include": "data/**/*",
+        "outDir": "dist/data",
         "watchAssets": true
+      },
+      {
+        "include": "uploads/**/*",
+        "outDir": "dist/uploads",
+        "watchAssets": false
       }
     ]
   }

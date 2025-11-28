@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HexGrid } from '../game/HexGrid';
-import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup } from '../../../shared/types/entities.ts';
+import { type AxialCoordinates, type HexTile, TerrainType, HexFeatureType, TriggerType, type MonsterType, type MonsterGroup, type LogMessage } from '../../../shared/types/entities.ts';
 import { FlyoutPanel } from '../components/ScenarioDesigner/FlyoutPanel';
 import { usePrevious } from '../hooks/usePrevious';
+import { GameHUD } from '../components/game/GameHUD';
 
 interface ScenarioState {
   name: string;
@@ -12,6 +13,7 @@ interface ScenarioState {
   activeHexes: Map<string, HexTile>;
   playerStartPositions: Record<number, AxialCoordinates[]>;
   monsterGroups: MonsterGroup[];
+  backgroundImageUrl?: string;
 }
 
 const ScenarioDesigner: React.FC = () => {
@@ -26,6 +28,7 @@ const ScenarioDesigner: React.FC = () => {
         activeHexes: new Map(parsedState.activeHexes || []),
         playerStartPositions: parsedState.playerStartPositions || { 2: [], 3: [], 4: [] },
         monsterGroups: parsedState.monsterGroups || [],
+        backgroundImageUrl: parsedState.backgroundImageUrl || undefined,
       };
     }
     return {
@@ -35,6 +38,7 @@ const ScenarioDesigner: React.FC = () => {
       activeHexes: new Map(),
       playerStartPositions: { 2: [], 3: [], 4: [] },
       monsterGroups: [],
+      backgroundImageUrl: undefined,
     };
   });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -42,8 +46,14 @@ const ScenarioDesigner: React.FC = () => {
   const [monsterTypes, setMonsterTypes] = useState<MonsterType[]>([]);
   const [selectedPlayerCount, setSelectedPlayerCount] = useState<number>(2);
   const [selectedFeatureType, setSelectedFeatureType] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [logs, setLogs] = useState<LogMessage[]>([]);
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HexGrid | null>(null);
+
+  const addLog = useCallback((message: string, type: 'info' | 'error' | 'warning' = 'info') => {
+    setLogs(prevLogs => [...prevLogs, { message, type, timestamp: new Date() }]);
+  }, []);
 
   const handleReset = useCallback(() => {
     setScenarioState({
@@ -53,6 +63,7 @@ const ScenarioDesigner: React.FC = () => {
       activeHexes: new Map(),
       playerStartPositions: { 2: [], 3: [], 4: [] },
       monsterGroups: [],
+      backgroundImageUrl: undefined,
     });
     // Optional: Also clear any visual state in HexGrid if needed
     if (gridRef.current) {
@@ -255,7 +266,7 @@ const ScenarioDesigner: React.FC = () => {
 
   const handleSaveToServer = async () => {
     if (!scenarioState.name) {
-      alert('Please enter a name for the scenario.');
+      addLog('Please enter a name for the scenario.', 'warning');
       return;
     }
 
@@ -266,6 +277,7 @@ const ScenarioDesigner: React.FC = () => {
       mapLayout: Array.from(scenarioState.activeHexes.values()),
       monsterGroups: scenarioState.monsterGroups,
       playerStartPositions: scenarioState.playerStartPositions,
+      backgroundImageUrl: scenarioState.backgroundImageUrl,
     };
 
     try {
@@ -278,13 +290,14 @@ const ScenarioDesigner: React.FC = () => {
       });
 
       if (response.ok) {
-        alert('Scenario saved successfully!');
+        addLog('Scenario saved successfully!', 'info');
       } else {
-        alert('Failed to save scenario.');
+        const errorText = await response.text();
+        addLog(`Failed to save scenario. Status: ${response.status}. Response: ${errorText}`, 'error');
       }
     } catch (error) {
       console.error('Error saving scenario:', error);
-      alert('An error occurred while saving the scenario.');
+      addLog(`An error occurred while saving the scenario: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`, 'error');
     }
   };
 
@@ -294,11 +307,43 @@ const ScenarioDesigner: React.FC = () => {
     }
   };
 
-  const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0] && gridRef.current) {
-      const imageUrl = URL.createObjectURL(event.target.files[0]);
-      gridRef.current.setBackgroundImage(imageUrl);
+  const handleBackgroundImageUpload = async () => {
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        addLog(`Uploading ${selectedFile.name}...`, 'info');
+        const response = await fetch('/api/uploads/image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const imageUrl = data.url;
+          addLog('Upload successful!', 'info');
+          setScenarioState(prevState => ({ ...prevState, backgroundImageUrl: imageUrl }));
+          if (gridRef.current) {
+            gridRef.current.setBackgroundImage(imageUrl);
+          }
+        } else {
+          const errorText = await response.text();
+          addLog(`Failed to upload background image. Status: ${response.status}. Response: ${errorText}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error uploading background image:', error);
+        addLog(`An error occurred while uploading the background image: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`, 'error');
+      }
     }
+  };
+
+  const handleClearBackground = () => {
+    if (gridRef.current) {
+      gridRef.current.clearBackgroundImage();
+    }
+    setScenarioState(prevState => ({ ...prevState, backgroundImageUrl: undefined }));
+    setSelectedFile(null);
   };
 
   useEffect(() => {
@@ -311,6 +356,9 @@ const ScenarioDesigner: React.FC = () => {
       grid.init().then(() => {
         grid.drawPlaceholderGrid(50, 50);
         gridRef.current = grid;
+        if (scenarioState.backgroundImageUrl) {
+          grid.setBackgroundImage(scenarioState.backgroundImageUrl);
+        }
       });
     }
 
@@ -370,13 +418,14 @@ const ScenarioDesigner: React.FC = () => {
 
   return (
     <div>
-      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1001, display: 'flex', gap: '10px' }}>
-        <input type="file" onChange={handleBackgroundImageUpload} accept="image/*" />
-        <button onClick={handleExportToPng}>Export as PNG</button>
-        <button onClick={handleSaveToServer}>Save to Server</button>
-      </div>
       <h1>Scenario Designer</h1>
-      <FlyoutPanel isOpen={isPanelOpen} onClose={() => setIsPanelOpen(false)} onReset={handleReset}>
+      <FlyoutPanel
+        isOpen={isPanelOpen}
+        onClose={() => setIsPanelOpen(false)}
+        onReset={handleReset}
+        onExportToPng={handleExportToPng}
+        onSaveToServer={handleSaveToServer}
+      >
         <h2>Scenario Settings</h2>
         <label>
           Name:
@@ -391,13 +440,20 @@ const ScenarioDesigner: React.FC = () => {
           <input type="text" value={scenarioState.objective} onChange={(e) => setScenarioState({ ...scenarioState, objective: e.target.value })} />
         </label>
         <hr />
+        <div>
+          <h4>Background</h4>
+          <input type="file" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} accept="image/*" />
+          <button onClick={handleBackgroundImageUpload} disabled={!selectedFile}>Apply Background</button>
+          <button onClick={handleClearBackground}>Clear Background</button>
+        </div>
+        <hr />
         {selectedHex && (
           <div>
             <h3>Editing Hex ({selectedHex.q}, {selectedHex.r})</h3>
             <button onClick={handleDeleteHex}>Delete Hex</button>
             <div>
               <h4>Terrain</h4>
-              <select value={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
+              <select data-testid="terrain-select" value={scenarioState.activeHexes.get(`${selectedHex.q},${selectedHex.r}`)?.terrain} onChange={(e) => handleTerrainChange(e.target.value as TerrainType)}>
                 {Object.values(TerrainType).map((type) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
@@ -487,6 +543,9 @@ const ScenarioDesigner: React.FC = () => {
         )}
       </FlyoutPanel>
       <div data-testid="pixi-container" ref={pixiContainerRef} style={{ width: '100vw', height: '100vh' }} />
+      <div style={{ position: 'fixed', bottom: 0, left: 0, width: '100%', height: '200px', zIndex: 9999 }}>
+        <GameHUD logs={logs} onClearLogs={() => setLogs([])} />
+      </div>
     </div>
   );
 };

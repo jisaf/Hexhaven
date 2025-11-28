@@ -47,6 +47,7 @@ export class HexGrid {
   private container: HTMLElement;
 
   // Layers
+  private backgroundLayer!: PIXI.Container;
   private placeholderLayer!: PIXI.Container;
   private tilesLayer!: PIXI.Container;
   private highlightsLayer!: PIXI.Container;
@@ -147,12 +148,14 @@ export class HexGrid {
     this.viewport.moveCenter(0, 0);
 
     // Create layers
+    this.backgroundLayer = new PIXI.Container();
     this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
     this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
+    this.viewport.addChild(this.backgroundLayer);
     this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
@@ -778,11 +781,33 @@ export class HexGrid {
     graphic.closePath();
   }
 
-  public setBackgroundImage(imageUrl: string): void {
-    const sprite = PIXI.Sprite.from(imageUrl);
-    sprite.width = this.app.screen.width;
-    sprite.height = this.app.screen.height;
-    this.app.stage.addChildAt(sprite, 0);
+  public async setBackgroundImage(imageUrl: string): Promise<void> {
+    // Clear existing background
+    this.backgroundLayer.removeChildren();
+
+    try {
+      // Load the texture and create the sprite
+      const texture = await PIXI.Assets.load(imageUrl);
+      const sprite = new PIXI.Sprite(texture);
+
+      // Position and scale the background to fit the hex grid
+      const activeLayer = this.tilesLayer.children.length > 0 ? this.tilesLayer : this.placeholderLayer;
+      if (activeLayer.children.length > 0) {
+        const bounds = activeLayer.getBounds();
+        sprite.x = bounds.x;
+        sprite.y = bounds.y;
+        sprite.width = bounds.width;
+        sprite.height = bounds.height;
+      }
+
+      this.backgroundLayer.addChild(sprite);
+    } catch (error) {
+      console.error('Failed to load background image:', error);
+    }
+  }
+
+  public clearBackgroundImage(): void {
+    this.backgroundLayer.removeChildren();
   }
 
   public async exportToPng(): Promise<void> {
