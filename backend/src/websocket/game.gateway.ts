@@ -867,6 +867,11 @@ export class GameGateway
         throw new Error('Character is immobilized and cannot move');
       }
 
+      // Check if character has already moved this turn (Gloomhaven rule: 1 move action per turn)
+      if (character.hasMovedThisTurn) {
+        throw new Error('Character has already moved this turn. You can only use one move action per turn.');
+      }
+
       // Store previous position
       const fromHex = character.position;
 
@@ -936,6 +941,9 @@ export class GameGateway
 
       // Move character
       characterService.moveCharacter(character.id, payload.targetHex);
+
+      // Mark character as having moved this turn
+      character.markMovedThisTurn();
 
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
@@ -1208,6 +1216,11 @@ export class GameGateway
         throw new Error('Attacker is disarmed and cannot attack');
       }
 
+      // Check if character has already attacked this turn (Gloomhaven rule: 1 attack action per turn)
+      if (attacker.hasAttackedThisTurn) {
+        throw new Error('Character has already attacked this turn. You can only use one attack action per turn.');
+      }
+
       // Get target (check monsters first, then characters)
       const monsters = this.roomMonsters.get(room.roomCode) || [];
       let target: any = monsters.find((m: any) => m.id === payload.targetId);
@@ -1302,6 +1315,9 @@ export class GameGateway
       const targetName = isMonsterTarget
         ? target.monsterType
         : target.characterClass;
+
+      // Mark character as having attacked this turn
+      attacker.markAttackedThisTurn();
 
       // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
@@ -1499,6 +1515,9 @@ export class GameGateway
         throw new Error('It is not your turn');
       }
 
+      // Reset action flags for this character's turn ending
+      character.resetActionFlags();
+
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
         currentIndex,
@@ -1513,11 +1532,12 @@ export class GameGateway
           `Round complete in room ${room.roomCode}, starting new round`,
         );
 
-        // Clear selected cards from all characters for new round
+        // Clear selected cards and reset action flags for all characters for new round
         room.players.forEach((p: any) => {
           const char = characterService.getCharacterByPlayerId(p.uuid);
           if (char) {
             char.selectedCards = undefined;
+            char.resetActionFlags();
           }
         });
 
@@ -1610,6 +1630,18 @@ export class GameGateway
           'MonsterAI',
         );
         throw new Error(`Monster ${monsterId} not found in room ${roomCode}`);
+      }
+
+      // Skip dead monsters - they cannot activate
+      if (monster.isDead || monster.health <= 0) {
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster ${monsterId} is dead, skipping activation and advancing turn`,
+          'MonsterAI',
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
       }
 
       this.emitDebugLog(
