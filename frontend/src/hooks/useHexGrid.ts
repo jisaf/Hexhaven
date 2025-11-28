@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
+import type { LootTokenData } from '../game/LootTokenSprite';
 import type { Axial } from '../game/hex-utils';
 import { axialToScreen } from '../game/hex-utils';
 
@@ -249,9 +250,19 @@ export function useHexGrid(
   }, []);
 
   // Remove monster from board
-  const removeMonster = useCallback((monsterId: string) => {
+  const removeMonster = useCallback(async (monsterId: string) => {
     if (hexGridRef.current) {
-      hexGridRef.current.removeMonster(monsterId);
+      const monster = hexGridRef.current.getMonster(monsterId);
+      if (monster) {
+        await monster.animateDeath();
+        hexGridRef.current.removeMonster(monsterId);
+      }
+    }
+  }, []);
+
+  const spawnLootToken = useCallback((lootData: LootTokenData) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.spawnLootToken(lootData);
     }
   }, []);
 
@@ -284,6 +295,7 @@ export function useHexGrid(
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    spawnLootToken,
     getCharacter,
     isHexBlocked,
     setSelectedHex,

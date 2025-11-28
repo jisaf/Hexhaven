@@ -222,6 +222,18 @@ export interface ScenarioCompletedPayload {
   completionTime: number; // seconds
 }
 
+export interface MonsterDiedPayload {
+  monsterId: string;
+  killerId: string; // The character/entity that killed it
+  hexCoordinates: AxialCoordinates; // where it died
+}
+
+export interface LootSpawnedPayload {
+  id: string;
+  coordinates: AxialCoordinates;
+  value: number;
+}
+
 export interface PlayerDisconnectedPayload {
   playerId: string;
   nickname: string;
@@ -291,6 +303,8 @@ export interface ServerEvents {
   character_moved: CharacterMovedPayload;
   attack_resolved: AttackResolvedPayload;
   monster_activated: MonsterActivatedPayload;
+  monster_died: MonsterDiedPayload;
+  loot_spawned: LootSpawnedPayload;
   elemental_state_changed: ElementalStateChangedPayload;
   loot_collected: LootCollectedPayload;
   round_ended: RoundEndedPayload;

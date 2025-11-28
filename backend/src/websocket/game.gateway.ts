@@ -20,6 +20,7 @@ import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { sessionService } from '../services/session.service';
 import { Player } from '../models/player.model';
+import { LootToken } from '../models/loot-token.model';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
@@ -869,7 +870,9 @@ export class GameGateway
 
       // Check if character has already moved this turn (Gloomhaven rule: 1 move action per turn)
       if (character.hasMovedThisTurn) {
-        throw new Error('Character has already moved this turn. You can only use one move action per turn.');
+        throw new Error(
+          'Character has already moved this turn. You can only use one move action per turn.',
+        );
       }
 
       // Store previous position
@@ -1218,7 +1221,9 @@ export class GameGateway
 
       // Check if character has already attacked this turn (Gloomhaven rule: 1 attack action per turn)
       if (attacker.hasAttackedThisTurn) {
-        throw new Error('Character has already attacked this turn. You can only use one attack action per turn.');
+        throw new Error(
+          'Character has already attacked this turn. You can only use one attack action per turn.',
+        );
       }
 
       // Get target (check monsters first, then characters)
@@ -1291,19 +1296,34 @@ export class GameGateway
           target.isDead = true;
 
           // Spawn loot token when monster dies
+          const lootValue = LootToken.calculateLootValue(
+            room.scenario.difficulty,
+          );
+          const lootToken = LootToken.create(
+            room.roomCode,
+            target.currentHex,
+            lootValue,
+          );
+
           const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
-          const lootToken = {
-            id: `loot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            hexCoordinates: target.currentHex,
-            goldValue: 1 + Math.floor(Math.random() * 3), // 1-3 gold (simplified)
-            collected: false,
-          };
           lootTokens.push(lootToken);
           this.roomLootTokens.set(room.roomCode, lootTokens);
 
           this.logger.log(
             `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id}`,
           );
+
+          this.server.to(room.roomCode).emit('monster_died', {
+            monsterId: target.id,
+            killerId: attacker.id,
+            hexCoordinates: target.currentHex,
+          });
+
+          this.server.to(room.roomCode).emit('loot_spawned', {
+            id: lootToken.id,
+            coordinates: lootToken.coordinates,
+            value: lootToken.value,
+          });
         }
       } else {
         // Apply damage to character target
