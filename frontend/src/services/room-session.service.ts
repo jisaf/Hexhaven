@@ -240,6 +240,14 @@ class RoomSessionManager {
         throw new Error('Missing player credentials (nickname or UUID)');
       }
 
+      // Leave previous room if switching to a different room
+      // This prevents being in multiple Socket.IO rooms simultaneously
+      const previousRoomCode = this.state.roomCode;
+      if (previousRoomCode && previousRoomCode !== roomCode) {
+        console.log(`[RoomSessionManager] Leaving previous room ${previousRoomCode} before joining ${roomCode}`);
+        websocketService.leaveRoom(previousRoomCode);
+      }
+
       // Update state: we're attempting to join
       this.state.status = 'joining';
       this.state.lastJoinIntent = intent;
@@ -388,19 +396,14 @@ class RoomSessionManager {
   }
 
   /**
-   * Switch to a different room
-   * Leaves the previous room on backend to prevent multi-room issues
+   * Switch to a different room (clears frontend state only)
+   * Does NOT leave the room on backend to keep room in "My Rooms"
+   * Backend room is left when actually joining a different room (see ensureJoined)
    */
   public switchRoom(): void {
-    console.log('[RoomSessionManager] Switching to new room');
+    console.log('[RoomSessionManager] Switching room - clearing frontend state');
 
-    // Leave previous room on backend if exists
-    if (this.state.roomCode) {
-      console.log(`[RoomSessionManager] Leaving previous room: ${this.state.roomCode}`);
-      websocketService.leaveRoom(this.state.roomCode);
-    }
-
-    // Clear state
+    // Clear frontend state only (don't leave backend room yet)
     this.state = {
       roomCode: null,
       status: 'disconnected',
