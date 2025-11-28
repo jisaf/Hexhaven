@@ -459,6 +459,25 @@ class GameStateManager {
   public selectHex(hex: Axial): void {
       if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
 
+      // ATTACK MODE: Check if clicking on a valid attack target
+      if (this.state.attackMode) {
+        // Find monster at this hex
+        const monster = this.state.gameData?.monsters.find(m =>
+          m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0
+        );
+
+        if (monster) {
+          // Execute attack on monster
+          websocketService.attackTarget(monster.id);
+          this.exitAttackMode();
+          return;
+        }
+
+        // If no monster at this hex, ignore the click in attack mode
+        return;
+      }
+
+      // MOVE MODE: Handle movement selection
       // TODO: validate hex is in validMovementHexes
 
       if (this.state.selectedHex && this.state.selectedHex.q === hex.q && this.state.selectedHex.r === hex.r) {
