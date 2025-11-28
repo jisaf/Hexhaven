@@ -484,10 +484,13 @@ class GameStateManager {
       this.state.validMovementHexes = [];
 
       const character = this.state.gameData?.characters.find(c => c.id === characterId);
-      if (character && character.currentHex && attackRange > 0) {
+      if (character && character.currentHex) {
+        // Range 0 means melee (adjacent hexes only), treat as range 1 in hex distance
+        // Range N (N > 0) means can attack any hex within N hexes distance
+        const effectiveRange = attackRange === 0 ? 1 : attackRange;
         this.state.validAttackHexes = hexAttackRange(
           character.currentHex,
-          attackRange,
+          effectiveRange,
           (hex: Axial) => hasAttackTarget(hex, this.state, characterId)
         );
       } else {
@@ -502,6 +505,52 @@ class GameStateManager {
       this.state.validAttackHexes = [];
       this.state.selectedAttackTarget = null;
       this.emitStateUpdate();
+  }
+
+  public enterMoveMode(): void {
+      if (!this.state.isMyTurn) return;
+
+      // Exit attack mode if active
+      if (this.state.attackMode) {
+        this.exitAttackMode();
+      }
+
+      // Recalculate movement range if we have a selected character
+      if (this.state.myCharacterId) {
+        this.selectCharacter(this.state.myCharacterId);
+      }
+  }
+
+  public getAttackAction(): { value: number; range: number } | null {
+    // Check top action first, then bottom action for an attack
+    if (this.state.selectedTopAction?.topAction?.type === 'attack') {
+      return {
+        value: this.state.selectedTopAction.topAction.value || 0,
+        range: this.state.selectedTopAction.topAction.range ?? 0,
+      };
+    }
+    if (this.state.selectedBottomAction?.bottomAction?.type === 'attack') {
+      return {
+        value: this.state.selectedBottomAction.bottomAction.value || 0,
+        range: this.state.selectedBottomAction.bottomAction.range ?? 0,
+      };
+    }
+    return null;
+  }
+
+  public getMoveAction(): { value: number } | null {
+    // Check bottom action first (traditional), then top action
+    if (this.state.selectedBottomAction?.bottomAction?.type === 'move') {
+      return {
+        value: this.state.selectedBottomAction.bottomAction.value || 0,
+      };
+    }
+    if (this.state.selectedTopAction?.topAction?.type === 'move') {
+      return {
+        value: this.state.selectedTopAction.topAction.value || 0,
+      };
+    }
+    return null;
   }
 
   public selectAttackTarget(targetId: string): void {

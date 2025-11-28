@@ -25,6 +25,7 @@ import { TerrainType } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
+import { ActionButtons } from '../components/game/ActionButtons';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
 import TurnOrder from '../components/TurnOrder';
@@ -128,6 +129,20 @@ export function GameBoard() {
     navigate('/');
   };
 
+  const handleAttackClick = () => {
+    const attackAction = gameStateManager.getAttackAction();
+    if (attackAction && gameState.myCharacterId) {
+      gameStateManager.enterAttackMode(gameState.myCharacterId, attackAction.range);
+    }
+  };
+
+  const handleMoveClick = () => {
+    gameStateManager.enterMoveMode();
+  };
+
+  const attackAction = gameStateManager.getAttackAction();
+  const moveAction = gameStateManager.getMoveAction();
+
   const gameBoardClass = `${styles.gameBoardPage} ${gameState.showCardSelection ? styles.cardSelectionActive : ''}`;
 
   return (
@@ -168,6 +183,15 @@ export function GameBoard() {
           selectedBottomAction={gameState.selectedBottomAction}
         />
       )}
+
+      <ActionButtons
+        hasAttack={attackAction !== null}
+        hasMove={moveAction !== null}
+        attackMode={gameState.attackMode}
+        isMyTurn={gameState.isMyTurn}
+        onAttackClick={handleAttackClick}
+        onMoveClick={handleMoveClick}
+      />
 
       <GameHints
         attackMode={gameState.attackMode}
