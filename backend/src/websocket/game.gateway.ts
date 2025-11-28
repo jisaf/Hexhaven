@@ -1328,6 +1328,13 @@ export class GameGateway
             coordinates: lootToken.coordinates,
             value: lootToken.value,
           });
+
+          // Remove monster from game state after it dies
+          const updatedMonsters = monsters.filter(
+            (m: any) => m.id !== target.id,
+          );
+          this.roomMonsters.set(room.roomCode, updatedMonsters);
+          this.logger.log(`Monster ${target.id} removed from game state.`);
         }
       } else {
         // Apply damage to character target
