@@ -15,23 +15,27 @@ import * as path from 'path';
 
 describe('Character Data Loading (US5 - T166)', () => {
   let characterData: any;
+  let characters: any[];
 
   beforeAll(() => {
     // Load character data JSON
     const dataPath = path.join(__dirname, '../../src/data/characters.json');
     const rawData = fs.readFileSync(dataPath, 'utf-8');
     characterData = JSON.parse(rawData);
+    characters = Object.entries(characterData.characters).map(([classType, data]) => ({
+        classType,
+        ...data,
+      }));
   });
 
   it('should load characters.json successfully', () => {
     expect(characterData).toBeDefined();
     expect(characterData.characters).toBeDefined();
-    expect(Array.isArray(characterData.characters)).toBe(true);
+    expect(typeof characterData.characters).toBe('object');
   });
 
   it('should contain all 6 starting character classes', () => {
-    const characters = characterData.characters;
-    expect(characters.length).toBe(6);
+    expect(Object.keys(characterData.characters).length).toBe(6);
 
     const expectedClasses = [
       'Brute',
@@ -42,7 +46,7 @@ describe('Character Data Loading (US5 - T166)', () => {
       'Mindthief'
     ];
 
-    const actualClasses = characters.map((char: any) => char.classType);
+    const actualClasses = Object.keys(characterData.characters);
 
     expectedClasses.forEach(expectedClass => {
       expect(actualClasses).toContain(expectedClass);
@@ -50,8 +54,6 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have valid health stats for each character', () => {
-    const characters = characterData.characters;
-
     const expectedHealth = {
       'Brute': 10,
       'Tinkerer': 8,
@@ -69,8 +71,6 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have valid hand size for each character', () => {
-    const characters = characterData.characters;
-
     const expectedHandSize = {
       'Brute': 10,
       'Tinkerer': 12,
@@ -88,8 +88,6 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have unique descriptions for each character', () => {
-    const characters = characterData.characters;
-
     characters.forEach((char: any) => {
       expect(char.description).toBeDefined();
       expect(typeof char.description).toBe('string');
@@ -103,8 +101,6 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have unique ability decks for each character', () => {
-    const characters = characterData.characters;
-
     characters.forEach((char: any) => {
       expect(char.abilityCards).toBeDefined();
       expect(Array.isArray(char.abilityCards)).toBe(true);
@@ -125,8 +121,6 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have valid ability card IDs (class-prefixed)', () => {
-    const characters = characterData.characters;
-
     characters.forEach((char: any) => {
       const classPrefix = char.classType.toLowerCase();
 
@@ -139,12 +133,7 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should have required character attributes', () => {
-    const characters = characterData.characters;
-
     const requiredAttributes = [
-      'id',
-      'classType',
-      'name',
       'maxHealth',
       'startingHandSize',
       'description',
@@ -158,32 +147,7 @@ describe('Character Data Loading (US5 - T166)', () => {
     });
   });
 
-  it('should have consistent class type and name', () => {
-    const characters = characterData.characters;
-
-    characters.forEach((char: any) => {
-      // Name should match classType
-      expect(char.name).toBe(char.classType);
-    });
-  });
-
-  it('should have unique character IDs', () => {
-    const characters = characterData.characters;
-
-    const ids = characters.map((char: any) => char.id);
-    const uniqueIds = new Set(ids);
-
-    expect(uniqueIds.size).toBe(6);
-
-    // IDs should follow pattern "char-{classname}"
-    ids.forEach((id: string) => {
-      expect(id).toMatch(/^char-/);
-    });
-  });
-
   it('should have ability deck sizes matching character design', () => {
-    const characters = characterData.characters;
-
     // Each character should have exactly 10 level-1 cards (standard Gloomhaven design)
     characters.forEach((char: any) => {
       expect(char.abilityCards.length).toBe(10);
@@ -191,7 +155,7 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should load character data for Brute with expected values', () => {
-    const brute = characterData.characters.find((c: any) => c.classType === 'Brute');
+    const brute = characterData.characters.Brute;
 
     expect(brute).toBeDefined();
     expect(brute.maxHealth).toBe(10);
@@ -202,7 +166,7 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should load character data for Spellweaver with expected values', () => {
-    const spellweaver = characterData.characters.find((c: any) => c.classType === 'Spellweaver');
+    const spellweaver = characterData.characters.Spellweaver;
 
     expect(spellweaver).toBeDefined();
     expect(spellweaver.maxHealth).toBe(6); // Lowest health
@@ -211,7 +175,7 @@ describe('Character Data Loading (US5 - T166)', () => {
   });
 
   it('should load character data for Tinkerer with expected values', () => {
-    const tinkerer = characterData.characters.find((c: any) => c.classType === 'Tinkerer');
+    const tinkerer = characterData.characters.Tinkerer;
 
     expect(tinkerer).toBeDefined();
     expect(tinkerer.maxHealth).toBe(8);

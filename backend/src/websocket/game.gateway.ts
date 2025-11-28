@@ -197,6 +197,7 @@ export class GameGateway
         currentHex: charData.position,
         conditions: charData.conditions,
         isExhausted: charData.exhausted,
+        avatar: charData.avatar,
         abilityDeck, // Include ability deck for card selection
       };
     });
@@ -214,6 +215,7 @@ export class GameGateway
         health: m.health,
         maxHealth: m.maxHealth,
         conditions: m.conditions,
+        avatar: m.avatar,
       })),
       characters: charactersWithDecks,
     };
@@ -1100,6 +1102,7 @@ export class GameGateway
         characterClass: c!.characterClass,
         isDead: false,
         isExhausted: c!.exhausted,
+        avatar: c.avatar,
       })),
       ...monsters.map((m) => ({
         entityId: m.id,
@@ -1109,6 +1112,7 @@ export class GameGateway
         characterClass: undefined,
         isDead: m.isDead,
         isExhausted: false,
+        avatar: m.avatar,
       })),
     ];
 

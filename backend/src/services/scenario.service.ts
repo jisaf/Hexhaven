@@ -17,6 +17,7 @@ import {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { LootToken } from '../models/loot-token.model';
+import { gameDataService } from './game-data.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -123,6 +124,7 @@ export class ScenarioService {
 
         const baseStats = this.getMonsterBaseStats(group.type, group.isElite);
         const scaledStats = this.scaleMonsterStats(baseStats, difficulty);
+        const monsterTypeData = gameDataService.getMonsterType(group.type, group.isElite);
 
         const monster: Monster = {
           id: this.generateMonsterId(),
@@ -138,6 +140,7 @@ export class ScenarioService {
           specialAbilities: this.getMonsterSpecialAbilities(group.type),
           conditions: [],
           isDead: false,
+          avatar: monsterTypeData?.avatar,
         };
 
         monsters.push(monster);

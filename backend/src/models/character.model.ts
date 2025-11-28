@@ -5,6 +5,7 @@
  * position, health, and conditions.
  */
 
+import { gameDataService } from '../services/game-data.service';
 import type {
   CharacterClass,
   AxialCoordinates,
@@ -28,6 +29,7 @@ export interface CharacterData {
   currentHealth: number;
   conditions: Condition[];
   exhausted: boolean;
+  avatar?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +43,7 @@ export class Character {
   private _currentHealth: number;
   private _conditions: Set<Condition>;
   private _exhausted: boolean;
+  private _avatar?: string;
   private _selectedCards?: {
     topCardId: string;
     bottomCardId: string;
@@ -58,6 +61,7 @@ export class Character {
     this._currentHealth = data.currentHealth;
     this._conditions = new Set(data.conditions);
     this._exhausted = data.exhausted;
+    this._avatar = data.avatar;
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
   }
@@ -121,6 +125,10 @@ export class Character {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get avatar(): string | undefined {
+    return this._avatar;
   }
 
   get selectedCards():
@@ -216,6 +224,7 @@ export class Character {
       currentHealth: this._currentHealth,
       conditions: Array.from(this._conditions),
       exhausted: this._exhausted,
+      avatar: this._avatar,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };
@@ -232,6 +241,10 @@ export class Character {
     const now = new Date();
     const stats = Character.getStatsForClass(characterClass);
 
+    // Get avatar from GameDataService
+    const characterInfo = gameDataService.getCharacterByClass(characterClass);
+    const avatar = characterInfo?.avatar;
+
     return new Character({
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       playerId,
@@ -241,6 +254,7 @@ export class Character {
       currentHealth: stats.maxHealth,
       conditions: [],
       exhausted: false,
+      avatar,
       createdAt: now,
       updatedAt: now,
     });

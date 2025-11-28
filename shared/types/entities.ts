@@ -137,6 +137,7 @@ export interface Character {
   activeCards: { top: string; bottom: string } | null;
   conditions: Condition[];
   isExhausted: boolean;
+  avatar?: string;
 }
 
 export interface Monster {
@@ -153,6 +154,7 @@ export interface Monster {
   specialAbilities: string[];
   conditions: Condition[];
   isDead: boolean;
+  avatar?: string;
 }
 
 export interface AbilityCard {
@@ -213,6 +215,7 @@ export interface MonsterGroup {
 export interface MonsterType {
   type: string;
   isElite: boolean;
+  avatar?: string;
 }
 
 export interface TreasureLocation {
