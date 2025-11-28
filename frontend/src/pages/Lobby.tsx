@@ -91,6 +91,7 @@ export function Lobby() {
   useEffect(() => {
     console.log('[Lobby] Component mounted - resetting room session for clean state');
     roomSessionManager.switchRoom();
+    setSelectedCharacter(undefined); // Reset character selection for new game
   }, []);
 
   // Navigate to game when room status becomes active

@@ -479,9 +479,13 @@ export class GameGateway
 
   /**
    * Leave room (player voluntarily leaves)
+   * Accepts optional roomCode to leave a specific room (for multi-room scenarios)
    */
   @SubscribeMessage('leave_room')
-  handleLeaveRoom(@ConnectedSocket() client: Socket): void {
+  handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload?: { roomCode?: string },
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -489,16 +493,32 @@ export class GameGateway
         return;
       }
 
-      // Get room from client's current Socket.IO room (multi-room support)
-      const roomData = this.getRoomFromSocket(client);
-      if (!roomData) {
-        this.logger.warn(
-          `Player ${playerUUID} tried to leave but is not in any room`,
-        );
-        return;
+      // If roomCode is provided, leave that specific room
+      // Otherwise, get room from client's current Socket.IO room (backward compatibility)
+      let roomCode: string;
+      let room: any;
+
+      if (payload?.roomCode) {
+        roomCode = payload.roomCode;
+        room = roomService.getRoom(roomCode);
+        if (!room) {
+          this.logger.warn(
+            `Player ${playerUUID} tried to leave room ${roomCode} but room not found`,
+          );
+          return;
+        }
+      } else {
+        const roomData = this.getRoomFromSocket(client);
+        if (!roomData) {
+          this.logger.warn(
+            `Player ${playerUUID} tried to leave but is not in any room`,
+          );
+          return;
+        }
+        room = roomData.room;
+        roomCode = roomData.roomCode;
       }
 
-      const { room, roomCode } = roomData;
       this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
 
       // Remove player from room
@@ -569,6 +589,14 @@ export class GameGateway
       this.logger.log(
         `Select character request from ${playerUUID}: ${payload.characterClass}`,
       );
+
+      // Multi-room detection: Check if client is in multiple rooms
+      const clientRooms = Array.from(client.rooms).filter(r => r !== client.id);
+      if (clientRooms.length > 1) {
+        this.logger.warn(
+          `⚠️ Client ${client.id} (player ${playerUUID}) is in multiple rooms: ${clientRooms.join(', ')}. This may cause character selection issues.`,
+        );
+      }
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);

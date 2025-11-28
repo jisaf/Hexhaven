@@ -282,7 +282,7 @@ class RoomSessionManager {
     this.state.players = data.players.map(p => ({
       ...p,
       connectionStatus: 'connected',
-      isReady: false,
+      isReady: !!p.characterClass, // Derive isReady from characterClass presence
     }));
 
     const playerUUID = getPlayerUUID();
@@ -388,12 +388,19 @@ class RoomSessionManager {
   }
 
   /**
-   * Switch to a different room without calling leaveRoom on backend
-   * Used when player wants to create/join a new room while keeping old room membership
+   * Switch to a different room
+   * Leaves the previous room on backend to prevent multi-room issues
    */
   public switchRoom(): void {
-    console.log('[RoomSessionManager] Switching to new room (keeping old room membership)');
+    console.log('[RoomSessionManager] Switching to new room');
 
+    // Leave previous room on backend if exists
+    if (this.state.roomCode) {
+      console.log(`[RoomSessionManager] Leaving previous room: ${this.state.roomCode}`);
+      websocketService.leaveRoom(this.state.roomCode);
+    }
+
+    // Clear state
     this.state = {
       roomCode: null,
       status: 'disconnected',
