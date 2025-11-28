@@ -110,3 +110,168 @@ The proposed refactoring of the WebSocket system will have a positive impact on 
 -   **State Management**: A stable, persistent connection makes client-side state management simpler. There will be fewer edge cases related to synchronizing state after a reconnect, as the connection will rarely be dropped during normal navigation.
 -   **Backend State**: The changes are primarily on the frontend and will not require significant modifications to the backend gateway. However, a more stable client will reduce the frequency of disconnect/reconnect cycles, which may slightly reduce the load on the backend's session management logic.
 -   **User Experience**: The most significant impact will be a vastly improved user experience. The application will feel more responsive and reliable, with fewer confusing disconnects or failures to load.
+
+## 6. Implementation Plan
+
+The recommendations in this document were implemented by completing the migration to a centralized `RoomSessionManager` service. This service acts as the single source of truth for all room-joining logic and session-related state.
+
+The implementation followed these steps:
+
+1.  **Refactor `Lobby.tsx`**: The `Lobby` component was refactored to be fully driven by the `RoomSessionManager`. This involved:
+    *   Removing the `useRoomManagement` custom hook, which previously handled room creation and joining via REST API calls.
+    *   Eliminating local component state for room and player data, instead subscribing to the state provided by the `useRoomSession` hook.
+    *   Integrating the REST API calls for room creation directly into the component, which then calls `roomSessionManager.ensureJoined()` to handle the WebSocket connection.
+
+2.  **Refactor `GameBoard.tsx`**: The `GameBoard` component was refactored to rely entirely on the `RoomSessionManager` for its state. This involved:
+    *   Removing the local `gameData` state.
+    *   Using `sessionState.gameState` from the `useRoomSession` hook as the single source of truth.
+    *   Simplifying the `useGameWebSocket` hook's `onGameStarted` handler to only call `roomSessionManager.onGameStarted()`, delegating all state management to the service.
+
+3.  **Confirm Application-Level Connection**: Verified that the WebSocket connection is established at the application level and is not tied to any specific component's lifecycle, as recommended. The `websocket.service.ts` had already been correctly modified to prevent component-level disconnects.
+
+## 7. Cleanup Tasks
+
+As part of the refactoring, several redundant pieces of code were identified and removed, simplifying the codebase and completing the centralization of the WebSocket logic.
+
+-   **Deleted `useRoomManagement.ts` hook**: This custom hook became entirely redundant after its responsibilities were moved into the `Lobby.tsx` component and the `RoomSessionManager`. The file `frontend/src/hooks/useRoomManagement.ts` was deleted.
+-   **Removed Local State from `Lobby.tsx`**: The `useState` variables for `room` and `players` were removed from the `Lobby` component, as this state is now managed by the `RoomSessionManager`.
+-   **Removed Local State from `GameBoard.tsx`**: The `useState` variable for `gameData` was removed from the `GameBoard` component. The component now correctly sources this data from the `RoomSessionManager`.
+
+## 8. Game State Centralization (November 2025)
+
+Following the successful centralization of room session management, the game state was further centralized with the implementation of `GameStateManager`.
+
+### 8.1. GameStateManager Architecture
+
+The `GameStateManager` is a singleton service that manages all in-game state and WebSocket event handling:
+
+**Responsibilities**:
+- Centralized game state (characters, monsters, turn order, player hand, etc.)
+- WebSocket event handling (all game events)
+- State subscription pattern for React components
+- **Visual callback system** for PixiJS rendering updates
+
+**Key Innovation - Visual Callback System**:
+The GameStateManager implements a visual callback pattern to bridge the gap between centralized state management and the PixiJS rendering layer:
+
+```typescript
+interface VisualUpdateCallbacks {
+  moveCharacter?: (characterId: string, toHex: Axial, movementPath?: Axial[]) => void;
+  updateMonsterPosition?: (monsterId: string, newHex: Axial) => void;
+  updateCharacterHealth?: (characterId: string, health: number) => void;
+  updateMonsterHealth?: (monsterId: string, health: number) => void;
+}
+
+class GameStateManager {
+  private visualCallbacks: VisualUpdateCallbacks = {};
+
+  public registerVisualCallbacks(callbacks: VisualUpdateCallbacks): void {
+    this.visualCallbacks = { ...this.visualCallbacks, ...callbacks };
+  }
+
+  private handleCharacterMoved(data: CharacterMovedPayload): void {
+    // Trigger visual update
+    this.visualCallbacks.moveCharacter?.(data.characterId, data.toHex, data.movementPath);
+
+    // Update state
+    // ... state updates ...
+
+    // Emit to subscribers
+    this.emitStateUpdate();
+  }
+}
+```
+
+### 8.2. Integration with GameBoard
+
+The `GameBoard` component registers visual update callbacks from `useHexGrid` with the `GameStateManager`:
+
+```typescript
+export function GameBoard() {
+  const gameState = useGameState(); // Subscribe to centralized state
+
+  const {
+    hexGridReady,
+    moveCharacter,
+    updateMonsterPosition,
+    updateCharacterHealth,
+    updateMonsterHealth,
+  } = useHexGrid(containerRef, {
+    onHexClick: (hex) => gameStateManager.selectHex(hex),
+    onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
+  });
+
+  // Register visual callbacks when HexGrid is ready
+  useEffect(() => {
+    if (hexGridReady) {
+      gameStateManager.registerVisualCallbacks({
+        moveCharacter,
+        updateMonsterPosition,
+        updateCharacterHealth,
+        updateMonsterHealth,
+      });
+    }
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth]);
+}
+```
+
+### 8.3. Benefits of Visual Callback System
+
+**1. Clean Separation of Concerns**:
+- State management logic resides in `GameStateManager` (business logic layer)
+- Rendering logic resides in `HexGrid` (presentation layer)
+- Callbacks provide a clean, unidirectional communication channel
+
+**2. Centralized State with Decentralized Rendering**:
+- State is centralized in one place (single source of truth)
+- Visual updates are delegated to the appropriate rendering components
+- No coupling between state management and PixiJS
+
+**3. Testability**:
+- GameStateManager can be tested independently of rendering
+- Visual callbacks can be mocked for state manager tests
+- Rendering can be tested independently of WebSocket events
+
+**4. Maintainability**:
+- All WebSocket event handling in one place
+- Visual update logic co-located with rendering code
+- Clear data flow: WebSocket → State Manager → Visual Callbacks → Rendering
+
+### 8.4. Complete Architecture
+
+The final centralized architecture consists of three layers:
+
+```
+┌──────────────────────────────────────┐
+│     React Components (UI Layer)     │
+│   - Lobby.tsx                        │
+│   - GameBoard.tsx                    │
+│   - Subscribe to state changes       │
+│   - Register visual callbacks        │
+└──────────────────────────────────────┘
+                │
+                ▼
+┌──────────────────────────────────────┐
+│  State Management Layer              │
+│   - RoomSessionManager               │
+│   - GameStateManager                 │
+│   - Handle WebSocket events          │
+│   - Manage state                     │
+│   - Trigger visual callbacks         │
+└──────────────────────────────────────┘
+                │                  │
+                ▼                  ▼
+┌─────────────────┐    ┌──────────────────┐
+│ WebSocket Layer │    │ Rendering Layer  │
+│ - websocket     │    │ - HexGrid (Pixi) │
+│   .service.ts   │    │ - Sprites        │
+└─────────────────┘    └──────────────────┘
+```
+
+This architecture successfully achieves:
+- ✅ Centralized WebSocket connection management
+- ✅ Centralized room session state
+- ✅ Centralized game state
+- ✅ Clean separation between state and rendering
+- ✅ Testable, maintainable codebase
+- ✅ No duplicate state or event handlers

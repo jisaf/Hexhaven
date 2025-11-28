@@ -37,7 +37,7 @@ export type {
   LogColor,
   LogMessagePart,
   LogMessage,
-  TurnEntity
+  TurnEntity,
 } from './entities';
 export * from './events';
 export * from './game-state';

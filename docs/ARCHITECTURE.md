@@ -213,12 +213,15 @@ frontend/src/
 │   ├── Lobby.tsx        # Room creation/join
 │   ├── GameBoard.tsx    # Main game view
 │   └── Profile.tsx      # Account & progression
-├── services/            # External communication
-│   ├── websocket.service.ts  # Socket.io client
-│   └── api.service.ts        # REST API client
+├── services/            # Centralized state management & external communication
+│   ├── websocket.service.ts    # Socket.io client
+│   ├── room-session.service.ts # Room session state manager
+│   ├── game-state.service.ts   # Game state manager with visual callbacks
+│   └── api.service.ts          # REST API client
 ├── hooks/               # React hooks
-│   ├── useGameState.ts       # Game state management
-│   ├── useWebSocket.ts       # WebSocket connection
+│   ├── useGameState.ts       # Game state subscription hook
+│   ├── useRoomSession.ts     # Room session subscription hook
+│   ├── useHexGrid.ts         # HexGrid rendering management
 │   └── useOrientation.ts     # Orientation handling
 └── i18n/                # Internationalization
     ├── index.ts
@@ -260,6 +263,128 @@ backend/src/
     ├── validation.ts    # Server-side validation
     └── logger.ts        # Structured logging
 ```
+
+---
+
+## State Management Architecture
+
+### Centralized State Management
+
+Hexhaven uses a **three-layer centralized state management architecture** to separate concerns between networking, business logic, and rendering:
+
+```
+┌─────────────────────────────────────────────┐
+│         React Components (View Layer)       │
+│  - Lobby.tsx                                │
+│  - GameBoard.tsx                            │
+│  - Subscribe to state via hooks             │
+│  - Register visual callbacks for rendering  │
+└─────────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────┐
+│    Centralized State Managers (Logic Layer) │
+│  ┌─────────────────────────────────────┐   │
+│  │  RoomSessionManager                  │   │
+│  │  - Room metadata (code, status)     │   │
+│  │  - Player list                       │   │
+│  │  - Connection status                 │   │
+│  └─────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────┐   │
+│  │  GameStateManager                    │   │
+│  │  - Game data (characters, monsters)  │   │
+│  │  - Turn order and round              │   │
+│  │  - Player hand and selected cards    │   │
+│  │  - Movement and attack state         │   │
+│  │  - Event handlers                    │   │
+│  │  - Visual callback triggers          │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+           │                      │
+           ▼                      ▼
+┌──────────────────┐   ┌────────────────────┐
+│ WebSocket Layer  │   │  Rendering Layer   │
+│ - Connection mgmt│   │  - HexGrid (PixiJS)│
+│ - Event handling │   │  - Character/      │
+│                  │   │    Monster sprites │
+└──────────────────┘   └────────────────────┘
+```
+
+### Visual Callback Pattern
+
+To maintain clean separation between state management and rendering (PixiJS), Hexhaven implements a **visual callback system**:
+
+**Problem**: PixiJS rendering logic should not be coupled to WebSocket event handlers or state managers.
+
+**Solution**: GameStateManager accepts callback functions for visual updates and invokes them when state changes:
+
+```typescript
+// GameStateManager registers visual callbacks from HexGrid
+interface VisualUpdateCallbacks {
+  moveCharacter?: (characterId: string, toHex: Axial, movementPath?: Axial[]) => void;
+  updateMonsterPosition?: (monsterId: string, newHex: Axial) => void;
+  updateCharacterHealth?: (characterId: string, health: number) => void;
+  updateMonsterHealth?: (monsterId: string, health: number) => void;
+}
+
+// GameBoard registers callbacks when HexGrid is ready
+useEffect(() => {
+  if (hexGridReady) {
+    gameStateManager.registerVisualCallbacks({
+      moveCharacter,
+      updateMonsterPosition,
+      updateCharacterHealth,
+      updateMonsterHealth,
+    });
+  }
+}, [hexGridReady, ...]);
+
+// GameStateManager triggers visual updates on events
+private handleCharacterMoved(data: CharacterMovedPayload): void {
+  // 1. Trigger visual update
+  this.visualCallbacks.moveCharacter?.(data.characterId, data.toHex, data.movementPath);
+
+  // 2. Update state
+  // ... state updates ...
+
+  // 3. Emit to React subscribers
+  this.emitStateUpdate();
+}
+```
+
+**Benefits**:
+- ✅ State management decoupled from rendering
+- ✅ Single source of truth for game state
+- ✅ Testable in isolation (mock callbacks)
+- ✅ Clear, unidirectional data flow
+
+### State Subscription Pattern
+
+Components subscribe to state changes via custom hooks:
+
+```typescript
+// useGameState hook
+export function useGameState() {
+  const [gameState, setGameState] = useState(gameStateManager.getState());
+
+  useEffect(() => {
+    const unsubscribe = gameStateManager.subscribe(setGameState);
+    return unsubscribe; // Cleanup on unmount
+  }, []);
+
+  return gameState;
+}
+
+// Usage in components
+const gameState = useGameState();
+// Component re-renders automatically when state changes
+```
+
+**Advantages**:
+- Automatic re-renders when state changes
+- No prop drilling
+- Centralized state accessible from any component
+- Proper cleanup prevents memory leaks
 
 ---
 

@@ -5,8 +5,16 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import type { ActiveRoom } from '../../hooks/useRoomManagement';
 import styles from './ActiveRoomsList.module.css';
+
+export interface ActiveRoom {
+  roomCode: string;
+  status: string;
+  playerCount: number;
+  maxPlayers: number;
+  hostNickname: string;
+  createdAt: string;
+}
 
 interface ActiveRoomsListProps {
   rooms: ActiveRoom[];
