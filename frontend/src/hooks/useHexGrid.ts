@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
+import type { LootSpawnedPayload } from '../../../shared/types';
 import type { Axial } from '../game/hex-utils';
 import { axialToScreen } from '../game/hex-utils';
 
@@ -190,6 +191,18 @@ export function useHexGrid(
     }
   }, []);
 
+  const showAttackRange = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showAttackRange(hexes);
+    }
+  }, []);
+
+  const clearAttackRange = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearAttackRange();
+    }
+  }, []);
+
   // Update monster position
   const updateMonsterPosition = useCallback((monsterId: string, newHex: Axial) => {
     if (hexGridRef.current) {
@@ -237,9 +250,19 @@ export function useHexGrid(
   }, []);
 
   // Remove monster from board
-  const removeMonster = useCallback((monsterId: string) => {
+  const removeMonster = useCallback(async (monsterId: string) => {
     if (hexGridRef.current) {
-      hexGridRef.current.removeMonster(monsterId);
+      const monster = hexGridRef.current.getMonster(monsterId);
+      if (monster) {
+        await monster.animateDeath();
+        hexGridRef.current.removeMonster(monsterId);
+      }
+    }
+  }, []);
+
+  const spawnLootToken = useCallback((lootData: LootSpawnedPayload) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.spawnLootToken(lootData);
     }
   }, []);
 
@@ -265,11 +288,14 @@ export function useHexGrid(
     deselectAll,
     showMovementRange,
     clearMovementRange,
+    showAttackRange,
+    clearAttackRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    spawnLootToken,
     getCharacter,
     isHexBlocked,
     setSelectedHex,
