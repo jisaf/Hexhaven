@@ -88,11 +88,21 @@ export function Lobby() {
     return () => clearInterval(interval);
   }, [fetchActiveRooms, fetchMyRooms]);
 
-  // CENTRALIZED CLEANUP: Reset all session state when arriving at lobby
+  // CENTRALIZED CLEANUP: Reset all session state when arriving at lobby FROM another page
+  // Only reset if we're not currently in an active game or lobby
   useEffect(() => {
-    console.log('[Lobby] Component mounted - resetting session for clean state');
-    gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
-  }, []);
+    const currentStatus = sessionState.status;
+    console.log('[Lobby] Component mounted with status:', currentStatus);
+
+    // Don't reset if we're already in lobby or active game
+    // This prevents clearing state when navigating back to lobby mid-game
+    if (currentStatus === 'disconnected' || currentStatus === 'joining') {
+      console.log('[Lobby] Resetting session for clean state');
+      gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
+    } else {
+      console.log('[Lobby] Skipping reset - already in active session');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to game when room status becomes active
   useEffect(() => {

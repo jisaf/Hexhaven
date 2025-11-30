@@ -17,7 +17,6 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { gameStateManager } from '../services/game-state.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile } from '../../../shared/types/entities.ts';
@@ -43,14 +42,6 @@ export function GameBoard() {
       navigate('/');
     }
   }, [roomCode, navigate]);
-
-  // CENTRALIZED CLEANUP: Reset all session state when navigating to different game
-  useEffect(() => {
-    if (roomCode) {
-      console.log('[GameBoard] Room code changed, resetting session for:', roomCode);
-      gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
-    }
-  }, [roomCode]);
 
   const {
     hexGridReady,
