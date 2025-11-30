@@ -8,6 +8,11 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: ['dev.hexhaven.net', 'test.hexhaven.net', 'www.hexhaven.net', 'hexhaven.net'],
+  },
   plugins: [
     react(),
     VitePWA({

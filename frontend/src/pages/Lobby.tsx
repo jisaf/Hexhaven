@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
+import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import type { CharacterClass } from '../components/CharacterSelect';
@@ -87,11 +88,21 @@ export function Lobby() {
     return () => clearInterval(interval);
   }, [fetchActiveRooms, fetchMyRooms]);
 
-  // CENTRALIZED CLEANUP: Reset room session when arriving at lobby
+  // CENTRALIZED CLEANUP: Reset all session state when arriving at lobby FROM another page
+  // Only reset if we're not currently in an active game or lobby
   useEffect(() => {
-    console.log('[Lobby] Component mounted - resetting room session for clean state');
-    roomSessionManager.switchRoom();
-  }, []);
+    const currentStatus = sessionState.status;
+    console.log('[Lobby] Component mounted with status:', currentStatus);
+
+    // Don't reset if we're already in lobby or active game
+    // This prevents clearing state when navigating back to lobby mid-game
+    if (currentStatus === 'disconnected' || currentStatus === 'joining') {
+      console.log('[Lobby] Resetting session for clean state');
+      gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
+    } else {
+      console.log('[Lobby] Skipping reset - already in active session');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to game when room status becomes active
   useEffect(() => {

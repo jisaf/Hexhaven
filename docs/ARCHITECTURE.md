@@ -214,10 +214,11 @@ frontend/src/
 │   ├── GameBoard.tsx    # Main game view
 │   └── Profile.tsx      # Account & progression
 ├── services/            # Centralized state management & external communication
-│   ├── websocket.service.ts    # Socket.io client
-│   ├── room-session.service.ts # Room session state manager
-│   ├── game-state.service.ts   # Game state manager with visual callbacks
-│   └── api.service.ts          # REST API client
+│   ├── websocket.service.ts               # Socket.io client
+│   ├── room-session.service.ts            # Room session state manager
+│   ├── game-state.service.ts              # Game state manager with visual callbacks
+│   ├── game-session-coordinator.service.ts # Lifecycle coordinator (facade pattern)
+│   └── api.service.ts                     # REST API client
 ├── hooks/               # React hooks
 │   ├── useGameState.ts       # Game state subscription hook
 │   ├── useRoomSession.ts     # Room session subscription hook
@@ -385,6 +386,50 @@ const gameState = useGameState();
 - No prop drilling
 - Centralized state accessible from any component
 - Proper cleanup prevents memory leaks
+
+### GameSessionCoordinator (Lifecycle Coordinator Pattern)
+
+To prevent coordination bugs when switching games, Hexhaven implements a **GameSessionCoordinator** that provides atomic lifecycle operations:
+
+**Problem**: Developers must manually coordinate RoomSessionManager and GameStateManager, leading to bugs when one reset is forgotten.
+
+**Solution**: Facade pattern coordinator provides single entry point:
+
+```typescript
+// GameSessionCoordinator orchestrates both managers
+class GameSessionCoordinator {
+    switchGame() {
+        roomSessionManager.switchRoom();  // Reset room state
+        gameStateManager.reset();          // Reset game state
+    }
+
+    leaveGame() {
+        gameStateManager.reset();          // Reset game state only
+        roomSessionManager.clearGameState();
+    }
+
+    resetAll() {
+        roomSessionManager.reset();        // Full room reset
+        gameStateManager.reset();          // Full game reset
+    }
+}
+```
+
+**Usage in Components**:
+```typescript
+// Lobby.tsx - when mounting (clean slate)
+gameSessionCoordinator.switchGame();
+
+// GameBoard.tsx - when room code changes
+gameSessionCoordinator.switchGame();
+```
+
+**Benefits**:
+- ✅ Eliminates coordination bugs (impossible to forget one reset)
+- ✅ Preserves existing architecture (managers remain independent)
+- ✅ Explicit lifecycle dependencies (visible in coordinator code)
+- ✅ Single entry point for lifecycle operations
+- ✅ Easy to extend with new coordinated operations
 
 ---
 
