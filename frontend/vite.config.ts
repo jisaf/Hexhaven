@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['dev.hexhaven.net', 'test.hexhaven.net', 'www.hexhaven.net', 'hexhaven.net'],
   },
   preview: {
     host: '0.0.0.0',
