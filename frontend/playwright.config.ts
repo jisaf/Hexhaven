@@ -48,6 +48,14 @@ export default defineConfig({
   // Running on Pixel 6 only - mobile-first game with touch interactions
   // TODO: Add more mobile devices for cross-device testing once features are implemented
   projects: [
+    // Firefox - Desktop browser testing
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+      },
+    },
+
     // Pixel 6 - Primary mobile testing device
     {
       name: 'Pixel 6',
