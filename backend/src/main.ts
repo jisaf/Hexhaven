@@ -48,6 +48,14 @@ async function bootstrap() {
       'http://localhost:4173', // Vite preview
       'http://150.136.173.159', // Production IP
       'http://10.1.1.80:5173', // Network dev server
+      'https://test.hexhaven.net', // Domain
+      'http://test.hexhaven.net', // Domain (http)
+      'https://hexhaven.net', // Production domain
+      'http://hexhaven.net', // Production domain (http)
+      'https://www.hexhaven.net', // Production domain (www)
+      'http://www.hexhaven.net', // Production domain (www, http)
+      'https://ripe-wombats-divide.loca.lt', // Frontend tunnel
+      'http://localhost:3000', // Backend local
     ];
   }
 
