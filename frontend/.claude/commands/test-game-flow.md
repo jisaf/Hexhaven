@@ -2,7 +2,7 @@
 
 Run the comprehensive game flow test in headless Firefox using hardcoded locators. This is the traditional approach for automated regression testing.
 
-**⚠️ Note**: For AI-powered testing that adapts to UI changes, use `/test-game-flow-mcp` instead or ask Claude to test using Playwright MCP directly.
+**⚠️ Note**: For AI-powered visual testing that adapts to UI changes, use `/visual [task]` instead.
 
 ## Prerequisites
 - Backend server running on localhost:3000
@@ -20,8 +20,7 @@ Run the comprehensive game flow test in headless Firefox using hardcoded locator
 
 ## Run Command
 ```bash
-cd /home/opc/hexhaven/frontend
-npx playwright test comprehensive-game-flow.spec.ts --config=playwright-firefox.config.ts
+npx playwright test tests/e2e/comprehensive-game-flow.spec.ts --config=tests/configs/playwright-firefox.config.ts
 ```
 
 ## Artifacts
@@ -33,7 +32,7 @@ npx playwright test comprehensive-game-flow.spec.ts --config=playwright-firefox.
 - ✅ CI/CD pipelines
 - ✅ Automated regression testing
 - ✅ Performance benchmarks
-- ❌ Exploratory testing (use MCP instead)
-- ❌ UI frequently changes (use MCP instead)
+- ❌ Exploratory testing (use `/visual` instead)
+- ❌ UI frequently changes (use `/visual` instead)
 
-See TESTING.md for full comparison of testing approaches.
+See `tests/docs/TESTING.md` for full comparison of testing approaches.

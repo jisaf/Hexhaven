@@ -21,7 +21,7 @@ async function testGameCreation() {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     recordVideo: {
-      dir: './test-results/mcp-session',
+      dir: './results',
       size: { width: 1280, height: 720 }
     }
   });
@@ -35,7 +35,7 @@ async function testGameCreation() {
 
     // Take screenshot for analysis
     await page.screenshot({
-      path: './test-results/mcp-session/01-homepage.png',
+      path: './results/01-homepage.png',
       fullPage: true
     });
     console.log('   ✓ Page loaded, screenshot saved\n');
@@ -64,7 +64,7 @@ async function testGameCreation() {
 
     // Wait for navigation/transition
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: './test-results/mcp-session/02-after-create.png' });
+    await page.screenshot({ path: './results/02-after-create.png' });
 
     // Phase 4: Find and fill nickname input
     console.log('✏️  Phase 4: Finding nickname input...');
@@ -82,7 +82,7 @@ async function testGameCreation() {
       console.log('   ✓ Filled nickname: "MCP Test Player"\n');
     }
 
-    await page.screenshot({ path: './test-results/mcp-session/03-nickname-filled.png' });
+    await page.screenshot({ path: './results/03-nickname-filled.png' });
 
     // Phase 5: Submit/Continue
     console.log('▶️  Phase 5: Looking for submit/continue button...');
@@ -96,7 +96,7 @@ async function testGameCreation() {
     }
 
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: './test-results/mcp-session/04-lobby.png', fullPage: true });
+    await page.screenshot({ path: './results/04-lobby.png', fullPage: true });
 
     // Phase 6: Verify we're in the lobby
     console.log('✅ Phase 6: Verifying lobby appearance...');
@@ -121,17 +121,17 @@ async function testGameCreation() {
     console.log('\n📊 Final page state (accessibility tree):');
     console.log(JSON.stringify(finalSnapshot, null, 2).substring(0, 800) + '...\n');
 
-    await page.screenshot({ path: './test-results/mcp-session/05-final.png', fullPage: true });
+    await page.screenshot({ path: './results/05-final.png', fullPage: true });
 
     console.log('\n✅ Test Complete!');
-    console.log('\n📁 Artifacts saved to: ./test-results/mcp-session/');
+    console.log('\n📁 Artifacts saved to: ./results/');
     console.log('   - Screenshots: 01-homepage.png through 05-final.png');
     console.log('   - Video: video.webm (when closed)');
 
   } catch (error) {
     console.error('\n❌ Test failed:', error.message);
-    await page.screenshot({ path: './test-results/mcp-session/error.png', fullPage: true });
-    console.log('   Error screenshot saved to: ./test-results/mcp-session/error.png');
+    await page.screenshot({ path: './results/error.png', fullPage: true });
+    console.log('   Error screenshot saved to: ./results/error.png');
   } finally {
     // Keep browser open for inspection
     console.log('\n⏳ Browser will close in 5 seconds...');

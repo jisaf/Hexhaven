@@ -10,6 +10,9 @@ export default defineConfig({
   // Test directory
   testDir: './tests/e2e',
 
+  // Output directory for test artifacts (videos, screenshots, traces)
+  outputDir: './public/test-videos',
+
   // Run tests in files in parallel
   fullyParallel: true,
 

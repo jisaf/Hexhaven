@@ -33,7 +33,7 @@ interface Bug {
 
 // Helper function to report bugs
 async function reportBug(bug: Bug) {
-  const bugsFilePath = path.join(__dirname, '../../bugs.md');
+  const bugsFilePath = path.join(__dirname, '../bugs.md');
 
   // Read existing bugs file or create new one
   let existingContent = '';
