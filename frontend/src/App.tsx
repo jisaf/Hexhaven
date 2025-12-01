@@ -78,6 +78,33 @@ function ConnectionUI() {
 }
 
 function App() {
+  // Set background color based on subdomain
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const subdomain = hostname.split('.')[0];
+
+    let backgroundColor: string;
+    let backgroundColorRgb: string;
+
+    if (subdomain === 'test') {
+      // Rich brick red for test.hexhaven.net
+      backgroundColor = '#8B2F2F';
+      backgroundColorRgb = '139, 47, 47';
+    } else if (subdomain === 'dev') {
+      // Rich earthy green for dev.hexhaven.net
+      backgroundColor = '#2F5233';
+      backgroundColorRgb = '47, 82, 51';
+    } else {
+      // Default dark blue for hexhaven.net and localhost
+      backgroundColor = '#0d1a2e';
+      backgroundColorRgb = '13, 26, 46';
+    }
+
+    // Set CSS custom properties
+    document.documentElement.style.setProperty('--primary-bg-color', backgroundColor);
+    document.documentElement.style.setProperty('--primary-bg-color-rgb', backgroundColorRgb);
+  }, []);
+
   useEffect(() => {
     const wsUrl = getWebSocketUrl();
     websocketService.connect(wsUrl);

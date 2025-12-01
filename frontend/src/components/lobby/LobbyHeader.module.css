@@ -1,5 +1,5 @@
 .lobbyHeader {
-  background-color: #0d1a2e;
+  background-color: var(--primary-bg-color, #0d1a2e);
   padding: 16px 24px;
   border-bottom: 2px solid #c9a444;
   color: #f0e6d2;
