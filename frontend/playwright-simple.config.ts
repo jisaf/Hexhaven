@@ -7,6 +7,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   outputDir: './public/test-videos',
+  globalSetup: require.resolve('./tests/cleanup-old-videos.ts'),
   fullyParallel: false,
   retries: 0,
   workers: 1,

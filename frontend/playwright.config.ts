@@ -13,6 +13,9 @@ export default defineConfig({
   // Output directory for test artifacts (videos, screenshots, traces)
   outputDir: './public/test-videos',
 
+  // Global setup - cleanup old videos before tests run
+  globalSetup: require.resolve('./tests/cleanup-old-videos.ts'),
+
   // Run tests in files in parallel
   fullyParallel: true,
 
