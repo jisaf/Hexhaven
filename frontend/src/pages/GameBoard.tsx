@@ -17,7 +17,6 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { roomSessionManager } from '../services/room-session.service';
 import { gameStateManager } from '../services/game-state.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile } from '../../../shared/types/entities.ts';
@@ -25,6 +24,7 @@ import { TerrainType } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
+import { ActionButtons } from '../components/game/ActionButtons';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
 import TurnOrder from '../components/TurnOrder';
@@ -44,31 +44,23 @@ export function GameBoard() {
     }
   }, [roomCode, navigate]);
 
-  // CENTRALIZED CLEANUP: Reset state when switching to different game
-  useEffect(() => {
-    if (roomCode && previousRoomCodeRef.current && roomCode !== previousRoomCodeRef.current) {
-      console.log('[GameBoard] Switching from', previousRoomCodeRef.current, 'to', roomCode, '- resetting state');
-      // switchRoom() now handles both room session AND game state reset
-      roomSessionManager.switchRoom();
-    }
-
-    // Update the ref to track the current room code
-    previousRoomCodeRef.current = roomCode || null;
-  }, [roomCode]);
-
   const {
     hexGridReady,
     initializeBoard,
     showMovementRange,
+    showAttackRange,
+    clearAttackRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
+    removeMonster,
+    spawnLootToken,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
-    onMonsterSelect: (id) => console.log('monster selected', id), // TODO: Connect to GameStateManager for attacks
+    onMonsterSelect: (id) => gameStateManager.selectAttackTarget(id),
   });
 
   // Register visual update callbacks with gameStateManager
@@ -79,9 +71,11 @@ export function GameBoard() {
         updateMonsterPosition,
         updateCharacterHealth,
         updateMonsterHealth,
+        removeMonster,
+        spawnLootToken,
       });
     }
-  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth]);
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken]);
 
   useEffect(() => {
     if (hexGridReady) {
@@ -94,6 +88,16 @@ export function GameBoard() {
         setSelectedHex(gameState.selectedHex);
     }
   }, [gameState.selectedHex, hexGridReady, setSelectedHex]);
+
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.attackMode && gameState.validAttackHexes.length > 0) {
+        showAttackRange(gameState.validAttackHexes);
+      } else {
+        clearAttackRange();
+      }
+    }
+  }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
 
 
   // Render game data when HexGrid is ready
@@ -124,6 +128,20 @@ export function GameBoard() {
       navigate('/');
     }
   };
+
+  const handleAttackClick = () => {
+    const attackAction = gameStateManager.getAttackAction();
+    if (attackAction && gameState.myCharacterId) {
+      gameStateManager.enterAttackMode(gameState.myCharacterId, attackAction.range);
+    }
+  };
+
+  const handleMoveClick = () => {
+    gameStateManager.enterMoveMode();
+  };
+
+  const attackAction = gameStateManager.getAttackAction();
+  const moveAction = gameStateManager.getMoveAction();
 
   const gameBoardClass = `${styles.gameBoardPage} ${gameState.showCardSelection ? styles.cardSelectionActive : ''}`;
 
@@ -165,6 +183,15 @@ export function GameBoard() {
           selectedBottomAction={gameState.selectedBottomAction}
         />
       )}
+
+      <ActionButtons
+        hasAttack={attackAction !== null}
+        hasMove={moveAction !== null}
+        attackMode={gameState.attackMode}
+        isMyTurn={gameState.isMyTurn}
+        onAttackClick={handleAttackClick}
+        onMoveClick={handleMoveClick}
+      />
 
       <GameHints
         attackMode={gameState.attackMode}

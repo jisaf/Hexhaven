@@ -16,7 +16,15 @@ export function getApiUrl(): string {
   }
 
   // Auto-detect based on current location
-  const { protocol, hostname, port } = window.location;
+  const { protocol, hostname, host, port } = window.location;
+
+  console.log('[API Config] window.location:', {
+    href: window.location.href,
+    protocol,
+    hostname,
+    host,
+    port,
+  });
 
   // In development, the backend runs on port 3000
   // In production with nginx, it's on the same host with /api path
@@ -25,7 +33,10 @@ export function getApiUrl(): string {
     return `${protocol}//localhost:3000/api`;
   } else {
     // Production or remote access - use same host with /api path
-    return `${protocol}//${hostname}${port ? `:${port}` : ''}/api`;
+    // Use 'host' which includes the full host (domain:port if present)
+    const apiUrl = `${protocol}//${host}/api`;
+    console.log('[API Config] Constructed API URL:', apiUrl);
+    return apiUrl;
   }
 }
 
@@ -40,7 +51,7 @@ export function getWebSocketUrl(): string {
   }
 
   // Auto-detect based on current location
-  const { protocol, hostname, port } = window.location;
+  const { protocol, hostname, host, port } = window.location;
 
   // In development, the backend runs on port 3000
   // In production with nginx, it's on the same host
@@ -54,7 +65,10 @@ export function getWebSocketUrl(): string {
   } else {
     // Production or remote access - use same host
     // Convert back to http/https for socket.io (it handles the upgrade)
-    return `${protocol}//${hostname}`;
+    // Use host to preserve the full domain
+    const wsUrl = `${protocol}//${host}`;
+    console.log('[API Config] Constructed WebSocket URL:', wsUrl);
+    return wsUrl;
   }
 }
 

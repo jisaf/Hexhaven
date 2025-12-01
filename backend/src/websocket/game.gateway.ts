@@ -20,6 +20,7 @@ import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { sessionService } from '../services/session.service';
 import { Player } from '../models/player.model';
+import { LootToken } from '../models/loot-token.model';
 import { ScenarioService } from '../services/scenario.service';
 import { AbilityCardService } from '../services/ability-card.service';
 import { TurnOrderService } from '../services/turn-order.service';
@@ -907,6 +908,13 @@ export class GameGateway
         throw new Error('Character is immobilized and cannot move');
       }
 
+      // Check if character has already moved this turn (Gloomhaven rule: 1 move action per turn)
+      if (character.hasMovedThisTurn) {
+        throw new Error(
+          'Character has already moved this turn. You can only use one move action per turn.',
+        );
+      }
+
       // Store previous position
       const fromHex = character.position;
 
@@ -976,6 +984,9 @@ export class GameGateway
 
       // Move character
       characterService.moveCharacter(character.id, payload.targetHex);
+
+      // Mark character as having moved this turn
+      character.markMovedThisTurn();
 
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
@@ -1210,10 +1221,10 @@ export class GameGateway
    * Attack a target (monster or character) (US2 - T097)
    */
   @SubscribeMessage('attack_target')
-  handleAttackTarget(
+  async handleAttackTarget(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AttackTargetPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -1246,6 +1257,13 @@ export class GameGateway
       // Check if attacker is disarmed
       if (attacker.isDisarmed) {
         throw new Error('Attacker is disarmed and cannot attack');
+      }
+
+      // Check if character has already attacked this turn (Gloomhaven rule: 1 attack action per turn)
+      if (attacker.hasAttackedThisTurn) {
+        throw new Error(
+          'Character has already attacked this turn. You can only use one attack action per turn.',
+        );
       }
 
       // Get target (check monsters first, then characters)
@@ -1318,19 +1336,45 @@ export class GameGateway
           target.isDead = true;
 
           // Spawn loot token when monster dies
+          const scenario = await this.scenarioService.loadScenario(
+            room.scenarioId,
+          );
+          if (!scenario) {
+            throw new Error(`Scenario not found: ${room.scenarioId}`);
+          }
+          const lootValue = LootToken.calculateLootValue(scenario.difficulty);
+          const lootToken = LootToken.create(
+            room.roomCode,
+            target.currentHex,
+            lootValue,
+          );
+
           const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
-          const lootToken = {
-            id: `loot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            hexCoordinates: target.currentHex,
-            goldValue: 1 + Math.floor(Math.random() * 3), // 1-3 gold (simplified)
-            collected: false,
-          };
           lootTokens.push(lootToken);
           this.roomLootTokens.set(room.roomCode, lootTokens);
 
           this.logger.log(
             `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id}`,
           );
+
+          this.server.to(room.roomCode).emit('monster_died', {
+            monsterId: target.id,
+            killerId: attacker.id,
+            hexCoordinates: target.currentHex,
+          });
+
+          this.server.to(room.roomCode).emit('loot_spawned', {
+            id: lootToken.id,
+            coordinates: lootToken.coordinates,
+            value: lootToken.value,
+          });
+
+          // Remove monster from game state after it dies
+          const updatedMonsters = monsters.filter(
+            (m: any) => m.id !== target.id,
+          );
+          this.roomMonsters.set(room.roomCode, updatedMonsters);
+          this.logger.log(`Monster ${target.id} removed from game state.`);
         }
       } else {
         // Apply damage to character target
@@ -1342,6 +1386,9 @@ export class GameGateway
       const targetName = isMonsterTarget
         ? target.monsterType
         : target.characterClass;
+
+      // Mark character as having attacked this turn
+      attacker.markAttackedThisTurn();
 
       // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
@@ -1539,6 +1586,9 @@ export class GameGateway
         throw new Error('It is not your turn');
       }
 
+      // Reset action flags for this character's turn ending
+      character.resetActionFlags();
+
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
         currentIndex,
@@ -1553,11 +1603,12 @@ export class GameGateway
           `Round complete in room ${room.roomCode}, starting new round`,
         );
 
-        // Clear selected cards from all characters for new round
+        // Clear selected cards and reset action flags for all characters for new round
         room.players.forEach((p: any) => {
           const char = characterService.getCharacterByPlayerId(p.uuid);
           if (char) {
             char.selectedCards = undefined;
+            char.resetActionFlags();
           }
         });
 
@@ -1650,6 +1701,18 @@ export class GameGateway
           'MonsterAI',
         );
         throw new Error(`Monster ${monsterId} not found in room ${roomCode}`);
+      }
+
+      // Skip dead monsters - they cannot activate
+      if (monster.isDead || monster.health <= 0) {
+        this.emitDebugLog(
+          roomCode,
+          'info',
+          `Monster ${monsterId} is dead, skipping activation and advancing turn`,
+          'MonsterAI',
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
       }
 
       this.emitDebugLog(

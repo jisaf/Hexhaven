@@ -18,7 +18,7 @@
   color: #f0e6d2;
   font-family: 'Georgia', serif;
   font-size: 1.1rem;
-  background-color: rgba(13, 26, 46, 0.5);
+  background-color: rgba(var(--primary-bg-color-rgb, 13, 26, 46), 0.5);
   border: 1px dashed #3a506b;
   border-radius: 8px;
 }

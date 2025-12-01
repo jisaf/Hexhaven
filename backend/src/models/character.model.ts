@@ -46,6 +46,8 @@ export class Character {
     bottomCardId: string;
     initiative: number;
   };
+  private _hasMovedThisTurn: boolean = false;
+  private _hasAttackedThisTurn: boolean = false;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -138,6 +140,14 @@ export class Character {
     this._updatedAt = new Date();
   }
 
+  get hasMovedThisTurn(): boolean {
+    return this._hasMovedThisTurn;
+  }
+
+  get hasAttackedThisTurn(): boolean {
+    return this._hasAttackedThisTurn;
+  }
+
   // Methods
   moveTo(position: AxialCoordinates): void {
     if (this.isImmobilized) {
@@ -192,6 +202,31 @@ export class Character {
 
   exhaust(): void {
     this._exhausted = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Mark that character has moved this turn
+   */
+  markMovedThisTurn(): void {
+    this._hasMovedThisTurn = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Mark that character has attacked this turn
+   */
+  markAttackedThisTurn(): void {
+    this._hasAttackedThisTurn = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Reset action flags at end of turn
+   */
+  resetActionFlags(): void {
+    this._hasMovedThisTurn = false;
+    this._hasAttackedThisTurn = false;
     this._updatedAt = new Date();
   }
 

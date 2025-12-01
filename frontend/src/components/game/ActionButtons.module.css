@@ -1,0 +1,64 @@
+.actionButtons {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  background: rgba(50, 50, 50, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.actionButton svg {
+  font-size: 20px;
+}
+
+.attackButton {
+  border-color: rgba(220, 53, 69, 0.5);
+}
+
+.attackButton:hover {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.8);
+}
+
+.attackButton.active {
+  background: rgba(220, 53, 69, 0.8);
+  border-color: rgb(220, 53, 69);
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+}
+
+.moveButton {
+  border-color: rgba(40, 167, 69, 0.5);
+}
+
+.moveButton:hover {
+  background: rgba(40, 167, 69, 0.2);
+  border-color: rgba(40, 167, 69, 0.8);
+}
+
+.moveButton.active {
+  background: rgba(40, 167, 69, 0.8);
+  border-color: rgb(40, 167, 69);
+  box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+}

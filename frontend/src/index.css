@@ -4,7 +4,7 @@
   font-weight: 400;
 
   color: #f0e6d2;
-  background-color: #0d1a2e;
+  background-color: var(--primary-bg-color, #0d1a2e);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
