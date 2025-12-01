@@ -64,9 +64,14 @@ export function Lobby() {
     try {
       const rooms = await apiFetchActiveRooms();
       setActiveRooms(rooms);
-    } catch (err) {
-      console.error('Failed to fetch active rooms:', err);
-      setError('Failed to fetch active rooms.');
+    } catch (err: any) {
+      console.error('[Lobby] Failed to fetch active rooms:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        fullError: err,
+      });
+      setError(`Failed to fetch active rooms: ${err?.message || 'Unknown error'}`);
     } finally {
       setLoadingRooms(false);
     }
@@ -76,8 +81,13 @@ export function Lobby() {
     try {
       const rooms = await apiFetchMyRooms();
       setMyRooms(rooms);
-    } catch (err) {
-      console.error('Failed to fetch my rooms:', err);
+    } catch (err: any) {
+      console.error('[Lobby] Failed to fetch my rooms:', {
+        message: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        fullError: err,
+      });
     }
   }, []);
 
