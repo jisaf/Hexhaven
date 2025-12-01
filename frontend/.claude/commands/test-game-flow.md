@@ -1,21 +1,39 @@
-Run the comprehensive game flow test in headless Firefox and report any bugs found to bugs.md.
+**Traditional Playwright Test** (locator-based, automated CI/CD testing)
 
-IMPORTANT: Before running this command, ensure that both the backend (localhost:3000) and frontend (localhost:5173) dev servers are running.
+Run the comprehensive game flow test in headless Firefox using hardcoded locators. This is the traditional approach for automated regression testing.
 
-The test will:
-1. Load the dev site (localhost:5173)
+**⚠️ Note**: For AI-powered testing that adapts to UI changes, use `/test-game-flow-mcp` instead or ask Claude to test using Playwright MCP directly.
+
+## Prerequisites
+- Backend server running on localhost:3000
+- Frontend server running on localhost:5173
+
+## What This Tests
+1. Load dev site (localhost:5173)
 2. Create 4 separate games
-3. Add 2 players to the first game
-4. Start all 4 games
+3. Add 2 players to first game
+4. Start all games
 5. Select cards for players
 6. Move and attack with characters
-7. Verify monsters move and attack back after player ends turn
-8. Report any bugs found to bugs.md (with duplicate checking)
+7. Verify monster AI behavior
+8. Report bugs to bugs.md
 
-To run the test, execute:
+## Run Command
 ```bash
 cd /home/opc/hexhaven/frontend
 npx playwright test comprehensive-game-flow.spec.ts --config=playwright-firefox.config.ts
 ```
 
-Test results, videos, and traces will be saved to the test-results directory.
+## Artifacts
+- Videos: `test-results/*/video.webm`
+- Screenshots: `test-results/*/test-failed-*.png`
+- Traces: `test-results/*/trace.zip`
+
+## When to Use
+- ✅ CI/CD pipelines
+- ✅ Automated regression testing
+- ✅ Performance benchmarks
+- ❌ Exploratory testing (use MCP instead)
+- ❌ UI frequently changes (use MCP instead)
+
+See TESTING.md for full comparison of testing approaches.
