@@ -10,7 +10,7 @@
   flex-direction: column;
   flex-grow: 1;
   position: relative;
-  background-color: #0d1a2e;
+  background-color: var(--primary-bg-color, #0d1a2e);
 }
 
 .app-container::before {
