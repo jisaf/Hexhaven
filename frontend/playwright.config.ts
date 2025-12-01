@@ -10,6 +10,12 @@ export default defineConfig({
   // Test directory
   testDir: './tests/e2e',
 
+  // Output directory for test artifacts (videos, screenshots, traces)
+  outputDir: './public/test-videos',
+
+  // Global setup - cleanup old videos before tests run
+  globalSetup: require.resolve('./tests/cleanup-old-videos.ts'),
+
   // Run tests in files in parallel
   fullyParallel: true,
 
@@ -48,6 +54,14 @@ export default defineConfig({
   // Running on Pixel 6 only - mobile-first game with touch interactions
   // TODO: Add more mobile devices for cross-device testing once features are implemented
   projects: [
+    // Firefox - Desktop browser testing
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+      },
+    },
+
     // Pixel 6 - Primary mobile testing device
     {
       name: 'Pixel 6',
