@@ -24,9 +24,10 @@ interface TurnOrderProps {
   currentRound: number;
   characters: TurnOrderCharacter[];
   monsters: TurnOrderMonster[];
+  actionButtons?: React.ReactNode;
 }
 
-const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, currentRound, characters, monsters }) => {
+const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, currentRound, characters, monsters, actionButtons }) => {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [listOffset, setListOffset] = useState(0);
   const actorRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -58,14 +59,15 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
 
   return (
     <div className={`${styles.turnOrderContainer} ${selectedActorId ? styles.detailsVisible : ''}`}>
-      <div className={styles.roundCounter}>
-        <span className={styles.roundLabel}>R</span>
-        <span className={styles.roundNumber}>{currentRound}</span>
-      </div>
+      <div className={styles.mainContent}>
+        <div className={styles.roundCounter}>
+          <span className={styles.roundLabel}>R</span>
+          <span className={styles.roundNumber}>{currentRound}</span>
+        </div>
 
-      <div className={styles.actorsWrapper}>
-        <ul className={styles.turnOrderList} style={{ transform: `translateX(${listOffset}px)` }}>
-          {turnOrder.map((entity, index) => {
+        <div className={styles.actorsWrapper}>
+          <ul className={styles.turnOrderList} style={{ transform: `translateX(${listOffset}px)` }}>
+            {turnOrder.map((entity, index) => {
             const actorDetails = entity.entityType === 'character'
               ? characters.find(c => c.id === entity.entityId)
               : monsters.find(m => m.id === entity.entityId);
@@ -111,7 +113,9 @@ const TurnOrder: React.FC<TurnOrderProps> = ({ turnOrder, currentTurnEntityId, c
             </div>
           </div>
         )}
+        </div>
       </div>
+      {actionButtons && <div className={styles.actionButtonsContainer}>{actionButtons}</div>}
     </div>
   );
 };

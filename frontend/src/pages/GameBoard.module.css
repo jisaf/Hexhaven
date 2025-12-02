@@ -13,14 +13,27 @@
     flex-direction: row;
   }
 
+  /* .gameContainer will use flex: 1 to take up the remaining 60% */
+
   .rightPanel {
-    width: 250px;
+    width: 40%;
+    max-width: 450px; /* Add a max-width for very large screens */
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    position: static; /* Ensure it's not fixed like in portrait */
+  }
+
+  .rightPanel > :first-child { /* TurnOrder */
+    height: 50%;
+    overflow-y: auto;
   }
 
   .hudWrapper {
-    margin-top: auto;
+    position: static;
+    height: 50%;
+    overflow-y: auto;
+    border-top: 1px solid #c9a444;
   }
 
   .cardSelectionActive .rightPanel {
@@ -29,7 +42,8 @@
 }
 
 .gameContainer {
-  flex: 1;
+  flex-grow: 1;
+  flex-basis: 60%;
   position: relative;
   overflow: hidden;
 }
