@@ -113,6 +113,7 @@ interface VisualUpdateCallbacks {
   updateMonsterHealth?: (monsterId: string, health: number) => void;
   removeMonster?: (monsterId: string) => void;
   spawnLootToken?: (lootData: LootSpawnedPayload) => void;
+  collectLootToken?: (tokenId: string) => void;
 }
 
 class GameStateManager {
@@ -168,6 +169,7 @@ class GameStateManager {
     websocketService.on('attack_resolved', this.handleAttackResolved.bind(this));
     websocketService.on('monster_died', this.handleMonsterDied.bind(this));
     websocketService.on('loot_spawned', this.handleLootSpawned.bind(this));
+    websocketService.on('loot_collected', this.handleLootCollected.bind(this));
     websocketService.on('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -250,6 +252,9 @@ class GameStateManager {
 
   private handleRoundEnded(data: { roundNumber: number }): void {
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
+    // Clear previously selected cards so players can select new ones for next round
+    this.state.selectedTopAction = null;
+    this.state.selectedBottomAction = null;
     this.state.showCardSelection = true;
     this.emitStateUpdate();
   }
@@ -396,6 +401,38 @@ class GameStateManager {
   private handleLootSpawned(data: LootSpawnedPayload): void {
     this.visualCallbacks.spawnLootToken?.(data);
     this.addLog([{ text: 'Loot dropped!', color: 'gold' }]);
+    this.emitStateUpdate();
+  }
+
+  private handleLootCollected(data: { playerId: string; lootTokenId: string; hexCoordinates: { q: number; r: number }; goldValue: number }): void {
+    // Trigger visual update to remove loot sprite
+    this.visualCallbacks.collectLootToken?.(data.lootTokenId);
+
+    // Get player name for log
+    const playerUUID = websocketService.getPlayerUUID();
+    const isMyLoot = data.playerId === playerUUID;
+
+    if (this.state.gameData) {
+      const character = this.state.gameData.characters.find(c => c.playerId === data.playerId);
+      const characterName = character?.characterClass || 'Unknown';
+
+      if (isMyLoot) {
+        this.addLog([
+          { text: 'You', color: 'lightblue' },
+          { text: ' collected ' },
+          { text: `${data.goldValue}`, color: 'gold' },
+          { text: ' gold!' }
+        ]);
+      } else {
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' collected ' },
+          { text: `${data.goldValue}`, color: 'gold' },
+          { text: ' gold.' }
+        ]);
+      }
+    }
+
     this.emitStateUpdate();
   }
 

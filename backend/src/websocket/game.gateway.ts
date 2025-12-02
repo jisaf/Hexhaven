@@ -741,16 +741,28 @@ export class GameGateway
       }
 
       // Create characters for all players at starting positions
+      this.logger.log(`🎭 Creating characters for ${room.players.length} players`);
+      room.players.forEach((p: Player, idx: number) => {
+        this.logger.log(`   Player ${idx}: ${p.nickname} - characterClass: ${p.characterClass}`);
+      });
+
       const characters = room.players
         .filter((p: Player) => p.characterClass)
         .map((p: Player, index: number) => {
           const startingPosition = startingPositions[index];
+          this.logger.log(`🎭 Creating character for player ${p.nickname}:`, {
+            uuid: p.uuid,
+            characterClass: p.characterClass,
+            startingPosition,
+          });
           return characterService.selectCharacter(
             p.uuid,
             p.characterClass as CharacterClass,
             startingPosition,
           );
         });
+
+      this.logger.log(`✅ Created ${characters.length} characters`);
 
       // Spawn monsters
       const monsters = this.scenarioService.spawnMonsters(
@@ -791,10 +803,23 @@ export class GameGateway
       // Load ability cards for each character
       const charactersWithDecks = characters.map((c: any) => {
         const charData = c.toJSON();
+        this.logger.log(`🃏 Loading ability deck for character:`, {
+          id: charData.id,
+          playerId: charData.playerId,
+          characterClass: charData.characterClass,
+        });
+
         // Get ability deck for this character class
         const abilityDeck = this.abilityCardService.getCardsByClass(
           charData.characterClass,
         );
+
+        this.logger.log(`🃏 Ability deck loaded:`, {
+          characterClass: charData.characterClass,
+          deckSize: abilityDeck.length,
+          firstCard: abilityDeck[0]?.name || 'NO CARDS',
+        });
+
         return {
           id: charData.id,
           playerId: charData.playerId,
@@ -908,10 +933,11 @@ export class GameGateway
         throw new Error('Character is immobilized and cannot move');
       }
 
-      // Check if character has already moved this turn (Gloomhaven rule: 1 move action per turn)
+      // Gloomhaven rule: You can move before OR after attacking, but you cannot split your movement
+      // Once you've used your move action, you cannot move again (even if you have movement left)
       if (character.hasMovedThisTurn) {
         throw new Error(
-          'Character has already moved this turn. You can only use one move action per turn.',
+          'Character has already used their move action this turn. You cannot split movement.',
         );
       }
 
@@ -935,14 +961,25 @@ export class GameGateway
         throw new Error('No valid path to target hex (blocked by obstacles)');
       }
 
-      // Get reachable hexes within movement range
+      // Calculate movement distance for this move (path length - 1, since path includes starting hex)
+      const moveDistance = path.length > 0 ? path.length - 1 : 0;
+
+      // Check if character has enough remaining movement for this move
+      const remainingMovement = character.movementRemainingThisTurn;
+      if (moveDistance > remainingMovement) {
+        throw new Error(
+          `Not enough movement remaining. Distance: ${moveDistance}, Remaining: ${remainingMovement}/${character.movement}`,
+        );
+      }
+
+      // Get reachable hexes within remaining movement range
       const reachableHexes = this.pathfindingService.getReachableHexes(
         fromHex,
-        character.movement,
+        remainingMovement,
         hexMap,
       );
 
-      // Check if target is within movement range
+      // Check if target is within remaining movement range
       const targetKey = `${payload.targetHex.q},${payload.targetHex.r}`;
       const isReachable = reachableHexes.some(
         (hex) => `${hex.q},${hex.r}` === targetKey,
@@ -950,7 +987,7 @@ export class GameGateway
 
       if (!isReachable) {
         throw new Error(
-          `Target hex is not reachable within movement range of ${character.movement}`,
+          `Target hex is not reachable within remaining movement range of ${remainingMovement}`,
         );
       }
 
@@ -985,8 +1022,8 @@ export class GameGateway
       // Move character
       characterService.moveCharacter(character.id, payload.targetHex);
 
-      // Mark character as having moved this turn
-      character.markMovedThisTurn();
+      // Track cumulative movement distance used this turn
+      character.addMovementUsed(moveDistance);
 
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
@@ -995,7 +1032,7 @@ export class GameGateway
         fromHex,
         toHex: payload.targetHex,
         movementPath: path,
-        distance: path.length > 0 ? path.length - 1 : 0,
+        distance: moveDistance,
       };
 
       this.server
@@ -1079,6 +1116,55 @@ export class GameGateway
         bottomCardId: payload.bottomCardId,
         initiative,
       };
+
+      // Extract and set effective movement and attack for this turn from the selected cards
+      // In Gloomhaven, you typically use: top action for attack, bottom action for movement
+      const topCard = validation.topCard!;
+      const bottomCard = validation.bottomCard!;
+
+      let movementValue = 0;
+      let attackValue = 0;
+      let attackRange = 0;
+
+      // Extract movement - check bottom action first (most common)
+      if (bottomCard.bottomAction?.type === 'move' && bottomCard.bottomAction.value) {
+        movementValue = bottomCard.bottomAction.value;
+      }
+      else if (topCard.topAction?.type === 'move' && topCard.topAction.value) {
+        movementValue = topCard.topAction.value;
+      }
+      else if (bottomCard.topAction?.type === 'move' && bottomCard.topAction.value) {
+        movementValue = bottomCard.topAction.value;
+      }
+      else if (topCard.bottomAction?.type === 'move' && topCard.bottomAction.value) {
+        movementValue = topCard.bottomAction.value;
+      }
+
+      // Extract attack and range - check top action first (most common)
+      if (topCard.topAction?.type === 'attack' && topCard.topAction.value) {
+        attackValue = topCard.topAction.value;
+        attackRange = topCard.topAction.range ?? 0;
+      }
+      else if (bottomCard.bottomAction?.type === 'attack' && bottomCard.bottomAction.value) {
+        attackValue = bottomCard.bottomAction.value;
+        attackRange = bottomCard.bottomAction.range ?? 0;
+      }
+      else if (topCard.bottomAction?.type === 'attack' && topCard.bottomAction.value) {
+        attackValue = topCard.bottomAction.value;
+        attackRange = topCard.bottomAction.range ?? 0;
+      }
+      else if (bottomCard.topAction?.type === 'attack' && bottomCard.topAction.value) {
+        attackValue = bottomCard.topAction.value;
+        attackRange = bottomCard.topAction.range ?? 0;
+      }
+
+      // Set the effective values for this turn
+      character.setEffectiveMovement(movementValue);
+      character.setEffectiveAttack(attackValue, attackRange);
+
+      this.logger.log(
+        `Player ${playerUUID} effective stats for this turn - Movement: ${movementValue}, Attack: ${attackValue}, Range: ${attackRange}`,
+      );
 
       // Broadcast cards selected (hide actual card IDs, only show initiative)
       const cardsSelectedPayload: CardsSelectedPayload = {
@@ -1294,8 +1380,8 @@ export class GameGateway
         throw new Error('Target character is already dead');
       }
 
-      // Get attack value from attacker (simplified - using stats)
-      const baseAttack = attacker.attack;
+      // Get attack value from attacker's selected card (Gloomhaven: attack comes from cards)
+      const baseAttack = attacker.effectiveAttackThisTurn;
 
       // Draw attack modifier card
       let modifierDeck = this.modifierDecks.get(room.roomCode);
@@ -1353,8 +1439,18 @@ export class GameGateway
           lootTokens.push(lootToken);
           this.roomLootTokens.set(room.roomCode, lootTokens);
 
+          // Count how many uncollected loot tokens are now at this position (for stacking display)
+          const tokensAtPosition = lootTokens.filter(
+            (t: LootToken) =>
+              t.coordinates.q === target.currentHex.q &&
+              t.coordinates.r === target.currentHex.r &&
+              !t.isCollected,
+          );
+          const stackCount = tokensAtPosition.length;
+          const totalValue = tokensAtPosition.reduce((sum, t) => sum + t.value, 0);
+
           this.logger.log(
-            `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id}`,
+            `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id} (${stackCount} token(s) stacked, total value: ${totalValue})`,
           );
 
           this.server.to(room.roomCode).emit('monster_died', {
@@ -1367,6 +1463,8 @@ export class GameGateway
             id: lootToken.id,
             coordinates: lootToken.coordinates,
             value: lootToken.value,
+            stackCount: stackCount, // Number of tokens stacked at this position
+            totalValue: totalValue, // Combined value of all stacked tokens
           });
 
           // Remove monster from game state after it dies
@@ -1468,16 +1566,16 @@ export class GameGateway
       // Get loot tokens from room state
       const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
 
-      // Find loot token at specified coordinates
-      const lootToken = lootTokens.find(
-        (token: any) =>
-          token.hexCoordinates.q === payload.hexCoordinates.q &&
-          token.hexCoordinates.r === payload.hexCoordinates.r &&
-          !token.collected,
+      // Find all uncollected loot tokens at specified coordinates (support stacking)
+      const lootAtPosition = lootTokens.filter(
+        (token: LootToken) =>
+          token.coordinates.q === payload.hexCoordinates.q &&
+          token.coordinates.r === payload.hexCoordinates.r &&
+          !token.isCollected,
       );
 
       // Validate loot token exists and is not collected
-      if (!lootToken) {
+      if (lootAtPosition.length === 0) {
         throw new Error('No loot token found at specified coordinates');
       }
 
@@ -1501,18 +1599,19 @@ export class GameGateway
         );
       }
 
-      // Mark loot token as collected
-      lootToken.collected = true;
-
-      // In a full implementation, would add gold to player's inventory
-      // For now, just broadcast the collection
+      // Calculate total gold from all stacked loot tokens and mark as collected
+      let totalGold = 0;
+      lootAtPosition.forEach((token: LootToken) => {
+        token.collect(playerUUID);
+        totalGold += token.value;
+      });
 
       // Broadcast loot collected to all players
       const lootCollectedPayload: LootCollectedPayload = {
         playerId: playerUUID,
-        lootTokenId: lootToken.id,
+        lootTokenId: lootAtPosition[0].id, // Frontend expects single ID
         hexCoordinates: payload.hexCoordinates,
-        goldValue: lootToken.goldValue,
+        goldValue: totalGold,
       };
 
       this.server
@@ -1520,7 +1619,7 @@ export class GameGateway
         .emit('loot_collected', lootCollectedPayload);
 
       this.logger.log(
-        `Loot collected by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), value: ${lootToken.goldValue} gold`,
+        `Manual collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
       );
     } catch (error) {
       const errorMessage =
@@ -1589,6 +1688,62 @@ export class GameGateway
       // Reset action flags for this character's turn ending
       character.resetActionFlags();
 
+      // Auto-collect loot if character is ending turn on a loot token
+      // In Gloomhaven, if multiple loot tokens are on the same hex, collect all of them
+      const characterPos = character.position;
+      const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
+
+      this.logger.log(
+        `[Loot] Checking for loot at character position (${characterPos.q}, ${characterPos.r}). Total loot tokens in room: ${lootTokens.length}`,
+      );
+
+      // Log all loot tokens for debugging
+      lootTokens.forEach((token: LootToken, idx: number) => {
+        this.logger.log(
+          `[Loot] Token ${idx}: position (${token.coordinates.q}, ${token.coordinates.r}), value: ${token.value}, collected: ${token.isCollected}`,
+        );
+      });
+
+      const lootAtPosition = lootTokens.filter(
+        (token: LootToken) =>
+          token.coordinates.q === characterPos.q &&
+          token.coordinates.r === characterPos.r &&
+          !token.isCollected,
+      );
+
+      this.logger.log(
+        `[Loot] Found ${lootAtPosition.length} uncollected loot token(s) at position (${characterPos.q}, ${characterPos.r})`,
+      );
+
+      if (lootAtPosition.length > 0) {
+        // Calculate total gold from all stacked loot tokens
+        let totalGold = 0;
+        const collectedTokenIds: string[] = [];
+
+        // Mark all loot tokens at this position as collected
+        lootAtPosition.forEach((token: LootToken) => {
+          token.collect(playerUUID);
+          totalGold += token.value;
+          collectedTokenIds.push(token.id);
+        });
+
+        // Broadcast loot collected to all players
+        const lootCollectedPayload: LootCollectedPayload = {
+          playerId: playerUUID,
+          lootTokenId: collectedTokenIds[0], // Frontend expects single ID, use first
+          hexCoordinates: characterPos,
+          goldValue: totalGold,
+        };
+
+        this.server
+          .to(room.roomCode)
+          .emit('loot_collected', lootCollectedPayload);
+
+        this.logger.log(
+          `Auto-collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at end of turn (${characterPos.q}, ${characterPos.r}), total value: ${totalGold} gold`,
+        );
+      }
+
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
         currentIndex,
@@ -1599,30 +1754,8 @@ export class GameGateway
       const roundComplete = nextIndex === 0 && currentIndex !== 0;
 
       if (roundComplete) {
-        this.logger.log(
-          `Round complete in room ${room.roomCode}, starting new round`,
-        );
-
-        // Clear selected cards and reset action flags for all characters for new round
-        room.players.forEach((p: any) => {
-          const char = characterService.getCharacterByPlayerId(p.uuid);
-          if (char) {
-            char.selectedCards = undefined;
-            char.resetActionFlags();
-          }
-        });
-
-        // Draw new monster initiatives for the new round (simulates drawing new ability cards)
-        const monsters = this.roomMonsters.get(room.roomCode) || [];
-        if (monsters.length > 0) {
-          this.drawMonsterInitiatives(room.roomCode, monsters);
-        }
-
-        // Notify all players that round ended and to select new cards
-        this.server.to(room.roomCode).emit('round_ended', {
-          message:
-            'Round complete, please select your cards for the next round',
-        });
+        // Use shared round completion logic
+        this.handleRoundCompletion(room.roomCode);
       } else {
         // Advance to next turn
         this.currentTurnIndex.set(room.roomCode, nextIndex);
@@ -2085,6 +2218,13 @@ export class GameGateway
    * Advance turn after monster activation
    */
   private advanceTurnAfterMonsterActivation(roomCode: string): void {
+    // Get room
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      this.logger.error(`Room not found for code ${roomCode}`);
+      return;
+    }
+
     // Get current turn order
     const turnOrder = this.roomTurnOrder.get(roomCode);
     if (!turnOrder) {
@@ -2093,39 +2233,114 @@ export class GameGateway
     }
 
     // Get current turn index
-    let currentIndex = this.currentTurnIndex.get(roomCode) || 0;
+    const currentIndex = this.currentTurnIndex.get(roomCode) || 0;
 
-    // Advance to next turn
-    currentIndex = (currentIndex + 1) % turnOrder.length;
-    this.currentTurnIndex.set(roomCode, currentIndex);
-
-    // Get next entity
-    const nextEntity = turnOrder[currentIndex];
-
-    // Broadcast turn started for next entity
-    const turnStartedPayload: TurnStartedPayload = {
-      entityId: nextEntity.entityId,
-      entityType: nextEntity.entityType,
-      turnIndex: currentIndex,
-    };
-
-    this.server.to(roomCode).emit('turn_started', turnStartedPayload);
-
-    this.logger.log(
-      `Advanced to next turn in room ${roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
+    // Get next living entity index (skips dead/exhausted entities)
+    const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
+      currentIndex,
+      turnOrder,
     );
 
-    // If next entity is also a monster, activate it automatically
-    if (nextEntity.entityType === 'monster') {
-      // Use setTimeout to avoid deep recursion
-      setTimeout(() => {
-        this.activateMonster(nextEntity.entityId, roomCode).catch((error) => {
-          this.logger.error(
-            `Auto-activation error: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
-      }, 100);
+    // Check if round is complete (wrapped back to start)
+    const roundComplete = nextIndex === 0 && currentIndex !== 0;
+
+    if (roundComplete) {
+      // Use shared round completion logic
+      this.handleRoundCompletion(roomCode);
+    } else {
+      // Advance to next turn
+      this.currentTurnIndex.set(roomCode, nextIndex);
+
+      // Get next entity
+      const nextEntity = turnOrder[nextIndex];
+
+      // Broadcast turn started for next entity
+      const turnStartedPayload: TurnStartedPayload = {
+        entityId: nextEntity.entityId,
+        entityType: nextEntity.entityType,
+        turnIndex: nextIndex,
+      };
+
+      this.server.to(roomCode).emit('turn_started', turnStartedPayload);
+
+      this.logger.log(
+        `Advanced to next turn in room ${roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
+      );
+
+      // If next entity is also a monster, activate it automatically
+      if (nextEntity.entityType === 'monster') {
+        // Use setTimeout to avoid deep recursion
+        setTimeout(() => {
+          this.activateMonster(nextEntity.entityId, roomCode).catch((error) => {
+            this.logger.error(
+              `Auto-activation error: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        }, 100);
+      }
     }
+  }
+
+  /**
+   * Handle round completion (shared logic for both player and monster turns)
+   * Clears cards, resets flags, draws new initiatives, and notifies clients
+   *
+   * TODO (Should-Have - Week 7-8): Add scenario objective checking at end of round
+   * - Check win/loss conditions (e.g., all monsters defeated, treasure looted, turns elapsed)
+   * - Emit scenario_completed event if objectives met
+   * - Reference: PRD Advanced Features (Week 7-8)
+   */
+  private handleRoundCompletion(roomCode: string): void {
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      this.logger.error(`Room not found for code ${roomCode} in handleRoundCompletion`);
+      return;
+    }
+
+    const currentRoundNumber = this.currentRound.get(roomCode) || 1;
+    this.logger.log(
+      `Round ${currentRoundNumber} complete in room ${roomCode}, waiting for card selection`,
+    );
+
+    // Clear selected cards and reset action flags for all characters for new round
+    room.players.forEach((p: any) => {
+      const char = characterService.getCharacterByPlayerId(p.uuid);
+      if (char) {
+        char.selectedCards = undefined;
+        char.resetActionFlags();
+      }
+    });
+
+    // TODO (Enhancement): Draw monster ABILITY CARDS (not just initiatives)
+    // Currently we only assign random initiatives to monsters each round.
+    // In full Gloomhaven rules, each monster type draws an ability card that provides:
+    // - Initiative value (already implemented)
+    // - Movement value (currently using base stat)
+    // - Attack value (currently using base stat)
+    // - Special abilities (not implemented)
+    // This would require:
+    // 1. Monster ability card data structures with stats per card
+    // 2. Deck management per monster type
+    // 3. Card reshuffle logic when deck exhausted
+    // 4. Setting effective movement/attack on monsters like we do for players
+    const monsters = this.roomMonsters.get(roomCode) || [];
+    if (monsters.length > 0) {
+      this.drawMonsterInitiatives(roomCode, monsters);
+    }
+
+    // TODO (Should-Have - Week 7-8): Check scenario objectives before emitting round_ended
+    // Example objective checks:
+    // - All monsters defeated → emit scenario_completed with victory: true
+    // - All characters exhausted → emit scenario_completed with victory: false
+    // - Specific treasure looted → check loot tokens collected
+    // - Turn limit exceeded → check currentRoundNumber vs scenario.maxRounds
+    // this.checkScenarioObjectives(roomCode);
+
+    // Notify all players that round ended and to select new cards
+    // The next round will start automatically when all players have selected cards (in handleSelectCards)
+    this.server.to(roomCode).emit('round_ended', {
+      roundNumber: currentRoundNumber,
+    });
   }
 
   /**
