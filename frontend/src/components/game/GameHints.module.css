@@ -1,5 +1,4 @@
-.attackModeHint,
-.movementHint {
+.hintContainer {
   position: fixed;
   bottom: 100px;
   left: 50%;
@@ -12,8 +11,11 @@
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 100;
-  pointer-events: none;
+  pointer-events: all;
   animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .attackModeHint {
@@ -22,6 +24,40 @@
 
 .movementHint {
   border: 2px solid #3498db;
+}
+
+.dismissButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+@media (orientation: portrait) {
+  .hintContainer {
+    bottom: auto;
+    top: calc(50vh + 8px); /* Position it just below the game container */
+    width: calc(100% - 16px);
+    left: 8px;
+    transform: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (orientation: landscape) {
+  .hintContainer {
+    bottom: auto;
+    top: calc(50vh + 8px); /* Position it over the top of the GameHUD panel */
+    left: calc(60% + 8px); /* Position it to the right of the game container */
+    right: 8px;
+    width: auto;
+    transform: none;
+  }
 }
 
 @keyframes fadeIn {

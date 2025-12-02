@@ -152,6 +152,16 @@ export function GameBoard() {
             currentRound={gameState.currentRound}
             characters={gameState.gameData?.characters || []}
             monsters={gameState.gameData?.monsters || []}
+            actionButtons={
+              <ActionButtons
+                hasAttack={attackAction !== null}
+                hasMove={moveAction !== null}
+                attackMode={gameState.attackMode}
+                isMyTurn={gameState.isMyTurn}
+                onAttackClick={handleAttackClick}
+                onMoveClick={handleMoveClick}
+              />
+            }
           />
         )}
         <div className={styles.hudWrapper}>
@@ -178,15 +188,6 @@ export function GameBoard() {
           selectedBottomAction={gameState.selectedBottomAction}
         />
       )}
-
-      <ActionButtons
-        hasAttack={attackAction !== null}
-        hasMove={moveAction !== null}
-        attackMode={gameState.attackMode}
-        isMyTurn={gameState.isMyTurn}
-        onAttackClick={handleAttackClick}
-        onMoveClick={handleMoveClick}
-      />
 
       <GameHints
         attackMode={gameState.attackMode}
