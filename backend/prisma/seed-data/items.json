@@ -1,0 +1,238 @@
+[
+  {
+    "name": "Leather Armor",
+    "type": "body",
+    "rarity": "COMMON",
+    "effects": [{ "type": "shield", "value": 1 }],
+    "cost": 5,
+    "description": "Basic leather armor providing minimal protection"
+  },
+  {
+    "name": "Iron Helmet",
+    "type": "head",
+    "rarity": "COMMON",
+    "effects": [{ "type": "shield", "value": 1 }],
+    "cost": 10,
+    "description": "A sturdy iron helmet to protect your head"
+  },
+  {
+    "name": "Boots of Striding",
+    "type": "feet",
+    "rarity": "COMMON",
+    "effects": [{ "type": "move-bonus", "value": 1 }],
+    "cost": 20,
+    "description": "Lightweight boots that enhance movement speed"
+  },
+  {
+    "name": "Minor Healing Potion",
+    "type": "small-item",
+    "rarity": "COMMON",
+    "effects": [{ "type": "heal", "value": 3 }],
+    "cost": 10,
+    "description": "A small vial that restores health when consumed"
+  },
+  {
+    "name": "Minor Stamina Potion",
+    "type": "small-item",
+    "rarity": "COMMON",
+    "effects": [{ "type": "recover-cards", "value": 1 }],
+    "cost": 15,
+    "description": "Recovers one discarded card from your discard pile"
+  },
+  {
+    "name": "Chain Armor",
+    "type": "body",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "shield", "value": 2 }],
+    "cost": 25,
+    "description": "Chain mail armor providing moderate protection"
+  },
+  {
+    "name": "Winged Shoes",
+    "type": "feet",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "jump", "value": 1 }, { "type": "move-bonus", "value": 1 }],
+    "cost": 30,
+    "description": "Enchanted shoes that allow you to jump over obstacles"
+  },
+  {
+    "name": "Eagle Eye Goggles",
+    "type": "head",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "advantage", "value": 1 }],
+    "cost": 40,
+    "description": "Goggles that grant advantage on ranged attacks"
+  },
+  {
+    "name": "Piercing Bow",
+    "type": "hands",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "pierce", "value": 2 }],
+    "cost": 35,
+    "description": "A powerful bow with armor-piercing arrows"
+  },
+  {
+    "name": "Major Healing Potion",
+    "type": "small-item",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "heal", "value": 5 }],
+    "cost": 25,
+    "description": "A potent healing draught that restores significant health"
+  },
+  {
+    "name": "Power Potion",
+    "type": "small-item",
+    "rarity": "UNCOMMON",
+    "effects": [{ "type": "attack-bonus", "value": 2 }],
+    "cost": 30,
+    "description": "Grants +2 Attack to your next attack action"
+  },
+  {
+    "name": "Plate Armor",
+    "type": "body",
+    "rarity": "RARE",
+    "effects": [{ "type": "shield", "value": 3 }],
+    "cost": 50,
+    "description": "Heavy plate armor providing excellent protection"
+  },
+  {
+    "name": "Helm of Authority",
+    "type": "head",
+    "rarity": "RARE",
+    "effects": [{ "type": "shield", "value": 2 }, { "type": "immunity", "value": "muddle" }],
+    "cost": 60,
+    "description": "A commanding helm that protects against confusion"
+  },
+  {
+    "name": "Boots of Dashing",
+    "type": "feet",
+    "rarity": "RARE",
+    "effects": [{ "type": "move-bonus", "value": 2 }, { "type": "jump", "value": 1 }],
+    "cost": 55,
+    "description": "Swift boots allowing rapid movement and jumping"
+  },
+  {
+    "name": "Gauntlets of Strength",
+    "type": "hands",
+    "rarity": "RARE",
+    "effects": [{ "type": "attack-bonus", "value": 2 }],
+    "cost": 50,
+    "description": "Heavy gauntlets that enhance physical strength"
+  },
+  {
+    "name": "Ring of Haste",
+    "type": "small-item",
+    "rarity": "RARE",
+    "effects": [{ "type": "initiative-bonus", "value": -10 }],
+    "cost": 60,
+    "description": "A magical ring that increases your turn order speed"
+  },
+  {
+    "name": "Amulet of Life",
+    "type": "small-item",
+    "rarity": "RARE",
+    "effects": [{ "type": "max-health-bonus", "value": 4 }],
+    "cost": 65,
+    "description": "A sacred amulet that increases maximum health"
+  },
+  {
+    "name": "Dragon Scale Armor",
+    "type": "body",
+    "rarity": "EPIC",
+    "effects": [{ "type": "shield", "value": 4 }, { "type": "immunity", "value": "fire" }],
+    "cost": 100,
+    "description": "Legendary armor crafted from dragon scales, immune to fire"
+  },
+  {
+    "name": "Crown of the Tactician",
+    "type": "head",
+    "rarity": "EPIC",
+    "effects": [{ "type": "initiative-bonus", "value": -15 }, { "type": "card-bonus", "value": 1 }],
+    "cost": 110,
+    "description": "A mystical crown that enhances tactical awareness"
+  },
+  {
+    "name": "Boots of Teleportation",
+    "type": "feet",
+    "rarity": "EPIC",
+    "effects": [{ "type": "teleport", "value": 4 }],
+    "cost": 105,
+    "description": "Magical boots allowing instant teleportation"
+  },
+  {
+    "name": "Gloves of Missiles",
+    "type": "hands",
+    "rarity": "EPIC",
+    "effects": [{ "type": "attack-bonus", "value": 3 }, { "type": "range-bonus", "value": 2 }],
+    "cost": 100,
+    "description": "Enchanted gloves that enhance ranged attacks"
+  },
+  {
+    "name": "Phoenix Heart",
+    "type": "small-item",
+    "rarity": "EPIC",
+    "effects": [{ "type": "resurrect", "value": 1 }],
+    "cost": 120,
+    "description": "A mystical artifact that revives you once if you fall"
+  },
+  {
+    "name": "Artifact Armor of the Ancients",
+    "type": "body",
+    "rarity": "LEGENDARY",
+    "effects": [
+      { "type": "shield", "value": 5 },
+      { "type": "immunity", "value": "poison" },
+      { "type": "immunity", "value": "wound" }
+    ],
+    "cost": 200,
+    "description": "Ancient armor imbued with protective magic, granting immunity to poison and wounds"
+  },
+  {
+    "name": "Crown of Dominance",
+    "type": "head",
+    "rarity": "LEGENDARY",
+    "effects": [
+      { "type": "initiative-bonus", "value": -20 },
+      { "type": "card-bonus", "value": 2 },
+      { "type": "immunity", "value": "curse" }
+    ],
+    "cost": 220,
+    "description": "The ultimate crown of power, providing unmatched tactical superiority"
+  },
+  {
+    "name": "Seven-League Boots",
+    "type": "feet",
+    "rarity": "LEGENDARY",
+    "effects": [
+      { "type": "move-bonus", "value": 3 },
+      { "type": "jump", "value": 1 },
+      { "type": "flying", "value": 1 }
+    ],
+    "cost": 210,
+    "description": "Legendary boots granting superhuman mobility and flight"
+  },
+  {
+    "name": "Fists of the Titans",
+    "type": "hands",
+    "rarity": "LEGENDARY",
+    "effects": [
+      { "type": "attack-bonus", "value": 4 },
+      { "type": "pierce", "value": 3 },
+      { "type": "add-target", "value": 1 }
+    ],
+    "cost": 200,
+    "description": "Gauntlets of immense power, capable of striking multiple foes"
+  },
+  {
+    "name": "Heart of the Phoenix",
+    "type": "small-item",
+    "rarity": "LEGENDARY",
+    "effects": [
+      { "type": "resurrect", "value": 1 },
+      { "type": "max-health-bonus", "value": 8 },
+      { "type": "heal-on-revive", "value": 10 }
+    ],
+    "cost": 250,
+    "description": "The ultimate life-preserving artifact, granting resurrection and vitality"
+  }
+]

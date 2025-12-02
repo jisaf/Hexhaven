@@ -25,30 +25,30 @@ This document breaks down the implementation into phases organized by user stori
 
 ### Tasks
 
-- [ ] T001 Install Prisma dependencies in backend: `npm install prisma @prisma/client bcrypt jsonwebtoken`
-- [ ] T002 Install Prisma dev dependencies: `npm install -D @types/bcrypt @types/jsonwebtoken`
-- [ ] T003 Initialize Prisma in backend: `npx prisma init` (creates `prisma/` directory)
-- [ ] T004 Configure DATABASE_URL in `.env`: Add PostgreSQL connection string with connection pool limit
-- [ ] T005 Add JWT secrets to `.env`: JWT_SECRET, JWT_ACCESS_EXPIRATION=7d, JWT_REFRESH_EXPIRATION=30d
-- [ ] T006 Add bcrypt config to `.env`: BCRYPT_SALT_ROUNDS=12
-- [ ] T007 Create backend/src/db/ directory structure for database layer
-- [ ] T008 Create backend/src/services/ directory for business logic
-- [ ] T009 Create backend/src/middleware/ directory for Express middleware
-- [ ] T010 Create backend/tests/unit/, backend/tests/integration/, backend/tests/contract/ directories
-- [ ] T011 Configure Jest for TypeScript testing in backend/jest.config.js
-- [ ] T012 Add test scripts to backend/package.json: test, test:watch, test:coverage
-- [ ] T013 Create backend/src/db/client.ts: Prisma client singleton with error handling
-- [ ] T013-R1 [P1] Add responsive design testing checklist to backend/tests/README.md: Document viewport sizes (375px, 768px, 1920px), browser compatibility matrix (Chrome, Firefox, Safari, Edge latest 2 versions)
-- [ ] T013-R2 [P1] Configure viewport testing in frontend/tests/setup.ts: Add @testing-library/react viewport helpers, configure window.matchMedia mock for media query testing
-- [ ] T013-P1 [P2] Configure performance benchmarking infrastructure in backend/tests/performance/setup.ts: Install benchmark.js, create benchmark runner with P50/P95/P99 statistics, configure output format
-- [ ] T013-P2 [P2] Create database query performance logger in backend/src/db/performance.ts: Prisma middleware to log slow queries >100ms with execution plans, collect timing statistics
-- [ ] T013-A1 [P2] Configure accessibility testing tools in frontend/tests/setup.ts: Install jest-axe, configure axe-core with WCAG 2.1 AA ruleset, add toHaveNoViolations matcher
-- [ ] T013-A2 [P2] Add accessibility testing documentation to frontend/tests/README.md: Document WCAG 2.1 AA requirements, keyboard navigation (Tab/Enter/Esc/Arrows), ARIA labels, color contrast (4.5:1 text, 3:1 UI), screen reader checklist
-- [ ] T013-V1 [P1] Install input validation libraries in backend: Install zod for schema validation, express-validator, dompurify for XSS sanitization, validator.js
-- [ ] T013-V2 [P1] Create validation schemas in backend/src/validation/schemas.ts: Define Zod schemas for user registration, character creation, game creation, game events with type safety
-- [ ] T013-E1 [P1] Define error handling standards in backend/src/types/errors.ts: Create custom error classes (ValidationError, AuthError, NotFoundError, ConflictError), define standard error response format, document HTTP status codes
-- [ ] T013-E2 [P1] Implement global error handler in backend/src/middleware/error.middleware.ts: Map errors to HTTP status codes, format all errors with standard structure, handle Prisma errors, log with stack traces (no stack in production responses)
-- [ ] T013-E3 [P1] Test error handler middleware in backend/tests/unit/error-handler.test.ts: Test ValidationError→400, AuthError→401, NotFoundError→404, ConflictError→409, Prisma unique constraint→409, unknown errors→500
+- [X] T001 Install Prisma dependencies in backend: `npm install prisma @prisma/client bcrypt jsonwebtoken`
+- [X] T002 Install Prisma dev dependencies: `npm install -D @types/bcrypt @types/jsonwebtoken`
+- [X] T003 Initialize Prisma in backend: `npx prisma init` (creates `prisma/` directory)
+- [X] T004 Configure DATABASE_URL in `.env`: Add PostgreSQL connection string with connection pool limit
+- [X] T005 Add JWT secrets to `.env`: JWT_SECRET, JWT_ACCESS_EXPIRATION=7d, JWT_REFRESH_EXPIRATION=30d
+- [X] T006 Add bcrypt config to `.env`: BCRYPT_SALT_ROUNDS=12
+- [X] T007 Create backend/src/db/ directory structure for database layer
+- [X] T008 Create backend/src/services/ directory for business logic
+- [X] T009 Create backend/src/middleware/ directory for Express middleware
+- [X] T010 Create backend/tests/unit/, backend/tests/integration/, backend/tests/contract/ directories
+- [X] T011 Configure Jest for TypeScript testing in backend/jest.config.js
+- [X] T012 Add test scripts to backend/package.json: test, test:watch, test:coverage
+- [X] T013 Create backend/src/db/client.ts: Prisma client singleton with error handling
+- [X] T013-R1 [P1] Add responsive design testing checklist to backend/tests/README.md: Document viewport sizes (375px, 768px, 1920px), browser compatibility matrix (Chrome, Firefox, Safari, Edge latest 2 versions)
+- [X] T013-R2 [P1] Configure viewport testing in frontend/tests/setup.ts: Add @testing-library/react viewport helpers, configure window.matchMedia mock for media query testing
+- [X] T013-P1 [P2] Configure performance benchmarking infrastructure in backend/tests/performance/setup.ts: Install benchmark.js, create benchmark runner with P50/P95/P99 statistics, configure output format
+- [X] T013-P2 [P2] Create database query performance logger in backend/src/db/performance.ts: Prisma middleware to log slow queries >100ms with execution plans, collect timing statistics
+- [X] T013-A1 [P2] Configure accessibility testing tools in frontend/tests/setup.ts: Install jest-axe, configure axe-core with WCAG 2.1 AA ruleset, add toHaveNoViolations matcher
+- [X] T013-A2 [P2] Add accessibility testing documentation to frontend/tests/README.md: Document WCAG 2.1 AA requirements, keyboard navigation (Tab/Enter/Esc/Arrows), ARIA labels, color contrast (4.5:1 text, 3:1 UI), screen reader checklist
+- [X] T013-V1 [P1] Install input validation libraries in backend: Install zod for schema validation, express-validator, dompurify for XSS sanitization, validator.js
+- [X] T013-V2 [P1] Create validation schemas in backend/src/validation/schemas.ts: Define Zod schemas for user registration, character creation, game creation, game events with type safety
+- [X] T013-E1 [P1] Define error handling standards in backend/src/types/errors.ts: Create custom error classes (ValidationError, AuthError, NotFoundError, ConflictError), define standard error response format, document HTTP status codes
+- [X] T013-E2 [P1] Implement global error handler in backend/src/middleware/error.middleware.ts: Map errors to HTTP status codes, format all errors with standard structure, handle Prisma errors, log with stack traces (no stack in production responses)
+- [X] T013-E3 [P1] Test error handler middleware in backend/tests/unit/error-handler.test.ts: Test ValidationError→400, AuthError→401, NotFoundError→404, ConflictError→409, Prisma unique constraint→409, unknown errors→500
 
 **Completion Criteria**:
 - ✅ All dependencies installed
@@ -69,35 +69,35 @@ This document breaks down the implementation into phases organized by user stori
 
 ### Tasks
 
-- [ ] T014 Define User model in backend/prisma/schema.prisma with fields: id, username, passwordHash, email (nullable), failedLoginAttempts, lockedUntil, deletedAt, createdAt
-- [ ] T015 Add User indexes: @@unique([username]), @@index([deletedAt])
-- [ ] T016 Define RefreshToken model with fields: id, token, userId, expiresAt, createdAt
-- [ ] T017 Add RefreshToken indexes: @@unique([token]), @@index([userId]), relation to User
-- [ ] T018 Define CharacterClass model with fields: id, name, startingHealth, maxHealthByLevel (JSON), handSize, perks (JSON)
-- [ ] T019 Add CharacterClass indexes: @@unique([name])
-- [ ] T020 Define Character model with fields: id, name, userId, classId, level, experience, gold, currentGameId (nullable), campaignId (nullable), health, perks (JSON), inventory (JSON), createdAt, updatedAt
-- [ ] T021 Add Character indexes: @@index([userId]), @@index([currentGameId]), @@index([campaignId]), relations to User, CharacterClass, Game (optional), Campaign (optional)
-- [ ] T022 Define AbilityCard model with fields: id, classId, name, level, initiative, topAction (JSON), bottomAction (JSON)
-- [ ] T023 Add AbilityCard indexes: @@index([classId]), relation to CharacterClass
-- [ ] T024 Define CardEnhancement model with fields: id, characterId, cardId, slot (enum: TOP/BOTTOM), enhancementType, appliedAt
+- [X] T014 Define User model in backend/prisma/schema.prisma with fields: id, username, passwordHash, email (nullable), failedLoginAttempts, lockedUntil, deletedAt, createdAt
+- [X] T015 Add User indexes: @@unique([username]), @@index([deletedAt])
+- [X] T016 Define RefreshToken model with fields: id, token, userId, expiresAt, createdAt
+- [X] T017 Add RefreshToken indexes: @@unique([token]), @@index([userId]), relation to User
+- [X] T018 Define CharacterClass model with fields: id, name, startingHealth, maxHealthByLevel (JSON), handSize, perks (JSON)
+- [X] T019 Add CharacterClass indexes: @@unique([name])
+- [X] T020 Define Character model with fields: id, name, userId, classId, level, experience, gold, currentGameId (nullable), campaignId (nullable), health, perks (JSON), inventory (JSON), createdAt, updatedAt
+- [X] T021 Add Character indexes: @@index([userId]), @@index([currentGameId]), @@index([campaignId]), relations to User, CharacterClass, Game (optional), Campaign (optional)
+- [X] T022 Define AbilityCard model with fields: id, classId, name, level, initiative, topAction (JSON), bottomAction (JSON)
+- [X] T023 Add AbilityCard indexes: @@index([classId]), relation to CharacterClass
+- [X] T024 Define CardEnhancement model with fields: id, characterId, cardId, slot (enum: TOP/BOTTOM), enhancementType, appliedAt
 - [ ] T024-I1 [P1] Verify database indexes created in backend/tests/integration/indexes.test.ts: Query pg_indexes to verify User.username, RefreshToken.userId, Character.userId/currentGameId, Game.roomCode, GameEvent.gameId+sequenceNumber indexes exist, generate missing indexes report
 - [ ] T024-I2 [P2] Benchmark index effectiveness in backend/tests/performance/index-effectiveness.bench.ts: Seed 1000 users/5000 characters/500 games, benchmark lookups by username/userId/roomCode, use EXPLAIN ANALYZE to verify index scans not sequential scans, query times <50ms
-- [ ] T025 Add CardEnhancement indexes: @@index([characterId]), @@index([cardId]), relations to Character, AbilityCard
-- [ ] T026 Define Item model with fields: id, name, type, rarity, effects (JSON), cost
-- [ ] T027 Add Item indexes: @@index([rarity])
-- [ ] T028 Define Game model with fields: id, roomCode, scenarioId, status (enum: LOBBY/ACTIVE/COMPLETED/ABANDONED), createdAt, updatedAt
-- [ ] T029 Add Game indexes: @@unique([roomCode]), @@index([status])
-- [ ] T030 Define GameState model with fields: id, gameId, sequenceNum, stateData (JSON), createdAt
-- [ ] T031 Add GameState indexes: @@unique([gameId]), relation to Game
-- [ ] T032 Define GameEvent model with fields: id, gameId, sequenceNum, eventType, eventData (JSON), playerId (nullable), createdAt
-- [ ] T033 Add GameEvent indexes: @@index([gameId, sequenceNum]), relation to Game
-- [ ] T034 Define Campaign model (schema only, features deferred) with fields: id, name, prosperityLevel, reputation, completedScenarios (JSON), createdAt
-- [ ] T035 Define Scenario model with fields: id, name, difficulty, mapLayout (JSON), monsterGroups (JSON), objectives (JSON)
-- [ ] T036 Add Scenario indexes: @@index([difficulty])
-- [ ] T037 Run `npx prisma format` to validate schema syntax
-- [ ] T038 Run `npx prisma generate` to generate Prisma Client types
-- [ ] T039 Create initial migration: `npx prisma migrate dev --name init_database_schema`
-- [ ] T040 Verify migration succeeded: Check prisma/migrations/ directory for SQL file
+- [X] T025 Add CardEnhancement indexes: @@index([characterId]), @@index([cardId]), relations to Character, AbilityCard
+- [X] T026 Define Item model with fields: id, name, type, rarity, effects (JSON), cost
+- [X] T027 Add Item indexes: @@index([rarity])
+- [X] T028 Define Game model with fields: id, roomCode, scenarioId, status (enum: LOBBY/ACTIVE/COMPLETED/ABANDONED), createdAt, updatedAt
+- [X] T029 Add Game indexes: @@unique([roomCode]), @@index([status])
+- [X] T030 Define GameState model with fields: id, gameId, sequenceNum, stateData (JSON), createdAt
+- [X] T031 Add GameState indexes: @@unique([gameId]), relation to Game
+- [X] T032 Define GameEvent model with fields: id, gameId, sequenceNum, eventType, eventData (JSON), playerId (nullable), createdAt
+- [X] T033 Add GameEvent indexes: @@index([gameId, sequenceNum]), relation to Game
+- [X] T034 Define Campaign model (schema only, features deferred) with fields: id, name, prosperityLevel, reputation, completedScenarios (JSON), createdAt
+- [X] T035 Define Scenario model with fields: id, name, difficulty, mapLayout (JSON), monsterGroups (JSON), objectives (JSON)
+- [X] T036 Add Scenario indexes: @@index([difficulty])
+- [X] T037 Run `npx prisma format` to validate schema syntax
+- [X] T038 Run `npx prisma generate` to generate Prisma Client types
+- [ ] T039 Create initial migration: `npx prisma migrate dev --name init_database_schema` (Requires PostgreSQL running)
+- [ ] T040 Verify migration succeeded: Check prisma/migrations/ directory for SQL file (Requires PostgreSQL running)
 - [ ] T040-P1 [P2] Benchmark character data retrieval in backend/tests/performance/character.bench.ts: Benchmark character retrieval by ID (target <50ms P95), benchmark character list per user (target <50ms), test with 10/50/100 characters per user, generate performance report
 
 **Completion Criteria**:

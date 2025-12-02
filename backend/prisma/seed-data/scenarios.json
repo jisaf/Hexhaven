@@ -1,0 +1,193 @@
+[
+  {
+    "name": "Black Barrow",
+    "difficulty": 1,
+    "mapLayout": [
+      { "id": "A1a", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "A1b", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "A1c", "x": 2, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "A2a", "x": 3, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "A2b", "x": 4, "y": 0, "terrain": "normal", "features": ["obstacle"] },
+      { "id": "A2c", "x": 5, "y": 0, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "bandit-guard",
+        "positions": [{ "x": 4, "y": 0 }, { "x": 5, "y": 0 }],
+        "level": "normal"
+      },
+      {
+        "type": "living-bones",
+        "positions": [{ "x": 3, "y": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Kill all enemies",
+      "secondary": "Loot the treasure"
+    },
+    "treasures": [{ "x": 5, "y": 0, "id": "treasure-1" }],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  },
+  {
+    "name": "Barrow Lair",
+    "difficulty": 2,
+    "mapLayout": [
+      { "id": "B1a", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "B1b", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "B1c", "x": 2, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "B2a", "x": 3, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "B2b", "x": 4, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "B2c", "x": 5, "y": 0, "terrain": "normal", "features": ["trap"] },
+      { "id": "B2d", "x": 6, "y": 0, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "bandit-archer",
+        "positions": [{ "x": 3, "y": 0 }, { "x": 4, "y": 0 }],
+        "level": "normal"
+      },
+      {
+        "type": "living-bones",
+        "positions": [{ "x": 5, "y": 0 }, { "x": 6, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "bandit-guard",
+        "positions": [{ "x": 2, "y": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Defeat the Bandit Commander",
+      "secondary": "Complete within 8 rounds"
+    },
+    "treasures": [{ "x": 6, "y": 0, "id": "treasure-2" }],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  },
+  {
+    "name": "Inox Encampment",
+    "difficulty": 3,
+    "mapLayout": [
+      { "id": "C1a", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "C1b", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "C1c", "x": 2, "y": 0, "terrain": "difficult", "features": ["obstacle"] },
+      { "id": "C2a", "x": 3, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "C2b", "x": 4, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "C2c", "x": 5, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "C3a", "x": 6, "y": 0, "terrain": "normal", "features": ["obstacle"] },
+      { "id": "C3b", "x": 7, "y": 0, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "inox-guard",
+        "positions": [{ "x": 4, "y": 0 }, { "x": 5, "y": 0 }],
+        "level": "normal"
+      },
+      {
+        "type": "inox-shaman",
+        "positions": [{ "x": 6, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "living-bones",
+        "positions": [{ "x": 2, "y": 0 }, { "x": 3, "y": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Kill all enemies and open both doors",
+      "secondary": "No player exhausted"
+    },
+    "treasures": [{ "x": 7, "y": 0, "id": "treasure-3" }],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  },
+  {
+    "name": "Crypt of the Damned",
+    "difficulty": 4,
+    "mapLayout": [
+      { "id": "D1a", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "D1b", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "D1c", "x": 2, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "D2a", "x": 3, "y": 0, "terrain": "difficult", "features": ["trap"] },
+      { "id": "D2b", "x": 4, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "D2c", "x": 5, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "D3a", "x": 6, "y": 0, "terrain": "normal", "features": ["obstacle"] },
+      { "id": "D3b", "x": 7, "y": 0, "terrain": "difficult", "features": ["trap"] },
+      { "id": "D3c", "x": 8, "y": 0, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "living-corpse",
+        "positions": [{ "x": 3, "y": 0 }, { "x": 4, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "living-bones",
+        "positions": [{ "x": 6, "y": 0 }, { "x": 7, "y": 0 }],
+        "level": "normal"
+      },
+      {
+        "type": "cultist",
+        "positions": [{ "x": 8, "y": 0 }],
+        "level": "elite"
+      }
+    ],
+    "objectives": {
+      "primary": "Defeat the Crypt Boss",
+      "secondary": "Collect all treasures"
+    },
+    "treasures": [
+      { "x": 5, "y": 0, "id": "treasure-4a" },
+      { "x": 8, "y": 0, "id": "treasure-4b" }
+    ],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  },
+  {
+    "name": "Ruinous Crypt",
+    "difficulty": 5,
+    "mapLayout": [
+      { "id": "E1a", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "E1b", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "E1c", "x": 2, "y": 0, "terrain": "difficult", "features": ["obstacle"] },
+      { "id": "E2a", "x": 3, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "E2b", "x": 4, "y": 0, "terrain": "difficult", "features": ["trap"] },
+      { "id": "E2c", "x": 5, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "E3a", "x": 6, "y": 0, "terrain": "normal", "features": ["door"] },
+      { "id": "E3b", "x": 7, "y": 0, "terrain": "difficult", "features": ["obstacle"] },
+      { "id": "E3c", "x": 8, "y": 0, "terrain": "normal", "features": ["trap"] },
+      { "id": "E3d", "x": 9, "y": 0, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "stone-golem",
+        "positions": [{ "x": 4, "y": 0 }, { "x": 5, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "living-bones",
+        "positions": [{ "x": 7, "y": 0 }, { "x": 8, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "cultist",
+        "positions": [{ "x": 9, "y": 0 }],
+        "level": "elite"
+      },
+      {
+        "type": "living-corpse",
+        "positions": [{ "x": 2, "y": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Defeat all enemies and escape through the final door",
+      "secondary": "Complete within 10 rounds without using healing items"
+    },
+    "treasures": [
+      { "x": 6, "y": 0, "id": "treasure-5a" },
+      { "x": 9, "y": 0, "id": "treasure-5b" }
+    ],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  }
+]

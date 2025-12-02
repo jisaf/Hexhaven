@@ -1,0 +1,577 @@
+[
+  {
+    "className": "Brute",
+    "name": "Trample",
+    "level": 1,
+    "initiative": 72,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": [],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": ["push:1"],
+      "target": 1
+    }
+  },
+  {
+    "className": "Brute",
+    "name": "Eye for an Eye",
+    "level": 1,
+    "initiative": 51,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["retaliate:2"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "heal",
+      "value": 3,
+      "effects": [],
+      "range": 0,
+      "target": "self"
+    }
+  },
+  {
+    "className": "Brute",
+    "name": "Spare Dagger",
+    "level": 1,
+    "initiative": 27,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": [],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Brute",
+    "name": "Balanced Measure",
+    "level": 2,
+    "initiative": 20,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": [],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 4,
+      "effects": ["jump"],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Brute",
+    "name": "Unstoppable Charge",
+    "level": 3,
+    "initiative": 86,
+    "topAction": {
+      "type": "move",
+      "value": 4,
+      "effects": [],
+      "target": "self"
+    },
+    "bottomAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["stun"],
+      "range": 0,
+      "target": 1
+    }
+  },
+  {
+    "className": "Tinkerer",
+    "name": "Hook Gun",
+    "level": 1,
+    "initiative": 42,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["pull:3"],
+      "range": 4,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Tinkerer",
+    "name": "Reviving Ether",
+    "level": 1,
+    "initiative": 6,
+    "topAction": {
+      "type": "heal",
+      "value": 3,
+      "effects": [],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Tinkerer",
+    "name": "Enhancement Field",
+    "level": 1,
+    "initiative": 74,
+    "topAction": {
+      "type": "buff",
+      "value": 0,
+      "effects": ["shield:1"],
+      "range": 3,
+      "target": "all-allies"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Tinkerer",
+    "name": "Crank Bow",
+    "level": 2,
+    "initiative": 18,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["wound"],
+      "range": 4,
+      "target": 2
+    },
+    "bottomAction": {
+      "type": "heal",
+      "value": 2,
+      "effects": [],
+      "range": 2,
+      "target": 1
+    }
+  },
+  {
+    "className": "Tinkerer",
+    "name": "Restorative Mist",
+    "level": 3,
+    "initiative": 7,
+    "topAction": {
+      "type": "heal",
+      "value": 4,
+      "effects": [],
+      "range": 3,
+      "target": "all-allies"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 4,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Spellweaver",
+    "name": "Fire Orbs",
+    "level": 1,
+    "initiative": 26,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["element:fire"],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["element:fire"],
+      "range": 3,
+      "target": 2
+    }
+  },
+  {
+    "className": "Spellweaver",
+    "name": "Frost Armor",
+    "level": 1,
+    "initiative": 41,
+    "topAction": {
+      "type": "buff",
+      "value": 0,
+      "effects": ["shield:2", "element:ice"],
+      "range": 0,
+      "target": "self"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Spellweaver",
+    "name": "Impaling Eruption",
+    "level": 1,
+    "initiative": 61,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["element:earth"],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Spellweaver",
+    "name": "Cold Fire",
+    "level": 2,
+    "initiative": 48,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["wound", "consume:fire"],
+      "range": 4,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["immobilize", "consume:ice"],
+      "range": 3,
+      "target": 1
+    }
+  },
+  {
+    "className": "Spellweaver",
+    "name": "Reviving Ether",
+    "level": 3,
+    "initiative": 19,
+    "topAction": {
+      "type": "special",
+      "value": 0,
+      "effects": ["recover-discards:2"],
+      "range": 0,
+      "target": "self"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 4,
+      "effects": ["element:any"],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Scoundrel",
+    "name": "Smoke Bomb",
+    "level": 1,
+    "initiative": 12,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": [],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": ["invisible"],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Scoundrel",
+    "name": "Backstab",
+    "level": 1,
+    "initiative": 46,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["bonus-adjacent:2"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Scoundrel",
+    "name": "Quick Hands",
+    "level": 1,
+    "initiative": 64,
+    "topAction": {
+      "type": "loot",
+      "value": 1,
+      "effects": [],
+      "range": 0,
+      "target": "self"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 4,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Scoundrel",
+    "name": "Flanking Strike",
+    "level": 2,
+    "initiative": 15,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["bonus-adjacent:2"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Scoundrel",
+    "name": "Duelist's Advance",
+    "level": 3,
+    "initiative": 13,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["pierce:2", "bonus-adjacent:2"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 5,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Cragheart",
+    "name": "Rumbling Advance",
+    "level": 1,
+    "initiative": 29,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["element:earth"],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": ["create-obstacle"],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Cragheart",
+    "name": "Massive Boulder",
+    "level": 1,
+    "initiative": 87,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["immobilize", "consume:earth"],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Cragheart",
+    "name": "Avalanche",
+    "level": 1,
+    "initiative": 75,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["element:earth", "aoe:cone"],
+      "range": 3,
+      "target": 3
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Cragheart",
+    "name": "Rock Tunnel",
+    "level": 2,
+    "initiative": 41,
+    "topAction": {
+      "type": "special",
+      "value": 0,
+      "effects": ["destroy-obstacle", "create-obstacle"],
+      "range": 4,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Cragheart",
+    "name": "Nature's Lift",
+    "level": 3,
+    "initiative": 64,
+    "topAction": {
+      "type": "move",
+      "value": 3,
+      "effects": ["jump"],
+      "range": 0,
+      "target": "all-allies"
+    },
+    "bottomAction": {
+      "type": "special",
+      "value": 0,
+      "effects": ["destroy-obstacle:2"],
+      "range": 3,
+      "target": 2
+    }
+  },
+  {
+    "className": "Mindthief",
+    "name": "Into the Night",
+    "level": 1,
+    "initiative": 14,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["invisible"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Mindthief",
+    "name": "Feedback Loop",
+    "level": 1,
+    "initiative": 79,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["retaliate:2", "consume:ice"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Mindthief",
+    "name": "Possession",
+    "level": 1,
+    "initiative": 68,
+    "topAction": {
+      "type": "attack",
+      "value": 2,
+      "effects": ["control"],
+      "range": 3,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 4,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Mindthief",
+    "name": "Empathetic Assault",
+    "level": 2,
+    "initiative": 11,
+    "topAction": {
+      "type": "attack",
+      "value": 4,
+      "effects": ["bonus-ally-adjacent:1"],
+      "range": 0,
+      "target": 1
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 3,
+      "effects": [],
+      "target": "self"
+    }
+  },
+  {
+    "className": "Mindthief",
+    "name": "Shared Nightmare",
+    "level": 3,
+    "initiative": 37,
+    "topAction": {
+      "type": "attack",
+      "value": 3,
+      "effects": ["muddle", "aoe:all-adjacent"],
+      "range": 0,
+      "target": "all-adjacent"
+    },
+    "bottomAction": {
+      "type": "move",
+      "value": 2,
+      "effects": ["jump"],
+      "target": "self"
+    }
+  }
+]

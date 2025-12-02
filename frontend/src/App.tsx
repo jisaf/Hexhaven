@@ -14,6 +14,10 @@ import { GameBoard } from './pages/GameBoard';
 import { HexMapDemo } from './pages/HexMapDemo';
 import ScenarioDesigner from './pages/ScenarioDesigner';
 import { TestVideos } from './pages/TestVideos';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Characters } from './pages/Characters';
+import { CreateCharacter } from './pages/CreateCharacter';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
@@ -120,6 +124,10 @@ function App() {
         <ConnectionUI />
         <Routes>
           <Route path="/" element={<Lobby />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/characters" element={<Characters />} />
+          <Route path="/characters/new" element={<CreateCharacter />} />
           <Route path="/game/:roomCode" element={<GameBoard />} />
           <Route path="/demo" element={<HexMapDemo />} />
           <Route path="/design" element={<ScenarioDesigner />} />
