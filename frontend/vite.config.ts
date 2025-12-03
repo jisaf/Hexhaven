@@ -4,6 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

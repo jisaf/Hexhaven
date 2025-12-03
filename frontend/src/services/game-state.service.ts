@@ -684,18 +684,30 @@ class GameStateManager {
       }
   }
 
+  // Helper function to extract action value from modular ability structure
+  private getActionValue(ability: Ability | null | undefined, actionType: string): number {
+    if (!ability || !ability.rows) return 0;
+
+    for (const row of ability.rows) {
+      for (const module of row.modules) {
+        if (module.type === 'icon_action' && module.action === actionType && module.value) {
+          return module.value;
+        }
+      }
+    }
+    return 0;
+  }
+
   public getAttackAction(): { value: number; range: number } | null {
     // Check top action first, then bottom action for an attack
-    if (this.state.selectedTopAction?.topAction?.type === 'attack') {
+    const topAttack = this.getActionValue(this.state.selectedTopAction?.topAction, 'attack');
+    const bottomAttack = this.getActionValue(this.state.selectedBottomAction?.bottomAction, 'attack');
+
+    const attackValue = topAttack || bottomAttack;
+    if (attackValue > 0) {
       return {
-        value: this.state.selectedTopAction.topAction.value || 0,
-        range: this.state.selectedTopAction.topAction.range ?? 0,
-      };
-    }
-    if (this.state.selectedBottomAction?.bottomAction?.type === 'attack') {
-      return {
-        value: this.state.selectedBottomAction.bottomAction.value || 0,
-        range: this.state.selectedBottomAction.bottomAction.range ?? 0,
+        value: attackValue,
+        range: 0, // Note: attackRange not yet in modular structure
       };
     }
     return null;
@@ -703,14 +715,13 @@ class GameStateManager {
 
   public getMoveAction(): { value: number } | null {
     // Check bottom action first (traditional), then top action
-    if (this.state.selectedBottomAction?.bottomAction?.type === 'move') {
+    const bottomMove = this.getActionValue(this.state.selectedBottomAction?.bottomAction, 'move');
+    const topMove = this.getActionValue(this.state.selectedTopAction?.topAction, 'move');
+
+    const moveValue = bottomMove || topMove;
+    if (moveValue > 0) {
       return {
-        value: this.state.selectedBottomAction.bottomAction.value || 0,
-      };
-    }
-    if (this.state.selectedTopAction?.topAction?.type === 'move') {
-      return {
-        value: this.state.selectedTopAction.topAction.value || 0,
+        value: moveValue,
       };
     }
     return null;

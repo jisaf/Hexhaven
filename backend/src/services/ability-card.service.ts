@@ -23,18 +23,35 @@ export class AbilityCardService implements OnModuleInit {
 
   private async loadAbilityCardsFromFile(): Promise<void> {
     try {
-      const dataFilePath = path.join(process.cwd(), 'backend', 'src', 'data', 'ability-cards.json');
+      const dataFilePath = path.join(
+        process.cwd(),
+        'backend',
+        'src',
+        'data',
+        'ability-cards.json',
+      );
 
       try {
         const fileContent = await fs.readFile(dataFilePath, 'utf-8');
         this.abilityCards = JSON.parse(fileContent) as AbilityCard[];
-        console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`);
-      } catch (error) {
+        console.log(
+          `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
+        );
+      } catch {
         // Fallback for compiled version in dist
-        const distDataFilePath = path.join(process.cwd(), 'dist', 'backend', 'src', 'data', 'ability-cards.json');
+        const distDataFilePath = path.join(
+          process.cwd(),
+          'dist',
+          'backend',
+          'src',
+          'data',
+          'ability-cards.json',
+        );
         const fileContent = await fs.readFile(distDataFilePath, 'utf-8');
         this.abilityCards = JSON.parse(fileContent) as AbilityCard[];
-        console.log(`✅ Loaded ${this.abilityCards.length} ability cards from ${distDataFilePath}`);
+        console.log(
+          `✅ Loaded ${this.abilityCards.length} ability cards from ${distDataFilePath}`,
+        );
       }
     } catch (error) {
       console.error('Failed to load ability-cards.json:', error);

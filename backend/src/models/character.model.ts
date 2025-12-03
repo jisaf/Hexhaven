@@ -152,7 +152,9 @@ export class Character {
     return this._activeAction ? { ...this._activeAction } : undefined;
   }
 
-  set activeAction(action: { cardId: string; half: 'top' | 'bottom' } | undefined) {
+  set activeAction(
+    action: { cardId: string; half: 'top' | 'bottom' } | undefined,
+  ) {
     this._activeAction = action ? { ...action } : undefined;
     this._updatedAt = new Date();
   }

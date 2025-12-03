@@ -1077,7 +1077,9 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Select action request from ${playerUUID}: card ${payload.cardId}, ${payload.half}`);
+      this.logger.log(
+        `Select action request from ${playerUUID}: card ${payload.cardId}, ${payload.half}`,
+      );
 
       const roomData = this.getRoomFromSocket(client);
       if (!roomData) {
@@ -1094,8 +1096,11 @@ export class GameGateway
         half: payload.half,
       };
 
-      client.emit('action_selected', { success: true, cardId: payload.cardId, half: payload.half });
-
+      client.emit('action_selected', {
+        success: true,
+        cardId: payload.cardId,
+        half: payload.half,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1172,56 +1177,39 @@ export class GameGateway
       const topCard = validation.topCard!;
       const bottomCard = validation.bottomCard!;
 
+      // Helper function to extract action value from modular ability structure
+      const getActionValue = (ability: any, actionType: string): number => {
+        if (!ability || !ability.rows) return 0;
+
+        for (const row of ability.rows) {
+          for (const module of row.modules) {
+            if (module.type === 'icon_action' && module.action === actionType && module.value) {
+              return module.value;
+            }
+          }
+        }
+        return 0;
+      };
+
       let movementValue = 0;
       let attackValue = 0;
       let attackRange = 0;
 
       // Extract movement - check bottom action first (most common)
-      if (
-        bottomCard.bottomAction?.type === 'move' &&
-        bottomCard.bottomAction.value
-      ) {
-        movementValue = bottomCard.bottomAction.value;
-      } else if (
-        topCard.topAction?.type === 'move' &&
-        topCard.topAction.value
-      ) {
-        movementValue = topCard.topAction.value;
-      } else if (
-        bottomCard.topAction?.type === 'move' &&
-        bottomCard.topAction.value
-      ) {
-        movementValue = bottomCard.topAction.value;
-      } else if (
-        topCard.bottomAction?.type === 'move' &&
-        topCard.bottomAction.value
-      ) {
-        movementValue = topCard.bottomAction.value;
-      }
+      movementValue = getActionValue(bottomCard.bottomAction, 'move') ||
+        getActionValue(topCard.topAction, 'move') ||
+        getActionValue(bottomCard.topAction, 'move') ||
+        getActionValue(topCard.bottomAction, 'move');
 
       // Extract attack and range - check top action first (most common)
-      if (topCard.topAction?.type === 'attack' && topCard.topAction.value) {
-        attackValue = topCard.topAction.value;
-        attackRange = topCard.topAction.range ?? 0;
-      } else if (
-        bottomCard.bottomAction?.type === 'attack' &&
-        bottomCard.bottomAction.value
-      ) {
-        attackValue = bottomCard.bottomAction.value;
-        attackRange = bottomCard.bottomAction.range ?? 0;
-      } else if (
-        topCard.bottomAction?.type === 'attack' &&
-        topCard.bottomAction.value
-      ) {
-        attackValue = topCard.bottomAction.value;
-        attackRange = topCard.bottomAction.range ?? 0;
-      } else if (
-        bottomCard.topAction?.type === 'attack' &&
-        bottomCard.topAction.value
-      ) {
-        attackValue = bottomCard.topAction.value;
-        attackRange = bottomCard.topAction.range ?? 0;
-      }
+      attackValue = getActionValue(topCard.topAction, 'attack') ||
+        getActionValue(bottomCard.bottomAction, 'attack') ||
+        getActionValue(topCard.bottomAction, 'attack') ||
+        getActionValue(bottomCard.topAction, 'attack');
+
+      // Note: attackRange is currently always 0 as the modular structure doesn't have a separate range field yet
+      // This will need to be updated when range information is added to the IconActionModule
+      attackRange = 0;
 
       // Set the effective values for this turn
       character.setEffectiveMovement(movementValue);
