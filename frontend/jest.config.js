@@ -29,7 +29,8 @@ export default {
         jsx: 'react',
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
-        resolveJsonModule: true
+        resolveJsonModule: true,
+        types: ['jest', '@testing-library/jest-dom', 'jest-axe', 'node']
       }
     }]
   },

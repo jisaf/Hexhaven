@@ -4,6 +4,7 @@
  * Tests components for WCAG 2.1 AA compliance using jest-axe
  */
 
+import React from 'react';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 
@@ -15,8 +16,8 @@ const AccessibleButton = () => (
 );
 
 const InaccessibleButton = () => (
-  // Missing aria-label for icon-only button
-  <button type="button">×</button>
+  // Empty button without label - truly inaccessible
+  <button type="button"></button>
 );
 
 const AccessibleForm = () => (

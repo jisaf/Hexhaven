@@ -4,12 +4,13 @@
  * Demonstrates how to test responsive components across different viewports
  */
 
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { setViewport, getViewport } from '../setup';
 
 // Example responsive component (for demonstration)
 const ResponsiveComponent = () => {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth < 768;
   const isDesktop = window.innerWidth >= 1024;
 
   return (
