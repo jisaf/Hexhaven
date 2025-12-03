@@ -17,6 +17,7 @@ import {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { LootToken } from '../models/loot-token.model';
+import { PrismaService } from './prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -31,6 +32,8 @@ interface MonsterStats {
 export class ScenarioService {
   private scenarios: Scenario[] | null = null;
   private scenariosFilePath: string | null = null;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Load all scenarios from JSON file (lazy load)
@@ -93,9 +96,38 @@ export class ScenarioService {
   }
 
   /**
-   * Load scenario by ID
+   * Load scenario by ID (002 - Updated to fetch from database first, fallback to JSON)
    */
   async loadScenario(scenarioId: string): Promise<Scenario | null> {
+    // Try loading from database first (UUID format)
+    try {
+      const dbScenario = await this.prisma.scenario.findUnique({
+        where: { id: scenarioId },
+      });
+
+      if (dbScenario) {
+        // Convert database scenario to Scenario type
+        const objectives = dbScenario.objectives as any;
+        return {
+          id: dbScenario.id,
+          name: dbScenario.name,
+          difficulty: dbScenario.difficulty,
+          mapLayout: dbScenario.mapLayout as any,
+          monsterGroups: dbScenario.monsterGroups as any,
+          objectivePrimary: objectives?.primary || 'Complete the scenario',
+          objectiveSecondary: objectives?.secondary,
+          treasures: dbScenario.treasures as any,
+          playerStartPositions: dbScenario.playerStartPositions as any,
+        };
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to load scenario ${scenarioId} from database, trying JSON file:`,
+        error,
+      );
+    }
+
+    // Fallback to JSON file for legacy scenarios (e.g., 'scenario-1')
     const scenarios = await this.loadScenariosFromFile();
     const scenario = scenarios.find((s) => s.id === scenarioId);
     return scenario || null;

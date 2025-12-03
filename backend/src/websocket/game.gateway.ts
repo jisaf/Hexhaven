@@ -69,7 +69,10 @@ export class GameGateway
 
   private readonly logger = new Logger(GameGateway.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly scenarioService: ScenarioService,
+  ) {
     this.logger.log('GameGateway constructor called');
   }
 
@@ -77,7 +80,6 @@ export class GameGateway
     this.logger.log('WebSocket Gateway initialized successfully');
     this.logger.log(`Socket.IO server is running`);
   }
-  private readonly scenarioService = new ScenarioService();
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
   private readonly damageService = new DamageCalculationService();
