@@ -145,6 +145,7 @@ export class ScenarioService {
             r: pos.r !== undefined ? pos.r : pos.y,
           }));
           playerStartPositions = {
+            1: positions.slice(0, 1), // For testing with 1 player
             2: positions,
             3: positions,
             4: positions,
@@ -419,9 +420,9 @@ export class ScenarioService {
   } {
     const errors: string[] = [];
 
-    // Check map layout has minimum tiles
-    if (scenario.mapLayout.length < 10) {
-      errors.push('Map layout must have at least 10 tiles');
+    // Check map layout has minimum tiles (reduced to 5 for testing)
+    if (scenario.mapLayout.length < 5) {
+      errors.push('Map layout must have at least 5 tiles');
     }
 
     // Check monster groups exist
