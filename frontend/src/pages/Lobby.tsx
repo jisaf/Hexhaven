@@ -213,6 +213,9 @@ export function Lobby() {
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
 
+  // Test log to verify DebugConsole is capturing logs
+  console.log('[Lobby] 🔍 DEBUG CONSOLE TEST - Component rendered');
+
   // Debug logging
   console.log('[Lobby] Player state:', {
     players,
