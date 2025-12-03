@@ -137,10 +137,28 @@ export type AddExperienceDto = z.infer<typeof addExperienceSchema>;
 // ========== GAME SCHEMAS ==========
 
 /**
+ * Room code validation
+ * - Exactly 6 characters
+ * - Uppercase alphanumeric only
+ */
+export const roomCodeSchema = z
+  .string()
+  .length(6, 'Room code must be exactly 6 characters')
+  .regex(/^[A-Z0-9]+$/, 'Room code must be uppercase alphanumeric')
+  .transform((val) => val.toUpperCase());
+
+/**
  * Game creation request
  */
 export const createGameSchema = z.object({
+  roomCode: roomCodeSchema,
   scenarioId: z.string().uuid('Invalid scenario ID'),
+  difficulty: z
+    .number()
+    .int('Difficulty must be an integer')
+    .min(1, 'Difficulty must be at least 1')
+    .max(7, 'Difficulty must not exceed 7'),
+  hostCharacterId: z.string().uuid('Invalid character ID'),
 });
 
 export type CreateGameDto = z.infer<typeof createGameSchema>;

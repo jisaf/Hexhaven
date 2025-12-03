@@ -13,6 +13,7 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  UsePipes,
 } from '@nestjs/common';
 import type {
   CreateGameDto,
@@ -25,6 +26,8 @@ import type {
 import { GameStateService } from '../services/game-state.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { prisma } from '../db/client';
+import { ZodValidationPipe } from '../pipes/zod-validation.pipe';
+import { createGameSchema } from '../validation/schemas';
 
 @Controller('api/games')
 @UseGuards(JwtAuthGuard)
@@ -43,7 +46,7 @@ export class GameManagementController {
   @HttpCode(HttpStatus.CREATED)
   async createGame(
     @Request() req: any,
-    @Body() createDto: CreateGameDto,
+    @Body(new ZodValidationPipe(createGameSchema)) createDto: CreateGameDto,
   ): Promise<GameWithCharacters> {
     const userId = req.user.userId;
     return await this.gameStateService.createGame(userId, createDto);
