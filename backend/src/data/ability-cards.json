@@ -1,7 +1,7 @@
 [
   {
     "id": "brute-warding-strength",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Warding Strength",
     "initiative": 32,
     "top": {
@@ -26,7 +26,7 @@
   },
   {
     "id": "brute-eye-for-an-eye",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Eye for an Eye",
     "initiative": 18,
     "top": {
@@ -51,7 +51,7 @@
   },
   {
     "id": "brute-provoking-roar",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Provoking Roar",
     "initiative": 10,
     "top": {
@@ -72,7 +72,7 @@
   },
   {
     "id": "brute-grab-and-go",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Grab and Go",
     "initiative": 87,
     "top": { "rows": [ { "modules": [ { "type": "icon_action", "action": "loot", "value": 1 } ] } ] },
@@ -80,7 +80,7 @@
   },
   {
     "id": "brute-trample",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Trample",
     "initiative": 72,
     "top": {
@@ -103,7 +103,7 @@
   },
   {
     "id": "brute-shield-bash",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Shield Bash",
     "initiative": 15,
     "top": {
@@ -125,7 +125,7 @@
   },
   {
     "id": "brute-sweeping-blow",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Sweeping Blow",
     "initiative": 64,
     "top": {
@@ -148,7 +148,7 @@
   },
   {
     "id": "brute-leaping-cleave",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Leaping Cleave",
     "initiative": 54,
     "top": {
@@ -169,7 +169,7 @@
   },
   {
     "id": "brute-overwhelming-assault",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Overwhelming Assault",
     "initiative": 61,
     "top": {
@@ -191,7 +191,7 @@
   },
   {
     "id": "brute-spare-dagger",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Spare Dagger",
     "initiative": 27,
     "top": {
@@ -209,7 +209,7 @@
   },
   {
     "id": "brute-skewer",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Skewer",
     "initiative": 35,
     "top": {
@@ -228,7 +228,7 @@
   },
   {
     "id": "brute-balanced-measure",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Balanced Measure",
     "initiative": 77,
     "top": {
@@ -248,7 +248,7 @@
   },
   {
     "id": "brute-wall-of-doom",
-    "character": "Brute",
+    "characterClass": "Brute",
     "name": "Wall of Doom",
     "initiative": 20,
     "top": {
@@ -273,7 +273,7 @@
   },
   {
     "id": "spellweaver-living-torch",
-    "character": "Spellweaver",
+    "characterClass": "Spellweaver",
     "name": "Living Torch",
     "initiative": 86,
     "top": {
