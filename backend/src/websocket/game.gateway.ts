@@ -350,7 +350,9 @@ export class GameGateway
 
       // IMPORTANT: Leave all other game rooms before joining the new one
       // This ensures getRoomFromSocket() always returns the correct current room
-      const currentRooms = Array.from(client.rooms).filter((r) => r !== client.id);
+      const currentRooms = Array.from(client.rooms).filter(
+        (r) => r !== client.id,
+      );
       for (const oldRoomCode of currentRooms) {
         if (oldRoomCode !== roomCode) {
           this.logger.log(
@@ -604,7 +606,9 @@ export class GameGateway
       );
 
       // Multi-room detection: Check if client is in multiple rooms
-      const clientRooms = Array.from(client.rooms).filter(r => r !== client.id);
+      const clientRooms = Array.from(client.rooms).filter(
+        (r) => r !== client.id,
+      );
       if (clientRooms.length > 1) {
         this.logger.warn(
           `⚠️ Client ${client.id} (player ${playerUUID}) is in multiple rooms: ${clientRooms.join(', ')}. This may cause character selection issues.`,
@@ -741,9 +745,13 @@ export class GameGateway
       }
 
       // Create characters for all players at starting positions
-      this.logger.log(`🎭 Creating characters for ${room.players.length} players`);
+      this.logger.log(
+        `🎭 Creating characters for ${room.players.length} players`,
+      );
       room.players.forEach((p: Player, idx: number) => {
-        this.logger.log(`   Player ${idx}: ${p.nickname} - characterClass: ${p.characterClass}`);
+        this.logger.log(
+          `   Player ${idx}: ${p.nickname} - characterClass: ${p.characterClass}`,
+        );
       });
 
       const characters = room.players
@@ -1127,16 +1135,25 @@ export class GameGateway
       let attackRange = 0;
 
       // Extract movement - check bottom action first (most common)
-      if (bottomCard.bottomAction?.type === 'move' && bottomCard.bottomAction.value) {
+      if (
+        bottomCard.bottomAction?.type === 'move' &&
+        bottomCard.bottomAction.value
+      ) {
         movementValue = bottomCard.bottomAction.value;
-      }
-      else if (topCard.topAction?.type === 'move' && topCard.topAction.value) {
+      } else if (
+        topCard.topAction?.type === 'move' &&
+        topCard.topAction.value
+      ) {
         movementValue = topCard.topAction.value;
-      }
-      else if (bottomCard.topAction?.type === 'move' && bottomCard.topAction.value) {
+      } else if (
+        bottomCard.topAction?.type === 'move' &&
+        bottomCard.topAction.value
+      ) {
         movementValue = bottomCard.topAction.value;
-      }
-      else if (topCard.bottomAction?.type === 'move' && topCard.bottomAction.value) {
+      } else if (
+        topCard.bottomAction?.type === 'move' &&
+        topCard.bottomAction.value
+      ) {
         movementValue = topCard.bottomAction.value;
       }
 
@@ -1144,16 +1161,22 @@ export class GameGateway
       if (topCard.topAction?.type === 'attack' && topCard.topAction.value) {
         attackValue = topCard.topAction.value;
         attackRange = topCard.topAction.range ?? 0;
-      }
-      else if (bottomCard.bottomAction?.type === 'attack' && bottomCard.bottomAction.value) {
+      } else if (
+        bottomCard.bottomAction?.type === 'attack' &&
+        bottomCard.bottomAction.value
+      ) {
         attackValue = bottomCard.bottomAction.value;
         attackRange = bottomCard.bottomAction.range ?? 0;
-      }
-      else if (topCard.bottomAction?.type === 'attack' && topCard.bottomAction.value) {
+      } else if (
+        topCard.bottomAction?.type === 'attack' &&
+        topCard.bottomAction.value
+      ) {
         attackValue = topCard.bottomAction.value;
         attackRange = topCard.bottomAction.range ?? 0;
-      }
-      else if (bottomCard.topAction?.type === 'attack' && bottomCard.topAction.value) {
+      } else if (
+        bottomCard.topAction?.type === 'attack' &&
+        bottomCard.topAction.value
+      ) {
         attackValue = bottomCard.topAction.value;
         attackRange = bottomCard.topAction.range ?? 0;
       }
@@ -1447,7 +1470,10 @@ export class GameGateway
               !t.isCollected,
           );
           const stackCount = tokensAtPosition.length;
-          const totalValue = tokensAtPosition.reduce((sum, t) => sum + t.value, 0);
+          const totalValue = tokensAtPosition.reduce(
+            (sum: number, t: LootToken): number => sum + t.value,
+            0,
+          );
 
           this.logger.log(
             `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id} (${stackCount} token(s) stacked, total value: ${totalValue})`,
@@ -2293,7 +2319,9 @@ export class GameGateway
   private handleRoundCompletion(roomCode: string): void {
     const room = roomService.getRoom(roomCode);
     if (!room) {
-      this.logger.error(`Room not found for code ${roomCode} in handleRoundCompletion`);
+      this.logger.error(
+        `Room not found for code ${roomCode} in handleRoundCompletion`,
+      );
       return;
     }
 

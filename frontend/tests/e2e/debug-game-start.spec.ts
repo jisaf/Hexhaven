@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Debug: Game Start Issue', () => {
-  test('should create game and check console logs', async ({ page, context }) => {
+  test('should create game and check console logs', async ({ page }) => {
     // Capture console logs
     const consoleLogs: string[] = [];
     const consoleErrors: string[] = [];

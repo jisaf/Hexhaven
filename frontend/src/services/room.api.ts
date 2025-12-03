@@ -20,12 +20,13 @@ export const fetchActiveRooms = async () => {
     }
     const errorText = await response.text();
     throw new Error(`Failed to fetch active rooms: ${response.status} ${response.statusText} - ${errorText}`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     console.error('[API] Fetch active rooms error:', {
       url,
-      error: err.message,
-      name: err.name,
-      stack: err.stack,
+      error: error.message,
+      name: error.name,
+      stack: error.stack,
     });
     throw err;
   }
@@ -52,12 +53,13 @@ export const fetchMyRooms = async () => {
     }
     const errorText = await response.text();
     throw new Error(`Failed to fetch my rooms: ${response.status} ${response.statusText} - ${errorText}`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     console.error('[API] Fetch my rooms error:', {
       url,
-      error: err.message,
-      name: err.name,
-      stack: err.stack,
+      error: error.message,
+      name: error.name,
+      stack: error.stack,
     });
     throw err;
   }

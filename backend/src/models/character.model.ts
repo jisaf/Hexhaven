@@ -154,21 +154,30 @@ export class Character {
 
   get effectiveMovementThisTurn(): number {
     // Use card's movement value if set, otherwise fall back to base stat
-    return this._effectiveMovementThisTurn > 0 ? this._effectiveMovementThisTurn : this._stats.movement;
+    return this._effectiveMovementThisTurn > 0
+      ? this._effectiveMovementThisTurn
+      : this._stats.movement;
   }
 
   get movementRemainingThisTurn(): number {
-    return Math.max(0, this.effectiveMovementThisTurn - this._movementUsedThisTurn);
+    return Math.max(
+      0,
+      this.effectiveMovementThisTurn - this._movementUsedThisTurn,
+    );
   }
 
   get effectiveAttackThisTurn(): number {
     // Use card's attack value if set, otherwise fall back to base stat
-    return this._effectiveAttackThisTurn > 0 ? this._effectiveAttackThisTurn : this._stats.attack;
+    return this._effectiveAttackThisTurn > 0
+      ? this._effectiveAttackThisTurn
+      : this._stats.attack;
   }
 
   get effectiveRangeThisTurn(): number {
     // Use card's range value if set, otherwise fall back to base stat
-    return this._effectiveRangeThisTurn > 0 ? this._effectiveRangeThisTurn : this._stats.range;
+    return this._effectiveRangeThisTurn > 0
+      ? this._effectiveRangeThisTurn
+      : this._stats.range;
   }
 
   get hasAttackedThisTurn(): boolean {

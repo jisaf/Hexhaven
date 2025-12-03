@@ -470,7 +470,7 @@ class GameStateManager {
 
     if (this.state.gameData) {
       const character = this.state.gameData.characters.find(c => c.playerId === data.playerId);
-      const characterName = character?.characterClass || 'Unknown';
+      const characterName = character?.classType || 'Unknown';
 
       if (isMyLoot) {
         this.addLog([
