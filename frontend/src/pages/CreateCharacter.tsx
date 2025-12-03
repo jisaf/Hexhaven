@@ -6,10 +6,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { characterService } from '../services/character.service';
+import { getApiUrl } from '../config/api';
 import type { CharacterClass } from '../types/character.types';
 import './CreateCharacter.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export function CreateCharacter() {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ export function CreateCharacter() {
     try {
       setLoading(true);
       // Fetch character classes from backend
-      const response = await fetch(`${API_BASE_URL}/api/character-classes`);
+      const response = await fetch(`${getApiUrl()}/character-classes`);
       if (!response.ok) {
         throw new Error('Failed to load character classes');
       }
