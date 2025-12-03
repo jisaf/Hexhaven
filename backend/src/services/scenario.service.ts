@@ -108,12 +108,25 @@ export class ScenarioService {
       if (dbScenario) {
         // Convert database scenario to Scenario type
         const objectives = dbScenario.objectives as any;
+        const dbMonsterGroups = dbScenario.monsterGroups as any[];
+
+        // Transform database monsterGroups format to code format
+        const monsterGroups = dbMonsterGroups.map((group: any) => ({
+          type: group.type,
+          isElite: group.level === 'elite',
+          count: group.positions?.length || 0,
+          spawnPoints: (group.positions || []).map((pos: any) => ({
+            q: pos.q !== undefined ? pos.q : pos.x,
+            r: pos.r !== undefined ? pos.r : pos.y,
+          })),
+        }));
+
         return {
           id: dbScenario.id,
           name: dbScenario.name,
           difficulty: dbScenario.difficulty,
           mapLayout: dbScenario.mapLayout as any,
-          monsterGroups: dbScenario.monsterGroups as any,
+          monsterGroups,
           objectivePrimary: objectives?.primary || 'Complete the scenario',
           objectiveSecondary: objectives?.secondary,
           treasures: dbScenario.treasures as any,
