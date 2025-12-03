@@ -7,8 +7,10 @@
 import { useTranslation } from 'react-i18next';
 import { PlayerList, type Player } from '../PlayerList';
 import { UserCharacterSelect } from '../UserCharacterSelect';
+import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
 import { ScenarioSelectionPanel } from '../ScenarioSelectionPanel';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
+import { authService } from '../../services/auth.service';
 import styles from './LobbyRoomView.module.css';
 
 interface LobbyRoomViewProps {
@@ -22,7 +24,7 @@ interface LobbyRoomViewProps {
   canStartGame: boolean;
   allPlayersReady: boolean;
   error: string | null;
-  onSelectCharacter: (characterId: string) => void;
+  onSelectCharacter: (characterIdOrClass: string) => void;
   onSelectScenario: (scenarioId: string) => void;
   onStartGame: () => void;
 }
@@ -98,11 +100,19 @@ export function LobbyRoomView({
         </div>
 
         <div className={styles.roomSection}>
-          <UserCharacterSelect
-            selectedCharacterId={selectedCharacterId}
-            disabledCharacterIds={disabledCharacterIds}
-            onSelect={onSelectCharacter}
-          />
+          {authService.isAuthenticated() ? (
+            <UserCharacterSelect
+              selectedCharacterId={selectedCharacterId}
+              disabledCharacterIds={disabledCharacterIds}
+              onSelect={onSelectCharacter}
+            />
+          ) : (
+            <CharacterSelect
+              selectedClass={selectedCharacterId as CharacterClass | undefined}
+              disabledClasses={[]}
+              onSelect={(charClass) => onSelectCharacter(charClass)}
+            />
+          )}
         </div>
       </div>
 
