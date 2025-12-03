@@ -1,7 +1,7 @@
 /**
- * Scenarios Controller (US2 - T101, T102)
+ * Scenarios Controller (002 - Phase 6)
  *
- * REST API endpoints for scenario browsing:
+ * REST API endpoints for scenario browsing using Prisma database:
  * - GET /api/scenarios - List available scenarios
  * - GET /api/scenarios/:id - Get scenario details
  */
@@ -9,34 +9,30 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Param,
   NotFoundException,
 } from '@nestjs/common';
-import { ScenarioService } from '../services/scenario.service';
-import { Scenario } from '../../../shared/types/entities';
+import prisma from '../db/client';
 
 @Controller('api/scenarios')
 export class ScenariosController {
-  constructor(private readonly scenarioService: ScenarioService) {}
-
-  @Post()
-  async createScenario(@Body() scenario: Omit<Scenario, 'id'>) {
-    const newScenario = await this.scenarioService.saveScenario(scenario);
-    return {
-      message: 'Scenario saved successfully',
-      scenario: newScenario,
-    };
-  }
-
   /**
    * GET /api/scenarios
-   * List all available scenarios
+   * List all available scenarios from database
    */
   @Get()
   async listScenarios() {
-    const scenarios = await this.scenarioService.getAvailableScenarios();
+    const scenarios = await prisma.scenario.findMany({
+      select: {
+        id: true,
+        name: true,
+        difficulty: true,
+      },
+      orderBy: {
+        difficulty: 'asc',
+      },
+    });
+
     return {
       scenarios,
       count: scenarios.length,
@@ -49,21 +45,16 @@ export class ScenariosController {
    */
   @Get(':id')
   async getScenario(@Param('id') id: string) {
-    const scenario = await this.scenarioService.loadScenario(id);
+    const scenario = await prisma.scenario.findUnique({
+      where: { id },
+    });
 
     if (!scenario) {
       throw new NotFoundException(`Scenario with id ${id} not found`);
     }
 
-    // Validate scenario data
-    const validation = this.scenarioService.validateScenario(scenario);
-    if (!validation.valid) {
-      console.warn(`Scenario ${id} validation failed:`, validation.errors);
-    }
-
     return {
       scenario,
-      validation,
     };
   }
 }
