@@ -7,6 +7,17 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['dev.hexhaven.net', 'test.hexhaven.net', 'www.hexhaven.net', 'hexhaven.net'],
+    strictPort: false,
+    hmr: {
+      clientPort: 80,
+      protocol: 'ws',
+    },
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    allowedHosts: ['dev.hexhaven.net', 'test.hexhaven.net', 'www.hexhaven.net', 'hexhaven.net'],
   },
   plugins: [
     react(),

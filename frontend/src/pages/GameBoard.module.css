@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #0d1a2e;
+  background-color: var(--primary-bg-color, #0d1a2e);
   color: #f0e6d2;
   overflow: hidden;
   font-family: 'Georgia', serif;
@@ -13,14 +13,27 @@
     flex-direction: row;
   }
 
+  /* .gameContainer will use flex: 1 to take up the remaining 60% */
+
   .rightPanel {
-    width: 250px;
+    width: 40%;
+    max-width: 450px; /* Add a max-width for very large screens */
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    position: static; /* Ensure it's not fixed like in portrait */
+  }
+
+  .rightPanel > :first-child { /* TurnOrder */
+    height: 50%;
+    overflow-y: auto;
   }
 
   .hudWrapper {
-    margin-top: auto;
+    position: static;
+    height: 50%;
+    overflow-y: auto;
+    border-top: 1px solid #c9a444;
   }
 
   .cardSelectionActive .rightPanel {
@@ -29,7 +42,8 @@
 }
 
 .gameContainer {
-  flex: 1;
+  flex-grow: 1;
+  flex-basis: 60%;
   position: relative;
   overflow: hidden;
 }
@@ -41,7 +55,7 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 24px;
-  background: rgba(13, 26, 46, 0.85);
+  background: rgba(var(--primary-bg-color-rgb, 13, 26, 46), 0.85);
   backdrop-filter: blur(5px);
   border: 1px solid #c9a444;
   color: #f0e6d2;
@@ -76,7 +90,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(13, 26, 46, 0.95);
+  background: rgba(var(--primary-bg-color-rgb, 13, 26, 46), 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,14 +124,6 @@
   font-family: 'MedievalSharp', serif;
 }
 
-.hudWrapper {
-  /* Default: a top bar in landscape */
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-}
 
 .bottomPlaceholder {
   display: none; /* Hidden in landscape */
@@ -140,7 +146,7 @@
     height: 50vh;
     display: flex;
     flex-direction: column;
-    background-color: #0d1a2e;
+    background-color: var(--primary-bg-color, #0d1a2e);
     z-index: 10;
   }
 

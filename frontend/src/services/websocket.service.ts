@@ -72,6 +72,8 @@ export interface WebSocketEvents {
 
   // Monster AI
   monster_activated: (data: MonsterActivatedPayload) => void;
+  monster_died: (data: { monsterId: string; killerId: string; hexCoordinates: { q: number; r: number } }) => void;
+  loot_spawned: (data: { id: string; coordinates: { q: number; r: number }; value: number }) => void;
 
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
@@ -340,10 +342,14 @@ class WebSocketService {
   }
 
   /**
-   * Leave current room
+   * Leave a specific room (or current room if no roomCode provided)
    */
-  leaveRoom(): void {
-    this.emit('leave_room');
+  leaveRoom(roomCode?: string): void {
+    if (roomCode) {
+      this.emit('leave_room', { roomCode });
+    } else {
+      this.emit('leave_room');
+    }
   }
 
   /**

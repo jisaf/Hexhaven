@@ -50,6 +50,12 @@ export class Character {
     cardId: string;
     half: 'top' | 'bottom';
   };
+  private _hasMovedThisTurn: boolean = false; // Deprecated - kept for backward compatibility
+  private _movementUsedThisTurn: number = 0; // New: tracks cumulative movement distance
+  private _effectiveMovementThisTurn: number = 0; // Movement value from selected card (Gloomhaven: movement comes from cards, not base stats)
+  private _effectiveAttackThisTurn: number = 0; // Attack value from selected card (Gloomhaven: attack comes from cards, not base stats)
+  private _effectiveRangeThisTurn: number = 0; // Attack range from selected card
+  private _hasAttackedThisTurn: boolean = false;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -151,6 +157,46 @@ export class Character {
     this._updatedAt = new Date();
   }
 
+  get hasMovedThisTurn(): boolean {
+    return this._hasMovedThisTurn;
+  }
+
+  get movementUsedThisTurn(): number {
+    return this._movementUsedThisTurn;
+  }
+
+  get effectiveMovementThisTurn(): number {
+    // Use card's movement value if set, otherwise fall back to base stat
+    return this._effectiveMovementThisTurn > 0
+      ? this._effectiveMovementThisTurn
+      : this._stats.movement;
+  }
+
+  get movementRemainingThisTurn(): number {
+    return Math.max(
+      0,
+      this.effectiveMovementThisTurn - this._movementUsedThisTurn,
+    );
+  }
+
+  get effectiveAttackThisTurn(): number {
+    // Use card's attack value if set, otherwise fall back to base stat
+    return this._effectiveAttackThisTurn > 0
+      ? this._effectiveAttackThisTurn
+      : this._stats.attack;
+  }
+
+  get effectiveRangeThisTurn(): number {
+    // Use card's range value if set, otherwise fall back to base stat
+    return this._effectiveRangeThisTurn > 0
+      ? this._effectiveRangeThisTurn
+      : this._stats.range;
+  }
+
+  get hasAttackedThisTurn(): boolean {
+    return this._hasAttackedThisTurn;
+  }
+
   // Methods
   moveTo(position: AxialCoordinates): void {
     if (this.isImmobilized) {
@@ -205,6 +251,82 @@ export class Character {
 
   exhaust(): void {
     this._exhausted = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Mark that character has moved this turn
+   * @deprecated Use addMovementUsed() instead to track cumulative distance
+   */
+  markMovedThisTurn(): void {
+    this._hasMovedThisTurn = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Add movement distance used this turn
+   * @param distance - The distance moved (in hexes)
+   */
+  addMovementUsed(distance: number): void {
+    if (distance < 0) {
+      throw new Error('Movement distance must be non-negative');
+    }
+    this._movementUsedThisTurn += distance;
+    if (this._movementUsedThisTurn > 0) {
+      this._hasMovedThisTurn = true; // Keep backward compatibility
+    }
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Set effective movement for this turn from selected card
+   * In Gloomhaven, movement comes from the card you play, not base stats
+   * @param movement - The movement value from the selected card
+   */
+  setEffectiveMovement(movement: number): void {
+    if (movement < 0) {
+      throw new Error('Movement value must be non-negative');
+    }
+    this._effectiveMovementThisTurn = movement;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Set effective attack and range for this turn from selected card
+   * In Gloomhaven, attack comes from the card you play, not base stats
+   * @param attack - The attack value from the selected card
+   * @param range - The attack range from the selected card (0 for melee)
+   */
+  setEffectiveAttack(attack: number, range: number): void {
+    if (attack < 0) {
+      throw new Error('Attack value must be non-negative');
+    }
+    if (range < 0) {
+      throw new Error('Range value must be non-negative');
+    }
+    this._effectiveAttackThisTurn = attack;
+    this._effectiveRangeThisTurn = range;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Mark that character has attacked this turn
+   */
+  markAttackedThisTurn(): void {
+    this._hasAttackedThisTurn = true;
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Reset action flags at end of turn
+   */
+  resetActionFlags(): void {
+    this._hasMovedThisTurn = false;
+    this._movementUsedThisTurn = 0;
+    this._effectiveMovementThisTurn = 0; // Reset card movement value for next turn
+    this._effectiveAttackThisTurn = 0; // Reset card attack value for next turn
+    this._effectiveRangeThisTurn = 0; // Reset card range value for next turn
+    this._hasAttackedThisTurn = false;
     this._updatedAt = new Date();
   }
 

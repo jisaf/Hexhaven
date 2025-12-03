@@ -17,14 +17,15 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { roomSessionManager } from '../services/room-session.service';
 import { gameStateManager } from '../services/game-state.service';
+import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
 import { GameHUD } from '../components/game/GameHUD';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
+import { ActionButtons } from '../components/game/ActionButtons';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
 import TurnOrder from '../components/TurnOrder';
@@ -43,27 +44,24 @@ export function GameBoard() {
     }
   }, [roomCode, navigate]);
 
-  // CENTRALIZED CLEANUP: Reset room session when navigating to different game
-  useEffect(() => {
-    if (roomCode) {
-      console.log('[GameBoard] Room code changed, resetting room session for:', roomCode);
-      roomSessionManager.switchRoom();
-    }
-  }, [roomCode]);
-
   const {
     hexGridReady,
     initializeBoard,
     showMovementRange,
+    showAttackRange,
+    clearAttackRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
+    removeMonster,
+    spawnLootToken,
+    collectLootToken,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
-    onMonsterSelect: (id) => console.log('monster selected', id), // TODO: Connect to GameStateManager for attacks
+    onMonsterSelect: (id) => gameStateManager.selectAttackTarget(id),
   });
 
   // Register visual update callbacks with gameStateManager
@@ -74,9 +72,12 @@ export function GameBoard() {
         updateMonsterPosition,
         updateCharacterHealth,
         updateMonsterHealth,
+        removeMonster,
+        spawnLootToken,
+        collectLootToken,
       });
     }
-  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth]);
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken, collectLootToken]);
 
   useEffect(() => {
     if (hexGridReady) {
@@ -89,6 +90,16 @@ export function GameBoard() {
         setSelectedHex(gameState.selectedHex);
     }
   }, [gameState.selectedHex, hexGridReady, setSelectedHex]);
+
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.attackMode && gameState.validAttackHexes.length > 0) {
+        showAttackRange(gameState.validAttackHexes);
+      } else {
+        clearAttackRange();
+      }
+    }
+  }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
 
 
   // Render game data when HexGrid is ready
@@ -113,8 +124,26 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
+    // Reset all game and room state properly
+    gameSessionCoordinator.switchGame();
+
+    // Navigate back to main lobby
     navigate('/');
   };
+
+  const handleAttackClick = () => {
+    const attackAction = gameStateManager.getAttackAction();
+    if (attackAction && gameState.myCharacterId) {
+      gameStateManager.enterAttackMode(gameState.myCharacterId, attackAction.range);
+    }
+  };
+
+  const handleMoveClick = () => {
+    gameStateManager.enterMoveMode();
+  };
+
+  const attackAction = gameStateManager.getAttackAction();
+  const moveAction = gameStateManager.getMoveAction();
 
   const gameBoardClass = `${styles.gameBoardPage} ${gameState.showCardSelection ? styles.cardSelectionActive : ''}`;
 
@@ -130,6 +159,16 @@ export function GameBoard() {
             currentRound={gameState.currentRound}
             characters={gameState.gameData?.characters || []}
             monsters={gameState.gameData?.monsters || []}
+            actionButtons={
+              <ActionButtons
+                hasAttack={attackAction !== null}
+                hasMove={moveAction !== null}
+                attackMode={gameState.attackMode}
+                isMyTurn={gameState.isMyTurn}
+                onAttackClick={handleAttackClick}
+                onMoveClick={handleMoveClick}
+              />
+            }
           />
         )}
         <div className={styles.hudWrapper}>

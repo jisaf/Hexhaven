@@ -125,6 +125,7 @@
   flex-direction: row;
   gap: 12px;
   align-items: center;
+  z-index: 20;
 }
 
 .action-buttons button {
