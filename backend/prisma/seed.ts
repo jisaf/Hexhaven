@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { CharacterClass } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -84,7 +85,7 @@ async function seedAbilityCards() {
 
   // Get all character classes to map names to IDs
   const classes = await prisma.characterClass.findMany();
-  const classMap = new Map(classes.map((c) => [c.name, c.id]));
+  const classMap = new Map(classes.map((c: CharacterClass) => [c.name, c.id]));
 
   let seedCount = 0;
   for (const cardData of cards) {

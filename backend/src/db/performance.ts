@@ -5,7 +5,8 @@
  * Collects timing statistics for performance monitoring
  */
 
-import type { Prisma as _Prisma } from '@prisma/client';
+// Prisma import intentionally unused - reserved for future type definitions
+// import type { Prisma } from '@prisma/client';
 
 /**
  * Query performance statistics

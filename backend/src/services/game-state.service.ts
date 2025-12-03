@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import type { Character } from '@prisma/client';
 import type {
   CreateGameDto,
   JoinGameDto,
@@ -335,7 +336,7 @@ export class GameStateService {
       createdAt: game.createdAt,
       startedAt: game.startedAt,
       completedAt: game.completedAt,
-      characters: characters.map((c) => ({
+      characters: characters.map((c: Character & { class: any }) => ({
         id: c.id,
         name: c.name,
         className: c.class.name,
