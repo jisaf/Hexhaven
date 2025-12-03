@@ -6,6 +6,7 @@
 
 import { useTranslation } from 'react-i18next';
 import styles from './GameHints.module.css';
+import { useState, useEffect } from 'react';
 
 interface GameHintsProps {
   attackMode: boolean;
@@ -14,19 +15,36 @@ interface GameHintsProps {
 
 export function GameHints({ attackMode, showMovementHint }: GameHintsProps) {
   const { t } = useTranslation();
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (attackMode || showMovementHint) {
+      setIsVisible(true);
+    }
+  }, [attackMode, showMovementHint]);
+
+  const handleDismiss = () => {
+    setIsVisible(false);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
 
   if (attackMode) {
     return (
-      <div className={styles.attackModeHint}>
-        {t('game:attackHint', 'Select an enemy to attack')}
+      <div className={`${styles.hintContainer} ${styles.attackModeHint}`}>
+        <span>{t('game:attackHint', 'Select an enemy to attack')}</span>
+        <button onClick={handleDismiss} className={styles.dismissButton}>&times;</button>
       </div>
     );
   }
 
   if (showMovementHint) {
     return (
-      <div className={styles.movementHint}>
-        {t('game:movementHint', 'Tap a highlighted hex to move your character')}
+      <div className={`${styles.hintContainer} ${styles.movementHint}`}>
+        <span>{t('game:movementHint', 'Tap a highlighted hex to move your character')}</span>
+        <button onClick={handleDismiss} className={styles.dismissButton}>&times;</button>
       </div>
     );
   }
