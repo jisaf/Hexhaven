@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client/runtime/library';
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from '@prisma/client/runtime/library';
 import {
   ValidationError,
   AuthError,
@@ -66,11 +69,11 @@ export function errorHandler(
   }
 
   // Handle Prisma errors
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err instanceof PrismaClientKnownRequestError) {
     return handlePrismaError(err, req, res);
   }
 
-  if (err instanceof Prisma.PrismaClientValidationError) {
+  if (err instanceof PrismaClientValidationError) {
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       error: {
         code: 'VALIDATION_ERROR',
@@ -103,7 +106,7 @@ export function errorHandler(
  * Handle Prisma-specific errors
  */
 function handlePrismaError(
-  err: Prisma.PrismaClientKnownRequestError,
+  err: PrismaClientKnownRequestError,
   req: Request,
   res: Response,
 ): Response {

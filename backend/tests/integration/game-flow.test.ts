@@ -80,13 +80,13 @@ describe('Full Game Flow Integration Test', () => {
   it('should complete full game flow: register → create characters → create game → join → start → complete → verify progression', async () => {
     // Step 1: Register two users
     const user1 = await authService.register(
-      `gameflow_user1_${Date.now()}`,
+      `gf1_${Date.now().toString().slice(-8)}`,
       'TestPassword123!'
     );
     user1Id = user1.user.id;
 
     const user2 = await authService.register(
-      `gameflow_user2_${Date.now()}`,
+      `gf2_${Date.now().toString().slice(-8)}`,
       'TestPassword123!'
     );
     user2Id = user2.user.id;
@@ -121,7 +121,7 @@ describe('Full Game Flow Integration Test', () => {
 
     // Step 3: User 1 creates a game
     const game = await gameService.createGame(user1Id, {
-      roomCode: `GAME${Date.now().toString().slice(-4)}`,
+      roomCode: `GF${Date.now().toString().slice(-4)}`,
       scenarioId,
       difficulty: 3,
       hostCharacterId: character1Id,
@@ -218,7 +218,7 @@ describe('Full Game Flow Integration Test', () => {
   it('should handle game completion with defeat and reduced rewards', async () => {
     // Register user
     const user = await authService.register(
-      `gameflow_defeat_${Date.now()}`,
+      `def_${Date.now().toString().slice(-8)}`,
       'TestPassword123!'
     );
     const userId = user.user.id;
@@ -231,7 +231,7 @@ describe('Full Game Flow Integration Test', () => {
 
     // Create game
     const game = await gameService.createGame(userId, {
-      roomCode: `DFET${Date.now().toString().slice(-4)}`,
+      roomCode: `DF${Date.now().toString().slice(-4)}`,
       scenarioId,
       difficulty: 2,
       hostCharacterId: character.id,
@@ -264,7 +264,7 @@ describe('Full Game Flow Integration Test', () => {
   it('should prevent character from joining multiple games simultaneously', async () => {
     // Register user
     const user = await authService.register(
-      `gameflow_multi_${Date.now()}`,
+      `mul_${Date.now().toString().slice(-8)}`,
       'TestPassword123!'
     );
     const userId = user.user.id;
@@ -277,7 +277,7 @@ describe('Full Game Flow Integration Test', () => {
 
     // Create first game
     const game1 = await gameService.createGame(userId, {
-      roomCode: `GM1${Date.now().toString().slice(-5)}`,
+      roomCode: `GM${Date.now().toString().slice(-4)}`,
       scenarioId,
       difficulty: 1,
       hostCharacterId: character.id,

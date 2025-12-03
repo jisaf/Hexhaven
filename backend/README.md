@@ -57,6 +57,42 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Database Setup for Testing
+
+The tests require a PostgreSQL database with migrations and seed data. Follow these steps:
+
+### 1. Create Test Database
+
+```bash
+# Using default credentials (adjust as needed)
+createdb hexhaven_test
+```
+
+### 2. Run Migrations
+
+```bash
+# Set the test database URL
+export DATABASE_URL="postgresql://hexhaven:hexhaven@127.0.0.1:5432/hexhaven_test?schema=public"
+
+# Run migrations
+npx prisma migrate deploy
+```
+
+### 3. Seed Test Database
+
+```bash
+# Seed with character classes, abilities, items, and scenarios
+npx prisma db seed
+```
+
+### 4. Run Tests
+
+```bash
+npm test
+```
+
+**Note**: The CI pipeline automatically sets up the test database, runs migrations, and seeds data before running tests.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

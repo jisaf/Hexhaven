@@ -79,7 +79,9 @@ export class UserCharacterService {
       },
     });
 
-    return characters.map((char: Character & { class: any }) => this.mapToCharacterResponse(char));
+    return characters.map((char: Character & { class: any }) =>
+      this.mapToCharacterResponse(char),
+    );
   }
 
   async getCharacter(

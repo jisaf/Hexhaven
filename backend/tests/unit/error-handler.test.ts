@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from '@prisma/client/runtime/library';
 import { errorHandler } from '../../src/middleware/error.middleware';
 import {
   ValidationError,
@@ -167,7 +171,7 @@ describe('errorHandler middleware', () => {
 
   describe('Prisma Errors', () => {
     it('should handle Prisma unique constraint violation (P2002) as 409 CONFLICT', () => {
-      const error = new Prisma.PrismaClientKnownRequestError(
+      const error = new PrismaClientKnownRequestError(
         'Unique constraint failed',
         {
           code: 'P2002',
@@ -193,7 +197,7 @@ describe('errorHandler middleware', () => {
     });
 
     it('should handle Prisma record not found (P2025) as 404 NOT_FOUND', () => {
-      const error = new Prisma.PrismaClientKnownRequestError(
+      const error = new PrismaClientKnownRequestError(
         'Record not found',
         {
           code: 'P2025',
@@ -216,7 +220,7 @@ describe('errorHandler middleware', () => {
     });
 
     it('should handle Prisma validation error as 400 BAD_REQUEST', () => {
-      const error = new Prisma.PrismaClientValidationError(
+      const error = new PrismaClientValidationError(
         'Invalid input data',
         { clientVersion: '5.0.0' },
       );
