@@ -14,8 +14,9 @@ Test individual functions, services, and middleware in isolation with mocked dep
 
 **Examples**:
 - `error-handler.test.ts` - Error middleware validation
-- `auth.service.test.ts` - Authentication logic
-- `character.service.test.ts` - Character management
+- `auth.service.test.ts` - Authentication logic (10 tests)
+- `user-character.service.test.ts` - Character CRUD operations (15 tests, Phase 7)
+- `game-state.service.test.ts` - Game state management and event sourcing (15 tests, Phase 7)
 
 ### Integration Tests (`tests/integration/`)
 
@@ -24,9 +25,10 @@ Test database operations, service interactions, and full workflows with real dat
 **Test Database**: Uses separate `hexhaven_test` database, reset before each test suite.
 
 **Examples**:
-- `auth.integration.test.ts` - Full registration/login flow
-- `character-concurrency.test.ts` - Concurrent XP updates
-- `game-event-concurrency.test.ts` - Race condition handling
+- `session-persistence.test.ts` - 24-hour session restore across disconnect/reconnect (2 tests)
+- `game-flow.test.ts` - Full game lifecycle: register → create characters → game → completion → progression (3 tests, Phase 7)
+  - Requires configured PostgreSQL database with seeded data
+  - Tests character creation, game joining, event sourcing, and reward distribution
 
 ### Contract Tests (`tests/contract/`)
 

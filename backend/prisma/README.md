@@ -21,9 +21,17 @@ Hexhaven uses PostgreSQL 14+ with Prisma ORM for type-safe database access. The 
 - **Item**: In-game items with effects and rarity
 
 ### Game System (002)
-- **Game**: Authenticated games with event sourcing
-- **GameState**: Snapshots every 20 events for performance
+- **Game**: Authenticated games with event sourcing, difficulty levels, and progression rewards
+  - Status: LOBBY → ACTIVE → COMPLETED/ABANDONED
+  - Tracks difficulty (1-7), startedAt, completedAt timestamps
+  - Links to Scenario for map/monster data
+- **GameState**: State snapshots every 20 events for performance optimization
+  - Stores full game state at checkpoint intervals
+  - Enables fast state reconstruction without replaying all events
 - **GameEvent**: Append-only event log for complete audit trail
+  - Sequential event numbering per game (prevents race conditions)
+  - Event types: GAME_STARTED, PLAYER_JOINED, TURN_STARTED, ATTACK_EXECUTED, etc.
+  - JSON event data for flexible payload structure
 - **Scenario**: Map layouts, monster groups, objectives
 - **Campaign**: Schema-only (features deferred to future)
 
