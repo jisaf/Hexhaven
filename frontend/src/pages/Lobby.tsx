@@ -176,6 +176,8 @@ export function Lobby() {
 
   // Character selection (T069) - Updated for persistent characters
   const handleSelectCharacter = (characterId: string) => {
+    console.log('[Lobby] handleSelectCharacter called with:', characterId);
+    console.log('[Lobby] Current players before selection:', players);
     setSelectedCharacterId(characterId);
     websocketService.selectCharacter(characterId);
   };
@@ -210,6 +212,16 @@ export function Lobby() {
 
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
+
+  // Debug logging
+  console.log('[Lobby] Player state:', {
+    players,
+    playersReady,
+    canStartGame,
+    selectedCharacterId,
+    selectedScenario,
+    isCurrentPlayerHost,
+  });
 
   const activeTab = myRooms.length > 0 ? 0 : 1;
 
