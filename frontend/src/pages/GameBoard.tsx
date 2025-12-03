@@ -18,6 +18,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
 import { gameStateManager } from '../services/game-state.service';
+import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
@@ -56,6 +57,7 @@ export function GameBoard() {
     updateMonsterHealth,
     removeMonster,
     spawnLootToken,
+    collectLootToken,
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
@@ -72,9 +74,10 @@ export function GameBoard() {
         updateMonsterHealth,
         removeMonster,
         spawnLootToken,
+        collectLootToken,
       });
     }
-  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken]);
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken, collectLootToken]);
 
   useEffect(() => {
     if (hexGridReady) {
@@ -121,6 +124,10 @@ export function GameBoard() {
 
 
   const handleBackToLobby = () => {
+    // Reset all game and room state properly
+    gameSessionCoordinator.switchGame();
+
+    // Navigate back to main lobby
     navigate('/');
   };
 
@@ -152,6 +159,16 @@ export function GameBoard() {
             currentRound={gameState.currentRound}
             characters={gameState.gameData?.characters || []}
             monsters={gameState.gameData?.monsters || []}
+            actionButtons={
+              <ActionButtons
+                hasAttack={attackAction !== null}
+                hasMove={moveAction !== null}
+                attackMode={gameState.attackMode}
+                isMyTurn={gameState.isMyTurn}
+                onAttackClick={handleAttackClick}
+                onMoveClick={handleMoveClick}
+              />
+            }
           />
         )}
         <div className={styles.hudWrapper}>
@@ -178,15 +195,6 @@ export function GameBoard() {
           selectedBottomAction={gameState.selectedBottomAction}
         />
       )}
-
-      <ActionButtons
-        hasAttack={attackAction !== null}
-        hasMove={moveAction !== null}
-        attackMode={gameState.attackMode}
-        isMyTurn={gameState.isMyTurn}
-        onAttackClick={handleAttackClick}
-        onMoveClick={handleMoveClick}
-      />
 
       <GameHints
         attackMode={gameState.attackMode}

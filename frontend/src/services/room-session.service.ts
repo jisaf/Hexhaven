@@ -240,6 +240,14 @@ class RoomSessionManager {
         throw new Error('Missing player credentials (nickname or UUID)');
       }
 
+      // Leave previous room if switching to a different room
+      // This prevents being in multiple Socket.IO rooms simultaneously
+      const previousRoomCode = this.state.roomCode;
+      if (previousRoomCode && previousRoomCode !== roomCode) {
+        console.log(`[RoomSessionManager] Leaving previous room ${previousRoomCode} before joining ${roomCode}`);
+        websocketService.leaveRoom(previousRoomCode);
+      }
+
       // Update state: we're attempting to join
       this.state.status = 'joining';
       this.state.lastJoinIntent = intent;
@@ -282,7 +290,7 @@ class RoomSessionManager {
     this.state.players = data.players.map(p => ({
       ...p,
       connectionStatus: 'connected',
-      isReady: !!p.characterClass, // Ready if character already selected
+      isReady: !!p.characterClass, // Derive isReady from characterClass presence
     }));
 
     const playerUUID = getPlayerUUID();
@@ -397,12 +405,16 @@ class RoomSessionManager {
   }
 
   /**
-   * Switch to a different room without calling leaveRoom on backend
-   * Used when player wants to create/join a new room while keeping old room membership
+   * Switch to a different room (clears frontend state only)
+   * Does NOT leave the room on backend to keep room in "My Rooms"
+   * Backend room is left when actually joining a different room (see ensureJoined)
+   *
+   * IMPORTANT: Also notifies game state manager to reset
    */
   public switchRoom(): void {
-    console.log('[RoomSessionManager] Switching to new room (keeping old room membership)');
+    console.log('[RoomSessionManager] Switching room - clearing frontend state');
 
+    // Clear frontend state only (don't leave backend room yet)
     this.state = {
       roomCode: null,
       status: 'disconnected',
@@ -415,6 +427,7 @@ class RoomSessionManager {
 
     this.hasJoinedInSession = false;
 
+    // Emit state update - game-state-service will listen and reset itself synchronously
     this.emitStateUpdate();
   }
 

@@ -39,7 +39,7 @@ async function reportBug(bug: Bug) {
   let existingContent = '';
   try {
     existingContent = fs.readFileSync(bugsFilePath, 'utf-8');
-  } catch (error) {
+  } catch {
     existingContent = '# Known Bugs\n\nThis file tracks known bugs found during testing.\n\n';
   }
 
@@ -494,7 +494,7 @@ test.describe('Comprehensive Game Flow Test', () => {
 
           // Get player character position before monster action
           const playerChar = page.locator('[data-testid="character-sprite-Brute"]');
-          const playerInitialBounds = await playerChar.boundingBox();
+          await playerChar.boundingBox();
 
           // Wait for monster AI to execute
           await page.waitForTimeout(3000);
