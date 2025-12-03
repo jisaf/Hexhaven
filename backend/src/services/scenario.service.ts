@@ -109,8 +109,10 @@ export class ScenarioService {
         // Convert database scenario to Scenario type
         const objectives = dbScenario.objectives as any;
         const dbMonsterGroups = dbScenario.monsterGroups as any[];
+        const dbMapLayout = dbScenario.mapLayout as any[];
+        const dbPlayerStarts = dbScenario.playerStartPositions as any;
 
-        // Transform database monsterGroups format to code format
+        // Transform monsterGroups format
         const monsterGroups = dbMonsterGroups.map((group: any) => ({
           type: group.type,
           isElite: group.level === 'elite',
@@ -121,16 +123,55 @@ export class ScenarioService {
           })),
         }));
 
+        // Transform mapLayout format (x,y -> coordinates: {q, r})
+        const mapLayout = dbMapLayout.map((tile: any) => ({
+          coordinates: {
+            q: tile.coordinates?.q !== undefined ? tile.coordinates.q : tile.x,
+            r: tile.coordinates?.r !== undefined ? tile.coordinates.r : tile.y,
+          },
+          terrain: tile.terrain,
+          features: tile.features || [],
+          occupiedBy: null,
+          hasLoot: false,
+          hasTreasure: false,
+        }));
+
+        // Transform playerStartPositions (array -> keyed by player count)
+        let playerStartPositions: Record<number, Array<{ q: number; r: number }>>;
+        if (Array.isArray(dbPlayerStarts)) {
+          // Database has simple array, convert to all player counts
+          const positions = dbPlayerStarts.map((pos: any) => ({
+            q: pos.q !== undefined ? pos.q : pos.x,
+            r: pos.r !== undefined ? pos.r : pos.y,
+          }));
+          playerStartPositions = {
+            2: positions,
+            3: positions,
+            4: positions,
+          };
+        } else {
+          // Already in correct format, just convert coordinates
+          playerStartPositions = {};
+          for (const [count, positions] of Object.entries(dbPlayerStarts)) {
+            playerStartPositions[parseInt(count)] = (positions as any[]).map(
+              (pos: any) => ({
+                q: pos.q !== undefined ? pos.q : pos.x,
+                r: pos.r !== undefined ? pos.r : pos.y,
+              }),
+            );
+          }
+        }
+
         return {
           id: dbScenario.id,
           name: dbScenario.name,
           difficulty: dbScenario.difficulty,
-          mapLayout: dbScenario.mapLayout as any,
+          mapLayout,
           monsterGroups,
           objectivePrimary: objectives?.primary || 'Complete the scenario',
           objectiveSecondary: objectives?.secondary,
           treasures: dbScenario.treasures as any,
-          playerStartPositions: dbScenario.playerStartPositions as any,
+          playerStartPositions,
         };
       }
     } catch (error) {
