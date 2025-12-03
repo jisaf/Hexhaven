@@ -19,6 +19,7 @@ import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
 import { sessionService } from '../services/session.service';
+import { PrismaService } from '../services/prisma.service';
 import { Player } from '../models/player.model';
 import { LootToken } from '../models/loot-token.model';
 import { ScenarioService } from '../services/scenario.service';
@@ -68,7 +69,7 @@ export class GameGateway
 
   private readonly logger = new Logger(GameGateway.name);
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     this.logger.log('GameGateway constructor called');
   }
 
@@ -554,13 +555,13 @@ export class GameGateway
   }
 
   /**
-   * Select character class
+   * Select character (002 - Updated for persistent characters)
    */
   @SubscribeMessage('select_character')
-  handleSelectCharacter(
+  async handleSelectCharacter(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCharacterPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -568,7 +569,8 @@ export class GameGateway
       }
 
       this.logger.log(
-        `Select character request from ${playerUUID}: ${payload.characterClass}`,
+        `Select character request from ${playerUUID}:`,
+        payload,
       );
 
       // Get room from client's current Socket.IO room (multi-room support)
@@ -590,23 +592,60 @@ export class GameGateway
         throw new Error('Game has already started');
       }
 
-      // Check if character class is already taken
+      let characterClass: CharacterClass;
+      let characterId: string | undefined;
+
+      // Handle persistent character selection (002)
+      if (payload.characterId) {
+        // Look up character from database
+        const character = await this.prisma.character.findUnique({
+          where: { id: payload.characterId },
+          include: { class: true },
+        });
+
+        if (!character) {
+          throw new Error('Character not found');
+        }
+
+        // Check if character is already in a game
+        if (character.currentGameId) {
+          throw new Error('Character is already in an active game');
+        }
+
+        // Extract character class name
+        characterClass = character.class.name as CharacterClass;
+        characterId = character.id;
+
+        this.logger.log(
+          `Player ${player.nickname} selected persistent character: ${character.name} (${characterClass})`,
+        );
+      } else if (payload.characterClass) {
+        // Legacy: Direct character class selection
+        characterClass = payload.characterClass;
+        this.logger.log(
+          `Player ${player.nickname} selected legacy character class: ${characterClass}`,
+        );
+      } else {
+        throw new Error('Must provide either characterId or characterClass');
+      }
+
+      // Check if character class is already taken by another player
       const characterTaken = room.players.some(
         (p: Player) =>
-          p.characterClass === payload.characterClass && p.uuid !== playerUUID,
+          p.characterClass === characterClass && p.uuid !== playerUUID,
       );
 
       if (characterTaken) {
         throw new Error('Character class already selected by another player');
       }
 
-      // Select character
-      player.selectCharacter(payload.characterClass);
+      // Select character (store both class and ID)
+      player.selectCharacter(characterClass, characterId);
 
       // Broadcast to all players in room
       const characterSelectedPayload: CharacterSelectedPayload = {
         playerId: player.uuid,
-        characterClass: payload.characterClass,
+        characterClass: characterClass,
       };
 
       this.server
@@ -614,7 +653,7 @@ export class GameGateway
         .emit('character_selected', characterSelectedPayload);
 
       this.logger.log(
-        `Player ${player.nickname} selected ${payload.characterClass}`,
+        `Player ${player.nickname} successfully selected ${characterClass}${characterId ? ` (ID: ${characterId})` : ''}`,
       );
     } catch (error) {
       const errorMessage =

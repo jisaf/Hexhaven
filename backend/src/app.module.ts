@@ -12,6 +12,7 @@ import { CharacterClassesController } from './api/character-classes.controller';
 import { GameManagementController } from './api/game-management.controller';
 import { ScenarioService } from './services/scenario.service';
 import { MonsterService } from './services/monster.service';
+import { PrismaService } from './services/prisma.service';
 
 @Module({
   imports: [],
@@ -32,10 +33,10 @@ import { MonsterService } from './services/monster.service';
     GameGateway,
     ScenarioService,
     MonsterService,
+    PrismaService, // 002: Re-enabled for persistent character integration
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,
-    // PrismaService,
   ],
 })
 export class AppModule {}
