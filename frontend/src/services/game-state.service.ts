@@ -1,4 +1,5 @@
 import { websocketService } from './websocket.service';
+import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload } from '../../../shared/types';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
@@ -112,8 +113,65 @@ interface VisualUpdateCallbacks {
   updateMonsterHealth?: (monsterId: string, health: number) => void;
   removeMonster?: (monsterId: string) => void;
   spawnLootToken?: (lootData: LootSpawnedPayload) => void;
+  collectLootToken?: (tokenId: string) => void;
 }
 
+/**
+ * EVENT HANDLER PATTERN
+ *
+ * This service follows a consistent pattern for handling WebSocket events from the backend:
+ *
+ * 1. WebSocket Event Received
+ *    - Event arrives via websocketService
+ *    - Registered in setupWebSocketListeners()
+ *
+ * 2. Visual Update (Optional)
+ *    - Call visualCallbacks for sprite/UI changes
+ *    - Examples: moveCharacter, updateMonsterPosition, removeMonster, collectLootToken
+ *    - These callbacks are registered by GameBoard component
+ *    - They trigger PixiJS sprite animations/updates in HexGrid
+ *
+ * 3. State Update (Optional)
+ *    - Modify this.state.gameData to keep local state in sync with backend
+ *    - Examples: Update character position, health, monster list
+ *
+ * 4. Log Message (Optional)
+ *    - Call this.addLog() with formatted message parts
+ *    - Provides user feedback about game events
+ *
+ * 5. Emit State Update (Always)
+ *    - Call this.emitStateUpdate() to notify all subscribers
+ *    - Triggers React re-renders
+ *
+ * EXAMPLE:
+ * ```typescript
+ * private handleLootCollected(data: LootCollectedPayload): void {
+ *   // 1. Event received (automatic)
+ *
+ *   // 2. Visual update - remove loot sprite
+ *   this.visualCallbacks.collectLootToken?.(data.lootTokenId);
+ *
+ *   // 3. State update - (if needed, none for loot currently)
+ *
+ *   // 4. Log message - show who collected loot
+ *   this.addLog([
+ *     { text: characterName, color: 'lightblue' },
+ *     { text: ' collected ' },
+ *     { text: `${data.goldValue}`, color: 'gold' }
+ *   ]);
+ *
+ *   // 5. Emit state update
+ *   this.emitStateUpdate();
+ * }
+ * ```
+ *
+ * WHY NOT ABSTRACT?
+ * - Each handler has unique business logic
+ * - Log formatting varies (simple text vs complex multi-part)
+ * - State updates are event-specific
+ * - Some events need conditional visual updates
+ * - Explicit code is more maintainable for game logic
+ */
 class GameStateManager {
   private state: GameState = {
     gameData: null,
@@ -167,6 +225,7 @@ class GameStateManager {
     websocketService.on('attack_resolved', this.handleAttackResolved.bind(this));
     websocketService.on('monster_died', this.handleMonsterDied.bind(this));
     websocketService.on('loot_spawned', this.handleLootSpawned.bind(this));
+    websocketService.on('loot_collected', this.handleLootCollected.bind(this));
     websocketService.on('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -249,6 +308,9 @@ class GameStateManager {
 
   private handleRoundEnded(data: { roundNumber: number }): void {
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
+    // Clear previously selected cards so players can select new ones for next round
+    this.state.selectedTopAction = null;
+    this.state.selectedBottomAction = null;
     this.state.showCardSelection = true;
     this.emitStateUpdate();
   }
@@ -395,6 +457,38 @@ class GameStateManager {
   private handleLootSpawned(data: LootSpawnedPayload): void {
     this.visualCallbacks.spawnLootToken?.(data);
     this.addLog([{ text: 'Loot dropped!', color: 'gold' }]);
+    this.emitStateUpdate();
+  }
+
+  private handleLootCollected(data: { playerId: string; lootTokenId: string; hexCoordinates: { q: number; r: number }; goldValue: number }): void {
+    // Trigger visual update to remove loot sprite
+    this.visualCallbacks.collectLootToken?.(data.lootTokenId);
+
+    // Get player name for log
+    const playerUUID = websocketService.getPlayerUUID();
+    const isMyLoot = data.playerId === playerUUID;
+
+    if (this.state.gameData) {
+      const character = this.state.gameData.characters.find(c => c.playerId === data.playerId);
+      const characterName = character?.classType || 'Unknown';
+
+      if (isMyLoot) {
+        this.addLog([
+          { text: 'You', color: 'lightblue' },
+          { text: ' collected ' },
+          { text: `${data.goldValue}`, color: 'gold' },
+          { text: ' gold!' }
+        ]);
+      } else {
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' collected ' },
+          { text: `${data.goldValue}`, color: 'gold' },
+          { text: ' gold.' }
+        ]);
+      }
+    }
+
     this.emitStateUpdate();
   }
 
@@ -635,3 +729,13 @@ class GameStateManager {
 }
 
 export const gameStateManager = new GameStateManager();
+
+// Subscribe to room session changes to reset game state when switching rooms
+roomSessionManager.subscribe((roomState) => {
+  // Reset game state when room switches (status becomes 'disconnected' with no room code)
+  // This happens SYNCHRONOUSLY when switchRoom() is called, before game_started event
+  if (roomState.status === 'disconnected' && roomState.roomCode === null) {
+    console.log('[GameStateManager] Room switched, resetting game state');
+    gameStateManager.reset();
+  }
+});

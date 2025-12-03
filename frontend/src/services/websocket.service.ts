@@ -342,10 +342,14 @@ class WebSocketService {
   }
 
   /**
-   * Leave current room
+   * Leave a specific room (or current room if no roomCode provided)
    */
-  leaveRoom(): void {
-    this.emit('leave_room');
+  leaveRoom(roomCode?: string): void {
+    if (roomCode) {
+      this.emit('leave_room', { roomCode });
+    } else {
+      this.emit('leave_room');
+    }
   }
 
   /**

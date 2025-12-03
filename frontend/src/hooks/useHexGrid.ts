@@ -266,6 +266,12 @@ export function useHexGrid(
     }
   }, []);
 
+  const collectLootToken = useCallback((tokenId: string) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.collectLootToken(tokenId);
+    }
+  }, []);
+
   const getCharacter = useCallback((characterId: string) => {
     if (hexGridRef.current) {
       return hexGridRef.current.getCharacter(characterId);
@@ -296,6 +302,7 @@ export function useHexGrid(
     removeCharacter,
     removeMonster,
     spawnLootToken,
+    collectLootToken,
     getCharacter,
     isHexBlocked,
     setSelectedHex,
