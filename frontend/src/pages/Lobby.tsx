@@ -24,6 +24,7 @@ import { gameSessionCoordinator } from '../services/game-session-coordinator.ser
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
 import type { CharacterClass } from '../components/CharacterSelect';
+import { UserCharacterSelect } from '../components/UserCharacterSelect';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
@@ -46,7 +47,7 @@ export function Lobby() {
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,10 +174,10 @@ export function Lobby() {
     }
   };
 
-  // Character selection (T069)
-  const handleSelectCharacter = (characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-    websocketService.selectCharacter(characterClass);
+  // Character selection (T069) - Updated for persistent characters
+  const handleSelectCharacter = (characterId: string) => {
+    setSelectedCharacterId(characterId);
+    websocketService.selectCharacter(characterId);
   };
 
   // Scenario selection (US5 - T179)
@@ -199,9 +200,10 @@ export function Lobby() {
     websocketService.startGame(selectedScenario);
   };
 
-  // Get disabled character classes using utility
+  // Get disabled character IDs (characters already selected by other players)
   const currentPlayerId = websocketService.getPlayerUUID();
-  const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
+  // TODO: Implement getDisabledCharacterIds when backend supports character ID in player state
+  const disabledCharacterIds: string[] = [];
 
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
   const isCurrentPlayerHost = sessionState.playerRole === 'host' || isPlayerHost(currentPlayer);
@@ -305,8 +307,8 @@ export function Lobby() {
             players={players}
             currentPlayerId={currentPlayerId || undefined}
             isHost={isCurrentPlayerHost}
-            selectedCharacter={selectedCharacter}
-            disabledClasses={disabledClasses}
+            selectedCharacterId={selectedCharacterId}
+            disabledCharacterIds={disabledCharacterIds}
             selectedScenario={selectedScenario}
             canStartGame={canStartGame}
             allPlayersReady={playersReady}

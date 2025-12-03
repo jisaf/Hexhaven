@@ -6,7 +6,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { PlayerList, type Player } from '../PlayerList';
-import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
+import { UserCharacterSelect } from '../UserCharacterSelect';
 import { ScenarioSelectionPanel } from '../ScenarioSelectionPanel';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
 import styles from './LobbyRoomView.module.css';
@@ -16,13 +16,13 @@ interface LobbyRoomViewProps {
   players: Player[];
   currentPlayerId?: string;
   isHost: boolean;
-  selectedCharacter: CharacterClass | undefined;
-  disabledClasses: CharacterClass[];
+  selectedCharacterId: string | undefined;
+  disabledCharacterIds: string[];
   selectedScenario: string;
   canStartGame: boolean;
   allPlayersReady: boolean;
   error: string | null;
-  onSelectCharacter: (characterClass: CharacterClass) => void;
+  onSelectCharacter: (characterId: string) => void;
   onSelectScenario: (scenarioId: string) => void;
   onStartGame: () => void;
 }
@@ -32,8 +32,8 @@ export function LobbyRoomView({
   players,
   currentPlayerId,
   isHost,
-  selectedCharacter,
-  disabledClasses,
+  selectedCharacterId,
+  disabledCharacterIds,
   selectedScenario,
   canStartGame,
   allPlayersReady,
@@ -98,9 +98,9 @@ export function LobbyRoomView({
         </div>
 
         <div className={styles.roomSection}>
-          <CharacterSelect
-            selectedClass={selectedCharacter}
-            disabledClasses={disabledClasses}
+          <UserCharacterSelect
+            selectedCharacterId={selectedCharacterId}
+            disabledCharacterIds={disabledCharacterIds}
             onSelect={onSelectCharacter}
           />
         </div>
