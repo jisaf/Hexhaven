@@ -282,7 +282,7 @@ class RoomSessionManager {
     this.state.players = data.players.map(p => ({
       ...p,
       connectionStatus: 'connected',
-      isReady: false,
+      isReady: !!p.characterClass, // Ready if character already selected
     }));
 
     const playerUUID = getPlayerUUID();
@@ -307,9 +307,18 @@ class RoomSessionManager {
   }
 
   public onCharacterSelected(playerId: string, characterClass: string): void {
-    this.state.players = this.state.players.map(p =>
-      p.id === playerId ? { ...p, characterClass, isReady: true } : p
-    );
+    console.log('[RoomSessionManager] onCharacterSelected:', { playerId, characterClass });
+    console.log('[RoomSessionManager] Current players:', this.state.players);
+
+    this.state.players = this.state.players.map(p => {
+      if (p.id === playerId) {
+        console.log('[RoomSessionManager] Updating player:', p.id, 'to', characterClass);
+        return { ...p, characterClass, isReady: true };
+      }
+      return p;
+    });
+
+    console.log('[RoomSessionManager] Updated players:', this.state.players);
     this.emitStateUpdate();
   }
 
