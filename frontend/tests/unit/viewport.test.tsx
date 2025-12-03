@@ -5,7 +5,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { setViewport, getViewport, VIEWPORTS } from '../setup';
+import { setViewport, getViewport } from '../setup';
 
 // Example responsive component (for demonstration)
 const ResponsiveComponent = () => {

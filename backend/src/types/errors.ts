@@ -27,7 +27,10 @@ export class AuthError extends Error {
   public readonly code = 'AUTH_ERROR';
   public readonly retryAfter?: Date;
 
-  constructor(message: string = 'Authentication failed', options?: { retryAfter?: Date }) {
+  constructor(
+    message: string = 'Authentication failed',
+    options?: { retryAfter?: Date },
+  ) {
     super(message);
     this.name = 'AuthError';
     this.retryAfter = options?.retryAfter;

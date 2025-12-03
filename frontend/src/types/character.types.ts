@@ -61,8 +61,8 @@ export interface AbilityCard {
   name: string;
   level: number;
   initiative: number;
-  topAction: any;
-  bottomAction: any;
+  topAction: unknown;
+  bottomAction: unknown;
 }
 
 export interface CardEnhancement {

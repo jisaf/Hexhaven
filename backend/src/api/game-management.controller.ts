@@ -13,7 +13,6 @@ import {
   HttpStatus,
   UseGuards,
   Request,
-  UsePipes,
 } from '@nestjs/common';
 import type {
   CreateGameDto,

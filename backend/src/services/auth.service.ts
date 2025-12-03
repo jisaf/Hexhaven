@@ -7,8 +7,6 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import {
-  RegisterDto,
-  LoginDto,
   TokenPair,
   JwtPayload,
   AuthResponse,
@@ -30,7 +28,10 @@ export class AuthService {
     this.jwtSecret = process.env.JWT_SECRET || 'replace-this-in-production';
     this.jwtAccessExpiration = process.env.JWT_ACCESS_EXPIRATION || '7d';
     this.jwtRefreshExpiration = process.env.JWT_REFRESH_EXPIRATION || '30d';
-    this.bcryptSaltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    this.bcryptSaltRounds = parseInt(
+      process.env.BCRYPT_SALT_ROUNDS || '12',
+      10,
+    );
   }
 
   /**
@@ -94,7 +95,7 @@ export class AuthService {
       const retryAfter = user.lockedUntil;
       throw new AuthError(
         `Account locked due to too many failed login attempts. Try again after ${retryAfter.toISOString()}`,
-        { retryAfter }
+        { retryAfter },
       );
     }
 
@@ -141,14 +142,14 @@ export class AuthService {
    */
   private async handleFailedLogin(
     userId: string,
-    currentAttempts: number
+    currentAttempts: number,
   ): Promise<void> {
     const newAttempts = currentAttempts + 1;
 
     // Lock account after 5 failed attempts
     if (newAttempts >= this.RATE_LIMIT_MAX_ATTEMPTS) {
       const lockoutUntil = new Date(
-        Date.now() + this.RATE_LIMIT_LOCKOUT_MINUTES * 60 * 1000
+        Date.now() + this.RATE_LIMIT_LOCKOUT_MINUTES * 60 * 1000,
       );
 
       await this.prisma.user.update({
@@ -173,7 +174,7 @@ export class AuthService {
    */
   private async generateTokenPair(
     userId: string,
-    username: string
+    username: string,
   ): Promise<TokenPair> {
     const payload: JwtPayload = {
       userId,
@@ -192,7 +193,7 @@ export class AuthService {
 
     // Store refresh token in database
     const expiresAt = new Date(
-      Date.now() + this.parseExpiration(this.jwtRefreshExpiration)
+      Date.now() + this.parseExpiration(this.jwtRefreshExpiration),
     );
 
     await this.prisma.refreshToken.create({
@@ -236,7 +237,7 @@ export class AuthService {
     // Verify JWT signature
     try {
       jwt.verify(refreshToken, this.jwtSecret);
-    } catch (error) {
+    } catch {
       throw new AuthError('Invalid refresh token');
     }
 
@@ -248,7 +249,7 @@ export class AuthService {
     // Generate new token pair
     const tokens = await this.generateTokenPair(
       storedToken.user.id,
-      storedToken.user.username
+      storedToken.user.username,
     );
 
     return tokens;
@@ -279,7 +280,7 @@ export class AuthService {
     try {
       const payload = jwt.verify(accessToken, this.jwtSecret) as JwtPayload;
       return payload;
-    } catch (error) {
+    } catch {
       throw new AuthError('Invalid or expired access token');
     }
   }

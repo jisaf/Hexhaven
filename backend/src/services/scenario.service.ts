@@ -137,7 +137,10 @@ export class ScenarioService {
         }));
 
         // Transform playerStartPositions (array -> keyed by player count)
-        let playerStartPositions: Record<number, Array<{ q: number; r: number }>>;
+        let playerStartPositions: Record<
+          number,
+          Array<{ q: number; r: number }>
+        >;
         if (Array.isArray(dbPlayerStarts)) {
           // Database has simple array, convert to all player counts
           const positions = dbPlayerStarts.map((pos: any) => ({

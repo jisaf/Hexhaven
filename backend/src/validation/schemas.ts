@@ -196,15 +196,13 @@ export const gameEventSchema = z.object({
     'ROUND_ENDED',
     'GAME_COMPLETED',
   ]),
-  eventData: z
-    .any()
-    .refine(
-      (data) => {
-        const jsonString = JSON.stringify(data);
-        return jsonString.length <= 1024 * 1024; // 1MB limit
-      },
-      { message: 'Event data exceeds 1MB size limit' },
-    ),
+  eventData: z.any().refine(
+    (data) => {
+      const jsonString = JSON.stringify(data);
+      return jsonString.length <= 1024 * 1024; // 1MB limit
+    },
+    { message: 'Event data exceeds 1MB size limit' },
+  ),
   playerId: z.string().uuid('Invalid player ID').optional(),
 });
 

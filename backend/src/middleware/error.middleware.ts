@@ -162,7 +162,12 @@ function handlePrismaError(
  * Format error into standard response format
  */
 function formatErrorResponse(
-  err: ValidationError | AuthError | NotFoundError | ConflictError | RateLimitError,
+  err:
+    | ValidationError
+    | AuthError
+    | NotFoundError
+    | ConflictError
+    | RateLimitError,
   path: string,
 ): ErrorResponse {
   const response: ErrorResponse = {
@@ -208,6 +213,7 @@ function formatErrorResponse(
  */
 function getFieldFromMeta(meta: any): string {
   if (meta && meta.target && Array.isArray(meta.target)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return meta.target.join(', ');
   }
   return 'field';

@@ -5,7 +5,7 @@
  * Collects timing statistics for performance monitoring
  */
 
-import { Prisma } from '@prisma/client';
+import type { Prisma as _Prisma } from '@prisma/client';
 
 /**
  * Query performance statistics
@@ -52,6 +52,7 @@ export function createPerformanceMiddleware(): any {
       // Collect statistics
       collectStats(params, duration);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return result;
     } catch (error) {
       // Log failed queries
@@ -72,8 +73,7 @@ export function createPerformanceMiddleware(): any {
  * Log slow query with details
  */
 function logSlowQuery(params: any, duration: number) {
-  const level =
-    duration > VERY_SLOW_QUERY_THRESHOLD_MS ? 'WARN' : 'INFO';
+  const level = duration > VERY_SLOW_QUERY_THRESHOLD_MS ? 'WARN' : 'INFO';
   const emoji = level === 'WARN' ? '⚠️' : '🐢';
 
   console[level === 'WARN' ? 'warn' : 'log'](
@@ -84,7 +84,7 @@ function logSlowQuery(params: any, duration: number) {
       duration: `${duration}ms`,
       threshold: `${SLOW_QUERY_THRESHOLD_MS}ms`,
       args: sanitizeArgs(params.args),
-    }
+    },
   );
 
   // In development, log the full query for debugging
@@ -141,7 +141,7 @@ function sanitizeArgs(args: any): any {
     Object.keys(obj).forEach((key) => {
       if (
         sensitiveFields.some((field) =>
-          key.toLowerCase().includes(field.toLowerCase())
+          key.toLowerCase().includes(field.toLowerCase()),
         )
       ) {
         obj[key] = '[REDACTED]';
@@ -191,7 +191,7 @@ export function getQueryStatsSummary() {
  */
 function getSlowQueriesByModel(): Record<string, number> {
   const slowQueries = queryStats.filter(
-    (s) => s.duration > SLOW_QUERY_THRESHOLD_MS
+    (s) => s.duration > SLOW_QUERY_THRESHOLD_MS,
   );
 
   return slowQueries.reduce(
@@ -199,7 +199,7 @@ function getSlowQueriesByModel(): Record<string, number> {
       acc[stat.model] = (acc[stat.model] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>
+    {} as Record<string, number>,
   );
 }
 
@@ -250,9 +250,14 @@ export function logPerformanceSummary() {
   console.log(`  P50: ${summary.p50.toFixed(2)}ms`);
   console.log(`  P95: ${summary.p95.toFixed(2)}ms`);
   console.log(`  P99: ${summary.p99.toFixed(2)}ms`);
-  console.log(`  Slow Queries (>${SLOW_QUERY_THRESHOLD_MS}ms): ${summary.slowQueries}`);
+  console.log(
+    `  Slow Queries (>${SLOW_QUERY_THRESHOLD_MS}ms): ${summary.slowQueries}`,
+  );
 
-  if (summary.slowQueriesByModel && Object.keys(summary.slowQueriesByModel).length > 0) {
+  if (
+    summary.slowQueriesByModel &&
+    Object.keys(summary.slowQueriesByModel).length > 0
+  ) {
     console.log('\n  Slow Queries by Model:');
     Object.entries(summary.slowQueriesByModel).forEach(([model, count]) => {
       console.log(`    ${model}: ${count}`);

@@ -359,7 +359,9 @@ export class UserCharacterService {
     });
 
     if (!card || card.classId !== character.classId) {
-      throw new NotFoundError('Ability card not found for this character class');
+      throw new NotFoundError(
+        'Ability card not found for this character class',
+      );
     }
 
     const existingEnhancement = await this.prisma.cardEnhancement.findFirst({

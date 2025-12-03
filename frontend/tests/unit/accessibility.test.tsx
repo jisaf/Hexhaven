@@ -50,12 +50,6 @@ const HighContrastText = () => (
   </div>
 );
 
-const LowContrastText = () => (
-  <div style={{ backgroundColor: '#eee', color: '#ddd', padding: '16px' }}>
-    <p>This text has insufficient contrast</p>
-  </div>
-);
-
 describe('Accessibility Testing with jest-axe', () => {
   describe('Button accessibility', () => {
     it('should pass axe checks for accessible button', async () => {

@@ -23,8 +23,6 @@ import { roomSessionManager } from '../services/room-session.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import type { CharacterClass } from '../components/CharacterSelect';
-import { UserCharacterSelect } from '../components/UserCharacterSelect';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
@@ -35,7 +33,7 @@ import { AuthNav } from '../components/AuthNav';
 import {
   getPlayerNickname,
 } from '../utils/storage';
-import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
+import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 

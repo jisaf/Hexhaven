@@ -52,7 +52,7 @@ export interface AuthError {
     code: string;
     message: string;
     statusCode: number;
-    details?: any;
+    details?: unknown;
     timestamp: string;
   };
 }

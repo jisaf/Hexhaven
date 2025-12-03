@@ -140,7 +140,11 @@ export class UserCharacterController {
     @Param('itemId') itemId: string,
   ): Promise<CharacterResponse> {
     const userId = req.user.userId;
-    return await this.userCharacterService.equipItem(characterId, userId, itemId);
+    return await this.userCharacterService.equipItem(
+      characterId,
+      userId,
+      itemId,
+    );
   }
 
   /**
@@ -155,7 +159,11 @@ export class UserCharacterController {
     @Param('itemId') itemId: string,
   ): Promise<CharacterResponse> {
     const userId = req.user.userId;
-    return await this.userCharacterService.unequipItem(characterId, userId, itemId);
+    return await this.userCharacterService.unequipItem(
+      characterId,
+      userId,
+      itemId,
+    );
   }
 
   /**

@@ -11,6 +11,7 @@ import { JwtPayload } from '../types/auth.types';
 
 // Extend Express Request to include user
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: JwtPayload;
@@ -25,7 +26,7 @@ declare global {
 export function authenticateJWT(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   try {
     // Extract Authorization header
@@ -37,7 +38,9 @@ export function authenticateJWT(
 
     // Check for Bearer token format
     if (!authHeader.startsWith('Bearer ')) {
-      throw new AuthError('Invalid authorization header format. Expected: Bearer <token>');
+      throw new AuthError(
+        'Invalid authorization header format. Expected: Bearer <token>',
+      );
     }
 
     // Extract token
@@ -68,7 +71,7 @@ export function authenticateJWT(
 export function optionalJWT(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   try {
     const authHeader = req.headers.authorization;
@@ -81,7 +84,7 @@ export function optionalJWT(
     }
 
     next();
-  } catch (error) {
+  } catch {
     // Ignore authentication errors for optional auth
     next();
   }

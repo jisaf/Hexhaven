@@ -230,7 +230,7 @@ class AuthService {
         };
 
         response = await fetch(url, { ...options, headers: newHeaders });
-      } catch (error) {
+      } catch {
         // Refresh failed - logout user
         await this.logout();
         throw new Error('Session expired. Please login again.');

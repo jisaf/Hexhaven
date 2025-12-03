@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client';
 
 declare global {
   // Allow global variable for development
-  // eslint-disable-next-line no-var
+
   var prisma: PrismaClient | undefined;
 }
 
@@ -31,8 +31,8 @@ if (process.env.NODE_ENV !== 'production') {
 // }
 
 // Graceful shutdown
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+process.on('beforeExit', () => {
+  void prisma.$disconnect();
 });
 
 export default prisma;

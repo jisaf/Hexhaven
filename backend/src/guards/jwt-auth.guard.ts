@@ -20,7 +20,7 @@ export class JwtAuthGuard implements CanActivate {
     this.authService = new AuthService(prisma);
   }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
@@ -34,7 +34,7 @@ export class JwtAuthGuard implements CanActivate {
       const payload = this.authService.verifyAccessToken(token);
       request.user = payload;
       return true;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

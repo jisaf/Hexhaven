@@ -28,9 +28,7 @@ export class AuthController {
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(
-    @Body() registerDto: RegisterDto,
-  ): Promise<AuthResponse> {
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
     const { username, password } = registerDto;
     return await this.authService.register(username, password);
   }
@@ -41,9 +39,7 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() loginDto: LoginDto,
-  ): Promise<AuthResponse> {
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     const { username, password } = loginDto;
     return await this.authService.login(username, password);
   }
@@ -57,7 +53,9 @@ export class AuthController {
   async refresh(
     @Body() refreshDto: RefreshTokenDto,
   ): Promise<{ tokens: TokenPair }> {
-    const tokens = await this.authService.refreshAccessToken(refreshDto.refreshToken);
+    const tokens = await this.authService.refreshAccessToken(
+      refreshDto.refreshToken,
+    );
     return { tokens };
   }
 
@@ -67,9 +65,7 @@ export class AuthController {
    */
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(
-    @Body() refreshDto: RefreshTokenDto,
-  ): Promise<void> {
+  async logout(@Body() refreshDto: RefreshTokenDto): Promise<void> {
     await this.authService.logout(refreshDto.refreshToken);
   }
 }

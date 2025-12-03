@@ -6,7 +6,7 @@
 
 import { useTranslation } from 'react-i18next';
 import styles from './GameHints.module.css';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface GameHintsProps {
   attackMode: boolean;
@@ -15,19 +15,23 @@ interface GameHintsProps {
 
 export function GameHints({ attackMode, showMovementHint }: GameHintsProps) {
   const { t } = useTranslation();
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    if (attackMode || showMovementHint) {
-      setIsVisible(true);
-    }
-  }, [attackMode, showMovementHint]);
+  // Track which hint mode was dismissed
+  const [dismissedMode, setDismissedMode] = useState<'attack' | 'movement' | null>(null);
 
   const handleDismiss = () => {
-    setIsVisible(false);
+    if (attackMode) {
+      setDismissedMode('attack');
+    } else if (showMovementHint) {
+      setDismissedMode('movement');
+    }
   };
 
-  if (!isVisible) {
+  // Determine if we should show the hint
+  const shouldShow =
+    (attackMode && dismissedMode !== 'attack') ||
+    (showMovementHint && dismissedMode !== 'movement');
+
+  if (!shouldShow) {
     return null;
   }
 

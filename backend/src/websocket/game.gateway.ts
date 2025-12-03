@@ -604,10 +604,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(
-        `Select character request from ${playerUUID}:`,
-        payload,
-      );
+      this.logger.log(`Select character request from ${playerUUID}:`, payload);
 
       // Multi-room detection: Check if client is in multiple rooms
       const clientRooms = Array.from(client.rooms).filter(
