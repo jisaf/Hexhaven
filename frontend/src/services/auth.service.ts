@@ -11,8 +11,7 @@ import type {
   AuthResponse,
   AuthError,
 } from '../types/auth.types';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { getApiUrl } from '../config/api';
 
 /**
  * Storage keys for tokens
@@ -28,7 +27,7 @@ class AuthService {
    * T089: Register a new user
    */
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const response = await fetch(`${getApiUrl()}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +53,7 @@ class AuthService {
    * T090: Login existing user
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${getApiUrl()}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,7 +83,7 @@ class AuthService {
 
     if (refreshToken) {
       try {
-        await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        await fetch(`${getApiUrl()}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -112,7 +111,7 @@ class AuthService {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const response = await fetch(`${getApiUrl()}/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,6 +4,7 @@
  */
 
 import { authService } from './auth.service';
+import { getApiUrl } from '../config/api';
 import type {
   CreateCharacterDto,
   UpdateCharacterDto,
@@ -13,15 +14,13 @@ import type {
   CharacterDetailResponse,
 } from '../types/character.types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
 class CharacterService {
   /**
    * Create a new character
    */
   async createCharacter(dto: CreateCharacterDto): Promise<CharacterResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters`,
+      `${getApiUrl()}/user-characters`,
       {
         method: 'POST',
         headers: {
@@ -44,7 +43,7 @@ class CharacterService {
    */
   async listCharacters(): Promise<CharacterResponse[]> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters`
+      `${getApiUrl()}/user-characters`
     );
 
     if (!response.ok) {
@@ -60,7 +59,7 @@ class CharacterService {
    */
   async getCharacter(characterId: string): Promise<CharacterDetailResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}`
+      `${getApiUrl()}/user-characters/${characterId}`
     );
 
     if (!response.ok) {
@@ -79,7 +78,7 @@ class CharacterService {
     dto: UpdateCharacterDto
   ): Promise<CharacterResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}`,
+      `${getApiUrl()}/user-characters/${characterId}`,
       {
         method: 'PATCH',
         headers: {
@@ -105,7 +104,7 @@ class CharacterService {
     dto: LevelUpDto
   ): Promise<CharacterResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}/level-up`,
+      `${getApiUrl()}/user-characters/${characterId}/level-up`,
       {
         method: 'POST',
         headers: {
@@ -128,7 +127,7 @@ class CharacterService {
    */
   async deleteCharacter(characterId: string): Promise<void> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}`,
+      `${getApiUrl()}/user-characters/${characterId}`,
       {
         method: 'DELETE',
       }
@@ -148,7 +147,7 @@ class CharacterService {
     itemId: string
   ): Promise<CharacterResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}/items/${itemId}`,
+      `${getApiUrl()}/user-characters/${characterId}/items/${itemId}`,
       {
         method: 'POST',
       }
@@ -170,7 +169,7 @@ class CharacterService {
     itemId: string
   ): Promise<CharacterResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}/items/${itemId}`,
+      `${getApiUrl()}/user-characters/${characterId}/items/${itemId}`,
       {
         method: 'DELETE',
       }
@@ -192,7 +191,7 @@ class CharacterService {
     dto: CreateEnhancementDto
   ): Promise<CharacterDetailResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}/enhancements`,
+      `${getApiUrl()}/user-characters/${characterId}/enhancements`,
       {
         method: 'POST',
         headers: {
@@ -218,7 +217,7 @@ class CharacterService {
     enhancementId: string
   ): Promise<CharacterDetailResponse> {
     const response = await authService.authenticatedFetch(
-      `${API_BASE_URL}/api/user-characters/${characterId}/enhancements/${enhancementId}`,
+      `${getApiUrl()}/user-characters/${characterId}/enhancements/${enhancementId}`,
       {
         method: 'DELETE',
       }
