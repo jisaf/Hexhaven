@@ -5,7 +5,6 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import type { Character, AbilityCard, CardEnhancement } from '@prisma/client';
 import type {
   CreateCharacterDto,
   UpdateCharacterDto,
@@ -79,7 +78,7 @@ export class UserCharacterService {
       },
     });
 
-    return characters.map((char: Character & { class: any }) =>
+    return characters.map((char) =>
       this.mapToCharacterResponse(char),
     );
   }
@@ -128,7 +127,7 @@ export class UserCharacterService {
         description: character.class.description,
         imageUrl: character.class.imageUrl,
       },
-      abilityCards: abilityCards.map((card: AbilityCard) => ({
+      abilityCards: abilityCards.map((card) => ({
         id: card.id,
         name: card.name,
         level: card.level,
@@ -136,7 +135,7 @@ export class UserCharacterService {
         topAction: card.topAction,
         bottomAction: card.bottomAction,
       })),
-      enhancements: character.enhancements.map((enh: CardEnhancement) => ({
+      enhancements: character.enhancements.map((enh) => ({
         id: enh.id,
         cardId: enh.cardId,
         slot: enh.slot,

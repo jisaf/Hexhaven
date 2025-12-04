@@ -5,7 +5,6 @@
 
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { prisma } from '../db/client';
-import type { CharacterClass } from '@prisma/client';
 
 @Controller('api/character-classes')
 export class CharacterClassesController {
@@ -22,7 +21,7 @@ export class CharacterClassesController {
       },
     });
 
-    return classes.map((c: CharacterClass) => ({
+    return classes.map((c) => ({
       id: c.id,
       name: c.name,
       startingHealth: c.startingHealth,

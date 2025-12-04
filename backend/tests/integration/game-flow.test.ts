@@ -32,8 +32,8 @@ describe('Full Game Flow Integration Test', () => {
       },
     });
 
-    const brute = classes.find((c) => c.name === 'Brute');
-    const spellweaver = classes.find((c) => c.name === 'Spellweaver');
+    const brute = classes.find((c: { name: string }) => c.name === 'Brute');
+    const spellweaver = classes.find((c: { name: string }) => c.name === 'Spellweaver');
 
     if (!brute || !spellweaver) {
       throw new Error('Required character classes not found in database');

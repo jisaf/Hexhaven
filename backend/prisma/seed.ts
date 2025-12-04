@@ -84,7 +84,7 @@ async function seedAbilityCards() {
 
   // Get all character classes to map names to IDs
   const classes = await prisma.characterClass.findMany();
-  const classMap = new Map(classes.map((c) => [c.name, c.id]));
+  const classMap = new Map(classes.map((c: { name: string; id: string }) => [c.name, c.id]));
 
   let seedCount = 0;
   for (const cardData of cards) {
