@@ -43,7 +43,15 @@ interface ScenarioSeed {
 }
 
 async function loadJSON<T>(filename: string): Promise<T[]> {
-  const filePath = path.join(__dirname, 'seed-data', filename);
+  // Handle both development (TS) and production (compiled JS) paths
+  let seedDataDir = path.join(__dirname, 'seed-data');
+
+  // If running from dist (compiled), look in the source location
+  if (__dirname.includes('dist/backend/prisma')) {
+    seedDataDir = path.join(__dirname, '../../../prisma/seed-data');
+  }
+
+  const filePath = path.join(seedDataDir, filename);
   const data = fs.readFileSync(filePath, 'utf-8');
   return JSON.parse(data);
 }

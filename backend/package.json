@@ -24,7 +24,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:seed": "ts-node src/db/seed.ts"
+    "db:seed": "node prisma/seed-runner.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.8",
@@ -82,6 +82,6 @@
     "uuid": "^13.0.0"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node prisma/seed-runner.js"
   }
 }
