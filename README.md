@@ -272,6 +272,85 @@ npm run prisma:migrate   # Run migrations
 npm run prisma:studio    # Open Prisma Studio GUI
 ```
 
+### Claude Code Slash Commands
+
+This project includes custom slash commands for development automation:
+
+#### Development & Testing Commands
+
+- **`/servers`** - Start/restart development servers intelligently
+  - Auto-detects if database migrations needed
+  - Kills existing processes before restart
+  - Uses npm or start-dev.sh based on state
+  - Runs with Haiku (fast & efficient)
+
+- **`/visual [smoke|full]`** - Run visual tests with Playwright MCP
+  - `smoke` - 7-step definition of done (default)
+  - `full` - 13-step comprehensive test suite
+  - Auto-starts servers before testing
+  - Screenshots saved with 5-day retention
+  - Bugs logged to `frontend/tests/bugs.md`
+
+- **`/min <command>`** - Execute commands with Haiku (fast mode)
+  - Runs with Haiku model + thinking off
+  - Auto-restores Sonnet + thinking on after
+  - Use for quick, straightforward tasks
+
+#### Feature Development Workflow (SpecKit)
+
+Complete workflow from specification to implementation:
+
+- **`/speckit.specify <description>`** - Create feature specification
+  - Generates spec.md from natural language
+  - Creates numbered feature branch (e.g., 003-feature-name)
+  - Validates requirements & success criteria
+  - Max 3 clarification questions if needed
+
+- **`/speckit.clarify`** - Refine underspecified areas
+  - Identifies gaps in current spec
+  - Asks targeted clarification questions
+  - Updates spec with answers
+
+- **`/speckit.plan`** - Generate implementation plan
+  - Creates plan.md with tech stack & approach
+  - Generates data-model.md (entities & relationships)
+  - Creates API contracts in contracts/ directory
+  - Produces quickstart.md for setup
+
+- **`/speckit.tasks`** - Generate actionable task list
+  - Creates tasks.md from plan & spec
+  - Organizes by user story with priorities
+  - Shows dependencies & parallel opportunities
+  - Includes file paths for each task
+
+- **`/speckit.implement`** - Execute implementation
+  - Processes tasks from tasks.md
+  - Executes in dependency order
+  - Updates task status as work progresses
+
+- **`/speckit.analyze`** - Cross-artifact consistency check
+  - Validates spec.md, plan.md, tasks.md alignment
+  - Non-destructive analysis
+  - Reports inconsistencies and gaps
+
+- **`/speckit.checklist`** - Generate custom feature checklist
+  - Creates validation checklist for current feature
+  - Based on requirements from spec
+
+- **`/speckit.constitution`** - Manage project principles
+  - Create/update project constitution
+  - Defines coding standards & architecture principles
+  - Keeps dependent templates in sync
+
+#### Internal Commands
+
+- **`/context-load`** - Load project context (auto-runs at session start)
+  - Reads README.md, PRD.md, and all spec.md files
+  - Uses Haiku with thinking off
+  - Restores Sonnet with thinking on after
+
+For detailed documentation on agents and command usage, see [AGENTS.md](AGENTS.md)
+
 ### Environment Variables
 
 ```env

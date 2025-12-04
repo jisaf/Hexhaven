@@ -6,11 +6,12 @@ Execute visual testing using Playwright MCP browser tools with Chromium on Pixel
 
 ## Execution Steps
 
-1. **Switch to Haiku**: Use `/model haiku` to set the model to Claude Haiku
-2. **Disable Thinking**: Use `/thinking off` to disable thinking mode
-3. **Execute Visual Test**: Perform the visual test specified below
-4. **Restore Sonnet**: Use `/model sonnet` to switch back to Claude Sonnet
-5. **Enable Thinking**: Use `/thinking on` to re-enable thinking mode
+1. **Ensure Servers Running**: Use `/servers` to start or restart development servers
+2. **Switch to Haiku**: Use `/model haiku` to set the model to Claude Haiku
+3. **Disable Thinking**: Use `/thinking off` to disable thinking mode
+4. **Execute Visual Test**: Perform the visual test specified below
+5. **Restore Sonnet**: Use `/model sonnet` to switch back to Claude Sonnet
+6. **Enable Thinking**: Use `/thinking on` to re-enable thinking mode
 
 ## IMPORTANT: This Uses Playwright MCP Tools
 
@@ -182,11 +183,12 @@ Before each test run:
 
 ## Prerequisites
 
-Before running:
-1. ✅ Frontend must be running on localhost:5173
-2. ✅ Backend must be running on localhost:3001
-3. ✅ Chromium symlinked at /opt/google/chrome/chrome
-4. ✅ MCP browser tools configured for Pixel 6 (412×915px)
+The following will be automatically handled:
+1. ✅ Frontend and backend servers (automatically started via `/servers` command)
+
+Manual prerequisites:
+1. ✅ Chromium symlinked at /opt/google/chrome/chrome
+2. ✅ MCP browser tools configured for Pixel 6 (412×915px)
 
 ## Execution Instructions
 
