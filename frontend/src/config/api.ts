@@ -26,11 +26,12 @@ export function getApiUrl(): string {
     port,
   });
 
-  // In development, the backend runs on port 3001
+  // In development, the backend runs on port 3001 (configurable via VITE_BACKEND_PORT)
   // In production with nginx, it's on the same host with /api path
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development
-    return `${protocol}//localhost:3001/api`;
+    const backendPort = import.meta.env.VITE_BACKEND_PORT || '3001';
+    return `${protocol}//localhost:${backendPort}/api`;
   } else {
     // Production or remote access - use same host with /api path
     // Use 'host' which includes the full host (domain:port if present)
@@ -53,15 +54,16 @@ export function getWebSocketUrl(): string {
   // Auto-detect based on current location
   const { protocol, hostname, host, port } = window.location;
 
-  // In development, the backend runs on port 3001
+  // In development, the backend runs on port 3001 (configurable via VITE_BACKEND_PORT)
   // In production with nginx, it's on the same host
+  const backendPort = import.meta.env.VITE_BACKEND_PORT || '3001';
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - localhost
-    return `http://localhost:3001`;
+    return `http://localhost:${backendPort}`;
   } else if (port === '5173' || port === '5174') {
     // Development via network IP (Vite dev server)
-    // Backend is on port 3001
-    return `http://${hostname}:3001`;
+    // Backend is on configurable port (default 3001)
+    return `http://${hostname}:${backendPort}`;
   } else {
     // Production or remote access - use same host
     // Convert back to http/https for socket.io (it handles the upgrade)
