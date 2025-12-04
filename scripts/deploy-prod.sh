@@ -55,7 +55,7 @@ $SCP deploy.tar.gz $USER@$HOST:/tmp/
 
 # Extract and deploy on server
 info "Deploying on server"
-$SSH $USER@$HOST 'bash -s' <<'DEPLOY'
+$SSH $USER@$HOST "DB_NAME='${DB_NAME:-hexhaven_production}' DB_USER='${DB_USER:-hexhaven_user}' DB_PASSWORD='${DB_PASSWORD:-hexhaven_production_password_CHANGE_ME}' bash -s" <<'DEPLOY'
 set -e
 
 # Install Node.js if needed
@@ -64,6 +64,32 @@ if ! command -v node >/dev/null; then
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt-get install -y nodejs
 fi
+
+# Install and configure PostgreSQL if needed
+if ! command -v psql >/dev/null; then
+  echo "Installing PostgreSQL..."
+  sudo apt-get update
+  sudo apt-get install -y postgresql postgresql-contrib
+  sudo systemctl start postgresql
+  sudo systemctl enable postgresql
+  echo "PostgreSQL installed successfully"
+else
+  echo "PostgreSQL already installed"
+  # Ensure PostgreSQL is running
+  sudo systemctl start postgresql || true
+fi
+
+# Set up database and user (idempotent)
+echo "Setting up database..."
+sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME};"
+
+sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname = '${DB_USER}'" | grep -q 1 || \
+  sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASSWORD}';"
+
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
+sudo -u postgres psql -d "${DB_NAME}" -c "GRANT ALL ON SCHEMA public TO ${DB_USER};"
+echo "Database setup completed"
 
 # Extract
 mkdir -p /tmp/hexhaven-extract
