@@ -11,7 +11,10 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --passWithNoTests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:visual": "node tests/visual/run-visual-test.cjs smoke",
+    "test:visual:smoke": "node tests/visual/run-visual-test.cjs smoke",
+    "test:visual:full": "node tests/visual/run-visual-test.cjs full"
   },
   "dependencies": {
     "@pixi/react": "^8.0.3",

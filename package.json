@@ -42,5 +42,8 @@
     "websockets"
   ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@playwright/mcp": "^0.0.49"
+  }
 }
