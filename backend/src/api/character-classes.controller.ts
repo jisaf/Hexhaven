@@ -21,7 +21,7 @@ export class CharacterClassesController {
       },
     });
 
-    return classes.map((c) => ({
+    return classes.map((c: any) => ({
       id: c.id,
       name: c.name,
       startingHealth: c.startingHealth,

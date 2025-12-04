@@ -78,7 +78,7 @@ export class UserCharacterService {
       },
     });
 
-    return characters.map((char) =>
+    return characters.map((char: any) =>
       this.mapToCharacterResponse(char),
     );
   }
@@ -127,7 +127,7 @@ export class UserCharacterService {
         description: character.class.description,
         imageUrl: character.class.imageUrl,
       },
-      abilityCards: abilityCards.map((card) => ({
+      abilityCards: abilityCards.map((card: any) => ({
         id: card.id,
         name: card.name,
         level: card.level,
@@ -135,7 +135,7 @@ export class UserCharacterService {
         topAction: card.topAction,
         bottomAction: card.bottomAction,
       })),
-      enhancements: character.enhancements.map((enh) => ({
+      enhancements: character.enhancements.map((enh: any) => ({
         id: enh.id,
         cardId: enh.cardId,
         slot: enh.slot,

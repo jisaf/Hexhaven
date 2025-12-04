@@ -335,7 +335,7 @@ export class GameStateService {
       createdAt: game.createdAt,
       startedAt: game.startedAt,
       completedAt: game.completedAt,
-      characters: characters.map((c) => ({
+      characters: characters.map((c: any) => ({
         id: c.id,
         name: c.name,
         className: c.class.name,
