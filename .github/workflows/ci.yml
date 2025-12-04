@@ -114,7 +114,7 @@ jobs:
         working-directory: ./backend
         run: npm test -- --coverage
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hexhaven_test
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
