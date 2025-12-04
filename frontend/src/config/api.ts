@@ -26,11 +26,11 @@ export function getApiUrl(): string {
     port,
   });
 
-  // In development, the backend runs on port 3000
+  // In development, the backend runs on port 3001
   // In production with nginx, it's on the same host with /api path
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development
-    return `${protocol}//localhost:3000/api`;
+    return `${protocol}//localhost:3001/api`;
   } else {
     // Production or remote access - use same host with /api path
     // Use 'host' which includes the full host (domain:port if present)
@@ -53,15 +53,15 @@ export function getWebSocketUrl(): string {
   // Auto-detect based on current location
   const { protocol, hostname, host, port } = window.location;
 
-  // In development, the backend runs on port 3000
+  // In development, the backend runs on port 3001
   // In production with nginx, it's on the same host
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - localhost
-    return `http://localhost:3000`;
+    return `http://localhost:3001`;
   } else if (port === '5173' || port === '5174') {
     // Development via network IP (Vite dev server)
-    // Backend is on port 3000
-    return `http://${hostname}:3000`;
+    // Backend is on port 3001
+    return `http://${hostname}:3001`;
   } else {
     // Production or remote access - use same host
     // Convert back to http/https for socket.io (it handles the upgrade)

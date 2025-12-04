@@ -1,0 +1,128 @@
+[
+  {
+    "name": "Brute",
+    "startingHealth": 10,
+    "maxHealthByLevel": [10, 12, 14, 16, 18, 20, 22, 24, 26],
+    "handSize": 10,
+    "perks": [
+      "Remove two -1 cards",
+      "Replace one -1 card with one +1 card",
+      "Add two +1 cards",
+      "Add one +3 card",
+      "Add three rolling PUSH 1 cards",
+      "Add two rolling PIERCE 3 cards",
+      "Add one rolling STUN card",
+      "Add one rolling DISARM card and one rolling MUDDLE card",
+      "Add one rolling ADD TARGET card",
+      "Add one +1 SHIELD 1, Self card",
+      "Ignore negative item effects and add one +1 card"
+    ],
+    "description": "The Brute is a tanky melee fighter who excels at absorbing damage and dealing consistent physical attacks. High health pool and straightforward combat abilities make this class ideal for beginners.",
+    "imageUrl": null
+  },
+  {
+    "name": "Tinkerer",
+    "startingHealth": 8,
+    "maxHealthByLevel": [8, 9, 11, 12, 14, 15, 17, 18, 20],
+    "handSize": 12,
+    "perks": [
+      "Remove two -1 cards",
+      "Replace one -1 card with one +1 card",
+      "Add two +1 cards",
+      "Add one +3 card",
+      "Add two rolling FIRE cards",
+      "Add three rolling MUDDLE cards",
+      "Add one +1 WOUND card",
+      "Add one +1 IMMOBILIZE card",
+      "Add one +1 HEAL 2 card",
+      "Add one +0 ADD TARGET card",
+      "Ignore negative scenario effects"
+    ],
+    "description": "The Tinkerer is a versatile support class capable of healing allies, buffing, and controlling enemies with gadgets and inventions. Large hand size allows for flexible tactical options.",
+    "imageUrl": null
+  },
+  {
+    "name": "Spellweaver",
+    "startingHealth": 6,
+    "maxHealthByLevel": [6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "handSize": 8,
+    "perks": [
+      "Remove four +0 cards",
+      "Replace one -1 card with one +1 card",
+      "Add two +1 cards",
+      "Add one +0 STUN card",
+      "Add one +1 WOUND card",
+      "Add one +1 IMMOBILIZE card",
+      "Add one +1 CURSE card",
+      "Add one +2 FIRE card",
+      "Add one +2 ICE card",
+      "Add one rolling EARTH and one rolling AIR card",
+      "Add one rolling LIGHT and one rolling DARK card"
+    ],
+    "description": "The Spellweaver is a powerful elemental mage who channels Fire, Ice, Earth, Air, Light, and Dark elements. Low health but devastating area-of-effect spells make careful positioning critical.",
+    "imageUrl": null
+  },
+  {
+    "name": "Scoundrel",
+    "startingHealth": 8,
+    "maxHealthByLevel": [8, 9, 11, 12, 14, 15, 17, 18, 20],
+    "handSize": 9,
+    "perks": [
+      "Remove two -1 cards",
+      "Remove four +0 cards",
+      "Replace one -1 card with one +1 card",
+      "Replace one +0 card with one +2 card",
+      "Add two rolling +1 cards",
+      "Add two rolling PIERCE 3 cards",
+      "Add two rolling POISON cards",
+      "Add two rolling MUDDLE cards",
+      "Add one rolling INVISIBLE card",
+      "Ignore negative scenario effects"
+    ],
+    "description": "The Scoundrel is a melee rogue specializing in single-target damage from advantageous positions. Gains bonus damage when attacking adjacent enemies, rewarding tactical movement and positioning.",
+    "imageUrl": null
+  },
+  {
+    "name": "Cragheart",
+    "startingHealth": 10,
+    "maxHealthByLevel": [10, 12, 14, 16, 18, 20, 22, 24, 26],
+    "handSize": 11,
+    "perks": [
+      "Remove four +0 cards",
+      "Replace one -1 card with one +1 card",
+      "Add one -2 card and two +2 cards",
+      "Add two rolling +1 cards",
+      "Add two rolling EARTH cards",
+      "Add two rolling AIR cards",
+      "Add two rolling PUSH 2 cards",
+      "Add two rolling IMMOBILIZE cards",
+      "Add two rolling MUDDLE cards",
+      "Ignore negative obstacle effects",
+      "Ignore negative scenario effects"
+    ],
+    "description": "The Cragheart is a ranged/melee hybrid who manipulates obstacles and terrain. Deals damage to both enemies and allies, requiring careful positioning. Earth-focused abilities create and destroy obstacles.",
+    "imageUrl": null
+  },
+  {
+    "name": "Mindthief",
+    "startingHealth": 6,
+    "maxHealthByLevel": [6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "handSize": 10,
+    "perks": [
+      "Remove two -1 cards",
+      "Remove four +0 cards",
+      "Replace two +1 cards with two +2 cards",
+      "Replace one -2 card with one +0 card",
+      "Add one +2 ICE card",
+      "Add two rolling +1 cards",
+      "Add three rolling PULL 1 cards",
+      "Add three rolling MUDDLE cards",
+      "Add two rolling IMMOBILIZE cards",
+      "Add one rolling STUN card",
+      "Add one rolling DISARM card and one rolling MUDDLE card",
+      "Ignore negative scenario effects"
+    ],
+    "description": "The Mindthief is an agile melee damage dealer who uses psychic powers and augments to control the battlefield. Can summon a rat companion and manipulate enemy positioning with mind control.",
+    "imageUrl": null
+  }
+]

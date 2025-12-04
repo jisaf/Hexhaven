@@ -15,7 +15,8 @@ export interface JoinRoomPayload {
 }
 
 export interface SelectCharacterPayload {
-  characterClass: CharacterClass;
+  characterClass?: CharacterClass; // Legacy - for backward compatibility
+  characterId?: string; // New persistent character ID (002)
 }
 
 export interface StartGamePayload {

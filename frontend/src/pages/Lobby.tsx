@@ -23,17 +23,17 @@ import { roomSessionManager } from '../services/room-session.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import type { CharacterClass } from '../components/CharacterSelect';
 import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
+import { AuthNav } from '../components/AuthNav';
 import {
   getPlayerNickname,
 } from '../utils/storage';
-import { getDisabledCharacterClasses, allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
+import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 
@@ -45,7 +45,7 @@ export function Lobby() {
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterClass | undefined>();
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,10 +174,12 @@ export function Lobby() {
     }
   };
 
-  // Character selection (T069)
-  const handleSelectCharacter = (characterClass: CharacterClass) => {
-    setSelectedCharacter(characterClass);
-    websocketService.selectCharacter(characterClass);
+  // Character selection (T069) - Updated for persistent characters
+  const handleSelectCharacter = (characterId: string) => {
+    console.log('[Lobby] handleSelectCharacter called with:', characterId);
+    console.log('[Lobby] Current players before selection:', players);
+    setSelectedCharacterId(characterId);
+    websocketService.selectCharacter(characterId);
   };
 
   // Scenario selection (US5 - T179)
@@ -200,9 +202,10 @@ export function Lobby() {
     websocketService.startGame(selectedScenario);
   };
 
-  // Get disabled character classes using utility
+  // Get disabled character IDs (characters already selected by other players)
   const currentPlayerId = websocketService.getPlayerUUID();
-  const disabledClasses = getDisabledCharacterClasses(players, currentPlayerId);
+  // TODO: Implement getDisabledCharacterIds when backend supports character ID in player state
+  const disabledCharacterIds: string[] = [];
 
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
   const isCurrentPlayerHost = sessionState.playerRole === 'host' || isPlayerHost(currentPlayer);
@@ -210,10 +213,24 @@ export function Lobby() {
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
 
+  // Test log to verify DebugConsole is capturing logs
+  console.log('[Lobby] 🔍 DEBUG CONSOLE TEST - Component rendered');
+
+  // Debug logging
+  console.log('[Lobby] Player state:', {
+    players,
+    playersReady,
+    canStartGame,
+    selectedCharacterId,
+    selectedScenario,
+    isCurrentPlayerHost,
+  });
+
   const activeTab = myRooms.length > 0 ? 0 : 1;
 
   return (
     <div className={styles.lobbyPage}>
+      <AuthNav />
       <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
 
       <main className={styles.lobbyContent}>
@@ -305,8 +322,8 @@ export function Lobby() {
             players={players}
             currentPlayerId={currentPlayerId || undefined}
             isHost={isCurrentPlayerHost}
-            selectedCharacter={selectedCharacter}
-            disabledClasses={disabledClasses}
+            selectedCharacterId={selectedCharacterId}
+            disabledCharacterIds={disabledCharacterIds}
             selectedScenario={selectedScenario}
             canStartGame={canStartGame}
             allPlayersReady={playersReady}

@@ -38,9 +38,16 @@ export class PrismaService
     }
 
     // Delete in order to respect foreign key constraints
-    await this.progression.deleteMany();
-    await this.account.deleteMany();
+    // 002 tables
+    await this.cardEnhancement.deleteMany();
+    await this.character.deleteMany();
+    await this.refreshToken.deleteMany();
+    await this.user.deleteMany();
+    await this.gameEvent.deleteMany();
     await this.gameState.deleteMany();
+    await this.game.deleteMany();
+
+    // 001 legacy tables (keep for backward compatibility)
     await this.player.deleteMany();
     await this.gameRoom.deleteMany();
   }

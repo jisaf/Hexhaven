@@ -64,6 +64,9 @@ init_config() {
             server_ip=$(ip -4 addr show | grep inet | grep -v 127.0.0.1 | head -1 | awk '{print $2}' | cut -d/ -f1 || echo "localhost")
         fi
 
+        # Generate secure JWT secret
+        local jwt_secret=$(openssl rand -base64 64 | tr -d '\n')
+
         # Create config file
         sudo bash -c "cat > $CONFIG_FILE" << EOF
 # Hexhaven Server Configuration
@@ -71,7 +74,7 @@ init_config() {
 # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
 # Database Configuration
-DATABASE_URL="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_name}?schema=public"
+DATABASE_URL="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_name}?schema=public&connection_limit=20&pool_timeout=20"
 
 # Server Settings
 HOST=0.0.0.0
@@ -80,6 +83,14 @@ PORT=3000
 # CORS and Frontend (auto-detected server IP: ${server_ip})
 CORS_ORIGIN=http://${server_ip}
 FRONTEND_URL=http://${server_ip}
+
+# JWT Authentication (auto-generated secure secret)
+JWT_SECRET=${jwt_secret}
+JWT_ACCESS_EXPIRATION=7d
+JWT_REFRESH_EXPIRATION=30d
+
+# Password Hashing
+BCRYPT_SALT_ROUNDS=12
 
 # Logging
 LOG_LEVEL=info
@@ -131,6 +142,10 @@ generate_env() {
     local port=$(grep "^PORT=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "3000")
     local cors_origin=$(grep "^CORS_ORIGIN=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://${server_ip}")
     local frontend_url=$(grep "^FRONTEND_URL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "http://${server_ip}")
+    local jwt_secret=$(grep "^JWT_SECRET=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "$(openssl rand -base64 64 | tr -d '\n')")
+    local jwt_access_exp=$(grep "^JWT_ACCESS_EXPIRATION=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "7d")
+    local jwt_refresh_exp=$(grep "^JWT_REFRESH_EXPIRATION=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "30d")
+    local bcrypt_rounds=$(grep "^BCRYPT_SALT_ROUNDS=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "12")
     local log_level=$(grep "^LOG_LEVEL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "info")
     local redis_url=$(grep "^REDIS_URL=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "")
     local sentry_dsn=$(grep "^SENTRY_DSN=" "$CONFIG_FILE" | cut -d= -f2- | tr -d '"' || echo "")
@@ -153,6 +168,14 @@ DATABASE_URL=${database_url}
 
 # CORS Configuration
 CORS_ORIGIN=${cors_origin}
+
+# JWT Authentication Configuration
+JWT_SECRET=${jwt_secret}
+JWT_ACCESS_EXPIRATION=${jwt_access_exp}
+JWT_REFRESH_EXPIRATION=${jwt_refresh_exp}
+
+# Password Hashing Configuration
+BCRYPT_SALT_ROUNDS=${bcrypt_rounds}
 
 # Session Configuration (auto-generated for this deployment)
 SESSION_SECRET=${session_secret}

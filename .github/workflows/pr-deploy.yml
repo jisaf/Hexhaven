@@ -37,6 +37,9 @@ jobs:
       - name: Run deployment script
         env:
           BRANCH_NAME: ${{ github.head_ref }}
+          DB_NAME: ${{ secrets.DB_NAME || 'hexhaven_production' }}
+          DB_USER: ${{ secrets.DB_USER || 'hexhaven_user' }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'hexhaven_production_password_CHANGE_ME' }}
         run: |
           ./scripts/deploy-prod.sh ~/.ssh/deploy_key
 

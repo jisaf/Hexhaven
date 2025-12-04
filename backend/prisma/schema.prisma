@@ -1,5 +1,5 @@
 // Hexhaven Multiplayer - Prisma Schema
-// Hybrid approach: JSONB for full state, normalized tables for queries
+// Integrated: Anonymous gameplay (001) + User authentication & progression (002)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,20 +10,257 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ========== CORE TABLES ==========
+// ========== USER AUTHENTICATION (002) ==========
 
-model GameRoom {
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  username            String    @unique @db.VarChar(20)
+  passwordHash        String    @db.VarChar(255)
+  email               String?   @unique @db.VarChar(255) // Reserved for future use
+  failedLoginAttempts Int       @default(0) @db.SmallInt
+  lockedUntil         DateTime?
+  deletedAt           DateTime? // Soft delete timestamp
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  characters    Character[]
+
+  @@index([username])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique @db.VarChar(255)
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ========== CHARACTER CLASSES & ABILITIES (002) ==========
+
+model CharacterClass {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @unique @db.VarChar(50) // "Brute", "Tinkerer", "Spellweaver", etc.
+  startingHealth   Int      @db.SmallInt
+  maxHealthByLevel Json // Array of max health per level [10, 12, 14, ...]
+  handSize         Int      @db.SmallInt // Number of cards in hand
+  perks            Json // Array of available perks ["Remove two -1 cards", ...]
+  description      String   @db.VarChar(500)
+  imageUrl         String?  @db.VarChar(255)
+  createdAt        DateTime @default(now())
+
+  // Relations
+  characters   Character[]
+  abilityCards AbilityCard[]
+
+  @@map("character_classes")
+}
+
+model AbilityCard {
+  id           String   @id @default(uuid()) @db.Uuid
+  classId      String   @db.Uuid
+  name         String   @db.VarChar(100)
+  level        Int      @db.SmallInt // Level X = starting card (level 0 or 1)
+  initiative   Int      @db.SmallInt // Turn order value
+  topAction    Json // { type, value, effects, range }
+  bottomAction Json // { type, value, effects }
+  createdAt    DateTime @default(now())
+
+  // Relations
+  class        CharacterClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  enhancements CardEnhancement[]
+
+  @@index([classId])
+  @@index([level])
+  @@map("ability_cards")
+}
+
+// ========== CHARACTERS & PROGRESSION (002) ==========
+
+model Character {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @db.VarChar(30)
+  userId        String   @db.Uuid
+  classId       String   @db.Uuid
+  level         Int      @default(1) @db.SmallInt
+  experience    Int      @default(0)
+  gold          Int      @default(0)
+  health        Int      @db.SmallInt // Current health
+  perks         Json     @default("[]") // Array of unlocked perk names
+  inventory     Json     @default("[]") // Array of item IDs in character's possession
+  currentGameId String?  @db.Uuid // NULL if not in game, gameId if in active game
+  campaignId    String?  @db.Uuid // NULL or campaignId (features deferred)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class        CharacterClass    @relation(fields: [classId], references: [id])
+  currentGame  Game?             @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  campaign     Campaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  enhancements CardEnhancement[]
+
+  @@index([userId])
+  @@index([classId])
+  @@index([currentGameId])
+  @@index([campaignId])
+  @@map("characters")
+}
+
+model CardEnhancement {
+  id              String          @id @default(uuid()) @db.Uuid
+  characterId     String          @db.Uuid
+  cardId          String          @db.Uuid
+  slot            EnhancementSlot // TOP or BOTTOM
+  enhancementType String          @db.VarChar(50) // "+1 Attack", "Add Element", etc.
+  appliedAt       DateTime        @default(now())
+
+  // Relations
+  character Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  card      AbilityCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+  @@index([cardId])
+  @@map("card_enhancements")
+}
+
+// ========== ITEMS (002) ==========
+
+model Item {
   id          String   @id @default(uuid()) @db.Uuid
-  roomCode    String   @unique @db.VarChar(6)
-  status      RoomStatus
-  scenarioId  String?  @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  type        String   @db.VarChar(50) // "head", "body", "hands", "feet", "small-item", etc.
+  rarity      Rarity
+  effects     Json // Array of effect objects
+  cost        Int // Gold cost
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+
+  @@index([rarity])
+  @@index([type])
+  @@map("items")
+}
+
+// ========== GAMES & EVENT SOURCING (002) ==========
+
+model Game {
+  id          String      @id @default(uuid()) @db.Uuid
+  roomCode    String      @unique @db.VarChar(6)
+  scenarioId  String?     @db.Uuid
+  difficulty  Int         @default(1) @db.SmallInt
+  status      GameStatus  @default(LOBBY)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Relations
+  scenario         Scenario?   @relation(fields: [scenarioId], references: [id])
+  gameState        GameState?
+  events           GameEvent[]
+  activeCharacters Character[] @relation("CharacterCurrentGame")
+
+  @@index([roomCode])
+  @@index([status])
+  @@index([createdAt])
+  @@map("games")
+}
+
+model GameState {
+  id          String   @id @default(uuid()) @db.Uuid
+  gameId      String   @unique @db.Uuid
+  sequenceNum Int // Snapshot at this event sequence number
+  stateData   Json // Complete game state snapshot
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  expiresAt   DateTime // 24-hour TTL
 
-  players     Player[]
-  gameState   GameState?
-  scenario    Scenario? @relation(fields: [scenarioId], references: [id])
+  // Relations
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@map("game_states")
+}
+
+model GameEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  gameId      String   @db.Uuid
+  sequenceNum Int // Incremental event number for this game
+  eventType   String   @db.VarChar(50) // GAME_CREATED, PLAYER_JOINED, etc.
+  eventData   Json // Event payload
+  playerId    String?  @db.Uuid // Player who triggered event (nullable for system events)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, sequenceNum])
+  @@index([gameId, sequenceNum])
+  @@map("game_events")
+}
+
+// ========== CAMPAIGNS (002 - Schema only, features deferred) ==========
+
+model Campaign {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String   @db.VarChar(100)
+  prosperityLevel    Int      @default(1) @db.SmallInt
+  reputation         Int      @default(0) @db.SmallInt
+  completedScenarios Json     @default("[]") // Array of scenario IDs
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  characters Character[]
+
+  @@map("campaigns")
+}
+
+// ========== SCENARIOS (001 + 002) ==========
+
+model Scenario {
+  id                   String   @id @default(uuid()) @db.Uuid
+  name                 String   @unique @db.VarChar(100)
+  difficulty           Int      @db.SmallInt
+  mapLayout            Json // Array of HexTile objects
+  monsterGroups        Json // Array of MonsterGroup objects
+  objectives           Json // { primary, secondary }
+  treasures            Json? // Array of treasure locations
+  playerStartPositions Json? // Array of starting hex coordinates
+  createdAt            DateTime @default(now())
+
+  // Relations
+  games Game[]
+
+  @@index([difficulty])
+  @@map("scenarios")
+}
+
+// ========== ANONYMOUS GAMEPLAY (001 - Legacy) ==========
+
+// GameRoom and Player models are kept for backward compatibility
+// with existing 001 anonymous gameplay. New authenticated games use Game model.
+
+model GameRoom {
+  id         String     @id @default(uuid()) @db.Uuid
+  roomCode   String     @unique @db.VarChar(6)
+  status     RoomStatus @default(lobby)
+  scenarioId String?    @db.Uuid
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  expiresAt  DateTime // 24-hour TTL for anonymous games
+
+  // Relations
+  players Player[]
 
   @@index([roomCode])
   @@index([status])
@@ -32,97 +269,33 @@ model GameRoom {
 }
 
 model Player {
-  id               String   @id @default(uuid()) @db.Uuid
-  uuid             String   @unique @db.VarChar(36)
-  nickname         String   @db.VarChar(50)
-  roomId           String?  @db.Uuid
-  isHost           Boolean  @default(false)
+  id               String           @id @default(uuid()) @db.Uuid
+  uuid             String           @unique @db.VarChar(36)
+  nickname         String           @db.VarChar(50)
+  roomId           String?          @db.Uuid
+  isHost           Boolean          @default(false)
   connectionStatus ConnectionStatus @default(connected)
-  lastSeenAt       DateTime @default(now())
-  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
 
-  room             GameRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  // Relations
+  room GameRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
 
   @@index([uuid])
   @@index([roomId])
   @@map("players")
 }
 
-// Full game state stored as JSONB for fast serialization/deserialization
-model GameState {
-  roomId    String   @id @db.Uuid
-  state     Json     // Complete game state: characters, monsters, board, etc.
-  updatedAt DateTime @updatedAt
-
-  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-
-  @@map("game_states")
-}
-
-model Scenario {
-  id                    String   @id @default(uuid()) @db.Uuid
-  name                  String   @db.VarChar(100)
-  difficulty            Int      @db.SmallInt
-  mapLayout             Json     // Array of HexTile objects
-  monsterGroups         Json     // Array of MonsterGroup objects
-  objectivePrimary      String   @db.VarChar(500)
-  objectiveSecondary    String?  @db.VarChar(500)
-  treasures             Json?    // Array of TreasureLocation objects
-  playerStartPositions  Json?    // Array of hex coordinates for player starting positions
-
-  rooms                 GameRoom[]
-
-  @@index([difficulty])
-  @@map("scenarios")
-}
-
-// ========== CHARACTER CLASSES (Static Data) ==========
-
-model CharacterClass {
-  id          String   @id @default(uuid()) @db.Uuid
-  className   String   @unique @db.VarChar(50) // "Brute", "Tinkerer", etc.
-  maxHealth   Int      @db.SmallInt
-  abilityDeck Json     // Array of AbilityCard objects
-  description String   @db.VarChar(500)
-  imageUrl    String?  @db.VarChar(255)
-
-  @@map("character_classes")
-}
-
-// ========== ACCOUNT & PROGRESSION (User Story 7) ==========
-
-model Account {
-  id        String   @id @default(uuid()) @db.Uuid
-  uuid      String   @unique @db.VarChar(36)
-  email     String?  @unique @db.VarChar(255)
-  createdAt DateTime @default(now())
-
-  progression Progression?
-
-  @@index([uuid])
-  @@index([email])
-  @@map("accounts")
-}
-
-model Progression {
-  accountUuid               String   @id @db.VarChar(36)
-  scenariosCompleted        Int      @default(0)
-  totalExperience           Int      @default(0)
-  charactersPlayed          Json     // Array of character class names
-  characterExperience       Json     // Object mapping character class to { level, xp, perksUnlocked[] }
-  perksUnlocked             Json     // Array of all perk names unlocked across characters
-  completedScenarioIds      Json     // Array of scenario IDs completed
-  scenarioCharacterHistory  Json?    // Array of { scenarioId, characterClass } objects
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-
-  account                   Account @relation(fields: [accountUuid], references: [uuid], onDelete: Cascade)
-
-  @@index([accountUuid])
-  @@map("progressions")
-}
-
 // ========== ENUMS ==========
+
+enum GameStatus {
+  LOBBY
+  ACTIVE
+  COMPLETED
+  ABANDONED
+
+  @@map("game_status")
+}
 
 enum RoomStatus {
   lobby
@@ -139,4 +312,21 @@ enum ConnectionStatus {
   reconnecting
 
   @@map("connection_status")
+}
+
+enum EnhancementSlot {
+  TOP
+  BOTTOM
+
+  @@map("enhancement_slot")
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+
+  @@map("rarity")
 }

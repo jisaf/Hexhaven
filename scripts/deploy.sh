@@ -64,6 +64,18 @@ check_directory() {
 setup_environment() {
     log_step "Setting up environment variables..."
 
+    # Load server configuration if it exists (contains DATABASE_URL)
+    SERVER_CONFIG="${DEPLOY_PATH}/.server-config"
+    if [ -f "${SERVER_CONFIG}" ]; then
+        log_info "Loading server configuration from .server-config..."
+        set -a
+        source "${SERVER_CONFIG}"
+        set +a
+    else
+        log_warn "No .server-config found. Database configuration may be missing."
+        log_warn "Run: ${DEPLOY_PATH}/scripts/server-config.sh init"
+    fi
+
     # Check if .env exists (created from GitHub secrets during deployment)
     if [ ! -f "${ENV_FILE}" ]; then
         # Create minimal .env for production
@@ -73,16 +85,13 @@ NODE_ENV=production
 PORT=3000
 HOST=0.0.0.0
 LOG_LEVEL=info
-
-# Database is not currently used - app loads data from JSON files
-# DATABASE_URL will be added in a future release when database integration is enabled
 ENVEOF
         log_info "Created minimal .env file"
     else
         log_info "Using existing .env file"
     fi
 
-    # Load environment variables
+    # Load environment variables from .env (can override .server-config)
     set -a
     source "${ENV_FILE}"
     set +a
@@ -152,46 +161,42 @@ run_database_migrations() {
         return 0
     fi
 
-    # TODO: Database not currently used in production
-    # The app loads data from JSON files, not the database
-    # Uncomment when database integration is needed
-    log_warn "Database migrations are currently disabled"
-    log_warn "The application uses JSON files for data storage"
-    log_warn "Database setup will be enabled in a future release"
-    return 0
-
     # Run from monorepo root using workspace
-    # cd "${DEPLOY_PATH}"
+    cd "${DEPLOY_PATH}"
 
-    # # Generate Prisma client
-    # log_info "Generating Prisma client..."
-    # if ! npm run prisma:generate --workspace=backend; then
-    #     log_error "Failed to generate Prisma client"
-    #     log_error "Check DATABASE_URL in ${DEPLOY_PATH}/.env or ${DEPLOY_PATH}/.server-config"
-    #     exit 1
-    # fi
+    # Generate Prisma client
+    log_info "Generating Prisma client..."
+    if ! npm run prisma:generate --workspace=backend; then
+        log_error "Failed to generate Prisma client"
+        log_error "Check DATABASE_URL in ${DEPLOY_PATH}/.env or ${DEPLOY_PATH}/.server-config"
+        exit 1
+    fi
 
-    # # Run migrations
-    # log_info "Applying database migrations..."
-    # if ! npm run prisma:migrate:deploy --workspace=backend; then
-    #     log_error "Database migration failed!"
-    #     log_error "Possible issues:"
-    #     log_error "  1. Database server is not running"
-    #     log_error "  2. Database credentials are incorrect"
-    #     log_error "  3. Database '${DATABASE_URL}' is not accessible"
-    #     log_error ""
-    #     log_error "Please check:"
-    #     log_error "  - PostgreSQL is running: sudo systemctl status postgresql"
-    #     log_error "  - Database config: cat ${DEPLOY_PATH}/.server-config"
-    #     log_error "  - Update password: ${DEPLOY_PATH}/server-config.sh update DATABASE_URL 'postgresql://user:pass@host:port/db'"
-    #     exit 1
-    # fi
+    # Run migrations
+    log_info "Applying database migrations..."
+    if ! npm run prisma:migrate:deploy --workspace=backend; then
+        log_error "Database migration failed!"
+        log_error "Possible issues:"
+        log_error "  1. Database server is not running"
+        log_error "  2. Database credentials are incorrect"
+        log_error "  3. Database '${DATABASE_URL}' is not accessible"
+        log_error ""
+        log_error "Please check:"
+        log_error "  - PostgreSQL is running: sudo systemctl status postgresql"
+        log_error "  - Database config: cat ${DEPLOY_PATH}/.server-config"
+        log_error "  - Update password: ${DEPLOY_PATH}/server-config.sh update DATABASE_URL 'postgresql://user:pass@host:port/db'"
+        exit 1
+    fi
 
-    # # Optional: Seed database (uncomment if needed)
-    # # log_info "Seeding database..."
-    # # npm run db:seed --workspace=backend || log_warn "Database seeding failed or not configured"
+    # Seed database with initial data
+    log_info "Seeding database..."
+    if npm run db:seed --workspace=backend; then
+        log_info "Database seeded successfully"
+    else
+        log_warn "Database seeding failed or not configured"
+    fi
 
-    # log_info "Database migrations completed"
+    log_info "Database migrations completed"
 }
 
 verify_backend_build() {

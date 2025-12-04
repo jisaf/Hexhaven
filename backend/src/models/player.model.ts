@@ -14,6 +14,7 @@ export interface PlayerData {
   nickname: string;
   roomId: string | null; // Room this player instance belongs to
   characterClass: CharacterClass | null;
+  characterId: string | null; // Persistent character ID (002)
   isHost: boolean;
   connectionStatus: ConnectionStatus;
   isReady: boolean;
@@ -28,6 +29,7 @@ export class Player {
   private _nickname: string;
   private _roomId: string | null;
   private _characterClass: CharacterClass | null;
+  private _characterId: string | null; // Persistent character ID (002)
   private _isHost: boolean;
   private _connectionStatus: ConnectionStatus;
   private _isReady: boolean;
@@ -41,6 +43,7 @@ export class Player {
     this._nickname = data.nickname;
     this._roomId = data.roomId;
     this._characterClass = data.characterClass;
+    this._characterId = data.characterId || null;
     this._isHost = data.isHost;
     this._connectionStatus = data.connectionStatus;
     this._isReady = data.isReady;
@@ -60,6 +63,10 @@ export class Player {
 
   get characterClass(): CharacterClass | null {
     return this._characterClass;
+  }
+
+  get characterId(): string | null {
+    return this._characterId;
   }
 
   get isHost(): boolean {
@@ -87,14 +94,16 @@ export class Player {
   }
 
   // Methods
-  selectCharacter(characterClass: CharacterClass): void {
+  selectCharacter(characterClass: CharacterClass, characterId?: string): void {
     this._characterClass = characterClass;
+    this._characterId = characterId || null;
     this._isReady = true;
     this._updatedAt = new Date();
   }
 
   clearCharacter(): void {
     this._characterClass = null;
+    this._characterId = null;
     this._isReady = false;
     this._updatedAt = new Date();
   }
@@ -109,6 +118,7 @@ export class Player {
     this._roomId = null;
     this._isHost = false;
     this._characterClass = null;
+    this._characterId = null;
     this._isReady = false;
     this._updatedAt = new Date();
   }
@@ -145,6 +155,7 @@ export class Player {
       nickname: this._nickname,
       roomId: this._roomId,
       characterClass: this._characterClass,
+      characterId: this._characterId,
       isHost: this._isHost,
       connectionStatus: this._connectionStatus,
       isReady: this._isReady,
@@ -165,6 +176,7 @@ export class Player {
       nickname: nickname.trim(),
       roomId: null,
       characterClass: null,
+      characterId: null,
       isHost: false,
       connectionStatus: ConnectionStatus.CONNECTED,
       isReady: false,

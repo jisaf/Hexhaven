@@ -353,10 +353,11 @@ class WebSocketService {
   }
 
   /**
-   * Select character
+   * Select character (002 - Updated for persistent characters)
    */
-  selectCharacter(characterClass: string): void {
-    this.emit('select_character', { characterClass });
+  selectCharacter(characterId: string): void {
+    console.log('[WebSocketService] Emitting select_character with:', { characterId });
+    this.emit('select_character', { characterId });
   }
 
   /**
