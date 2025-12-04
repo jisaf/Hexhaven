@@ -671,6 +671,265 @@ gh pr create --title "Add real-time notifications" --body "..."
 
 ---
 
+## Backend Server Port Configuration
+
+### Overview
+The Hexhaven project uses different ports for development and production environments to provide optimal development experience while maintaining security in production.
+
+**Port Strategy:**
+- **Development:** Port 3001 (direct connection for debugging)
+- **Production:** Port 3000 (behind Nginx reverse proxy, internal only)
+
+### Why Two Different Ports?
+
+**Development Needs:**
+- Direct access to backend for debugging and log inspection
+- Clear separation: Frontend (5173), Backend (3001)
+- Avoids common port conflicts (many services use 3000)
+
+**Production Needs:**
+- Nginx reverse proxy handles all external traffic on 80/443
+- Backend runs internally on port 3000 (not exposed to internet)
+- Single domain for frontend and API (`/api` path)
+- Automatic SSL/TLS termination at Nginx layer
+
+### Development Port Strategy
+
+When running `npm run dev` or `start-dev.sh`:
+
+1. **Frontend**: Runs on port 5173 (Vite dev server)
+2. **Backend**: Runs on port 3001
+3. **Connection**: Frontend connects directly to `http://localhost:3001`
+4. **WebSocket**: Real-time updates via `ws://localhost:3001/socket.io`
+
+**Files Controlling Development Ports:**
+- `backend/.env` - Contains `PORT=3001`
+- `backend/src/main.ts:73` - Default fallback to 3001
+- `backend/src/config/env.config.ts:52` - Configuration default to 3001
+- `frontend/src/config/api.ts` - Auto-detects localhost and uses port 3001
+- `frontend/.env.development` - Optional `VITE_BACKEND_PORT` override
+
+### Production Port Strategy
+
+When deployed to OCI instance via `scripts/setup-server.sh`:
+
+1. **Frontend**: Served as static files by Nginx (port 80/443)
+2. **Backend**: Runs on port 3000 (internal only, not exposed)
+3. **Nginx Routing**:
+   - `/` → Frontend static files
+   - `/api/*` → Backend at `localhost:3000`
+   - `/socket.io/*` → WebSocket at `localhost:3000`
+4. **Frontend Connection**: Uses relative `/api` path (no explicit port needed)
+
+**Files Controlling Production Ports:**
+- `scripts/setup-server.sh` - Sets `BACKEND_PORT="3000"`
+- `/etc/nginx/sites-available/hexhaven` - Nginx proxy configuration
+- `/opt/hexhaven/.env` - Production environment with `PORT=3000`
+- `frontend/src/config/api.ts` - Detects production and uses `/api` path
+
+### Port Validation
+
+The backend includes automatic port validation on startup to catch configuration mismatches early.
+
+**Implementation:** `backend/src/config/validate-ports.ts`
+
+**Development Mode:**
+- ✅ Port 3001: Logs success message
+- ⚠️  Other ports: Warns that frontend expects 3001
+
+**Production Mode:**
+- Logs that backend is running behind Nginx proxy
+
+**Example Logs:**
+```
+✅ Backend running on http://localhost:3001
+   Frontend should connect successfully to this port
+```
+
+```
+⚠️  Backend running on port 3002, but frontend expects port 3001.
+    If you get "connection refused" errors, set PORT=3001 in backend/.env
+```
+
+### Troubleshooting
+
+#### "Failed to fetch" or "Connection refused" Errors
+
+**Symptoms:**
+- Frontend shows error: "Failed to fetch active rooms: Failed to fetch"
+- Browser console shows: "ERR_CONNECTION_REFUSED at http://localhost:3001/"
+- WebSocket connection errors
+
+**Root Cause:** Backend and frontend ports don't match
+
+**Solution Steps:**
+
+1. **Check backend is running:**
+   ```bash
+   # Check process
+   ps aux | grep nest
+
+   # Check port
+   lsof -i :3001  # Development
+   lsof -i :3000  # Production
+   ```
+
+2. **Verify backend port configuration:**
+   ```bash
+   # Check .env file
+   cat backend/.env | grep PORT
+   # Should show: PORT=3001
+
+   # Check backend logs
+   npm run dev:backend 2>&1 | grep -i port
+   # Should show: "Application is listening on port 3001"
+   ```
+
+3. **Ensure .env file exists:**
+   ```bash
+   # If .env is missing, create it
+   cd backend
+   cp .env.example .env
+
+   # Verify PORT is set correctly
+   cat .env | grep PORT
+   ```
+
+4. **Restart backend:**
+   ```bash
+   # From project root
+   npm run dev:backend
+
+   # OR use start script
+   ./start-dev.sh
+   ```
+
+#### Backend Running on Wrong Port (3000 instead of 3001)
+
+**Possible Causes:**
+1. `.env` file is missing → Copy from `.env.example`
+2. `.env` has wrong value → Edit and change to `PORT=3001`
+3. Environment variable override → Check `echo $PORT`
+
+**Fix:**
+```bash
+cd backend
+
+# If .env doesn't exist
+cp .env.example .env
+
+# Edit .env and ensure PORT=3001
+echo "PORT=3001" > .env
+
+# Restart backend
+npm run dev
+```
+
+#### Frontend Connecting to Wrong Port
+
+**Diagnosis:**
+1. Open browser DevTools → Network tab
+2. Check what URL frontend is trying to connect to
+3. Should be `http://localhost:3001/api/rooms` for development
+
+**Override Port (if needed):**
+```bash
+# Edit frontend/.env.development
+# Add or uncomment:
+VITE_BACKEND_PORT=3001
+
+# Restart frontend
+cd frontend
+npm run dev
+```
+
+#### Production "Connection Refused" Errors
+
+**Check Services:**
+```bash
+# Nginx running?
+sudo systemctl status nginx
+
+# Backend running?
+sudo systemctl status hexhaven-backend
+
+# Check Nginx proxy configuration
+sudo cat /etc/nginx/sites-available/hexhaven | grep "proxy_pass"
+# Should show: proxy_pass http://localhost:3000/;
+```
+
+**Check Logs:**
+```bash
+# Backend logs
+sudo journalctl -u hexhaven-backend -f
+
+# Nginx error logs
+sudo tail -f /var/log/nginx/error.log
+```
+
+### How to Change Development Port
+
+If you need to use a different port (e.g., for testing or conflict resolution):
+
+**Backend:**
+1. Edit `backend/.env`:
+   ```env
+   PORT=3002
+   ```
+
+**Frontend:**
+2. Edit `frontend/.env.development`:
+   ```env
+   VITE_BACKEND_PORT=3002
+   ```
+
+**Restart:**
+3. Restart both servers:
+   ```bash
+   npm run dev
+   ```
+
+### Port Reference Table
+
+| Component | Development | Production | Type | Exposed |
+|-----------|-------------|------------|------|---------|
+| Frontend | 5173 | 443 (HTTPS) | External | Yes |
+| Backend | 3001 | 3000 | Internal | Development only |
+| API Path | /api | /api | Proxied | Yes (via Nginx) |
+| WebSocket | :3001 | /socket.io | Proxied | Yes (via Nginx) |
+| Nginx | N/A | 80, 443 | External | Production only |
+
+### Key Files Reference
+
+#### Backend Configuration
+- **Defaults**: `backend/src/main.ts`, `backend/src/config/env.config.ts`
+- **Environment**: `backend/.env`, `backend/.env.example`
+- **Validation**: `backend/src/config/validate-ports.ts`
+
+#### Frontend Configuration
+- **API URL**: `frontend/src/config/api.ts` (getApiUrl, getWebSocketUrl)
+- **Environment**: `frontend/.env.development` (optional VITE_BACKEND_PORT)
+
+#### Scripts
+- **Development**: `start-dev.sh` (displays port 3001)
+- **Production**: `scripts/setup-server.sh` (configures Nginx + port 3000)
+
+#### Documentation
+- **README.md** - Quick start with port 3001
+- **SETUP.md** - Detailed setup with development URLs
+- **Memory**: `.claude/memory/backend-port-configuration.md` - Complete reference
+
+#### Production Files
+- **Nginx**: `/etc/nginx/sites-available/hexhaven`
+- **Systemd**: `/etc/systemd/system/hexhaven-backend.service`
+- **Environment**: `/opt/hexhaven/.env`
+
+### Related Memory
+
+See `.claude/memory/backend-port-configuration.md` for complete historical context, troubleshooting examples, and detailed file references.
+
+---
+
 ## Best Practices
 
 ### Slash Commands

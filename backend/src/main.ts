@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { GameGateway } from './websocket/game.gateway';
+import { validatePortConfiguration } from './config/validate-ports';
 
 // Load environment variables from .env file
 // In production, this loads from /opt/hexhaven/.env
@@ -69,9 +70,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 3001;
   const server = await app.listen(port, '0.0.0.0');
   logger.log(`Application is listening on port ${port}`);
+
+  // Validate port configuration and log helpful warnings
+  validatePortConfiguration(Number(port));
 
   // TODO: Investigate why NestJS @WebSocketGateway decorators don't work in this setup
   // See commit 71b3194 for context on the decorator issue.

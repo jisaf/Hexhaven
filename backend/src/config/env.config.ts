@@ -49,7 +49,7 @@ function loadConfig(): Config {
   // Default values
   const config: Config = {
     env,
-    port: parseInt(process.env.PORT || '3000', 10),
+    port: parseInt(process.env.PORT || '3001', 10),
     database: {
       url:
         process.env.DATABASE_URL || 'postgresql://localhost:5432/hexhaven_dev',

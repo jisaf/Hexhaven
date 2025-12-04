@@ -48,8 +48,8 @@ npm run dev
 
 **Access**:
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-- API Health: http://localhost:3000/api/health
+- Backend API: http://localhost:3001
+- API Health: http://localhost:3001/api/health
 
 **Full setup guide**: [specs/001-gloomhaven-multiplayer/quickstart.md](specs/001-gloomhaven-multiplayer/quickstart.md)
 
@@ -356,12 +356,12 @@ For detailed documentation on agents and command usage, see [AGENTS.md](AGENTS.m
 ```env
 # Backend (.env in backend/)
 DATABASE_URL=postgresql://user:pass@localhost:5432/hexhaven_dev
-PORT=3000
+PORT=3001
 FRONTEND_URL=http://localhost:5173
 
 # Frontend (.env in frontend/)
-VITE_API_URL=http://localhost:3000
-VITE_WS_URL=ws://localhost:3000
+VITE_API_URL=http://localhost:3001
+VITE_WS_URL=ws://localhost:3001
 ```
 
 ---

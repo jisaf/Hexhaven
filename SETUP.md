@@ -87,7 +87,7 @@ npm run prisma:migrate:deploy
 npm run dev
 ```
 
-Backend runs on **http://localhost:3000**
+Backend runs on **http://localhost:3001**
 
 ### 3. Frontend Setup
 
@@ -104,8 +104,8 @@ Frontend runs on **http://localhost:5173**
 ## Development URLs
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **WebSocket**: ws://localhost:3000 (Socket.IO)
+- **Backend API**: http://localhost:3001
+- **WebSocket**: ws://localhost:3001 (Socket.IO)
 
 ## Useful Commands
 
@@ -161,7 +161,7 @@ npm run db:seed
 
 ### Port Already in Use
 
-If ports 3000 or 5173 are already in use:
+If ports 3001 or 5173 are already in use:
 
 - **Backend**: Set `PORT` in `backend/.env`
 - **Frontend**: Vite will automatically try the next available port
