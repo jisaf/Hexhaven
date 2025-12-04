@@ -195,22 +195,3 @@ Call log:
 ---
 
 
-## - [ ] Create Game button not clickable - Login link intercepts clicks
-
-**Explanation:** The Create Game button cannot be clicked because the Login navigation link is intercepting pointer events. Error: TimeoutError: locator.click: Timeout 5000ms exceeded. Element is visible and stable, but Login link from navigation subtree intercepts pointer events.
-
-**Steps to Recreate:**
-1. Navigate to http://localhost:5173
-2. Attempt to click the "Create Game" button (+ button in banner)
-3. Click fails due to Login link overlay
-
-**Expected Behavior:** Create Game button should be clickable and not have navigation links overlapping it
-
-**Screenshot:** ../public/test-videos/002-postgres-user-db-20251204T105342Z-smoke-02-create-button.png
-
-**Branch:** 002-postgres-user-db
-
-**Found:** 2025-12-04T10:53:42.000Z
-
----
-
