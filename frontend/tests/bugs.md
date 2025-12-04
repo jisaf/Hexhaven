@@ -214,22 +214,3 @@ Call log:
 
 ---
 
-## - [ ] Backend API not responding - Connection refused
-
-**Explanation:** Backend server at localhost:3001 is not responding to API requests. All API calls fail with ERR_CONNECTION_REFUSED. WebSocket connections also failing. Error: Failed to load resource: net::ERR_CONNECTION_REFUSED at http://localhost:3001/api/rooms
-
-**Steps to Recreate:**
-1. Start frontend at localhost:5173
-2. Attempt to access backend API endpoints
-3. Check browser console for connection errors
-
-**Expected Behavior:** Backend should be running and responding to API requests on port 3001
-
-**Screenshot:** ../public/test-videos/002-postgres-user-db-20251204T105342Z-smoke-01-landing.png
-
-**Branch:** 002-postgres-user-db
-
-**Found:** 2025-12-04T10:53:42.000Z
-
----
-
