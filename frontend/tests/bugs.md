@@ -118,3 +118,118 @@ Call log:
 **Expected Behavior:** Monster should take turn automatically with movement and/or attack
 
 ---
+
+## - [ ] Page failed to load
+
+**Explanation:** The application page did not load successfully. Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/
+Call log:
+[2m  - navigating to "http://localhost:5173/", waiting until "networkidle"[22m
+
+
+**Steps to Recreate:**
+1. Navigate to http://localhost:5173
+2. Wait for page to load
+
+**Expected Behavior:** Page should load with title and content visible
+
+**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
+
+**Found:** 2025-12-04T10:39:29.812Z
+
+---
+
+
+## - [ ] Game creation flow failed
+
+**Explanation:** Could not create a game or reach game creation form. Error: Create Game button not found
+
+**Steps to Recreate:**
+1. Click "Create Game" button
+2. Wait for nickname input
+
+**Expected Behavior:** Nickname input should appear after clicking Create Game
+
+**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
+
+**Found:** 2025-12-04T10:39:29.910Z
+
+---
+
+
+## - [ ] Nickname submission failed
+
+**Explanation:** Could not submit nickname and reach lobby. Error: locator.fill: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for getByPlaceholder(/nickname|name/i).first()[22m
+
+
+**Steps to Recreate:**
+1. Enter nickname "Test Player"
+2. Click submit button
+3. Wait for lobby
+
+**Expected Behavior:** Should reach lobby with room code displayed
+
+**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
+
+**Found:** 2025-12-04T10:39:40.012Z
+
+---
+
+
+## - [ ] Lobby not displayed correctly
+
+**Explanation:** Lobby page did not render properly
+
+**Steps to Recreate:**
+1. Create game
+2. Enter nickname
+3. View lobby
+
+**Expected Behavior:** Lobby should show room code and player list
+
+**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
+
+**Found:** 2025-12-04T10:39:42.115Z
+
+---
+
+
+## - [ ] Create Game button not clickable - Login link intercepts clicks
+
+**Explanation:** The Create Game button cannot be clicked because the Login navigation link is intercepting pointer events. Error: TimeoutError: locator.click: Timeout 5000ms exceeded. Element is visible and stable, but Login link from navigation subtree intercepts pointer events.
+
+**Steps to Recreate:**
+1. Navigate to http://localhost:5173
+2. Attempt to click the "Create Game" button (+ button in banner)
+3. Click fails due to Login link overlay
+
+**Expected Behavior:** Create Game button should be clickable and not have navigation links overlapping it
+
+**Screenshot:** ../public/test-videos/002-postgres-user-db-20251204T105342Z-smoke-02-create-button.png
+
+**Branch:** 002-postgres-user-db
+
+**Found:** 2025-12-04T10:53:42.000Z
+
+---
+
+## - [ ] Backend API not responding - Connection refused
+
+**Explanation:** Backend server at localhost:3001 is not responding to API requests. All API calls fail with ERR_CONNECTION_REFUSED. WebSocket connections also failing. Error: Failed to load resource: net::ERR_CONNECTION_REFUSED at http://localhost:3001/api/rooms
+
+**Steps to Recreate:**
+1. Start frontend at localhost:5173
+2. Attempt to access backend API endpoints
+3. Check browser console for connection errors
+
+**Expected Behavior:** Backend should be running and responding to API requests on port 3001
+
+**Screenshot:** ../public/test-videos/002-postgres-user-db-20251204T105342Z-smoke-01-landing.png
+
+**Branch:** 002-postgres-user-db
+
+**Found:** 2025-12-04T10:53:42.000Z
+
+---
+

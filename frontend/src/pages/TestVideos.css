@@ -4,7 +4,7 @@
   color: #e4e4e4;
   padding: 2rem;
   min-height: 100vh;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -23,14 +23,14 @@
   font-size: 1.1rem;
 }
 
-.video-grid {
+.screenshot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
 }
 
-.video-card {
+.screenshot-card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 1.5rem;
@@ -38,35 +38,82 @@
   transition: all 0.3s ease;
 }
 
-.video-card:hover {
+.screenshot-card:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(102, 126, 234, 0.5);
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-.video-title {
-  font-size: 1.2rem;
+.screenshot-title {
+  font-size: 1.1rem;
   margin-bottom: 0.5rem;
   color: #fff;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.video-meta {
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-smoke {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+}
+
+.badge-full {
+  background: rgba(118, 75, 162, 0.2);
+  color: #a78bfa;
+}
+
+.screenshot-meta {
   color: #888;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.video-card video {
+.meta-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.meta-label {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.screenshot-image {
   width: 100%;
   border-radius: 8px;
   background: #000;
   margin-bottom: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-.video-links {
+.screenshot-image:hover {
+  transform: scale(1.02);
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+.screenshot-links {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -78,6 +125,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .btn-primary {
@@ -101,27 +149,96 @@
 }
 
 .stats {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 2rem;
+  background: transparent;
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 1rem;
   display: flex;
-  gap: 2rem;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  align-items: center;
+  opacity: 0.5;
 }
 
 .stat {
-  flex: 1;
+  display: inline-flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  align-items: baseline;
+  white-space: nowrap;
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #667eea;
+  font-size: 8px !important;
+  font-weight: normal;
+  color: #888;
+  line-height: 1;
 }
 
 .stat-label {
+  color: #666;
+  font-size: 8px !important;
+  line-height: 1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+  color: #a0a0a0;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
   color: #888;
-  font-size: 0.9rem;
+}
+
+.empty-state code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #667eea;
+}
+
+/* Modal for fullscreen image */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  cursor: zoom-out;
+}
+
+.modal-content {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+  max-height: 90%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .test-videos-footer {
@@ -146,16 +263,11 @@
 }
 
 @media (max-width: 768px) {
-  .video-grid {
+  .screenshot-grid {
     grid-template-columns: 1fr;
   }
 
   .test-videos-container h1 {
     font-size: 2rem;
-  }
-
-  .stats {
-    flex-direction: column;
-    gap: 1rem;
   }
 }

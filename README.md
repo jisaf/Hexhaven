@@ -22,6 +22,7 @@
 - **📊 Progression System**: Account creation, XP tracking, perk unlocking
 - **🔄 Reconnection**: Automatic reconnect with state restoration
 - **✋ Touch Optimized**: Pinch-zoom, pan, swipe, long-press gestures
+- **🧪 Visual Testing**: Playwright MCP integration with 5-day screenshot retention
 
 ---
 
@@ -112,7 +113,8 @@ hexhaven/
 - **TypeScript** - Type safety
 - **Jest** - Unit & integration testing
 
-### DevOps
+### DevOps & Testing
+- **Playwright MCP** - Visual testing with Chromium ARM64
 - **ESLint & Prettier** - Code quality
 - **GitHub Actions** - CI/CD (planned)
 - **Docker** - Containerization (planned)
@@ -282,6 +284,46 @@ FRONTEND_URL=http://localhost:5173
 VITE_API_URL=http://localhost:3000
 VITE_WS_URL=ws://localhost:3000
 ```
+
+---
+
+## 🧪 Visual Testing
+
+Hexhaven includes an MCP-based visual testing system for real browser testing.
+
+### Quick Commands
+
+```bash
+# Run smoke test (7 steps - definition of done)
+/visual smoke
+
+# Run full test (13 steps - comprehensive)
+/visual full
+```
+
+### Features
+
+- **Real Browser Testing**: Uses Playwright MCP with Chromium on ARM64
+- **Semantic Locators**: Accessibility tree-based element detection
+- **Automatic Screenshots**: Branch + timestamp naming convention
+- **5-Day Retention**: Auto-cleanup of old screenshots
+- **Bug Tracking**: Auto-appends failures to `tests/bugs.md`
+- **Mobile Viewport**: Tests on Pixel 6 (412×915px)
+
+### Screenshot Gallery
+
+View test screenshots at: http://localhost:5173/test-videos
+
+Screenshots are named: `[branch]-[timestamp]-[mode]-[step]-[description].png`
+
+Example: `002-postgres-user-db-20251204T105342Z-smoke-01-landing.png`
+
+### Documentation
+
+- **Guide**: `frontend/tests/docs/VISUAL-TESTING-GUIDE.md`
+- **Reports**: `frontend/tests/docs/SMOKE_TEST_REPORT.md`
+- **Bugs**: `frontend/tests/bugs.md`
+- **Command**: `frontend/.claude/commands/visual.md`
 
 ---
 
