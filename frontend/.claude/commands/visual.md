@@ -1,4 +1,16 @@
+---
+description: Execute visual testing with Playwright MCP using Haiku (efficient testing)
+---
+
 Execute visual testing using Playwright MCP browser tools with Chromium on Pixel 6 viewport.
+
+## Execution Steps
+
+1. **Switch to Haiku**: Use `/model haiku` to set the model to Claude Haiku
+2. **Disable Thinking**: Use `/thinking off` to disable thinking mode
+3. **Execute Visual Test**: Perform the visual test specified below
+4. **Restore Sonnet**: Use `/model sonnet` to switch back to Claude Sonnet
+5. **Enable Thinking**: Use `/thinking on` to re-enable thinking mode
 
 ## IMPORTANT: This Uses Playwright MCP Tools
 
