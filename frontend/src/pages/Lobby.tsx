@@ -139,6 +139,9 @@ export function Lobby() {
   };
 
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
+    // Reset session state before joining different room
+    gameSessionCoordinator.switchGame();
+
     setIsLoading(true);
     setError(null);
     try {
@@ -152,6 +155,9 @@ export function Lobby() {
 
   // Room creation flow (T067)
   const handleCreateRoom = () => {
+    // Reset session state to allow creating new room
+    gameSessionCoordinator.switchGame();
+
     const storedNickname = getPlayerNickname();
     if (storedNickname) {
       proceedWithRoomCreation(storedNickname);
@@ -166,6 +172,9 @@ export function Lobby() {
 
   // Quick join from active room list
   const handleQuickJoinRoom = (roomCode: string) => {
+    // Reset session state before joining different room
+    gameSessionCoordinator.switchGame();
+
     const storedNickname = getPlayerNickname();
     if (storedNickname) {
       handleJoinRoom(roomCode, storedNickname);
@@ -226,7 +235,7 @@ export function Lobby() {
     isCurrentPlayerHost,
   });
 
-  const activeTab = myRooms.length > 0 ? 0 : 1;
+  const defaultTab = myRooms.length > 0 ? 0 : 1;
 
   return (
     <div className={styles.lobbyPage}>
@@ -254,7 +263,7 @@ export function Lobby() {
                 ),
               },
             ]}
-            activeTab={activeTab}
+            defaultTab={defaultTab}
           />
         )}
 
