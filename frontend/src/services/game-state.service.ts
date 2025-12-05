@@ -729,6 +729,7 @@ class GameStateManager {
         logs: [],
         connectionStatus: 'connected',
         showCardSelection: false,
+        waitingForRoundStart: false,
     };
     this.emitStateUpdate();
   }
