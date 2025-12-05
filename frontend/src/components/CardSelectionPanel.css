@@ -3,9 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70vh;
-  min-height: 400px;
-  max-height: 80vh;
+  height: 50vh;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -83,7 +81,7 @@
 .cards-container {
   display: flex;
   overflow-x: auto;
-  overflow-y: visible; /* Allow cards to pop out vertically */
+  overflow-y: hidden;
   gap: 8px;
   padding: 60px 10px 20px 10px; /* Adjust padding for instructions */
   flex-grow: 1;
@@ -167,8 +165,7 @@
 
 @media (orientation: portrait) {
   .card-selection-panel {
-    height: 50vh; /* Cover bottom half of the screen */
-    min-height: 0;
+    height: 25vh; /* Cover bottom quarter of the screen */
     padding: 8px;
     gap: 8px;
   }
