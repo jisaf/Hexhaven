@@ -65,6 +65,7 @@ export const ActionModule: React.FC<ActionModuleProps> = ({
       <div
         className={`action-module ${compact ? 'compact' : ''} ${isActive ? 'active' : ''} ${config?.customClass || ''} ${className}`}
         style={{ gridRow: `span ${module.rows} / span ${module.rows}` }}
+        data-position={position}
       >
         <div className="section-label">{position === 'top' ? 'Top' : 'Bottom'}</div>
         <div className="action-display">
@@ -79,6 +80,7 @@ export const ActionModule: React.FC<ActionModuleProps> = ({
     <div
       className={`action-module ${compact ? 'compact' : ''} ${isActive ? 'active' : ''} ${config?.customClass || ''} ${className}`}
       style={{ gridRow: `span ${module.rows} / span ${module.rows}` }}
+      data-position={position}
       data-testid={`action-module-${position}`}
     >
       <div className="section-label">{position === 'top' ? 'Top' : 'Bottom'}</div>

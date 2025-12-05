@@ -45,30 +45,44 @@
 - ✅ Field mapping system with dot notation support
 - ✅ Context-based data provision to modules
 
+### Phase 5.5: UI Integration ✅ COMPLETE
+- ✅ Updated AbilityCard to use ConfigurableCard
+- ✅ Created DEFAULT_ABILITY_CARD_TEMPLATE (hardcoded inline)
+- ✅ Simplified AbilityCard.css for wrapper pattern
+- ✅ Added data-position attribute to ActionModule for highlight support
+- ✅ Cards now visible in UI using modular system
+- ✅ Build successful with no TypeScript errors
+
+### Phase 6: Backend Services ✅ COMPLETE
+- ✅ Created CardLayoutTemplateService with full CRUD operations
+- ✅ Implemented template validation (module structure, duplicate IDs)
+- ✅ Created CardLayoutTemplatesController with REST API endpoints
+- ✅ Added public GET endpoints (all, by-id, by-name, in-use)
+- ✅ Added authenticated CUD endpoints (create, update, delete)
+- ✅ Registered service and controller in app.module.ts
+- ✅ Build successful with no TypeScript errors
+
 ## 🚧 In Progress
 
-### Phase 6: Backend Services
-- ⏳ Create card-layout-template.service.ts
-- ⏳ Implement template CRUD operations
-- ⏳ Add API endpoints
+### Phase 7: Integration & Testing
+- ⏳ Test API endpoints
+- ⏳ Update frontend to fetch templates from API
+- ⏳ Integration testing
 
 ## 📋 Next Steps
 
-1. **Phase 6: Backend Services** (Day 8)
-   - Create card-layout-template.service.ts
-   - Implement template CRUD operations
-   - Add API endpoints
-
-4. **Phase 7: Integration** (Days 9-10)
-   - Update AbilityCard to use ConfigurableCard
-   - Migrate existing card data
-   - Update CardSelectionPanel
+1. **Phase 7: Integration** (Days 9-10)
+   - Test API endpoints
+   - Update frontend to fetch templates from API (optional enhancement)
+   - Add integration tests
+   - Performance testing
 
 ## 📊 Statistics
 
-- **Files Created**: 22
-- **Files Modified**: 5
-- **Lines of Code Added**: ~1,900
+- **Files Created**: 24 (22 frontend + 2 backend)
+- **Files Modified**: 9
+- **Lines of Code Added**: ~2,400
+- **Lines of Code Removed**: ~250 (simplified AbilityCard)
 - **Database Tables Added**: 1
 - **Seed Templates**: 3
 - **CSS Variables Defined**: 35+
@@ -92,7 +106,10 @@
 - ✅ ConfigurableCard renderer with error boundaries
 - ✅ CardDataContext for data provision
 - ✅ Field mapping utilities with dot notation
-- ⏳ Default layout matches current design
+- ✅ Default layout matches current design
+- ✅ Cards visible in UI using modular system
+- ✅ Backend API for template management (full CRUD)
+- ⏳ Frontend fetches templates from API (currently hardcoded)
 
 ### Code Quality
 - ✅ No TypeScript errors
@@ -108,6 +125,25 @@
 - Template validation included in type definitions
 
 ## 🔄 Recent Changes
+
+**2025-12-05 15:45 UTC**
+- ✅ Completed Phase 6: Backend Services
+- Created CardLayoutTemplateService with full CRUD operations
+- Implemented template validation (structure, duplicates)
+- Created REST API controller with 7 endpoints
+- Public GET endpoints: all, by-id, by-name, in-use
+- Authenticated CUD endpoints: create, update, delete
+- Registered service and controller in app.module.ts
+- Build successful, no TypeScript errors
+
+**2025-12-05 15:00 UTC**
+- ✅ Completed Phase 5.5: UI Integration
+- Updated AbilityCard to use ConfigurableCard with hardcoded template
+- Simplified AbilityCard.css (~250 lines removed, wrapper-only styles)
+- Added data-position attribute to ActionModule for section highlighting
+- Cards now rendering in UI using modular system
+- Build successful, no TypeScript errors
+- **Cards are now visible in the game UI!**
 
 **2025-12-05 14:30 UTC**
 - ✅ Completed Phase 5: Module Registry & Renderer
