@@ -3,9 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70vh;
-  min-height: 400px;
-  max-height: 80vh;
+  height: 50vh;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -83,9 +81,9 @@
 .cards-container {
   display: flex;
   overflow-x: auto;
-  overflow-y: visible; /* Allow cards to pop out vertically */
+  overflow-y: hidden; /* Prevent vertical overflow */
   gap: 8px;
-  padding: 60px 10px 20px 10px; /* Adjust padding for instructions */
+  padding: 20px 10px; /* Adjust padding for new panel height */
   flex-grow: 1;
 }
 
@@ -105,12 +103,12 @@
 }
 
 .card-wrapper.focused {
-  transform: scale(1.05) translateY(-10px);
+  transform: scale(1.05) translateY(-15px);
   z-index: 10; /* Ensure focused card is on top */
 }
 
 .card-wrapper.selected {
-  transform: scale(1.02) translateY(-20px);
+  transform: scale(1.02) translateY(-15px);
 }
 
 .card-wrapper:not(.focused) {
@@ -167,8 +165,7 @@
 
 @media (orientation: portrait) {
   .card-selection-panel {
-    height: 50vh; /* Cover bottom half of the screen */
-    min-height: 0;
+    height: 25vh; /* Cover bottom quarter of the screen */
     padding: 8px;
     gap: 8px;
   }
@@ -194,9 +191,4 @@
     padding: 0;
   }
 
-  .card-selection-panel.portrait .card-wrapper {
-    /* Make cards smaller in portrait */
-    --card-width: 120px;
-    --card-height: 170px;
-  }
 }

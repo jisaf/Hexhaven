@@ -8,8 +8,8 @@
 /* Wrapper for interaction states and selection */
 .ability-card-wrapper {
   position: relative;
-  width: var(--card-width);
-  height: var(--card-height);
+  height: 100%;
+  aspect-ratio: 2.5 / 3.5;
   cursor: pointer;
   transition: all var(--transition-normal);
   touch-action: manipulation;
@@ -80,23 +80,17 @@
 
 /* Responsive Design */
 @media (max-width: 375px) {
-  .ability-card-wrapper {
-    width: 240px;
-    min-height: 340px;
-  }
+  /* Rule removed as width and height are now responsive */
 }
 
 /* Touch Targets (minimum 44px) */
 @media (hover: none) and (pointer: coarse) {
-  .ability-card-wrapper {
-    min-height: 400px;
-  }
+  /* Rule removed as width and height are now responsive */
 }
 
 /* Compact card styles for portrait mode */
 .portrait .ability-card-wrapper {
-  width: var(--card-width-compact);
-  height: var(--card-height-compact);
+  /* Rule removed as width and height are now responsive */
 }
 
 .portrait .selection-indicator {
