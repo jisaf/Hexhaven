@@ -4,7 +4,7 @@ This file tracks known bugs found during testing.
 
 ---
 
-## - [ ] Multiple player joining (Test Infrastructure Issue)
+## - [x] Multiple player joining (Test Infrastructure Issue) - RESOLVED
 
 **Explanation:** Playwright test framework error when trying to create multiple browser contexts. Error: `browserContext.newPage: Protocol error (Browser.newPage): can't access property "userContextId", browserContext is undefined`
 
@@ -20,10 +20,24 @@ This file tracks known bugs found during testing.
 
 **Status:** The application works correctly with multiple players. This has been verified manually. The issue is with the test automation setup, not the application code.
 
-**Resolution:** Consider using alternative testing approaches for multiplayer scenarios, such as:
-- Running separate test processes for each player
-- Using different Playwright test configurations
-- Manual testing for multiplayer validation
+**Resolution:** Use dual sub-agent testing approach:
+- Launch two independent Task agents in parallel
+- Each agent runs in separate process with isolated MCP browser instance
+- Agent A creates game and shares room code via file
+- Agent B reads room code and joins game
+- Both agents verify multiplayer interactions independently
+- See `/home/opc/hexhaven/frontend/tests/multiplayer-poc.md` for implementation details
+
+**Status Update (2025-12-05):** Solution identified - using parallel Task agents provides true process isolation without needing browser.newContext(). Ready for implementation.
+
+**RESOLVED (2025-12-05):**
+- Created `/multiplayer-test` command for automated multiplayer testing
+- Successfully tested with dual sub-agents (Player A + Player B)
+- Test Results: Room MAXG7Q - 2 players joined, both visible, different characters selected
+- Fixed tab navigation bug preventing Player B from switching to Active Games tab
+- Validated: Multiplayer infrastructure fully functional with isolated browser contexts
+
+See `/home/opc/hexhaven/.claude/commands/multiplayer-test.md` for reusable test command.
 
 ---
 

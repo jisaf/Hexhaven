@@ -235,7 +235,7 @@ export function Lobby() {
     isCurrentPlayerHost,
   });
 
-  const activeTab = myRooms.length > 0 ? 0 : 1;
+  const defaultTab = myRooms.length > 0 ? 0 : 1;
 
   return (
     <div className={styles.lobbyPage}>
@@ -263,7 +263,7 @@ export function Lobby() {
                 ),
               },
             ]}
-            activeTab={activeTab}
+            defaultTab={defaultTab}
           />
         )}
 
