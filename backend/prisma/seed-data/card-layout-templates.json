@@ -1,0 +1,183 @@
+[
+  {
+    "name": "ability-card-default",
+    "description": "Default layout for ability cards with header, top/bottom actions, and footer",
+    "modules": [
+      {
+        "id": "header",
+        "type": "header",
+        "rows": 1,
+        "order": 1,
+        "config": {
+          "fields": ["name", "initiative"],
+          "layout": "horizontal"
+        }
+      },
+      {
+        "id": "top-action",
+        "type": "action",
+        "rows": 4,
+        "order": 2,
+        "config": {
+          "position": "top",
+          "showElements": true,
+          "showEffects": true
+        }
+      },
+      {
+        "id": "divider",
+        "type": "divider",
+        "rows": 1,
+        "order": 3,
+        "config": {
+          "style": "faded"
+        }
+      },
+      {
+        "id": "bottom-action",
+        "type": "action",
+        "rows": 4,
+        "order": 4,
+        "config": {
+          "position": "bottom",
+          "showElements": true,
+          "showEffects": true
+        }
+      },
+      {
+        "id": "footer",
+        "type": "footer",
+        "rows": 1,
+        "order": 5,
+        "config": {
+          "fields": ["level"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "ability-card-compact",
+    "description": "Compact layout for ability cards optimized for mobile/smaller screens",
+    "modules": [
+      {
+        "id": "header",
+        "type": "header",
+        "rows": 0.5,
+        "order": 1,
+        "compact": true,
+        "config": {
+          "fields": ["name", "initiative"],
+          "layout": "horizontal"
+        }
+      },
+      {
+        "id": "top-action",
+        "type": "action",
+        "rows": 3,
+        "order": 2,
+        "compact": true,
+        "config": {
+          "position": "top",
+          "showElements": true,
+          "showEffects": true
+        }
+      },
+      {
+        "id": "divider",
+        "type": "divider",
+        "rows": 0.5,
+        "order": 3,
+        "compact": true,
+        "config": {
+          "style": "faded"
+        }
+      },
+      {
+        "id": "bottom-action",
+        "type": "action",
+        "rows": 3,
+        "order": 4,
+        "compact": true,
+        "config": {
+          "position": "bottom",
+          "showElements": true,
+          "showEffects": true
+        }
+      },
+      {
+        "id": "footer",
+        "type": "footer",
+        "rows": 0.5,
+        "order": 5,
+        "compact": true,
+        "config": {
+          "fields": ["level"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "summon-card-default",
+    "description": "Card layout for summons (e.g., Spellweaver) with creature stats and abilities",
+    "modules": [
+      {
+        "id": "header",
+        "type": "header",
+        "rows": 1,
+        "order": 1,
+        "config": {
+          "fields": ["name"],
+          "layout": "horizontal"
+        }
+      },
+      {
+        "id": "creature-stats",
+        "type": "creature",
+        "rows": 2,
+        "order": 2,
+        "config": {
+          "stats": [
+            {
+              "label": "Health",
+              "field": "health",
+              "bgVar": "--creature-health-bg",
+              "textVar": "--creature-health-text",
+              "position": { "row": 1, "col": 1 }
+            },
+            {
+              "label": "Move",
+              "field": "move",
+              "bgVar": "--creature-move-bg",
+              "textVar": "--creature-move-text",
+              "position": { "row": 2, "col": 1 }
+            },
+            {
+              "label": "Attack",
+              "field": "attack",
+              "bgVar": "--creature-attack-bg",
+              "textVar": "--creature-attack-text",
+              "position": { "row": 1, "col": 2 }
+            },
+            {
+              "label": "Range",
+              "field": "range",
+              "bgVar": "--creature-range-bg",
+              "textVar": "--creature-range-text",
+              "position": { "row": 2, "col": 2 }
+            }
+          ]
+        }
+      },
+      {
+        "id": "abilities",
+        "type": "textbox",
+        "rows": 3,
+        "order": 3,
+        "config": {
+          "title": "Special Abilities",
+          "content": "{{specialAbilities}}"
+        }
+      }
+    ]
+  }
+]
