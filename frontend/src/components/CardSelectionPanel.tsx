@@ -13,6 +13,7 @@ interface CardSelectionPanelProps {
   selectedTopAction: AbilityCardType | null;
   selectedBottomAction: AbilityCardType | null;
   disabled?: boolean;
+  waiting?: boolean;
 }
 
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -25,6 +26,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   selectedTopAction,
   selectedBottomAction,
   disabled = false,
+  waiting = false,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -42,11 +44,13 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
       <div className="selection-instructions">
         <h3>Select Your Actions</h3>
         <p>
-          {!selectedTopAction
-            ? 'Select a card for your TOP action'
-            : !selectedBottomAction
-              ? 'Select a card for your BOTTOM action'
-              : 'Cards selected! Ready to confirm.'}
+          {waiting
+            ? 'Waiting for other players...'
+            : !selectedTopAction
+              ? 'Select a card for your TOP action'
+              : !selectedBottomAction
+                ? 'Select a card for your BOTTOM action'
+                : 'Cards selected! Ready to confirm.'}
         </p>
       </div>
 
@@ -61,9 +65,9 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
             <div
               key={card.id}
               className={wrapperClassName}
-              onClick={() => onCardSelect(card)}
-              onMouseEnter={() => setFocusedId(card.id)}
-              onMouseLeave={() => setFocusedId(null)}
+              onClick={() => !waiting && onCardSelect(card)}
+              onMouseEnter={() => !waiting && setFocusedId(card.id)}
+              onMouseLeave={() => !waiting && setFocusedId(null)}
             >
               <AbilityCard
                 card={card}
@@ -75,7 +79,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                       ? false
                       : undefined
                 }
-                disabled={disabled}
+                disabled={disabled || waiting}
               />
             </div>
           );
@@ -86,16 +90,16 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         <button
           className="btn-clear"
           onClick={onClearSelection}
-          disabled={!selectedTopAction && !selectedBottomAction || disabled}
+          disabled={!selectedTopAction && !selectedBottomAction || disabled || waiting}
         >
           Clear
         </button>
         <button
           className="btn-confirm"
           onClick={onConfirmSelection}
-          disabled={!canConfirm || disabled}
+          disabled={!canConfirm || disabled || waiting}
         >
-          Confirm
+          {waiting ? 'Waiting...' : 'Confirm'}
         </button>
       </div>
     </div>

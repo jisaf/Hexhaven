@@ -104,6 +104,7 @@ interface GameState {
   logs: LogMessage[];
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
   showCardSelection: boolean;
+  waitingForRoundStart: boolean;
 }
 
 interface VisualUpdateCallbacks {
@@ -194,6 +195,7 @@ class GameStateManager {
     logs: [],
     connectionStatus: 'connected',
     showCardSelection: false,
+    waitingForRoundStart: false,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -302,6 +304,9 @@ class GameStateManager {
   private handleRoundStarted(data: { roundNumber: number; turnOrder: TurnEntity[] }): void {
     this.state.turnOrder = data.turnOrder;
     this.state.currentRound = data.roundNumber;
+    // Hide card selection panel and clear waiting state
+    this.state.showCardSelection = false;
+    this.state.waitingForRoundStart = false;
     this.addLog([{ text: `Round ${data.roundNumber} has started.` }]);
     this.emitStateUpdate();
   }
@@ -528,7 +533,8 @@ class GameStateManager {
           { text: ' and ' },
           { text: this.state.selectedBottomAction.name, color: 'white' }
       ]);
-      this.state.showCardSelection = false;
+      // Keep panel visible but show waiting state
+      this.state.waitingForRoundStart = true;
       this.emitStateUpdate();
     }
   }
