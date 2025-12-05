@@ -6,8 +6,9 @@
 import { useEffect, useRef } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
-import { type Monster, TerrainType, Condition, CharacterClass, type Character, type TurnEntity } from '../../../shared/types/entities.ts';
-import TurnOrder from '../components/TurnOrder';
+import { type Monster, TerrainType, Condition, CharacterClass, type AbilityCard } from '../../../shared/types/entities';
+import type { Character, TurnEntity } from '../../../shared/types/entities';
+import { CardSelectionPanel } from '../components/CardSelectionPanel';
 
 const mockCharacters: Character[] = [
   { id: 'brute-1', classType: CharacterClass.BRUTE, health: 10, maxHealth: 10, conditions: [Condition.POISON], playerId: 'player-1', currentHex: { q: 0, r: 0 }, experience: 0, level: 1, abilityDeck: [], hand: [], discardPile: [], lostPile: [], activeCards: null, isExhausted: false },
@@ -19,11 +20,13 @@ const mockMonsters: Monster[] = [
   { id: 'bandit-2', monsterType: 'Bandit Archer', isElite: true, health: 6, maxHealth: 6, conditions: [Condition.WOUND], roomId: 'demo', currentHex: { q: 3, r: -1 }, movement: 2, attack: 2, range: 3, specialAbilities: [], isDead: false },
 ];
 
-const mockTurnOrder: TurnEntity[] = [
-  { entityId: 'bandit-1', name: 'Bandit Guard', entityType: 'monster', initiative: 25 },
-  { entityId: 'brute-1', name: 'Brute', entityType: 'character', initiative: 35 },
-  { entityId: 'tinkerer-1', name: 'Tinkerer', entityType: 'character', initiative: 65 },
-  { entityId: 'bandit-2', name: 'Bandit Archer (Elite)', entityType: 'monster', initiative: 80 },
+const mockAbilityCards: AbilityCard[] = [
+  // Simplified mock cards for layout testing
+  { id: 'card-1', name: 'Trample', initiative: 72, topAction: { type: 'ATTACK', value: 3, range: 1, effects: [] }, bottomAction: { type: 'MOVE', value: 4, effects: [] } },
+  { id: 'card-2', name: 'Eye for an Eye', initiative: 12, topAction: { type: 'ATTACK', value: 4, range: 1, effects: [] }, bottomAction: { type: 'HEAL', value: 2, effects: [] } },
+  { id: 'card-3', name: 'Balanced Measure', initiative: 81, topAction: { type: 'MOVE', value: 2, effects: [] }, bottomAction: { type: 'ATTACK', value: 5, range: 1, effects: [] } },
+  { id: 'card-4', name: 'Warding Click', initiative: 33, topAction: { type: 'HEAL', value: 3, effects: [] }, bottomAction: { type: 'MOVE', value: 3, effects: [] } },
+  { id: 'card-5', name: 'Skewer', initiative: 55, topAction: { type: 'ATTACK', value: 2, range: 1, effects: [] }, bottomAction: { type: 'MOVE', value: 2, effects: [] } },
 ];
 
 export function HexMapDemo() {
@@ -94,15 +97,14 @@ export function HexMapDemo() {
         </p>
       </header>
       <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }} />
-      <footer style={{ padding: '1rem', background: '#2c2c2c', borderTop: '2px solid #333', height: '120px' }}>
-        <TurnOrder
-          turnOrder={mockTurnOrder}
-          currentTurnEntityId="brute-1"
-          currentRound={3}
-          characters={mockCharacters}
-          monsters={mockMonsters}
-        />
-      </footer>
+      <CardSelectionPanel
+        cards={mockAbilityCards}
+        onCardSelect={() => {}}
+        onClearSelection={() => {}}
+        onConfirmSelection={() => {}}
+        selectedTopAction={null}
+        selectedBottomAction={null}
+      />
     </div>
   );
 }

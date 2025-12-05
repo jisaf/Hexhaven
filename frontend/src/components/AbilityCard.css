@@ -8,12 +8,20 @@
 /* Wrapper for interaction states and selection */
 .ability-card-wrapper {
   position: relative;
-  width: var(--card-width);
-  height: var(--card-height);
+  height: 95%; /* Leave a small margin */
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: all 0.3s ease;
   touch-action: manipulation;
   user-select: none;
+  display: flex; /* Center the card content */
+  align-items: center;
+  justify-content: center;
+}
+
+.ability-card-wrapper .ability-card-content {
+  height: 100%;
+  aspect-ratio: 2.5 / 3.5;
+  transition: all 0.3s ease; /* Ensure smooth transitions */
 }
 
 .ability-card-wrapper:hover:not(.disabled) .ability-card-content {
@@ -78,26 +86,6 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 375px) {
-  .ability-card-wrapper {
-    width: 240px;
-    min-height: 340px;
-  }
-}
-
-/* Touch Targets (minimum 44px) */
-@media (hover: none) and (pointer: coarse) {
-  .ability-card-wrapper {
-    min-height: 400px;
-  }
-}
-
-/* Compact card styles for portrait mode */
-.portrait .ability-card-wrapper {
-  width: var(--card-width-compact);
-  height: var(--card-height-compact);
-}
 
 .portrait .selection-indicator {
   width: 24px;

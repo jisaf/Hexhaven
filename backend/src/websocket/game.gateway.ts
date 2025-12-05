@@ -23,7 +23,7 @@ import { PrismaService } from '../services/prisma.service';
 import { Player } from '../models/player.model';
 import { LootToken } from '../models/loot-token.model';
 import { ScenarioService } from '../services/scenario.service';
-import { AbilityCardService } from '../services/ability-card.service';
+import { UserCharacterService } from '../services/user-character.service';
 import { TurnOrderService } from '../services/turn-order.service';
 import { DamageCalculationService } from '../services/damage-calculation.service';
 import { ModifierDeckService } from '../services/modifier-deck.service';
@@ -72,6 +72,7 @@ export class GameGateway
   constructor(
     private readonly prisma: PrismaService,
     private readonly scenarioService: ScenarioService,
+    private readonly userCharacterService: UserCharacterService,
   ) {
     this.logger.log('GameGateway constructor called');
   }
@@ -80,7 +81,6 @@ export class GameGateway
     this.logger.log('WebSocket Gateway initialized successfully');
     this.logger.log(`Socket.IO server is running`);
   }
-  private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
   private readonly damageService = new DamageCalculationService();
   private readonly modifierDeckService = new ModifierDeckService();
@@ -167,10 +167,10 @@ export class GameGateway
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private buildGameStatePayload(
+  private async buildGameStatePayload(
     room: any,
     roomCode: string,
-  ): GameStartedPayload {
+  ): Promise<GameStartedPayload> {
     // Get current scenario and game state
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -187,11 +187,9 @@ export class GameGateway
     }
 
     // Load ability decks for all characters
-    const charactersWithDecks = characters.map((c: any) => {
+    const charactersWithDecks = await Promise.all(characters.map(async (c: any) => {
       const charData = c.toJSON();
-      const abilityDeck = this.abilityCardService.getCardsByClass(
-        charData.characterClass,
-      );
+      const characterDetails = await this.userCharacterService.getCharacter(charData.id, charData.playerId);
       return {
         id: charData.id,
         playerId: charData.playerId,
@@ -201,9 +199,9 @@ export class GameGateway
         currentHex: charData.position,
         conditions: charData.conditions,
         isExhausted: charData.exhausted,
-        abilityDeck, // Include ability deck for card selection
+        abilityDeck: characterDetails.abilityCards,
       };
-    });
+    }));
 
     // Build game state payload
     const gameStartedPayload: GameStartedPayload = {
@@ -402,7 +400,7 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -846,55 +844,8 @@ export class GameGateway
         `Room ${room.roomCode} game started, status set to ACTIVE`,
       );
 
-      // Load ability cards for each character
-      const charactersWithDecks = characters.map((c: any) => {
-        const charData = c.toJSON();
-        this.logger.log(`🃏 Loading ability deck for character:`, {
-          id: charData.id,
-          playerId: charData.playerId,
-          characterClass: charData.characterClass,
-        });
-
-        // Get ability deck for this character class
-        const abilityDeck = this.abilityCardService.getCardsByClass(
-          charData.characterClass,
-        );
-
-        this.logger.log(`🃏 Ability deck loaded:`, {
-          characterClass: charData.characterClass,
-          deckSize: abilityDeck.length,
-          firstCard: abilityDeck[0]?.name || 'NO CARDS',
-        });
-
-        return {
-          id: charData.id,
-          playerId: charData.playerId,
-          classType: charData.characterClass,
-          health: charData.currentHealth,
-          maxHealth: charData.stats.maxHealth,
-          currentHex: charData.position,
-          conditions: charData.conditions,
-          isExhausted: charData.exhausted,
-          abilityDeck, // Include ability deck for card selection
-        };
-      });
-
       // Broadcast game started to all players
-      const gameStartedPayload: GameStartedPayload = {
-        scenarioId: payload.scenarioId,
-        scenarioName: scenario.name,
-        mapLayout: scenario.mapLayout,
-        monsters: monsters.map((m) => ({
-          id: m.id,
-          monsterType: m.monsterType,
-          isElite: m.isElite,
-          currentHex: m.currentHex,
-          health: m.health,
-          maxHealth: m.maxHealth,
-          conditions: m.conditions,
-        })),
-        characters: charactersWithDecks,
-      };
+      const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
 
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event

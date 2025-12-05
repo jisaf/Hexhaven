@@ -15,6 +15,7 @@ import { ScenarioService } from './services/scenario.service';
 import { MonsterService } from './services/monster.service';
 import { PrismaService } from './services/prisma.service';
 import { CardLayoutTemplateService } from './services/card-layout-template.service';
+import { UserCharacterService } from './services/user-character.service.provider';
 
 @Module({
   imports: [],
@@ -38,6 +39,7 @@ import { CardLayoutTemplateService } from './services/card-layout-template.servi
     MonsterService,
     PrismaService, // 002: Re-enabled for persistent character integration
     CardLayoutTemplateService, // Card layout template service
+    UserCharacterService,
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,
