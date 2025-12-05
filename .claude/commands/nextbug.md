@@ -83,7 +83,17 @@ Execute `/visual smoke` to verify the fix:
 - Write the updated bugs.md back to disk
 - Confirm to the user that the bug has been removed from the list
 
-### 9. Report Results
+### 9. Submit Pull Request (If Fixed)
+
+**Only if visual tests pass and bug was deleted:**
+- Execute `/min submit pr` to use Haiku for efficient PR creation
+- This will automatically:
+  - Create a feature branch (if not already on one)
+  - Stage and commit changes with descriptive message
+  - Push to remote repository
+  - Create pull request with summary and test plan
+
+### 10. Report Results
 
 Provide a summary including:
 - Bug that was fixed
@@ -91,6 +101,7 @@ Provide a summary including:
 - Files modified
 - Visual test results
 - Status of bug list update
+- Pull request URL (if created)
 
 ## Important Notes
 

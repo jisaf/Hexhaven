@@ -50,54 +50,47 @@ Execute these steps using MCP browser tools:
 - Get git branch name and timestamp
 - Use `mcp__playwright__browser_navigate` to go to http://localhost:5173
 - Use `mcp__playwright__browser_snapshot` to get page structure
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-01-landing.png`
 - Verify: Page title exists and "Create Game" button is visible
-- **On Failure**: Log bug "Page failed to load"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-01-landing.png`) and log bug "Page failed to load"
 
 ### Step 2: Click Create Game Button
 - Use `mcp__playwright__browser_snapshot` to find "Create Game" button ref
 - Use `mcp__playwright__browser_click` on the button ref
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-02-create-button.png`
 - Verify: Nickname input field appears
-- **On Failure**: Log bug "Game creation button failed"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-02-create-button.png`) and log bug "Game creation button failed"
 
 ### Step 3: Enter Nickname
 - Use `mcp__playwright__browser_snapshot` to find nickname input ref
 - Use `mcp__playwright__browser_type` to enter "TestPlayer"
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-03-nickname.png`
 - Verify: Input contains text
-- **On Failure**: Log bug "Nickname entry failed"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-03-nickname.png`) and log bug "Nickname entry failed"
 
 ### Step 4: Submit and Verify Lobby
 - Use `mcp__playwright__browser_snapshot` to find submit button ref
 - Use `mcp__playwright__browser_click` on submit button
 - Wait 2 seconds using `mcp__playwright__browser_wait_for`
 - Use `mcp__playwright__browser_snapshot` to check for room code
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-04-lobby.png`
 - Verify: Room code pattern [A-Z0-9]{4,6} visible in page text
-- **On Failure**: Log bug "Lobby not displayed"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-04-lobby.png`) and log bug "Lobby not displayed"
 
 ### Step 5: Start Game
 - Use `mcp__playwright__browser_snapshot` to find "Start Game" button ref
 - Use `mcp__playwright__browser_click` on button
 - Wait 3 seconds for game board to load
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-05-game-start.png`
 - Verify: Canvas element visible or game board rendered
-- **On Failure**: Log bug "Game failed to start"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-05-game-start.png`) and log bug "Game failed to start"
 
 ### Step 6: Verify Hex Map Loads
 - Use `mcp__playwright__browser_snapshot` to inspect page structure
 - Use `mcp__playwright__browser_evaluate` to check for canvas: `() => document.querySelector('canvas') !== null`
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-06-hex-map.png`
 - Verify: Canvas with game board hex grid is rendered
-- **On Failure**: Log bug "Hex map failed to render"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-06-hex-map.png`) and log bug "Hex map failed to render"
 
 ### Step 7: Verify Cards Appear
 - Use `mcp__playwright__browser_snapshot` to find card UI elements
 - Look for card selection panel or ability cards in accessibility tree
-- Use `mcp__playwright__browser_take_screenshot` with filename: `[branch]-[timestamp]-smoke-07-cards.png`
 - Verify: Card elements visible in page (button roles with card names or card container)
-- **On Failure**: Log bug "Ability cards not displayed"
+- **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-07-cards.png`) and log bug "Ability cards not displayed"
 
 ---
 
