@@ -1,0 +1,480 @@
+/**
+ * Card Modules CSS
+ *
+ * Styles for modular card components using CSS variables from index.css
+ * Supports both full and compact layouts
+ */
+
+/* ========== BASE MODULE CONTAINER ========== */
+
+.card-module {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--module-bg);
+  transition: all var(--transition-fast);
+}
+
+.card-module.compact {
+  padding: var(--module-padding-compact);
+}
+
+/* ========== ROW MODULE ========== */
+
+.row-module {
+  display: flex;
+  align-items: center;
+  padding: var(--module-padding);
+  color: var(--text-primary);
+}
+
+.row-module.compact {
+  padding: var(--module-padding-compact);
+  font-size: 0.875rem;
+}
+
+/* ========== FADED BORDER ========== */
+
+.faded-border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--faded-border-height);
+  background: var(--faded-border-gradient);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.faded-border.compact {
+  height: var(--faded-border-compact-height);
+  opacity: 0.7;
+}
+
+/* ========== HEADER MODULE ========== */
+
+.header-module {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--module-padding);
+  padding-bottom: calc(var(--module-padding) * 0.67);
+  border-bottom: 2px solid var(--divider-color);
+}
+
+.header-module.compact {
+  padding: var(--module-padding-compact);
+  font-size: 0.75rem;
+}
+
+.header-module.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--module-gap);
+}
+
+.header-module .card-name {
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-module.compact .card-name {
+  font-size: 0.625rem;
+}
+
+.header-module .card-initiative {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--text-initiative);
+  background: rgba(243, 156, 18, 0.2);
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.header-module.compact .card-initiative {
+  font-size: 0.625rem;
+  padding: 2px 4px;
+}
+
+/* ========== FOOTER MODULE ========== */
+
+.footer-module {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: var(--module-padding);
+  padding-top: calc(var(--module-padding) * 0.67);
+  border-top: 2px solid var(--divider-color);
+  margin-top: auto;
+}
+
+.footer-module.compact {
+  padding: var(--module-padding-compact);
+  font-size: 0.625rem;
+}
+
+.footer-module .card-level {
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: var(--text-initiative);
+}
+
+.footer-module.compact .card-level {
+  font-size: 0.625rem;
+}
+
+/* ========== DIVIDER MODULE ========== */
+
+.divider-module {
+  height: var(--faded-border-height);
+  margin: 4px 0;
+}
+
+.divider-module.faded {
+  background: var(--faded-border-gradient);
+}
+
+.divider-module.solid {
+  background: var(--divider-color);
+}
+
+.divider-module.dashed {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--divider-color) 25%,
+    transparent 25%,
+    transparent 75%,
+    var(--divider-color) 75%
+  );
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+}
+
+.divider-module.compact {
+  margin: 2px 0;
+}
+
+/* ========== TEXT BOX MODULE ========== */
+
+.textbox-module {
+  background: var(--textbox-bg);
+  padding: var(--module-padding);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.textbox-module.compact {
+  padding: calc(var(--module-padding-compact) * 1.5);
+}
+
+.textbox-module .textbox-title {
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  margin-bottom: calc(var(--module-gap) * 0.67);
+}
+
+.textbox-module.compact .textbox-title {
+  font-size: 0.5rem;
+  margin-bottom: calc(var(--module-gap-compact) * 0.5);
+}
+
+.textbox-module .textbox-content {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.textbox-module.compact .textbox-content {
+  font-size: 0.5rem;
+  line-height: 1.3;
+}
+
+/* ========== ACTION MODULE ========== */
+
+.action-module {
+  padding: var(--module-padding);
+  background: var(--module-bg);
+  border-radius: 6px;
+  margin: calc(var(--module-gap) * 0.67) 0;
+  transition: all var(--transition-fast);
+}
+
+.action-module.compact {
+  padding: var(--module-padding-compact);
+  border-radius: 4px;
+  margin: calc(var(--module-gap-compact) * 0.5) 0;
+}
+
+.action-module.active {
+  background: rgba(52, 152, 219, 0.15);
+  border: 2px solid #3498db;
+}
+
+.action-module .section-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: calc(var(--module-gap) * 0.67);
+}
+
+.action-module.compact .section-label {
+  font-size: 0.5rem;
+  margin-bottom: calc(var(--module-gap-compact) * 0.5);
+}
+
+.action-module .action-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--module-gap);
+}
+
+.action-module.compact .action-display {
+  gap: var(--module-gap-compact);
+}
+
+.action-module .action-main {
+  display: flex;
+  align-items: center;
+  gap: var(--module-gap);
+  font-size: 1.125rem;
+}
+
+.action-module.compact .action-main {
+  gap: var(--module-gap-compact);
+  font-size: 0.875rem;
+}
+
+.action-module .action-icon {
+  font-size: 1.5rem;
+}
+
+.action-module.compact .action-icon {
+  font-size: 1rem;
+}
+
+.action-module .action-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #e74c3c;
+}
+
+.action-module.compact .action-value {
+  font-size: 0.875rem;
+}
+
+.action-module .action-range {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.action-module.compact .action-range {
+  font-size: 0.625rem;
+}
+
+/* Action Elements */
+.action-module .action-element {
+  display: flex;
+  align-items: center;
+  gap: var(--module-gap);
+  font-size: 0.875rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.action-module.compact .action-element {
+  gap: var(--module-gap-compact);
+  font-size: 0.625rem;
+  padding: 2px 4px;
+}
+
+.action-module .action-element.generate {
+  background: var(--element-generate-bg);
+  color: var(--element-generate-text);
+}
+
+.action-module .action-element.consume {
+  background: var(--element-consume-bg);
+  color: var(--element-consume-text);
+}
+
+.action-module .element-icon {
+  font-size: 1.125rem;
+}
+
+.action-module.compact .element-icon {
+  font-size: 0.75rem;
+}
+
+.action-module .element-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.action-module.compact .element-label {
+  font-size: 0.5rem;
+}
+
+/* Action Effects */
+.action-module .action-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.action-module.compact .action-effects {
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.action-module .effect-tag {
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  background: var(--effect-tag-bg);
+  color: var(--effect-tag-text);
+  border-radius: var(--effect-tag-radius);
+  font-weight: bold;
+}
+
+.action-module.compact .effect-tag {
+  font-size: 0.5rem;
+  padding: 1px 4px;
+}
+
+/* ========== CREATURE MODULE ========== */
+
+.creature-module {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--divider-color);
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.creature-module.compact {
+  font-size: 0.75rem;
+}
+
+.creature-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--module-padding);
+  background: var(--module-bg);
+  position: relative;
+}
+
+.creature-module.compact .creature-stat {
+  padding: var(--module-padding-compact);
+}
+
+.creature-stat .stat-label {
+  font-size: 0.5rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+.creature-module.compact .creature-stat .stat-label {
+  font-size: 0.35rem;
+  line-height: 1;
+}
+
+.creature-stat .stat-value {
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.creature-module.compact .creature-stat .stat-value {
+  font-size: 0.875rem;
+}
+
+/* Creature stat backgrounds */
+.creature-stat.health {
+  background: var(--creature-health-bg);
+}
+
+.creature-stat.health .stat-label {
+  color: var(--creature-health-text);
+}
+
+.creature-stat.move {
+  background: var(--creature-move-bg);
+}
+
+.creature-stat.move .stat-label {
+  color: var(--creature-move-text);
+}
+
+.creature-stat.attack {
+  background: var(--creature-attack-bg);
+}
+
+.creature-stat.attack .stat-label {
+  color: var(--creature-attack-text);
+}
+
+.creature-stat.range {
+  background: var(--creature-range-bg);
+}
+
+.creature-stat.range .stat-label {
+  color: var(--creature-range-text);
+}
+
+/* ========== RESPONSIVE UTILITIES ========== */
+
+@media (max-width: 375px) {
+  .card-module {
+    padding: var(--module-padding-compact);
+  }
+
+  .action-module .action-main {
+    font-size: 1rem;
+  }
+
+  .header-module .card-name {
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .card-module {
+    min-height: 44px; /* Touch target minimum */
+  }
+
+  .action-module {
+    padding: calc(var(--module-padding) * 1.2);
+  }
+}
+
+/* Portrait mode optimizations */
+@media (orientation: portrait) {
+  .header-module.auto-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

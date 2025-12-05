@@ -67,22 +67,39 @@ model CharacterClass {
   @@map("character_classes")
 }
 
-model AbilityCard {
-  id           String   @id @default(uuid()) @db.Uuid
-  classId      String   @db.Uuid
-  name         String   @db.VarChar(100)
-  level        Int      @db.SmallInt // Level X = starting card (level 0 or 1)
-  initiative   Int      @db.SmallInt // Turn order value
-  topAction    Json // { type, value, effects, range }
-  bottomAction Json // { type, value, effects }
-  createdAt    DateTime @default(now())
+model CardLayoutTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100) // "ability-card-default", "ability-card-compact", "summon-card"
+  description String?  @db.VarChar(500)
+  modules     Json // Array of module configurations
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  class        CharacterClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  enhancements CardEnhancement[]
+  abilityCards AbilityCard[]
+
+  @@map("card_layout_templates")
+}
+
+model AbilityCard {
+  id               String              @id @default(uuid()) @db.Uuid
+  classId          String              @db.Uuid
+  name             String              @db.VarChar(100)
+  level            Int                 @db.SmallInt // Level X = starting card (level 0 or 1)
+  initiative       Int                 @db.SmallInt // Turn order value
+  topAction        Json // { type, value, effects, range }
+  bottomAction     Json // { type, value, effects }
+  layoutTemplateId String?             @db.Uuid // NULL uses default template
+  createdAt        DateTime            @default(now())
+
+  // Relations
+  class          CharacterClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  layoutTemplate CardLayoutTemplate?  @relation(fields: [layoutTemplateId], references: [id], onDelete: SetNull)
+  enhancements   CardEnhancement[]
 
   @@index([classId])
   @@index([level])
+  @@index([layoutTemplateId])
   @@map("ability_cards")
 }
 

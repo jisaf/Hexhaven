@@ -42,6 +42,12 @@ interface ScenarioSeed {
   playerStartPositions?: any[];
 }
 
+interface CardLayoutTemplateSeed {
+  name: string;
+  description?: string;
+  modules: any[];
+}
+
 async function loadJSON<T>(filename: string): Promise<T[]> {
   // Handle both development (TS) and production (compiled JS) paths
   let seedDataDir = path.join(__dirname, 'seed-data');
@@ -196,10 +202,33 @@ async function seedScenarios() {
   console.log(`✓ Seeded ${scenarios.length} scenarios`);
 }
 
+async function seedCardLayoutTemplates() {
+  console.log('Seeding card layout templates...');
+  const templates = await loadJSON<CardLayoutTemplateSeed>('card-layout-templates.json');
+
+  for (const templateData of templates) {
+    await prisma.cardLayoutTemplate.upsert({
+      where: { name: templateData.name },
+      update: {
+        description: templateData.description,
+        modules: templateData.modules,
+      },
+      create: {
+        name: templateData.name,
+        description: templateData.description,
+        modules: templateData.modules,
+      },
+    });
+  }
+
+  console.log(`✓ Seeded ${templates.length} card layout templates`);
+}
+
 async function main() {
   console.log('Starting database seed...\n');
 
   try {
+    await seedCardLayoutTemplates();
     await seedCharacterClasses();
     await seedAbilityCards();
     await seedItems();

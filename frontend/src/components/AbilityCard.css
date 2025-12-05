@@ -6,31 +6,31 @@
 
 .ability-card {
   position: relative;
-  width: 180px;
-  height: 250px;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  border: 2px solid #7f8c8d;
-  border-radius: 10px;
-  padding: 12px;
+  width: var(--card-width);
+  height: var(--card-height);
+  background: var(--card-bg-gradient);
+  border: var(--card-border-width) solid var(--card-border);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   touch-action: manipulation;
   user-select: none;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .ability-card:hover:not(.disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: var(--card-hover-transform);
+  box-shadow: var(--card-hover-shadow);
   border-color: #3498db;
 }
 
 .ability-card.selected {
-  border-color: #2ecc71;
-  box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  border-color: var(--card-selected-border);
+  box-shadow: var(--card-selected-shadow);
+  background: var(--card-selected-bg);
 }
 
 .ability-card.disabled {
@@ -56,20 +56,20 @@
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 2px solid var(--divider-color);
 }
 
 .card-name {
   font-size: 14px;
   font-weight: bold;
-  color: #ecf0f1;
+  color: var(--text-primary);
   flex: 1;
 }
 
 .card-initiative {
   font-size: 12px;
   font-weight: bold;
-  color: #f39c12;
+  color: var(--text-initiative);
   background: rgba(243, 156, 18, 0.2);
   padding: 3px 6px;
   border-radius: 4px;
@@ -78,11 +78,11 @@
 /* Card Sections */
 .card-section {
   flex: 1;
-  padding: 8px;
+  padding: var(--module-padding);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--module-bg);
   margin: 6px 0;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .card-section.active {
@@ -93,7 +93,7 @@
 .section-label {
   font-size: 12px;
   font-weight: bold;
-  color: #95a5a6;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 8px;
@@ -140,13 +140,13 @@
 }
 
 .action-element.generate {
-  background: rgba(46, 204, 113, 0.2);
-  color: #2ecc71;
+  background: var(--element-generate-bg);
+  color: var(--element-generate-text);
 }
 
 .action-element.consume {
-  background: rgba(231, 76, 60, 0.2);
-  color: #e74c3c;
+  background: var(--element-consume-bg);
+  color: var(--element-consume-text);
 }
 
 .element-icon {
@@ -169,21 +169,16 @@
 .effect-tag {
   font-size: 10px;
   padding: 2px 6px;
-  background: rgba(155, 89, 182, 0.3);
-  color: #9b59b6;
-  border-radius: 10px;
+  background: var(--effect-tag-bg);
+  color: var(--effect-tag-text);
+  border-radius: var(--effect-tag-radius);
   font-weight: bold;
 }
 
 /* Card Divider */
 .card-divider {
-  height: 2px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  height: var(--faded-border-height);
+  background: var(--faded-border-gradient);
   margin: 4px 0;
 }
 
@@ -191,7 +186,7 @@
 .card-footer {
   margin-top: 12px;
   padding-top: 8px;
-  border-top: 2px solid rgba(255, 255, 255, 0.2);
+  border-top: 2px solid var(--divider-color);
   display: flex;
   justify-content: flex-end;
 }
@@ -199,7 +194,7 @@
 .card-level {
   font-size: 14px;
   font-weight: bold;
-  color: #f39c12;
+  color: var(--text-initiative);
 }
 
 /* Selection Indicator */
@@ -263,9 +258,9 @@
 
 /* Compact card styles for portrait mode */
 .portrait .ability-card {
-  width: 120px;
-  height: 180px;
-  padding: 8px;
+  width: var(--card-width-compact);
+  height: var(--card-height-compact);
+  padding: var(--module-padding);
   border-radius: 8px;
 }
 
