@@ -8,11 +8,35 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { websocketService } from '../services/websocket.service';
 
+export type LogCategory =
+  | 'Component'
+  | 'WebSocket'
+  | 'State'
+  | 'API'
+  | 'Render'
+  | 'Game-Logic'
+  | 'DB'
+  | 'I18n'
+  | 'Default';
+
+const ALL_CATEGORIES: LogCategory[] = [
+  'Component',
+  'WebSocket',
+  'State',
+  'API',
+  'Render',
+  'Game-Logic',
+  'DB',
+  'I18n',
+  'Default',
+];
+
 interface LogEntry {
   id: number;
   timestamp: string;
   level: 'log' | 'error' | 'warn' | 'info';
   message: string;
+  category: LogCategory;
   data?: unknown;
 }
 
@@ -21,11 +45,21 @@ export function DebugConsole() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>('');
-  const [filters, setFilters] = useState({
-    log: true,
-    error: true,
-    warn: true,
-    info: true,
+  const [filters, setFilters] = useState(() => {
+    const savedFilters = localStorage.getItem('debug-console-filters');
+    if (savedFilters) {
+      return JSON.parse(savedFilters);
+    }
+    return {
+      log: true,
+      error: true,
+      warn: true,
+      info: true,
+      ...ALL_CATEGORIES.reduce(
+        (acc, cat) => ({ ...acc, [cat]: true }),
+        {} as Record<LogCategory, boolean>,
+      ),
+    };
   });
   const logIdCounter = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -33,7 +67,7 @@ export function DebugConsole() {
   // Define addLog before useEffect hooks that depend on it
   const addLog = useCallback((level: LogEntry['level'], args: unknown[]) => {
     const timestamp = new Date().toLocaleTimeString();
-    const message = args
+    let message = args
       .map(arg => {
         if (typeof arg === 'object') {
           try {
@@ -46,6 +80,18 @@ export function DebugConsole() {
       })
       .join(' ');
 
+    // Parse category from message
+    let category: LogCategory = 'Default';
+    const categoryMatch = message.match(/^\[([a-zA-Z-]+)\]/);
+    if (categoryMatch) {
+      const parsedCategory = categoryMatch[1];
+      if (ALL_CATEGORIES.includes(parsedCategory as LogCategory)) {
+        category = parsedCategory as LogCategory;
+        // Remove category from the message
+        message = message.substring(categoryMatch[0].length).trim();
+      }
+    }
+
     // Use queueMicrotask to avoid setState during render
     queueMicrotask(() => {
       setLogs(prev => [
@@ -55,6 +101,7 @@ export function DebugConsole() {
           timestamp,
           level,
           message,
+          category,
           data: args.length === 1 && typeof args[0] === 'object' ? args[0] : null,
         },
       ]);
@@ -98,9 +145,19 @@ export function DebugConsole() {
     };
   }, [addLog]);
 
+  // Save filters to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem('debug-console-filters', JSON.stringify(filters));
+  }, [filters]);
+
   // Listen for debug_log events from WebSocket
   useEffect(() => {
-    const handleDebugLog = (data: { level: 'log' | 'error' | 'warn' | 'info'; message: string; category?: string; data?: unknown }) => {
+    const handleDebugLog = (data: {
+      level: 'log' | 'error' | 'warn' | 'info';
+      message: string;
+      category?: string;
+      data?: unknown;
+    }) => {
       const prefix = data.category ? `[${data.category}] ` : '';
       const message = `${prefix}${data.message}`;
       const args = data.data ? [message, data.data] : [message];
@@ -151,11 +208,13 @@ export function DebugConsole() {
     }
   };
 
-  const toggleFilter = (level: LogEntry['level']) => {
-    setFilters(prev => ({ ...prev, [level]: !prev[level] }));
+  const toggleFilter = (filter: keyof typeof filters) => {
+    setFilters((prev: typeof filters) => ({ ...prev, [filter]: !prev[filter] }));
   };
 
-  const filteredLogs = logs.filter(log => filters[log.level]);
+  const filteredLogs = logs.filter(
+    log => filters[log.level] && filters[log.category],
+  );
 
   const copyAllLogs = () => {
     // Only copy visible (filtered) logs
@@ -308,6 +367,23 @@ export function DebugConsole() {
           )}
 
           {!isMinimized && (
+            <div className="debug-filters">
+              <div className="filter-label">Categories:</div>
+              {ALL_CATEGORIES.map(category => (
+                <button
+                  key={category}
+                  onClick={() => toggleFilter(category)}
+                  className={`filter-btn ${filters[category] ? 'active' : ''}`}
+                  aria-label={`Toggle ${category} messages`}
+                  title={`Toggle ${category} messages`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!isMinimized && (
             <div className="debug-logs">
               {logs.length === 0 ? (
                 <div className="no-logs">No logs yet...</div>
@@ -325,6 +401,7 @@ export function DebugConsole() {
                       >
                         {log.level.toUpperCase()}
                       </span>
+                      <span className="log-category">{log.category}</span>
                     </div>
                     <pre className="log-message">{log.message}</pre>
                   </div>
@@ -577,6 +654,15 @@ export function DebugConsole() {
           padding: 2px 6px;
           background: rgba(255, 255, 255, 0.1);
           border-radius: 4px;
+        }
+
+        .log-category {
+          font-size: 10px;
+          font-weight: bold;
+          background: rgba(255, 255, 255, 0.1);
+          padding: 2px 4px;
+          border-radius: 3px;
+          color: #cbd5e1;
         }
 
         .log-message {

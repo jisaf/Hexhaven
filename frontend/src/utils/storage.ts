@@ -6,6 +6,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { loggingService } from '../services/logging.service';
 
 const STORAGE_KEYS = {
   PLAYER_UUID: 'hexhaven_player_uuid',
@@ -25,13 +26,13 @@ export function getOrCreatePlayerUUID(): string {
     if (!uuid) {
       uuid = uuidv4();
       localStorage.setItem(STORAGE_KEYS.PLAYER_UUID, uuid);
-      console.log('Created new player UUID:', uuid);
+      loggingService.log('State', 'Created new player UUID:', uuid);
     }
 
     return uuid;
   } catch (error) {
     // Fallback if localStorage is unavailable (private browsing, etc.)
-    console.error('localStorage unavailable, using session UUID:', error);
+    loggingService.error('Default', 'localStorage unavailable, using session UUID:', error);
     return uuidv4();
   }
 }
@@ -43,7 +44,7 @@ export function getPlayerUUID(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEYS.PLAYER_UUID);
   } catch (error) {
-    console.error('Failed to get player UUID:', error);
+    loggingService.error('Default', 'Failed to get player UUID:', error);
     return null;
   }
 }
@@ -55,7 +56,7 @@ export function savePlayerNickname(nickname: string): void {
   try {
     localStorage.setItem(STORAGE_KEYS.PLAYER_NICKNAME, nickname);
   } catch (error) {
-    console.error('Failed to save nickname:', error);
+    loggingService.error('Default', 'Failed to save nickname:', error);
   }
 }
 
@@ -66,7 +67,7 @@ export function getPlayerNickname(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEYS.PLAYER_NICKNAME);
   } catch (error) {
-    console.error('Failed to get nickname:', error);
+    loggingService.error('Default', 'Failed to get nickname:', error);
     return null;
   }
 }
@@ -78,7 +79,7 @@ export function saveLastRoomCode(roomCode: string): void {
   try {
     localStorage.setItem(STORAGE_KEYS.LAST_ROOM_CODE, roomCode);
   } catch (error) {
-    console.error('Failed to save room code:', error);
+    loggingService.error('Default', 'Failed to save room code:', error);
   }
 }
 
@@ -89,7 +90,7 @@ export function getLastRoomCode(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEYS.LAST_ROOM_CODE);
   } catch (error) {
-    console.error('Failed to get room code:', error);
+    loggingService.error('Default', 'Failed to get room code:', error);
     return null;
   }
 }
@@ -101,7 +102,7 @@ export function clearLastRoomCode(): void {
   try {
     localStorage.removeItem(STORAGE_KEYS.LAST_ROOM_CODE);
   } catch (error) {
-    console.error('Failed to clear room code:', error);
+    loggingService.error('Default', 'Failed to clear room code:', error);
   }
 }
 
@@ -115,7 +116,7 @@ export function savePreferences(preferences: Record<string, unknown>): void {
       JSON.stringify(preferences)
     );
   } catch (error) {
-    console.error('Failed to save preferences:', error);
+    loggingService.error('Default', 'Failed to save preferences:', error);
   }
 }
 
@@ -127,7 +128,7 @@ export function getPreferences(): Record<string, unknown> | null {
     const data = localStorage.getItem(STORAGE_KEYS.GAME_PREFERENCES);
     return data ? JSON.parse(data) : null;
   } catch (error) {
-    console.error('Failed to get preferences:', error);
+    loggingService.error('Default', 'Failed to get preferences:', error);
     return null;
   }
 }
@@ -140,9 +141,9 @@ export function clearAllStorage(): void {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
-    console.log('All storage cleared');
+    loggingService.log('State', 'All storage cleared');
   } catch (error) {
-    console.error('Failed to clear storage:', error);
+    loggingService.error('Default', 'Failed to clear storage:', error);
   }
 }
 

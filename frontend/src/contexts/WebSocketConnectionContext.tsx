@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { websocketService } from '../services/websocket.service';
+import { loggingService } from '../services/logging.service';
 import type { ConnectionStatus } from '../services/websocket.service';
 
 interface PlayerConnectionEvent {
@@ -84,7 +85,7 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
 
     // Player disconnect/reconnect handlers
     const handlePlayerDisconnected = (data: { playerId: string; nickname: string }) => {
-      console.log('Player disconnected event in context:', data);
+      loggingService.log('WebSocket', 'Player disconnected event in context:', data);
       setDisconnectedPlayers((prev) => [
         ...prev,
         {
@@ -96,7 +97,7 @@ export function WebSocketConnectionProvider({ children }: WebSocketConnectionPro
     };
 
     const handlePlayerReconnected = (data: { playerId: string; nickname: string }) => {
-      console.log('Player reconnected event in context:', data);
+      loggingService.log('WebSocket', 'Player reconnected event in context:', data);
 
       // Remove from disconnected list
       setDisconnectedPlayers((prev) => prev.filter((p) => p.playerId !== data.playerId));

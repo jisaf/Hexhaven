@@ -10,17 +10,21 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { RoomService } from '../../src/services/room.service';
 import { PlayerService } from '../../src/services/player.service';
-import { sessionService } from '../../src/services/session.service';
+import { SessionService } from '../../src/services/session.service';
+import { LoggingService } from '../../src/services/logging.service';
 import { RoomStatus, ConnectionStatus } from '../../../shared/types/entities';
 
 describe('Session Persistence Integration (US4 - T146)', () => {
   let roomService: RoomService;
   let playerService: PlayerService;
+  let sessionService: SessionService;
+  let loggingService: LoggingService;
 
   beforeEach(() => {
     roomService = new RoomService();
     playerService = new PlayerService();
-    sessionService.clearAllSessions();
+    loggingService = new LoggingService();
+    sessionService = new SessionService(loggingService);
     roomService.clearAllRooms();
   });
 

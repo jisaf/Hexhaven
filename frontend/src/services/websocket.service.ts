@@ -8,6 +8,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import { getOrCreatePlayerUUID, saveLastRoomCode } from '../utils/storage';
+import { loggingService } from './logging.service';
 import type {
   RoomJoinedPayload,
   GameStartedPayload,
@@ -109,7 +110,7 @@ class WebSocketService {
    */
   connect(url: string = 'http://localhost:3000'): void {
     if (this.socket?.connected) {
-      console.warn('WebSocket already connected');
+      loggingService.warn('WebSocket', 'WebSocket already connected');
       return;
     }
 
@@ -143,13 +144,13 @@ class WebSocketService {
       this.reconnectAttempts = 0;
 
       // Register all queued events with the connected socket
-      console.log('WebSocket connected - registering queued events');
+      loggingService.log('WebSocket', 'WebSocket connected - registering queued events');
       for (const event of this.eventHandlers.keys()) {
         this.registerEventWithSocket(event as EventName);
       }
 
       this.emit('ws_connected');
-      console.log('WebSocket connected', { playerUUID: this.playerUUID });
+      loggingService.log('WebSocket', 'WebSocket connected', { playerUUID: this.playerUUID });
 
       // Auto-rejoin removed - RoomSessionManager now handles room joining
       // See /home/opc/hexhaven/ROOM_JOIN_UNIFIED_ARCHITECTURE.md for architecture details
@@ -158,7 +159,7 @@ class WebSocketService {
     this.socket.on('disconnect', (reason) => {
       this.connectionStatus = 'disconnected';
       this.emit('ws_disconnected');
-      console.log('WebSocket disconnected:', reason);
+      loggingService.log('WebSocket', 'WebSocket disconnected:', reason);
 
       // Clear registered events so they can be re-registered on reconnect
       this.registeredEvents.clear();
@@ -173,18 +174,18 @@ class WebSocketService {
       this.connectionStatus = 'reconnecting';
       this.reconnectAttempts = attemptNumber;
       this.emit('ws_reconnecting');
-      console.log(`Reconnecting... (attempt ${attemptNumber}/${this.maxReconnectAttempts})`);
+      loggingService.log('WebSocket', `Reconnecting... (attempt ${attemptNumber}/${this.maxReconnectAttempts})`);
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
       this.connectionStatus = 'connected';
       this.emit('ws_reconnected');
-      console.log(`WebSocket reconnected after ${attemptNumber} attempts`);
+      loggingService.log('WebSocket', `WebSocket reconnected after ${attemptNumber} attempts`);
     });
 
     this.socket.on('reconnect_failed', () => {
       this.connectionStatus = 'failed';
-      console.error('Reconnection failed after maximum attempts');
+      loggingService.error('WebSocket', 'Reconnection failed after maximum attempts');
       this.emit('error', {
         message: 'Connection failed. Please refresh the page.',
         code: 'RECONNECT_FAILED',
@@ -193,7 +194,7 @@ class WebSocketService {
 
     this.socket.on('error', (error: Error) => {
       this.emit('error', { message: error.message || 'WebSocket error' });
-      console.error('WebSocket error:', error);
+      loggingService.error('WebSocket', 'WebSocket error:', error);
     });
   }
 
@@ -207,7 +208,7 @@ class WebSocketService {
     this.socket.on(
       'player_disconnected',
       (data: { playerId: string; nickname: string; willReconnect: boolean }) => {
-        console.log('Player disconnected:', data);
+        loggingService.log('WebSocket', 'Player disconnected:', data);
         // Emit to application layer for UI updates
         this.emit('player_disconnected', {
           playerId: data.playerId,
@@ -218,7 +219,7 @@ class WebSocketService {
 
     // Handle other players reconnecting (US4 - T160)
     this.socket.on('player_reconnected', (data: { playerId: string; nickname: string }) => {
-      console.log('Player reconnected:', data);
+      loggingService.log('WebSocket', 'Player reconnected:', data);
       // Emit to application layer for UI updates
       this.emit('player_reconnected', {
         playerId: data.playerId,
@@ -271,22 +272,22 @@ class WebSocketService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wrappedHandler = ((...args: any[]): void => {
       // Debug logging for all events
-      console.log(`🔔 WebSocket event "${event}" received`, args.length > 0 ? args[0] : '(no data)');
+      loggingService.log('WebSocket', `🔔 WebSocket event "${event}" received`, args.length > 0 ? args[0] : '(no data)');
 
       // Call ALL registered handlers for this event
       const handlers = this.eventHandlers.get(event);
       if (handlers) {
-        console.log(`   Calling ${handlers.size} handler(s) for "${event}"`);
+        loggingService.log('WebSocket', `   Calling ${handlers.size} handler(s) for "${event}"`);
         for (const handler of handlers) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (handler as any)(...args);
           } catch (error) {
-            console.error(`   ❌ Error in handler for "${event}":`, error);
+            loggingService.error('WebSocket', `   ❌ Error in handler for "${event}":`, error);
           }
         }
       } else {
-        console.warn(`   ⚠️  No handlers found for "${event}"`);
+        loggingService.warn('WebSocket', `   ⚠️  No handlers found for "${event}"`);
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
@@ -294,7 +295,7 @@ class WebSocketService {
     // Register with socket.io (one listener per event)
     this.socket.on(event, wrappedHandler);
     this.registeredEvents.add(event);
-    console.log(`✅ Registered Socket.IO listener for event: ${event}`);
+    loggingService.log('WebSocket', `✅ Registered Socket.IO listener for event: ${event}`);
   }
 
   /**
@@ -317,7 +318,7 @@ class WebSocketService {
    */
   emit(event: string, data?: unknown): void {
     if (!this.socket || !this.socket.connected) {
-      console.warn(`Cannot emit ${event}: WebSocket not connected`);
+      loggingService.warn('WebSocket', `Cannot emit ${event}: WebSocket not connected`);
       return;
     }
 
@@ -338,7 +339,7 @@ class WebSocketService {
     saveLastRoomCode(roomCode);
 
     this.emit('join_room', { roomCode, nickname, playerUUID, intent });
-    console.log('Joining room:', { roomCode, nickname, playerUUID, intent });
+    loggingService.log('WebSocket', 'Joining room:', { roomCode, nickname, playerUUID, intent });
   }
 
   /**
@@ -356,7 +357,7 @@ class WebSocketService {
    * Select character (002 - Updated for persistent characters)
    */
   selectCharacter(characterId: string): void {
-    console.log('[WebSocketService] Emitting select_character with:', { characterId });
+    loggingService.log('WebSocket', 'Emitting select_character with:', { characterId });
     this.emit('select_character', { characterId });
   }
 

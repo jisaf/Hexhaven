@@ -22,6 +22,7 @@
  */
 import { roomSessionManager } from './room-session.service';
 import { gameStateManager } from './game-state.service';
+import { loggingService } from './logging.service';
 
 interface SessionStatus {
     room: ReturnType<typeof roomSessionManager.getState>;
@@ -60,7 +61,7 @@ class GameSessionCoordinator {
      * 2. Game second (clears gameplay data)
      */
     public switchGame(): void {
-        console.log('[GameSessionCoordinator] Switching game - resetting all state');
+        loggingService.log('State', 'Switching game - resetting all state');
 
         this.emitLifecycleEvent({
             type: 'switching_game',
@@ -79,9 +80,9 @@ class GameSessionCoordinator {
                 status: this.getSessionStatus()
             });
 
-            console.log('[GameSessionCoordinator] ✅ Switch complete');
+            loggingService.log('State', '✅ Switch complete');
         } catch (error) {
-            console.error('[GameSessionCoordinator] ❌ Switch failed:', error);
+            loggingService.error('State', '❌ Switch failed:', error);
             throw error;
         }
     }
@@ -96,7 +97,7 @@ class GameSessionCoordinator {
      * - Scenario completion
      */
     public leaveGame(): void {
-        console.log('[GameSessionCoordinator] Leaving game - resetting game state');
+        loggingService.log('State', 'Leaving game - resetting game state');
 
         this.emitLifecycleEvent({
             type: 'leaving_game',
@@ -112,9 +113,9 @@ class GameSessionCoordinator {
                 timestamp: Date.now()
             });
 
-            console.log('[GameSessionCoordinator] ✅ Left game');
+            loggingService.log('State', '✅ Left game');
         } catch (error) {
-            console.error('[GameSessionCoordinator] ❌ Leave failed:', error);
+            loggingService.error('State', '❌ Leave failed:', error);
             throw error;
         }
     }
@@ -129,7 +130,7 @@ class GameSessionCoordinator {
      * - Clearing all data for new anonymous session
      */
     public resetAll(): void {
-        console.log('[GameSessionCoordinator] Full reset - clearing all state');
+        loggingService.log('State', 'Full reset - clearing all state');
 
         this.emitLifecycleEvent({
             type: 'resetting_all',
@@ -145,9 +146,9 @@ class GameSessionCoordinator {
                 timestamp: Date.now()
             });
 
-            console.log('[GameSessionCoordinator] ✅ Full reset complete');
+            loggingService.log('State', '✅ Full reset complete');
         } catch (error) {
-            console.error('[GameSessionCoordinator] ❌ Reset failed:', error);
+            loggingService.error('State', '❌ Reset failed:', error);
             throw error;
         }
     }
@@ -187,7 +188,7 @@ class GameSessionCoordinator {
             try {
                 handler(event);
             } catch (error) {
-                console.error('[GameSessionCoordinator] Error in lifecycle hook:', error);
+                loggingService.error('Default', 'Error in lifecycle hook:', error);
             }
         });
     }

@@ -5,8 +5,9 @@
  * Saves game state to enable players to reconnect after disconnection.
  */
 
+import { Injectable } from '@nestjs/common';
 import { GameRoom } from '../models/game-room.model';
-import { Logger } from '@nestjs/common';
+import { LoggingService } from './logging.service';
 
 interface SerializedGameState {
   roomId: string;
@@ -24,11 +25,13 @@ interface SerializedGameState {
  * In-memory session storage (MVP)
  * TODO: Replace with database persistence in production
  */
-class SessionService {
+@Injectable()
+export class SessionService {
   private sessions: Map<string, SerializedGameState> = new Map();
   private readonly SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
   private cleanupInterval: NodeJS.Timeout | null = null;
-  private readonly logger = new Logger('SessionService');
+
+  constructor(private readonly logger: LoggingService) {}
 
   /**
    * Save game state to session storage
@@ -43,7 +46,7 @@ class SessionService {
         scenarioId: room.scenarioId,
         currentRound: room.currentRound,
         currentTurnIndex: room.currentTurnIndex,
-        players: room.players.map((p) => ({
+        players: room.players.map(p => ({
           id: p.id,
           uuid: p.uuid,
           nickname: p.nickname,
@@ -57,9 +60,13 @@ class SessionService {
       };
 
       this.sessions.set(room.id, state);
-      this.logger.log(`Session saved for room ${room.roomCode} (${room.id})`);
+      this.logger.log(
+        'State',
+        `Session saved for room ${room.roomCode} (${room.id})`,
+      );
     } catch (error: any) {
       this.logger.error(
+        'State',
         `Failed to save session for room ${room.id}: ${error.message}`,
       );
     }
@@ -73,7 +80,7 @@ class SessionService {
     const session = this.sessions.get(roomId);
 
     if (!session) {
-      this.logger.warn(`No session found for room ${roomId}`);
+      this.logger.warn('State', `No session found for room ${roomId}`);
       return null;
     }
 
@@ -81,13 +88,17 @@ class SessionService {
     const age = Date.now() - session.lastUpdated.getTime();
     if (age > this.SESSION_TTL_MS) {
       this.logger.warn(
-        `Session expired for room ${roomId} (age: ${Math.round(age / 1000 / 60)} minutes)`,
+        'State',
+        `Session expired for room ${roomId} (age: ${Math.round(
+          age / 1000 / 60,
+        )} minutes)`,
       );
       this.sessions.delete(roomId);
       return null;
     }
 
     this.logger.log(
+      'State',
       `Session restored for room ${session.roomCode} (${roomId})`,
     );
     return session;
@@ -99,7 +110,7 @@ class SessionService {
    */
   findSessionByPlayerUuid(playerUuid: string): SerializedGameState | null {
     for (const session of this.sessions.values()) {
-      const player = session.players.find((p) => p.uuid === playerUuid);
+      const player = session.players.find(p => p.uuid === playerUuid);
       if (player) {
         // Check expiration
         const age = Date.now() - session.lastUpdated.getTime();
@@ -119,7 +130,7 @@ class SessionService {
   deleteSession(roomId: string): void {
     const deleted = this.sessions.delete(roomId);
     if (deleted) {
-      this.logger.log(`Session deleted for room ${roomId}`);
+      this.logger.log('State', `Session deleted for room ${roomId}`);
     }
   }
 
@@ -137,13 +148,14 @@ class SessionService {
         this.sessions.delete(roomId);
         cleaned++;
         this.logger.log(
+          'State',
           `Expired session cleaned: room ${session.roomCode} (${roomId})`,
         );
       }
     }
 
     if (cleaned > 0) {
-      this.logger.log(`Cleaned ${cleaned} expired session(s)`);
+      this.logger.log('State', `Cleaned ${cleaned} expired session(s)`);
     }
 
     return cleaned;
@@ -161,7 +173,7 @@ class SessionService {
    */
   clearAllSessions(): void {
     this.sessions.clear();
-    this.logger.log('All sessions cleared');
+    this.logger.log('State', 'All sessions cleared');
   }
 
   /**
@@ -172,13 +184,10 @@ class SessionService {
     if (this.cleanupInterval) {
       return; // Already running
     }
-    this.cleanupInterval = setInterval(
-      () => {
-        this.cleanupExpiredSessions();
-      },
-      60 * 60 * 1000,
-    ); // 1 hour
-    this.logger.log('Session cleanup scheduler started');
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupExpiredSessions();
+    }, 60 * 60 * 1000); // 1 hour
+    this.logger.log('State', 'Session cleanup scheduler started');
   }
 
   /**
@@ -188,7 +197,7 @@ class SessionService {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      this.logger.log('Session cleanup scheduler stopped');
+      this.logger.log('State', 'Session cleanup scheduler stopped');
     }
   }
 
@@ -202,12 +211,4 @@ class SessionService {
       session.lastUpdated = timestamp;
     }
   }
-}
-
-// Singleton instance
-export const sessionService = new SessionService();
-
-// Start cleanup scheduler in production (not in test environment)
-if (process.env.NODE_ENV !== 'test') {
-  sessionService.startCleanupScheduler();
 }

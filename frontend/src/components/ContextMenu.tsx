@@ -7,6 +7,7 @@
 
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { MIN_TOUCH_TARGET_SIZE } from '../utils/responsive';
+import { loggingService } from '../services/logging.service';
 import type { AxialCoordinates } from '../../../shared/types/entities';
 
 export interface ContextMenuItem {
@@ -292,7 +293,7 @@ export function createHexContextItems(
     label: `Hex (${coordinates.q}, ${coordinates.r})`,
     icon: 'ℹ️',
     action: () => {
-      console.log('View hex info:', coordinates);
+      loggingService.log('Component', 'View hex info:', coordinates);
     },
   });
 

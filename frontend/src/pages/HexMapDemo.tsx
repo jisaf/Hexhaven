@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
+import { loggingService } from '../services/logging.service';
 import { type Monster, TerrainType, Condition, CharacterClass } from '../../../shared/types/entities.ts';
 import type { Character, TurnEntity } from '../../../shared/types/entities.ts';
 import TurnOrder from '../components/TurnOrder';
@@ -38,22 +39,22 @@ export function HexMapDemo() {
     }
     isInitialized.current = true;
 
-    console.log('HexMapDemo: Starting initialization');
+    loggingService.log('Render', 'HexMapDemo: Starting initialization');
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
-    console.log('HexMapDemo: Container dimensions:', { width, height });
+    loggingService.log('Render', 'HexMapDemo: Container dimensions:', { width, height });
 
     const hexGrid = new HexGrid(containerRef.current, {
       width,
       height,
-      onHexClick: (hex) => console.log('Hex clicked:', hex),
-      onCharacterSelect: (id) => console.log('Character selected:', id),
-      onMonsterSelect: (id) => console.log('Monster selected:', id),
+      onHexClick: (hex) => loggingService.log('Render', 'Hex clicked:', hex),
+      onCharacterSelect: (id) => loggingService.log('Render', 'Character selected:', id),
+      onMonsterSelect: (id) => loggingService.log('Render', 'Monster selected:', id),
     });
 
     hexGrid.init()
       .then(() => {
-        console.log('HexMapDemo: HexGrid initialized successfully');
+        loggingService.log('Render', 'HexMapDemo: HexGrid initialized successfully');
         hexGridRef.current = hexGrid;
 
         const testData: GameBoardData = {
@@ -65,21 +66,21 @@ export function HexMapDemo() {
           monsters: mockMonsters,
         };
 
-        console.log('HexMapDemo: Initializing board with test data:', testData);
+        loggingService.log('Render', 'HexMapDemo: Initializing board with test data:', testData);
         hexGrid.initializeBoard(testData);
-        console.log('HexMapDemo: Board initialized!');
+        loggingService.log('Render', 'HexMapDemo: Board initialized!');
       })
       .catch((error) => {
-        console.error('HexMapDemo: Failed to initialize HexGrid:', error);
+        loggingService.error('Render', 'HexMapDemo: Failed to initialize HexGrid:', error);
       });
 
     return () => {
-      console.log('HexMapDemo: Cleaning up');
+      loggingService.log('Render', 'HexMapDemo: Cleaning up');
       if (hexGridRef.current) {
         try {
           hexGridRef.current.destroy();
         } catch (error) {
-          console.error('HexMapDemo: Error destroying HexGrid:', error);
+          loggingService.error('Render', 'HexMapDemo: Error destroying HexGrid:', error);
         }
       }
       hexGridRef.current = null;

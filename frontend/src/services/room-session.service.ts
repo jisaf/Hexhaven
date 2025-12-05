@@ -30,6 +30,7 @@ import {
   savePlayerNickname,
 } from '../utils/storage';
 import { getApiUrl } from '../config/api';
+import { loggingService } from './logging.service';
 import type { GameStartedPayload } from '../../../shared/types/events';
 
 /**
@@ -154,7 +155,7 @@ class RoomSessionManager {
       try {
         callback(stateCopy);
       } catch (error) {
-        console.error('[RoomSessionManager] Error in subscriber callback:', error);
+        loggingService.error('State', 'Error in subscriber callback:', error);
       }
     });
   }
@@ -165,11 +166,11 @@ class RoomSessionManager {
    */
   private async waitForConnection(): Promise<void> {
     if (websocketService.isConnected()) {
-      console.log('[RoomSessionManager] WebSocket already connected');
+      loggingService.log('WebSocket', 'WebSocket already connected');
       return Promise.resolve();
     }
 
-    console.log('[RoomSessionManager] Waiting for WebSocket connection...');
+    loggingService.log('WebSocket', 'Waiting for WebSocket connection...');
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -180,7 +181,7 @@ class RoomSessionManager {
       const handleConnected = () => {
         clearTimeout(timeout);
         websocketService.off('ws_connected', handleConnected);
-        console.log('[RoomSessionManager] WebSocket connected');
+        loggingService.log('WebSocket', 'WebSocket connected');
         resolve();
       };
 
@@ -201,23 +202,24 @@ class RoomSessionManager {
    */
   public async ensureJoined(intent: JoinIntent): Promise<void> {
     if (this.joinInProgress) {
-      console.warn('[RoomSessionManager] Join already in progress, skipping request');
+      loggingService.warn('WebSocket', 'Join already in progress, skipping request');
       return;
     }
     this.joinInProgress = true;
 
     try {
-      console.log(`[RoomSessionManager] ensureJoined called with intent: ${intent}`);
+      loggingService.log('WebSocket', `ensureJoined called with intent: ${intent}`);
 
       // Prevent duplicate joins in same session
       if (this.hasJoinedInSession && this.state.status !== 'disconnected') {
         // Special case: Allow 'refresh' intent if we're in an active game but missing game state
         // This happens when navigating to /game after Lobby has unmounted
         if (intent === 'refresh' && this.state.status === 'active' && !this.state.gameState) {
-          console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
+          loggingService.log('State', 'Refresh intent with missing game state - proceeding to fetch from backend');
         } else {
-          console.log(
-            `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
+          loggingService.log(
+            'State',
+            `Already joined in this session (status: ${this.state.status}), skipping duplicate join`
           );
           return;
         }
@@ -244,7 +246,7 @@ class RoomSessionManager {
       // This prevents being in multiple Socket.IO rooms simultaneously
       const previousRoomCode = this.state.roomCode;
       if (previousRoomCode && previousRoomCode !== roomCode) {
-        console.log(`[RoomSessionManager] Leaving previous room ${previousRoomCode} before joining ${roomCode}`);
+        loggingService.log('WebSocket', `Leaving previous room ${previousRoomCode} before joining ${roomCode}`);
         websocketService.leaveRoom(previousRoomCode);
       }
 
@@ -263,13 +265,14 @@ class RoomSessionManager {
       // Mark as joined to prevent duplicates
       this.hasJoinedInSession = true;
 
-      console.log(
-        `[RoomSessionManager] ✅ join_room emitted with intent: ${intent}, roomCode: ${roomCode}`
+      loggingService.log(
+        'WebSocket',
+        `✅ join_room emitted with intent: ${intent}, roomCode: ${roomCode}`
       );
     } catch (error) {
       // On error, mark as disconnected and set error state
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      console.error('[RoomSessionManager] ❌ Error in ensureJoined:', errorMessage);
+      loggingService.error('WebSocket', '❌ Error in ensureJoined:', errorMessage);
       this.state.status = 'disconnected';
       this.state.error = { message: errorMessage };
       this.emitStateUpdate();
@@ -283,7 +286,7 @@ class RoomSessionManager {
    * Updates session state with room info
    */
   public onRoomJoined(data: RoomJoinedPayload): void {
-    console.log('[RoomSessionManager] onRoomJoined:', data);
+    loggingService.log('WebSocket', 'onRoomJoined:', data);
 
     this.state.roomCode = data.roomCode;
     this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
@@ -297,8 +300,9 @@ class RoomSessionManager {
     const currentPlayer = data.players.find((p) => p.id === playerUUID);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
 
-    console.log(
-      `[RoomSessionManager] Room status updated: ${this.state.status}, role: ${this.state.playerRole}`
+    loggingService.log(
+      'State',
+      `Room status updated: ${this.state.status}, role: ${this.state.playerRole}`
     );
 
     this.emitStateUpdate();
@@ -315,18 +319,18 @@ class RoomSessionManager {
   }
 
   public onCharacterSelected(playerId: string, characterClass: string): void {
-    console.log('[RoomSessionManager] onCharacterSelected:', { playerId, characterClass });
-    console.log('[RoomSessionManager] Current players:', this.state.players);
+    loggingService.log('WebSocket', 'onCharacterSelected:', { playerId, characterClass });
+    loggingService.log('State', 'Current players:', this.state.players);
 
     this.state.players = this.state.players.map(p => {
       if (p.id === playerId) {
-        console.log('[RoomSessionManager] Updating player:', p.id, 'to', characterClass);
+        loggingService.log('State', 'Updating player:', p.id, 'to', characterClass);
         return { ...p, characterClass, isReady: true };
       }
       return p;
     });
 
-    console.log('[RoomSessionManager] Updated players:', this.state.players);
+    loggingService.log('State', 'Updated players:', this.state.players);
     this.emitStateUpdate();
   }
 
@@ -360,12 +364,12 @@ class RoomSessionManager {
    * Updates session state with game data
    */
   public onGameStarted(data: GameStartedPayload): void {
-    console.log('[RoomSessionManager] onGameStarted with', data.mapLayout?.length || 0, 'tiles');
+    loggingService.log('WebSocket', 'onGameStarted with', data.mapLayout?.length || 0, 'tiles');
 
     this.state.status = 'active';
     this.state.gameState = data;
 
-    console.log('[RoomSessionManager] Game state stored, status set to active');
+    loggingService.log('State', 'Game state stored, status set to active');
 
     this.emitStateUpdate();
   }
@@ -375,7 +379,7 @@ class RoomSessionManager {
    * Marks session as disconnected so next join will proceed
    */
   public onDisconnected(): void {
-    console.log('[RoomSessionManager] WebSocket disconnected');
+    loggingService.log('WebSocket', 'WebSocket disconnected');
 
     this.state.status = 'disconnected';
     this.hasJoinedInSession = false; // Allow rejoin after disconnect
@@ -387,7 +391,7 @@ class RoomSessionManager {
    * Reset session state (on intentional leave or logout)
    */
   public reset(): void {
-    console.log('[RoomSessionManager] Resetting session');
+    loggingService.log('State', 'Resetting session');
 
     this.state = {
       roomCode: null,
@@ -412,7 +416,7 @@ class RoomSessionManager {
    * IMPORTANT: Also notifies game state manager to reset
    */
   public switchRoom(): void {
-    console.log('[RoomSessionManager] Switching room - clearing frontend state');
+    loggingService.log('State', 'Switching room - clearing frontend state');
 
     // Clear frontend state only (don't leave backend room yet)
     this.state = {
@@ -436,7 +440,7 @@ class RoomSessionManager {
    * Used when game ends but player stays in lobby
    */
   public clearGameState(): void {
-    console.log('[RoomSessionManager] Clearing game state');
+    loggingService.log('State', 'Clearing game state');
 
     this.state.gameState = null;
     this.state.status = 'lobby';

@@ -1,13 +1,14 @@
 import { getApiUrl } from '../config/api';
 import { getPlayerUUID } from '../utils/storage';
+import { loggingService } from './logging.service';
 
 export const fetchActiveRooms = async () => {
   const apiUrl = getApiUrl();
   const url = `${apiUrl}/rooms`;
-  console.log('[API] Fetching active rooms from:', url);
+  loggingService.log('API', 'Fetching active rooms from:', url);
   try {
     const response = await fetch(url);
-    console.log('[API] Active rooms response:', {
+    loggingService.log('API', 'Active rooms response:', {
       url,
       status: response.status,
       statusText: response.statusText,
@@ -22,7 +23,7 @@ export const fetchActiveRooms = async () => {
     throw new Error(`Failed to fetch active rooms: ${response.status} ${response.statusText} - ${errorText}`);
   } catch (err: unknown) {
     const error = err as Error;
-    console.error('[API] Fetch active rooms error:', {
+    loggingService.error('API', 'Fetch active rooms error:', {
       url,
       error: error.message,
       name: error.name,
@@ -37,10 +38,10 @@ export const fetchMyRooms = async () => {
   if (!uuid) return [];
   const apiUrl = getApiUrl();
   const url = `${apiUrl}/rooms/my-rooms/${uuid}`;
-  console.log('[API] Fetching my rooms from:', url);
+  loggingService.log('API', 'Fetching my rooms from:', url);
   try {
     const response = await fetch(url);
-    console.log('[API] My rooms response:', {
+    loggingService.log('API', 'My rooms response:', {
       url,
       status: response.status,
       statusText: response.statusText,
@@ -55,7 +56,7 @@ export const fetchMyRooms = async () => {
     throw new Error(`Failed to fetch my rooms: ${response.status} ${response.statusText} - ${errorText}`);
   } catch (err: unknown) {
     const error = err as Error;
-    console.error('[API] Fetch my rooms error:', {
+    loggingService.error('API', 'Fetch my rooms error:', {
       url,
       error: error.message,
       name: error.name,

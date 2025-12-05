@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
+import { loggingService } from '../services/logging.service';
 import type { LootSpawnedPayload } from '../../../shared/types';
 import type { Axial } from '../game/hex-utils';
 import { axialToScreen } from '../game/hex-utils';
@@ -32,12 +33,12 @@ export function useHexGrid(
 
   // Initialize hex grid
   useEffect(() => {
-    console.log('=== HEX GRID INITIALIZATION EFFECT ===');
-    console.log('containerRef.current:', containerRef.current ? 'EXISTS' : 'NULL');
-    console.log('hexGridRef.current:', hexGridRef.current ? 'ALREADY INITIALIZED' : 'NULL');
+    loggingService.log('Render', '=== HEX GRID INITIALIZATION EFFECT ===');
+    loggingService.log('Render', 'containerRef.current:', containerRef.current ? 'EXISTS' : 'NULL');
+    loggingService.log('Render', 'hexGridRef.current:', hexGridRef.current ? 'ALREADY INITIALIZED' : 'NULL');
 
     if (!containerRef.current || hexGridRef.current) {
-      console.log('Skipping HexGrid init - already initialized or no container');
+      loggingService.log('Render', 'Skipping HexGrid init - already initialized or no container');
       return;
     }
 
@@ -49,11 +50,11 @@ export function useHexGrid(
 
       const width = containerRef.current.clientWidth;
       const height = containerRef.current.clientHeight;
-      console.log('🎨 Container dimensions:', { width, height });
+      loggingService.log('Render', '🎨 Container dimensions:', { width, height });
 
       // If dimensions are still 0, something is wrong with the layout
       if (width === 0 || height === 0) {
-        console.error('❌ HexGrid container has zero dimensions. Aborting initialization.');
+        loggingService.error('Render', '❌ HexGrid container has zero dimensions. Aborting initialization.');
         return;
       }
 
@@ -64,22 +65,22 @@ export function useHexGrid(
         onCharacterSelect: (...args) => optionsRef.current.onCharacterSelect(...args),
         onMonsterSelect: (...args) => optionsRef.current.onMonsterSelect(...args),
       });
-      console.log('🎨 HexGrid instance created, starting async initialization...');
+      loggingService.log('Render', '🎨 HexGrid instance created, starting async initialization...');
 
       // Initialize the HexGrid asynchronously (PixiJS v8 requirement)
       const mounted = true;
 
       hexGrid.init().then(() => {
-      console.log('✅ HexGrid.init() promise resolved!');
+      loggingService.log('Render', '✅ HexGrid.init() promise resolved!');
       if (mounted) {
         hexGridRef.current = hexGrid;
         setHexGridReady(true); // Signal that HexGrid is ready
-        console.log('✅ HexGrid reference set! Ready to render game data.');
+        loggingService.log('Render', '✅ HexGrid reference set! Ready to render game data.');
       } else {
-        console.log('⚠️ Component unmounted before init completed');
+        loggingService.log('Render', '⚠️ Component unmounted before init completed');
       }
     }).catch((error) => {
-      console.error('❌ Failed to initialize HexGrid:', error);
+      loggingService.error('Render', '❌ Failed to initialize HexGrid:', error);
     });
     });
 
@@ -101,7 +102,7 @@ export function useHexGrid(
         try {
           hexGridRef.current.destroy();
         } catch (err) {
-          console.error('Error destroying HexGrid:', err);
+          loggingService.error('Render', 'Error destroying HexGrid:', err);
         }
       }
 
@@ -113,20 +114,20 @@ export function useHexGrid(
 
   // Initialize board with game data
   const initializeBoard = useCallback((boardData: GameBoardData, ackCallback?: (ack: boolean) => void) => {
-    console.log('=== INITIALIZE BOARD CALLED ===');
-    console.log('hexGridReady:', hexGridReady);
-    console.log('hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
+    loggingService.log('Render', '=== INITIALIZE BOARD CALLED ===');
+    loggingService.log('Render', 'hexGridReady:', hexGridReady);
+    loggingService.log('Render', 'hexGridRef.current:', hexGridRef.current ? 'EXISTS' : 'NULL');
 
     if (!hexGridReady || !hexGridRef.current) {
-      console.log('⏳ HexGrid not ready yet - waiting for initialization');
+      loggingService.log('Render', '⏳ HexGrid not ready yet - waiting for initialization');
       if (ackCallback) {
         ackCallbackRef.current = ackCallback;
       }
       return;
     }
 
-    console.log('✅ HexGrid is ready - initializing board');
-    console.log('🎮 Board data:', {
+    loggingService.log('Render', '✅ HexGrid is ready - initializing board');
+    loggingService.log('Render', '🎮 Board data:', {
       tiles: boardData.tiles.length,
       characters: boardData.characters.length,
       monsters: boardData.monsters?.length || 0,
@@ -134,25 +135,25 @@ export function useHexGrid(
 
     try {
       hexGridRef.current.initializeBoard(boardData);
-      console.log('✅ Board initialized successfully!');
+      loggingService.log('Render', '✅ Board initialized successfully!');
 
       // Send positive acknowledgment
       if (ackCallback) {
         ackCallback(true);
-        console.log('✅ Sent positive acknowledgment to server');
+        loggingService.log('WebSocket', '✅ Sent positive acknowledgment to server');
       } else if (ackCallbackRef.current) {
         ackCallbackRef.current(true);
-        console.log('✅ Sent positive acknowledgment to server');
+        loggingService.log('WebSocket', '✅ Sent positive acknowledgment to server');
         ackCallbackRef.current = null;
       }
     } catch (error) {
-      console.error('❌ ERROR initializing board:', error);
+      loggingService.error('Render', '❌ ERROR initializing board:', error);
 
       // Send negative acknowledgment
       const callback = ackCallback || ackCallbackRef.current;
       if (callback) {
         callback(false);
-        console.log('❌ Sent negative acknowledgment to server');
+        loggingService.log('WebSocket', '❌ Sent negative acknowledgment to server');
         ackCallbackRef.current = null;
       }
     }

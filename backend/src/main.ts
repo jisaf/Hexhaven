@@ -1,10 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { GameGateway } from './websocket/game.gateway';
+import { LoggingService } from './services/logging.service';
+import { initializeErrorHandler } from './utils/error-handler';
+import { SessionService } from './services/session.service';
+import { SocketIOAdapter } from './adapters/socket-io.adapter';
 
 // Load environment variables from .env file
 // In production, this loads from /opt/hexhaven/.env
@@ -22,15 +25,32 @@ if (dotenvResult.error) {
 }
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  logger.log('Creating NestJS application...');
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    // Disable NestJS's default logger to use our custom one
+    logger: false,
+  });
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  logger.log('NestJS application created successfully');
+  // Get instance of our custom logger
+  const logger = app.get(LoggingService);
+  initializeErrorHandler(logger);
+
+  app.useWebSocketAdapter(new SocketIOAdapter(logger));
+
+  // Start session cleanup scheduler
+  const sessionService = app.get(SessionService);
+  if (process.env.NODE_ENV !== 'test') {
+    sessionService.startCleanupScheduler();
+  }
+
+  logger.log('Default', 'Creating NestJS application...');
+  logger.log('Default', 'NestJS application created successfully');
 
   // Log startup environment info
-  logger.log(`Node environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.log(`Working directory: ${process.cwd()}`);
+  logger.log(
+    'Default',
+    `Node environment: ${process.env.NODE_ENV || 'development'}`,
+  );
+  logger.log('Default', `Working directory: ${process.cwd()}`);
 
   // Enable CORS for frontend
   // Support both CORS_ORIGINS (plural, comma-separated) and CORS_ORIGIN (singular)
@@ -59,7 +79,7 @@ async function bootstrap() {
     ];
   }
 
-  logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
+  logger.log('Default', `CORS enabled for origins: ${corsOrigins.join(', ')}`);
 
   // In development, allow all origins
   const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -71,7 +91,7 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   const server = await app.listen(port, '0.0.0.0');
-  logger.log(`Application is listening on port ${port}`);
+  logger.log('Default', `Application is listening on port ${port}`);
 
   // TODO: Investigate why NestJS @WebSocketGateway decorators don't work in this setup
   // See commit 71b3194 for context on the decorator issue.
@@ -101,7 +121,7 @@ async function bootstrap() {
     transports: ['websocket', 'polling'],
   });
 
-  logger.log(`Socket.IO server initialized on port ${port}`);
+  logger.log('WebSocket', `Socket.IO server initialized on port ${port}`);
 
   // Get GameGateway instance and wire it up to the Socket.IO server
   const gameGateway = app.get(GameGateway);
@@ -155,6 +175,6 @@ async function bootstrap() {
     });
   });
 
-  logger.log('GameGateway handlers wired up to Socket.IO server');
+  logger.log('WebSocket', 'GameGateway handlers wired up to Socket.IO server');
 }
 void bootstrap();

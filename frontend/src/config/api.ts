@@ -5,6 +5,8 @@
  * Works for localhost, any IP address, and custom domains.
  */
 
+import { loggingService } from '../services/logging.service';
+
 /**
  * Get the base URL for API requests
  * Uses the same host as the frontend, just changes the path to /api
@@ -18,7 +20,7 @@ export function getApiUrl(): string {
   // Auto-detect based on current location
   const { protocol, hostname, host, port } = window.location;
 
-  console.log('[API Config] window.location:', {
+  loggingService.log('API', 'window.location:', {
     href: window.location.href,
     protocol,
     hostname,
@@ -35,7 +37,7 @@ export function getApiUrl(): string {
     // Production or remote access - use same host with /api path
     // Use 'host' which includes the full host (domain:port if present)
     const apiUrl = `${protocol}//${host}/api`;
-    console.log('[API Config] Constructed API URL:', apiUrl);
+    loggingService.log('API', 'Constructed API URL:', apiUrl);
     return apiUrl;
   }
 }
@@ -67,7 +69,7 @@ export function getWebSocketUrl(): string {
     // Convert back to http/https for socket.io (it handles the upgrade)
     // Use host to preserve the full domain
     const wsUrl = `${protocol}//${host}`;
-    console.log('[API Config] Constructed WebSocket URL:', wsUrl);
+    loggingService.log('API', 'Constructed WebSocket URL:', wsUrl);
     return wsUrl;
   }
 }
@@ -76,7 +78,7 @@ export function getWebSocketUrl(): string {
  * Log current configuration (useful for debugging)
  */
 export function logApiConfig(): void {
-  console.log('API Configuration:', {
+  loggingService.log('API', 'API Configuration:', {
     apiUrl: getApiUrl(),
     wsUrl: getWebSocketUrl(),
     location: {

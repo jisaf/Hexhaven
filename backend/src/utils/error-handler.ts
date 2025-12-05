@@ -5,7 +5,13 @@
  * and user-friendly error messages.
  */
 
-import { logger } from './logger';
+import { LoggingService } from '../services/logging.service';
+
+let logger: LoggingService;
+
+export function initializeErrorHandler(loggingService: LoggingService) {
+  logger = loggingService;
+}
 
 /**
  * Base application error class
@@ -132,17 +138,23 @@ export function logError(
   error: Error | AppError,
   context?: Record<string, unknown>,
 ): void {
+  const category = 'Default';
+  if (!logger) {
+    console.error('Logger not initialized for error handler. Logging to console.');
+    console.error(error);
+    return;
+  }
   if (error instanceof AppError) {
     if (error.isOperational) {
       // Operational errors (validation, not found, etc.) - log as warnings
-      logger.warn(error.message, {
+      logger.warn(category, error.message, {
         ...context,
         statusCode: error.statusCode,
         details: error.details,
       });
     } else {
       // Non-operational errors (bugs) - log as errors
-      logger.error(error.message, {
+      logger.error(category, error.message, {
         ...context,
         statusCode: error.statusCode,
         details: error.details,
@@ -151,7 +163,7 @@ export function logError(
     }
   } else {
     // Unknown errors - log as errors
-    logger.error(error.message, {
+    logger.error(category, error.message, {
       ...context,
       name: error.name,
       stack: error.stack,
@@ -169,7 +181,7 @@ export function errorHandler(
   res: { status: (code: number) => { json: (data: unknown) => void } },
   ..._: unknown[]
 ): void {
-  const correlationId = logger.getCorrelationId() || undefined;
+  const correlationId = undefined; // logger.getCorrelationId() || undefined;
 
   // Log the error
   logError(error, {

@@ -32,6 +32,7 @@ import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { AuthNav } from '../components/AuthNav';
+import { loggingService } from '../services/logging.service';
 import {
   getPlayerNickname,
 } from '../utils/storage';
@@ -68,7 +69,7 @@ export function Lobby() {
       setActiveRooms(rooms);
     } catch (err: unknown) {
       const error = err as Error;
-      console.error('[Lobby] Failed to fetch active rooms:', {
+      loggingService.error('API', 'Failed to fetch active rooms:', {
         message: error?.message,
         name: error?.name,
         stack: error?.stack,
@@ -86,7 +87,7 @@ export function Lobby() {
       setMyRooms(rooms);
     } catch (err: unknown) {
       const error = err as Error;
-      console.error('[Lobby] Failed to fetch my rooms:', {
+      loggingService.error('API', 'Failed to fetch my rooms:', {
         message: error?.message,
         name: error?.name,
         stack: error?.stack,
@@ -106,22 +107,25 @@ export function Lobby() {
   // Only reset if we're not currently in an active game or lobby
   useEffect(() => {
     const currentStatus = sessionState.status;
-    console.log('[Lobby] Component mounted with status:', currentStatus);
+    loggingService.log('Component', 'Component mounted with status:', currentStatus);
 
     // Don't reset if we're already in lobby or active game
     // This prevents clearing state when navigating back to lobby mid-game
     if (currentStatus === 'disconnected' || currentStatus === 'joining') {
-      console.log('[Lobby] Resetting session for clean state');
+      loggingService.log('State', 'Resetting session for clean state');
       gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
     } else {
-      console.log('[Lobby] Skipping reset - already in active session');
+      loggingService.log('State', 'Skipping reset - already in active session');
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to game when room status becomes active
   useEffect(() => {
     if (sessionState.status === 'active' && sessionState.roomCode) {
-      console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
+      loggingService.log(
+        'Component',
+        `Game started, navigating to /game/${sessionState.roomCode}`,
+      );
       navigate(`/game/${sessionState.roomCode}`);
     } else if (sessionState.status === 'lobby' && sessionState.roomCode) {
       setMode('in-room');
@@ -178,8 +182,8 @@ export function Lobby() {
 
   // Character selection (T069) - Updated for persistent characters
   const handleSelectCharacter = (characterId: string) => {
-    console.log('[Lobby] handleSelectCharacter called with:', characterId);
-    console.log('[Lobby] Current players before selection:', players);
+    loggingService.log('Component', 'handleSelectCharacter called with:', characterId);
+    loggingService.log('State', 'Current players before selection:', players);
     setSelectedCharacterId(characterId);
     websocketService.selectCharacter(characterId);
   };
@@ -216,10 +220,10 @@ export function Lobby() {
   const canStartGame = players.length >= 1 && playersReady;
 
   // Test log to verify DebugConsole is capturing logs
-  console.log('[Lobby] 🔍 DEBUG CONSOLE TEST - Component rendered');
+  loggingService.log('Component', '🔍 DEBUG CONSOLE TEST - Component rendered');
 
   // Debug logging
-  console.log('[Lobby] Player state:', {
+  loggingService.log('State', 'Player state:', {
     players,
     playersReady,
     canStartGame,

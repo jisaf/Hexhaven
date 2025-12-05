@@ -14,12 +14,12 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
-import { sessionService } from '../services/session.service';
 import { PrismaService } from '../services/prisma.service';
+import { SessionService } from '../services/session.service';
 import { Player } from '../models/player.model';
 import { LootToken } from '../models/loot-token.model';
 import { ScenarioService } from '../services/scenario.service';
@@ -52,6 +52,7 @@ import type {
   ErrorPayload,
   DebugLogPayload,
 } from '../../../shared/types/events';
+import { LoggingService } from '../services/logging.service';
 import {
   ConnectionStatus,
   RoomStatus,
@@ -67,18 +68,21 @@ export class GameGateway
   // Server is injected manually in main.ts instead of using @WebSocketServer decorator
   server!: Server;
 
-  private readonly logger = new Logger(GameGateway.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly scenarioService: ScenarioService,
+    private readonly loggingService: LoggingService,
+    private readonly sessionService: SessionService,
   ) {
-    this.logger.log('GameGateway constructor called');
+    this.loggingService.log('WebSocket', 'GameGateway constructor called');
   }
 
   afterInit(_server: Server) {
-    this.logger.log('WebSocket Gateway initialized successfully');
-    this.logger.log(`Socket.IO server is running`);
+    this.loggingService.log(
+      'WebSocket',
+      'WebSocket Gateway initialized successfully',
+    );
+    this.loggingService.log('WebSocket', `Socket.IO server is running`);
   }
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
@@ -147,18 +151,18 @@ export class GameGateway
     };
     this.server.to(roomCode).emit('debug_log', payload);
     // Also log to server console
-    const logMessage = `[${category || 'Debug'}] ${message}`;
+    const logCategory = (category as any) || 'Default';
     switch (level) {
       case 'error':
-        this.logger.error(logMessage);
+        this.loggingService.error(logCategory, message, data);
         break;
       case 'warn':
-        this.logger.warn(logMessage);
+        this.loggingService.warn(logCategory, message, data);
         break;
       case 'info':
       case 'log':
       default:
-        this.logger.log(logMessage);
+        this.loggingService.log(logCategory, message, data);
         break;
     }
   }
@@ -229,7 +233,7 @@ export class GameGateway
    * Handle client connection
    */
   handleConnection(client: Socket): void {
-    this.logger.log(`Client connected: ${client.id}`);
+    this.loggingService.log('WebSocket', `Client connected: ${client.id}`);
   }
 
   /**
@@ -238,7 +242,7 @@ export class GameGateway
   handleDisconnect(client: Socket): void {
     const playerUUID = this.socketToPlayer.get(client.id);
     if (playerUUID) {
-      this.logger.log(`Player disconnected: ${playerUUID}`);
+      this.loggingService.log('WebSocket', `Player disconnected: ${playerUUID}`);
 
       // Update player connection status
       try {
@@ -258,7 +262,7 @@ export class GameGateway
           const room = roomService.getRoom(roomCode);
           if (room) {
             // Save session to enable reconnection (US4 - T154)
-            sessionService.saveSession(room);
+            this.sessionService.saveSession(room);
 
             this.server.to(room.roomCode).emit('player_disconnected', {
               playerId: playerUUID,
@@ -266,13 +270,15 @@ export class GameGateway
               willReconnect: true, // Player can reconnect within 10 minutes
             });
 
-            this.logger.log(
+            this.loggingService.log(
+              'State',
               `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
             );
           }
         }
       } catch (error) {
-        this.logger.error(
+        this.loggingService.error(
+          'WebSocket',
           `Error handling disconnect: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
@@ -282,7 +288,7 @@ export class GameGateway
       this.playerToSocket.delete(playerUUID);
     }
 
-    this.logger.log(`Client disconnected: ${client.id}`);
+    this.loggingService.log('WebSocket', `Client disconnected: ${client.id}`);
   }
 
   /**
@@ -294,8 +300,12 @@ export class GameGateway
     @MessageBody() payload: JoinRoomPayload,
   ): Promise<void> {
     try {
-      this.logger.log(`Join room request: ${JSON.stringify(payload)}`);
-      this.logger.log(
+      this.loggingService.log(
+        'WebSocket',
+        `Join room request: ${JSON.stringify(payload)}`,
+      );
+      this.loggingService.log(
+        'WebSocket',
         `📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`,
       );
 
@@ -337,7 +347,8 @@ export class GameGateway
         room = roomService.joinRoom(roomCode, newRoomPlayer);
       } else {
         // Player is already in this specific room
-        this.logger.log(
+        this.loggingService.log(
+          'WebSocket',
           `Player ${nickname} is ${isReconnecting ? 'reconnecting to' : 'already in'} room ${roomCode}`,
         );
       }
@@ -358,7 +369,8 @@ export class GameGateway
       );
       for (const oldRoomCode of currentRooms) {
         if (oldRoomCode !== roomCode) {
-          this.logger.log(
+          this.loggingService.log(
+            'WebSocket',
             `Player ${nickname} leaving old Socket.IO room ${oldRoomCode} before joining ${roomCode}`,
           );
           await client.leave(oldRoomCode);
@@ -391,13 +403,17 @@ export class GameGateway
           playerId: roomPlayer.uuid,
           nickname: roomPlayer.nickname,
         });
-        this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
+        this.loggingService.log(
+          'WebSocket',
+          `Player ${nickname} reconnected to room ${roomCode}`,
+        );
       }
 
       // If game is active, send current game state to player (whether reconnecting or just navigating)
       if (room.status === RoomStatus.ACTIVE && isAlreadyInRoom) {
         try {
-          this.logger.log(
+          this.loggingService.log(
+            'State',
             `Sending game state to ${nickname} in active room ${roomCode}`,
           );
 
@@ -410,14 +426,21 @@ export class GameGateway
             gameStartedPayload,
             (acknowledged: boolean) => {
               if (acknowledged) {
-                this.logger.log(`✅ Game state acknowledged by ${nickname}`);
+                this.loggingService.log(
+                  'State',
+                  `✅ Game state acknowledged by ${nickname}`,
+                );
               } else {
-                this.logger.warn(
+                this.loggingService.warn(
+                  'State',
                   `⚠️  Game state NOT acknowledged by ${nickname}, retrying in 500ms...`,
                 );
                 // Retry once after 500ms
                 setTimeout(() => {
-                  this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                  this.loggingService.log(
+                    'State',
+                    `🔄 Retrying game_started for ${nickname}`,
+                  );
                   client.emit('game_started', gameStartedPayload);
                 }, 500);
               }
@@ -449,10 +472,14 @@ export class GameGateway
               turnIndex: currentTurnIdx,
             };
             client.emit('turn_started', turnStartedPayload);
-            this.logger.log(`Sent current turn info to ${nickname}`);
+            this.loggingService.log(
+              'Game-Logic',
+              `Sent current turn info to ${nickname}`,
+            );
           }
         } catch (activeGameError) {
-          this.logger.error(
+          this.loggingService.error(
+            'Game-Logic',
             `Error sending game state to ${nickname}:`,
             activeGameError,
           );
@@ -461,7 +488,7 @@ export class GameGateway
 
       // Save session with updated connection status
       if (isReconnecting) {
-        sessionService.saveSession(room);
+        this.sessionService.saveSession(room);
       }
 
       if (!isAlreadyInRoom) {
@@ -476,17 +503,21 @@ export class GameGateway
           };
 
           client.to(roomCode).emit('player_joined', playerJoinedPayload);
-          this.logger.log(`Player ${nickname} joined room ${roomCode}`);
+          this.loggingService.log(
+            'WebSocket',
+            `Player ${nickname} joined room ${roomCode}`,
+          );
         }
       } else {
-        this.logger.log(
+        this.loggingService.log(
+          'WebSocket',
           `Player ${nickname} connected socket to room ${roomCode}`,
         );
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Join room error: ${errorMessage}`);
+      this.loggingService.error('WebSocket', `Join room error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'JOIN_ROOM_ERROR',
         message: errorMessage,
@@ -507,7 +538,10 @@ export class GameGateway
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
-        this.logger.warn('Leave room request from unknown player');
+        this.loggingService.warn(
+          'WebSocket',
+          'Leave room request from unknown player',
+        );
         return;
       }
 
@@ -520,7 +554,8 @@ export class GameGateway
         roomCode = payload.roomCode;
         room = roomService.getRoom(roomCode);
         if (!room) {
-          this.logger.warn(
+          this.loggingService.warn(
+            'WebSocket',
             `Player ${playerUUID} tried to leave room ${roomCode} but room not found`,
           );
           return;
@@ -528,7 +563,8 @@ export class GameGateway
       } else {
         const roomData = this.getRoomFromSocket(client);
         if (!roomData) {
-          this.logger.warn(
+          this.loggingService.warn(
+            'WebSocket',
             `Player ${playerUUID} tried to leave but is not in any room`,
           );
           return;
@@ -537,7 +573,10 @@ export class GameGateway
         roomCode = roomData.roomCode;
       }
 
-      this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
+      this.loggingService.log(
+        'WebSocket',
+        `Player ${playerUUID} leaving room ${roomCode}`,
+      );
 
       // Remove player from room
       const player = room.players.find((p: Player) => p.uuid === playerUUID);
@@ -566,7 +605,10 @@ export class GameGateway
         this.roomTurnOrder.delete(roomCode);
         this.currentTurnIndex.delete(roomCode);
         this.roomLootTokens.delete(roomCode);
-        this.logger.log(`Room ${roomCode} is empty, cleaning up`);
+        this.loggingService.log(
+          'WebSocket',
+          `Room ${roomCode} is empty, cleaning up`,
+        );
 
         // Delete the room
         if (updatedRoom) {
@@ -574,14 +616,17 @@ export class GameGateway
         }
       } else {
         // Room still has players, save updated session
-        sessionService.saveSession(updatedRoom);
+        this.sessionService.saveSession(updatedRoom);
       }
 
-      this.logger.log(`Player ${playerUUID} left room ${roomCode}`);
+      this.loggingService.log(
+        'WebSocket',
+        `Player ${playerUUID} left room ${roomCode}`,
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Leave room error: ${errorMessage}`);
+      this.loggingService.error('WebSocket', `Leave room error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'LEAVE_ROOM_ERROR',
         message: errorMessage,
@@ -604,7 +649,8 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Select character request from ${playerUUID}:`,
         payload,
       );
@@ -614,7 +660,8 @@ export class GameGateway
         (r) => r !== client.id,
       );
       if (clientRooms.length > 1) {
-        this.logger.warn(
+        this.loggingService.warn(
+          'WebSocket',
           `⚠️ Client ${client.id} (player ${playerUUID}) is in multiple rooms: ${clientRooms.join(', ')}. This may cause character selection issues.`,
         );
       }
@@ -662,13 +709,15 @@ export class GameGateway
         characterClass = character.class.name as CharacterClass;
         characterId = character.id;
 
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `Player ${player.nickname} selected persistent character: ${character.name} (${characterClass})`,
         );
       } else if (payload.characterClass) {
         // Legacy: Direct character class selection
         characterClass = payload.characterClass;
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `Player ${player.nickname} selected legacy character class: ${characterClass}`,
         );
       } else {
@@ -698,13 +747,17 @@ export class GameGateway
         .to(room.roomCode)
         .emit('character_selected', characterSelectedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Player ${player.nickname} successfully selected ${characterClass}${characterId ? ` (ID: ${characterId})` : ''}`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Select character error: ${errorMessage}`);
+      this.loggingService.error(
+        'Game-Logic',
+        `Select character error: ${errorMessage}`,
+      );
       const errorPayload: ErrorPayload = {
         code: 'SELECT_CHARACTER_ERROR',
         message: errorMessage,
@@ -727,7 +780,10 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Start game request from ${playerUUID}`);
+      this.loggingService.log(
+        'Game-Logic',
+        `Start game request from ${playerUUID}`,
+      );
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -736,7 +792,7 @@ export class GameGateway
       }
 
       const { room, roomCode } = roomData;
-      this.logger.log(`Starting game in room ${roomCode}`);
+      this.loggingService.log('Game-Logic', `Starting game in room ${roomCode}`);
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -799,11 +855,15 @@ export class GameGateway
         .filter((p: Player) => p.characterClass)
         .map((p: Player, index: number) => {
           const startingPosition = startingPositions[index];
-          this.logger.log(`🎭 Creating character for player ${p.nickname}:`, {
-            uuid: p.uuid,
-            characterClass: p.characterClass,
-            startingPosition,
-          });
+          this.loggingService.log(
+            'Game-Logic',
+            `🎭 Creating character for player ${p.nickname}:`,
+            {
+              uuid: p.uuid,
+              characterClass: p.characterClass,
+              startingPosition,
+            },
+          );
           return characterService.selectCharacter(
             p.uuid,
             p.characterClass as CharacterClass,
@@ -811,7 +871,10 @@ export class GameGateway
           );
         });
 
-      this.logger.log(`✅ Created ${characters.length} characters`);
+      this.loggingService.log(
+        'Game-Logic',
+        `✅ Created ${characters.length} characters`,
+      );
 
       // Spawn monsters
       const monsters = this.scenarioService.spawnMonsters(
@@ -845,25 +908,30 @@ export class GameGateway
       this.currentRound.set(room.roomCode, 0);
 
       // Note: Game is already started by roomService.startGame() on line 533
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Room ${room.roomCode} game started, status set to ACTIVE`,
       );
 
       // Load ability cards for each character
       const charactersWithDecks = characters.map((c: any) => {
         const charData = c.toJSON();
-        this.logger.log(`🃏 Loading ability deck for character:`, {
-          id: charData.id,
-          playerId: charData.playerId,
-          characterClass: charData.characterClass,
-        });
+        this.loggingService.log(
+          'Game-Logic',
+          `🃏 Loading ability deck for character:`,
+          {
+            id: charData.id,
+            playerId: charData.playerId,
+            characterClass: charData.characterClass,
+          },
+        );
 
         // Get ability deck for this character class
         const abilityDeck = this.abilityCardService.getCardsByClass(
           charData.characterClass,
         );
 
-        this.logger.log(`🃏 Ability deck loaded:`, {
+        this.loggingService.log('Game-Logic', `🃏 Ability deck loaded:`, {
           characterClass: charData.characterClass,
           deckSize: abilityDeck.length,
           firstCard: abilityDeck[0]?.name || 'NO CARDS',
@@ -902,7 +970,8 @@ export class GameGateway
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();
-      this.logger.log(
+      this.loggingService.log(
+        'WebSocket',
         `Sending game_started to ${roomSockets.length} clients in room ${room.roomCode}`,
       );
 
@@ -916,14 +985,21 @@ export class GameGateway
           gameStartedPayload,
           (acknowledged: boolean) => {
             if (acknowledged) {
-              this.logger.log(`✅ Game start acknowledged by ${nickname}`);
+              this.loggingService.log(
+                'WebSocket',
+                `✅ Game start acknowledged by ${nickname}`,
+              );
             } else {
-              this.logger.warn(
+              this.loggingService.warn(
+                'WebSocket',
                 `⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`,
               );
               // Retry once after 500ms
               setTimeout(() => {
-                this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                this.loggingService.log(
+                  'WebSocket',
+                  `🔄 Retrying game_started for ${nickname}`,
+                );
                 roomSocket.emit('game_started', gameStartedPayload);
               }, 500);
             }
@@ -933,7 +1009,7 @@ export class GameGateway
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Start game error: ${errorMessage}`);
+      this.loggingService.error('Game-Logic', `Start game error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'START_GAME_ERROR',
         message: errorMessage,
@@ -956,7 +1032,10 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Move character request from ${playerUUID}`);
+      this.loggingService.log(
+        'Game-Logic',
+        `Move character request from ${playerUUID}`,
+      );
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -1088,13 +1167,17 @@ export class GameGateway
         .to(room.roomCode)
         .emit('character_moved', characterMovedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Move character error: ${errorMessage}`);
+      this.loggingService.error(
+        'Game-Logic',
+        `Move character error: ${errorMessage}`,
+      );
       const errorPayload: ErrorPayload = {
         code: 'MOVE_CHARACTER_ERROR',
         message: errorMessage,
@@ -1117,7 +1200,10 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Select cards request from ${playerUUID}`);
+      this.loggingService.log(
+        'Game-Logic',
+        `Select cards request from ${playerUUID}`,
+      );
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -1226,7 +1312,8 @@ export class GameGateway
       character.setEffectiveMovement(movementValue);
       character.setEffectiveAttack(attackValue, attackRange);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Player ${playerUUID} effective stats for this turn - Movement: ${movementValue}, Attack: ${attackValue}, Range: ${attackRange}`,
       );
 
@@ -1241,7 +1328,8 @@ export class GameGateway
         .to(room.roomCode)
         .emit('cards_selected', cardsSelectedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Player ${playerUUID} selected cards (initiative: ${initiative})`,
       );
 
@@ -1261,7 +1349,7 @@ export class GameGateway
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Select cards error: ${errorMessage}`);
+      this.loggingService.error('Game-Logic', `Select cards error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'SELECT_CARDS_ERROR',
         message: errorMessage,
@@ -1350,13 +1438,15 @@ export class GameGateway
       };
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Round ${roundNumber} started in room ${roomCode}, first turn: ${turnOrder[0].entityId} (initiative: ${turnOrder[0].initiative})`,
       );
 
       // If the first turn is a monster, activate its AI immediately
       if (firstEntity.entityType === 'monster') {
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `First turn is a monster, activating AI for: ${firstEntity.entityId}`,
         );
         // Use setTimeout to ensure turn_started event is processed first
@@ -1381,7 +1471,8 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Attack target request from ${playerUUID} -> ${payload.targetId}`,
       );
 
@@ -1516,7 +1607,8 @@ export class GameGateway
             0,
           );
 
-          this.logger.log(
+          this.loggingService.log(
+            'Game-Logic',
             `Loot spawned at (${target.currentHex.q}, ${target.currentHex.r}) for monster ${target.id} (${stackCount} token(s) stacked, total value: ${totalValue})`,
           );
 
@@ -1539,7 +1631,10 @@ export class GameGateway
             (m: any) => m.id !== target.id,
           );
           this.roomMonsters.set(room.roomCode, updatedMonsters);
-          this.logger.log(`Monster ${target.id} removed from game state.`);
+          this.loggingService.log(
+            'Game-Logic',
+            `Monster ${target.id} removed from game state.`,
+          );
         }
       } else {
         // Apply damage to character target
@@ -1573,7 +1668,8 @@ export class GameGateway
         .to(room.roomCode)
         .emit('attack_resolved', attackResolvedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Attack resolved: ${attacker.id} -> ${payload.targetId}, damage: ${damage}, modifier: ${modifierCard.modifier}`,
       );
 
@@ -1584,7 +1680,10 @@ export class GameGateway
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Attack target error: ${errorMessage}`);
+      this.loggingService.error(
+        'Game-Logic',
+        `Attack target error: ${errorMessage}`,
+      );
       const errorPayload: ErrorPayload = {
         code: 'ATTACK_TARGET_ERROR',
         message: errorMessage,
@@ -1607,7 +1706,8 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Collect loot request from ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
       );
 
@@ -1685,13 +1785,14 @@ export class GameGateway
         .to(room.roomCode)
         .emit('loot_collected', lootCollectedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Manual collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Collect loot error: ${errorMessage}`);
+      this.loggingService.error('Game-Logic', `Collect loot error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'COLLECT_LOOT_ERROR',
         message: errorMessage,
@@ -1714,7 +1815,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`End turn request from ${playerUUID}`);
+      this.loggingService.log('Game-Logic', `End turn request from ${playerUUID}`);
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -1760,13 +1861,15 @@ export class GameGateway
       const characterPos = character.position;
       const lootTokens = this.roomLootTokens.get(room.roomCode) || [];
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `[Loot] Checking for loot at character position (${characterPos.q}, ${characterPos.r}). Total loot tokens in room: ${lootTokens.length}`,
       );
 
       // Log all loot tokens for debugging
       lootTokens.forEach((token: LootToken, idx: number) => {
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `[Loot] Token ${idx}: position (${token.coordinates.q}, ${token.coordinates.r}), value: ${token.value}, collected: ${token.isCollected}`,
         );
       });
@@ -1778,7 +1881,8 @@ export class GameGateway
           !token.isCollected,
       );
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `[Loot] Found ${lootAtPosition.length} uncollected loot token(s) at position (${characterPos.q}, ${characterPos.r})`,
       );
 
@@ -1806,7 +1910,8 @@ export class GameGateway
           .to(room.roomCode)
           .emit('loot_collected', lootCollectedPayload);
 
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `Auto-collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at end of turn (${characterPos.q}, ${characterPos.r}), total value: ${totalGold} gold`,
         );
       }
@@ -1837,13 +1942,17 @@ export class GameGateway
 
         this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
 
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `Turn advanced in room ${room.roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
         );
 
         // If next entity is a monster, activate monster AI
         if (nextEntity.entityType === 'monster') {
-          this.logger.log(`Activating monster AI for: ${nextEntity.entityId}`);
+          this.loggingService.log(
+            'Game-Logic',
+            `Activating monster AI for: ${nextEntity.entityId}`,
+          );
           // Activate monster AI - turn will auto-advance after monster acts
           await this.activateMonster(nextEntity.entityId, room.roomCode);
         }
@@ -1854,7 +1963,7 @@ export class GameGateway
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`End turn error: ${errorMessage}`);
+      this.loggingService.error('Game-Logic', `End turn error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'END_TURN_ERROR',
         message: errorMessage,
@@ -1873,7 +1982,8 @@ export class GameGateway
     roomCode: string,
   ): Promise<void> {
     try {
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `🤖 [MonsterAI] Activating monster ${monsterId} in room ${roomCode}`,
       );
 
@@ -2330,7 +2440,8 @@ export class GameGateway
 
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 
-      this.logger.log(
+      this.loggingService.log(
+        'Game-Logic',
         `Advanced to next turn in room ${roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
       );
 
@@ -2339,7 +2450,8 @@ export class GameGateway
         // Use setTimeout to avoid deep recursion
         setTimeout(() => {
           this.activateMonster(nextEntity.entityId, roomCode).catch((error) => {
-            this.logger.error(
+            this.loggingService.error(
+              'Game-Logic',
               `Auto-activation error: ${error instanceof Error ? error.message : String(error)}`,
             );
           });
@@ -2360,14 +2472,16 @@ export class GameGateway
   private handleRoundCompletion(roomCode: string): void {
     const room = roomService.getRoom(roomCode);
     if (!room) {
-      this.logger.error(
+      this.loggingService.error(
+        'WebSocket',
         `Room not found for code ${roomCode} in handleRoundCompletion`,
       );
       return;
     }
 
     const currentRoundNumber = this.currentRound.get(roomCode) || 1;
-    this.logger.log(
+    this.loggingService.log(
+      'Game-Logic',
       `Round ${currentRoundNumber} complete in room ${roomCode}, waiting for card selection`,
     );
 
@@ -2434,7 +2548,8 @@ export class GameGateway
     // Store for this room
     this.roomMonsterInitiatives.set(roomCode, initiatives);
 
-    this.logger.log(
+    this.loggingService.log(
+      'Game-Logic',
       `Drew monster initiatives for room ${roomCode}: ${Array.from(
         initiatives.entries(),
       )
@@ -2488,12 +2603,14 @@ export class GameGateway
           .to(roomCode)
           .emit('scenario_completed', scenarioCompletedPayload);
 
-        this.logger.log(
+        this.loggingService.log(
+          'Game-Logic',
           `Scenario completed in room ${roomCode}: ${completion.reason}`,
         );
       }
     } catch (error) {
-      this.logger.error(
+      this.loggingService.error(
+        'Game-Logic',
         `Check scenario completion error: ${error instanceof Error ? error.message : String(error)}`,
       );
     }

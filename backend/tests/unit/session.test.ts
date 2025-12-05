@@ -4,15 +4,20 @@
  * Tests session persistence, restoration, and expiration logic
  */
 
-import { sessionService } from '../../src/services/session.service';
+import { SessionService } from '../../src/services/session.service';
+import { LoggingService } from '../../src/services/logging.service';
 import { roomService } from '../../src/services/room.service';
 import { playerService } from '../../src/services/player.service';
 import { RoomStatus, ConnectionStatus } from '../../../shared/types/entities';
 
 describe('SessionService', () => {
+  let sessionService: SessionService;
+  let loggingService: LoggingService;
+
   beforeEach(() => {
     // Clear all state before each test
-    sessionService.clearAllSessions();
+    loggingService = new LoggingService();
+    sessionService = new SessionService(loggingService);
     roomService.clearAllRooms();
     playerService.clearAllPlayers();
   });

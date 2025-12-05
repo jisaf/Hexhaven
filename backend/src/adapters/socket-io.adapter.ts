@@ -1,9 +1,13 @@
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ServerOptions } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import { ServerOptions } from 'socket.io';
+import { LoggingService } from '../services/logging.service';
 
 export class SocketIOAdapter extends IoAdapter {
-  private readonly logger = new Logger(SocketIOAdapter.name);
+  constructor(private readonly logger: LoggingService) {
+    super();
+  }
 
   createIOServer(port: number, options?: ServerOptions): any {
     const corsOrigins = process.env.CORS_ORIGINS
@@ -28,13 +32,13 @@ export class SocketIOAdapter extends IoAdapter {
       allowEIO3: true,
     } as ServerOptions;
 
-    this.logger.log('Creating Socket.IO server with options:', {
+    this.logger.log('WebSocket', 'Creating Socket.IO server with options:', {
       cors: serverOptions.cors,
       transports: serverOptions.transports,
     });
 
     const server = super.createIOServer(port, serverOptions);
-    this.logger.log('Socket.IO server created successfully');
+    this.logger.log('WebSocket', 'Socket.IO server created successfully');
 
     return server;
   }

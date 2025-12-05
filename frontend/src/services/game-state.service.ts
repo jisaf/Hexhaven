@@ -1,5 +1,6 @@
 import { websocketService } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
+import { loggingService } from './logging.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload } from '../../../shared/types';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
@@ -735,7 +736,7 @@ roomSessionManager.subscribe((roomState) => {
   // Reset game state when room switches (status becomes 'disconnected' with no room code)
   // This happens SYNCHRONOUSLY when switchRoom() is called, before game_started event
   if (roomState.status === 'disconnected' && roomState.roomCode === null) {
-    console.log('[GameStateManager] Room switched, resetting game state');
+    loggingService.log('State', 'Room switched, resetting game state');
     gameStateManager.reset();
   }
 });

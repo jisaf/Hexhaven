@@ -10,7 +10,9 @@ import { AuthController } from './api/auth.controller';
 import { UserCharacterController } from './api/user-character.controller';
 import { CharacterClassesController } from './api/character-classes.controller';
 import { GameManagementController } from './api/game-management.controller';
+import { LoggingService } from './services/logging.service';
 import { ScenarioService } from './services/scenario.service';
+import { SessionService } from './services/session.service';
 import { MonsterService } from './services/monster.service';
 import { PrismaService } from './services/prisma.service';
 
@@ -34,6 +36,8 @@ import { PrismaService } from './services/prisma.service';
     ScenarioService,
     MonsterService,
     PrismaService, // 002: Re-enabled for persistent character integration
+    LoggingService,
+    SessionService,
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,
