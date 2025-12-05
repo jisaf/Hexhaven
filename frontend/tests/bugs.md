@@ -4,28 +4,13 @@ This file tracks known bugs found during testing.
 
 ---
 
-## - [ ] Dev site failed to load
-
-**Explanation:** The development site at localhost:5173 failed to load. Error: Error: page.goto: NS_ERROR_CONNECTION_REFUSED
-Call log:
-[2m  - navigating to "http://localhost:5173/", waiting until "load"[22m
-
-
-**Steps to Recreate:**
-1. Navigate to http://localhost:5173
-2. Wait for page to load
-
-**Expected Behavior:** Home page should load with "Create Game" button visible
-
----
-
 ## - [ ] Failed to create multiple games
 
 **Explanation:** Could not create 4 separate games. Error: Error: locator.click: Test timeout of 180000ms exceeded.
 Call log:
-[2m  - waiting for locator('button:has-text("Create Game")')[22m
-[2m    - waiting for navigation to finish...[22m
-[2m    - navigated to "http://localhost:5173/"[22m
+[2m  - waiting for locator('button:has-text("Create Game")')[22m
+[2m    - waiting for navigation to finish...[22m
+[2m    - navigated to "http://localhost:5173/"[22m
 
 
 **Steps to Recreate:**
@@ -50,19 +35,6 @@ Call log:
 5. Click Join
 
 **Expected Behavior:** Second player should successfully join the lobby
-
----
-
-## - [ ] Failed to start games
-
-**Explanation:** Could not start all 4 games. Error: Error: locator.click: Target page, context or browser has been closed
-
-**Steps to Recreate:**
-1. Create games
-2. Select characters
-3. Click "Start Game"
-
-**Expected Behavior:** All games should transition to game board after starting
 
 ---
 
@@ -118,80 +90,4 @@ Call log:
 **Expected Behavior:** Monster should take turn automatically with movement and/or attack
 
 ---
-
-## - [ ] Page failed to load
-
-**Explanation:** The application page did not load successfully. Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/
-Call log:
-[2m  - navigating to "http://localhost:5173/", waiting until "networkidle"[22m
-
-
-**Steps to Recreate:**
-1. Navigate to http://localhost:5173
-2. Wait for page to load
-
-**Expected Behavior:** Page should load with title and content visible
-
-**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
-
-**Found:** 2025-12-04T10:39:29.812Z
-
----
-
-
-## - [ ] Game creation flow failed
-
-**Explanation:** Could not create a game or reach game creation form. Error: Create Game button not found
-
-**Steps to Recreate:**
-1. Click "Create Game" button
-2. Wait for nickname input
-
-**Expected Behavior:** Nickname input should appear after clicking Create Game
-
-**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
-
-**Found:** 2025-12-04T10:39:29.910Z
-
----
-
-
-## - [ ] Nickname submission failed
-
-**Explanation:** Could not submit nickname and reach lobby. Error: locator.fill: Timeout 10000ms exceeded.
-Call log:
-[2m  - waiting for getByPlaceholder(/nickname|name/i).first()[22m
-
-
-**Steps to Recreate:**
-1. Enter nickname "Test Player"
-2. Click submit button
-3. Wait for lobby
-
-**Expected Behavior:** Should reach lobby with room code displayed
-
-**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
-
-**Found:** 2025-12-04T10:39:40.012Z
-
----
-
-
-## - [ ] Lobby not displayed correctly
-
-**Explanation:** Lobby page did not render properly
-
-**Steps to Recreate:**
-1. Create game
-2. Enter nickname
-3. View lobby
-
-**Expected Behavior:** Lobby should show room code and player list
-
-**Video:** ../public/test-videos/9a92752db00f36f59b7d8508a2c833bd.webm
-
-**Found:** 2025-12-04T10:39:42.115Z
-
----
-
 
