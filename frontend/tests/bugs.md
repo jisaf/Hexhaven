@@ -38,20 +38,6 @@ Call log:
 
 ---
 
-## - [ ] Card selection failed
-
-**Explanation:** Could not complete card selection. Error: Error: expect.toBeVisible: Target page, context or browser has been closed
-
-**Steps to Recreate:**
-1. Start a game
-2. Wait for card selection panel
-3. Click two cards
-4. Click confirm
-
-**Expected Behavior:** Players should be able to select and confirm two cards
-
----
-
 ## - [ ] Character movement failed
 
 **Explanation:** Error during character movement attempt. Error: Error: expect.toBeVisible: Target page, context or browser has been closed

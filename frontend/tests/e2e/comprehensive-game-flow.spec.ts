@@ -266,8 +266,10 @@ test.describe('Comprehensive Game Flow Test', () => {
       await player2Page.locator('[data-testid="confirm-cards-button"]').click();
       console.log('✓ Player 2 selected cards');
 
-      // Wait for card selection to complete
-      await page.waitForTimeout(2000);
+      // Wait for round to start - turn order display should appear
+      await expect(page.locator('[data-testid="turn-order-display"]')).toBeVisible({ timeout: 10000 });
+      await expect(player2Page.locator('[data-testid="turn-order-display"]')).toBeVisible({ timeout: 10000 });
+      console.log('✓ Round started, turn order displayed');
 
     } catch (error) {
       bugs.push({

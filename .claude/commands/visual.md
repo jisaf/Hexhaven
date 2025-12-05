@@ -39,16 +39,22 @@ You must execute the **{{arg1|smoke}}** test using Playwright MCP browser tools.
 ## Smoke Test (7 Steps)
 
 **IMPORTANT: Before starting tests:**
-1. Get current git branch: `git rev-parse --abbrev-ref HEAD`
-2. Generate timestamp: `date -u +%Y%m%dT%H%M%SZ`
-3. Clean up old screenshots (>5 days): `find frontend/public/test-videos -name "*.png" -mtime +5 -delete`
-4. Use format: `[branch]-[timestamp]-smoke-[step]-[description].png`
+1. Determine test URL based on environment:
+   - Check `ENVIRONMENT` variable from `/etc/environment`
+   - If `ENVIRONMENT=dev` → use `http://dev.hexhaven.net`
+   - If `ENVIRONMENT=test` → use `http://test.hexhaven.net`
+   - Default: `http://dev.hexhaven.net`
+2. Get current git branch: `git rev-parse --abbrev-ref HEAD`
+3. Generate timestamp: `date -u +%Y%m%dT%H%M%SZ`
+4. Clean up old screenshots (>5 days): `find frontend/public/test-videos -name "*.png" -mtime +5 -delete`
+5. Use format: `[branch]-[timestamp]-smoke-[step]-[description].png`
 
 Execute these steps using MCP browser tools:
 
 ### Step 1: Navigate and Verify Page Load
 - Get git branch name and timestamp
-- Use `mcp__playwright__browser_navigate` to go to http://localhost:5173
+- Determine test URL from ENVIRONMENT variable
+- Use `mcp__playwright__browser_navigate` to go to the test URL (dev.hexhaven.net or test.hexhaven.net)
 - Use `mcp__playwright__browser_snapshot` to get page structure
 - Verify: Page title exists and "Create Game" button is visible
 - **On Failure**: Take screenshot with `mcp__playwright__browser_take_screenshot` (filename: `[branch]-[timestamp]-smoke-01-landing.png`) and log bug "Page failed to load"

@@ -193,6 +193,7 @@ export function GameBoard() {
           onConfirmSelection={() => gameStateManager.confirmCardSelection()}
           selectedTopAction={gameState.selectedTopAction}
           selectedBottomAction={gameState.selectedBottomAction}
+          waiting={gameState.waitingForRoundStart}
         />
       )}
 
