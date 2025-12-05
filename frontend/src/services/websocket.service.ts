@@ -357,7 +357,7 @@ class WebSocketService {
    */
   selectCharacter(characterId: string): void {
     console.log('[WebSocketService] Emitting select_character with:', { characterId });
-    this.emit('select_character', { characterId });
+    this.emit('select_character', { characterClass: characterId as any });
   }
 
   /**
