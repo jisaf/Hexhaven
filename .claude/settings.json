@@ -5,8 +5,9 @@
         "matcher": "Bash(git commit*)",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "CRITICAL: Before committing, evaluate if code changes require visual testing.\n\n1. Check what files are staged for commit using `git diff --cached --name-only`\n\n2. Determine if visual tests are needed:\n   - **RUN TESTS** if changes include:\n     - frontend/src/**/*.{ts,tsx,js,jsx} (React components, game logic)\n     - backend/src/**/*.{ts,js} (API, WebSocket, services)\n     - *.css, *.scss (styles)\n     - package.json, package-lock.json (dependencies)\n   \n   - **SKIP TESTS** if changes are ONLY:\n     - *.md files (documentation)\n     - .claude/commands/*.md (slash commands)\n     - *.json config files (except package.json)\n     - .gitignore, .env files\n     - README, AGENTS, PRD files\n\n3. If visual tests are needed:\n   - Execute `/visual smoke` now\n   - Check `/home/opc/hexhaven/frontend/tests/bugs.md` for bugs\n   - If bugs found:\n     - STOP commit immediately\n     - Fix ALL bugs\n     - Re-run `/visual smoke` to verify\n   - Only proceed after all tests pass\n\n4. If visual tests are skipped:\n   - Log: \"Skipping visual tests - documentation/config changes only\"\n   - Proceed with commit\n\nDo NOT consider this done until bugs are resolved (if tests were run) or tests are properly skipped."
+            "type": "command",
+            "command": "bash .claude/scripts/pre-commit-ci.sh",
+            "statusMessage": "Running CI tests..."
           }
         ]
       }
