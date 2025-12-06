@@ -66,13 +66,16 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
         style={{
           display: 'grid',
           gridTemplateRows: `repeat(${totalRows}, 1fr)`,
-          gap: 'var(--card-gap, 8px)',
+          gap: compact ? 'var(--module-gap-compact, 4px)' : 'var(--card-gap, 8px)',
           background: 'var(--card-bg-gradient)',
           border: 'var(--card-border-width) solid var(--card-border)',
           borderRadius: 'var(--card-border-radius)',
-          padding: 'var(--card-padding, 12px)',
+          padding: compact ? 'var(--module-padding-compact, 4px)' : 'var(--card-padding, 12px)',
           boxShadow: 'var(--card-shadow)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          overflow: 'hidden',
+          width: '100%',
+          height: '100%',
         }}
       >
         {sortedModules.map((module) => {

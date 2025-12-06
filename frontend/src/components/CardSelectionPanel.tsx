@@ -80,6 +80,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                       : undefined
                 }
                 disabled={disabled || waiting}
+                compact={true}
               />
             </div>
           );

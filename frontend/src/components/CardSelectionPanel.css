@@ -3,13 +3,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 70vh;
-  min-height: 400px;
-  max-height: 80vh;
+  height: 25vh;
+  min-height: 200px;
+  max-height: 30vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 8px;
+  padding: 8px;
   background-color: rgba(13, 26, 46, 0.95);
   z-index: 9999; /* Increased z-index */
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -83,10 +83,11 @@
 .cards-container {
   display: flex;
   overflow-x: auto;
-  overflow-y: visible; /* Allow cards to pop out vertically */
-  gap: 8px;
-  padding: 60px 10px 20px 10px; /* Adjust padding for instructions */
+  overflow-y: hidden; /* Prevent overflow */
+  gap: 6px;
+  padding: 4px;
   flex-grow: 1;
+  align-items: center;
 }
 
 .cards-container::-webkit-scrollbar {
@@ -102,15 +103,17 @@
   flex: 0 0 auto;
   transition: all 0.3s ease;
   position: relative; /* For z-index to work */
+  width: var(--card-width-compact);
+  height: var(--card-height-compact);
 }
 
 .card-wrapper.focused {
-  transform: scale(1.05) translateY(-10px);
+  transform: scale(1.08);
   z-index: 10; /* Ensure focused card is on top */
 }
 
 .card-wrapper.selected {
-  transform: scale(1.02) translateY(-20px);
+  transform: scale(1.05);
 }
 
 .card-wrapper:not(.focused) {

@@ -19,6 +19,7 @@ interface AbilityCardProps {
   isTop?: boolean; // Which half is being used
   onClick?: () => void;
   disabled?: boolean;
+  compact?: boolean; // Use compact layout mode
 }
 
 /**
@@ -89,6 +90,7 @@ export const AbilityCard: React.FC<AbilityCardProps> = ({
   isTop,
   onClick,
   disabled = false,
+  compact = false,
 }) => {
   return (
     <div
@@ -103,6 +105,7 @@ export const AbilityCard: React.FC<AbilityCardProps> = ({
         card={card}
         template={DEFAULT_ABILITY_CARD_TEMPLATE}
         isActive={isSelected}
+        compact={compact}
         className="ability-card-content"
       />
 
