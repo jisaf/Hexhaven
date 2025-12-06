@@ -64,3 +64,8 @@ prisma/migrations/**/migration.sql
 shared/types/**/*.js
 shared/types/**/*.d.ts
 shared/types/**/*.js.map
+
+# Lighthouse reports
+lighthouse-report*
+lighthouse-test*.js
+analyze-lighthouse.js
