@@ -1,53 +1,35 @@
 .gameBoardPage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  flex-direction: column;
-  height: 100vh;
+  width: 100vw;
+  height: 100vh; /* Fallback */
+  height: 100dvh; /* Modern browsers - accounts for mobile address bar */
   background-color: var(--primary-bg-color, #0d1a2e);
   color: #f0e6d2;
-  overflow: hidden;
+  overflow: hidden; /* Lock scrolling on game page only */
   font-family: 'Georgia', serif;
+  z-index: 1;
 }
 
+/* Portrait mode - stack vertically */
+@media (orientation: portrait) {
+  .gameBoardPage {
+    flex-direction: column;
+  }
+}
+
+/* Landscape mode - side by side */
 @media (orientation: landscape) {
   .gameBoardPage {
     flex-direction: row;
   }
-
-  /* .gameContainer will use flex: 1 to take up the remaining 60% */
-
-  .rightPanel {
-    width: 40%;
-    max-width: 450px; /* Add a max-width for very large screens */
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: static; /* Ensure it's not fixed like in portrait */
-  }
-
-  .rightPanel > :first-child { /* TurnOrder */
-    height: 50%;
-    overflow-y: auto;
-  }
-
-  .hudWrapper {
-    position: static;
-    height: 50%;
-    overflow-y: auto;
-    border-top: 1px solid #c9a444;
-  }
-
-  .cardSelectionActive .rightPanel {
-    display: none;
-  }
 }
 
-.gameContainer {
-  flex-grow: 1;
-  flex-basis: 60%;
-  position: relative;
-  overflow: hidden;
-}
-
+/* Overlay hints */
 .movementHint,
 .attackModeHint {
   position: absolute;
@@ -65,6 +47,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   animation: slideUp 0.3s ease-out;
+  z-index: 100;
 }
 
 .attackModeHint {
@@ -84,6 +67,7 @@
   }
 }
 
+/* Reconnecting overlay */
 .reconnectingOverlay {
   position: fixed;
   top: 0;
@@ -122,51 +106,4 @@
   font-size: 18px;
   color: #f0e6d2;
   font-family: 'MedievalSharp', serif;
-}
-
-
-.bottomPlaceholder {
-  display: none; /* Hidden in landscape */
-}
-
-@media (orientation: portrait) {
-  .gameBoardPage {
-    flex-direction: column;
-  }
-
-  .gameContainer {
-    height: 50vh;
-  }
-
-  .rightPanel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50vh;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--primary-bg-color, #0d1a2e);
-    z-index: 10;
-  }
-
-  .rightPanel > :first-child { /* TurnOrder */
-    height: 50%;
-    overflow-y: auto;
-  }
-
-  .hudWrapper {
-    position: static;
-    height: 50%;
-    overflow-y: auto;
-    border-top: 1px solid #c9a444;
-  }
-
-  .cardSelectionActive .rightPanel {
-    display: none;
-  }
-}
-
-.rightPanel {
-  /* Common styles for both orientations */
 }

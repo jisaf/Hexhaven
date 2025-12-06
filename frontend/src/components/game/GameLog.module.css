@@ -1,0 +1,113 @@
+.gameLog {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--primary-bg-color, #0d1a2e);
+  border-top: 1px solid #c9a444;
+}
+
+.logHeader {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: rgba(201, 164, 68, 0.1);
+  border-bottom: 1px solid #c9a444;
+}
+
+.logHeader h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.logContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  scroll-behavior: smooth;
+}
+
+.logMessage {
+  margin: 0 0 6px 0;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #f0e6d2;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  border-left: 2px solid #c9a444;
+}
+
+.logMessage:last-child {
+  margin-bottom: 0;
+}
+
+.emptyMessage {
+  margin: 0;
+  padding: 12px;
+  text-align: center;
+  color: rgba(240, 230, 210, 0.5);
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* Color classes for log message parts */
+.red {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.green {
+  color: #51cf66;
+  font-weight: 600;
+}
+
+.blue {
+  color: #4dabf7;
+  font-weight: 600;
+}
+
+.yellow {
+  color: #ffd43b;
+  font-weight: 600;
+}
+
+.orange {
+  color: #ff922b;
+  font-weight: 600;
+}
+
+.purple {
+  color: #cc5de8;
+  font-weight: 600;
+}
+
+.gray {
+  color: #adb5bd;
+}
+
+.gold {
+  color: #c9a444;
+  font-weight: 600;
+}
+
+/* Custom scrollbar styling */
+.logContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.logContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.logContainer::-webkit-scrollbar-thumb {
+  background: rgba(201, 164, 68, 0.4);
+  border-radius: 3px;
+}
+
+.logContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 164, 68, 0.6);
+}
