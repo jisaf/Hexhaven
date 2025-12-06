@@ -42,7 +42,7 @@ export function getWebSocketUrl(): string {
   }
 
   // Auto-detect based on current location
-  const { protocol, hostname, host } = window.location;
+  const { protocol, hostname, host, port } = window.location;
 
   // In development, the backend runs on port 3001 (configurable via VITE_BACKEND_PORT)
   // In production with nginx, it's on the same host
