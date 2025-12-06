@@ -16,10 +16,8 @@
  */
 
 import fs from 'fs';
-import path from 'path';
 
 const ROOM_CODE_FILE = '/tmp/hexhaven-test-room-code.txt';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5001';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 /**

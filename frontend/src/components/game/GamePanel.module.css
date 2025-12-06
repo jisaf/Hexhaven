@@ -1,0 +1,23 @@
+.gamePanel {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--primary-bg-color, #0d1a2e);
+}
+
+/* Portrait mode - top half of screen */
+@media (orientation: portrait) {
+  .gamePanel {
+    width: 100vw;
+    height: 50vh; /* Fallback */
+    height: 50dvh; /* Modern browsers - accounts for address bar */
+  }
+}
+
+/* Landscape mode - left 60% of screen */
+@media (orientation: landscape) {
+  .gamePanel {
+    width: 60vw;
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Modern browsers */
+  }
+}

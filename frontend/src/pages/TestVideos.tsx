@@ -116,6 +116,7 @@ export function TestVideos() {
       .filter((s): s is ScreenshotData => s !== null)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
 
+    // eslint-disable-next-line
     setScreenshots(parsed);
     setLoading(false);
   }, []);

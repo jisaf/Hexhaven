@@ -15,7 +15,7 @@ export interface FooterModuleProps {
   data?: {
     level?: number | string;
     name?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   className?: string;
 }

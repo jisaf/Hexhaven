@@ -1,0 +1,107 @@
+.infoPanel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--primary-bg-color, #0d1a2e);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Portrait mode - bottom half of screen, fixed position */
+@media (orientation: portrait) {
+  .infoPanel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    height: 50vh; /* Fallback */
+    height: 50dvh; /* Modern browsers - accounts for address bar */
+    z-index: 10;
+  }
+
+  .turnStatusContainer {
+    height: 25vh; /* Fallback */
+    height: 25dvh; /* Half of info panel */
+    overflow: hidden;
+  }
+
+  .gameLogContainer {
+    height: 25vh; /* Fallback */
+    height: 25dvh; /* Half of info panel */
+    overflow: hidden;
+  }
+
+  .cardSelectionOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30; /* Above turn status and game log */
+    animation: slideUpIn 300ms ease-out forwards;
+  }
+
+  @keyframes slideUpIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+/* Landscape mode - right 40% of screen */
+@media (orientation: landscape) {
+  .infoPanel {
+    width: 40vw;
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Modern browsers */
+  }
+
+  .turnStatusContainer {
+    height: 50vh; /* Fallback */
+    height: 50dvh; /* Half of info panel */
+    overflow: hidden;
+  }
+
+  .gameLogContainer {
+    height: 50vh; /* Fallback */
+    height: 50dvh; /* Half of info panel */
+    overflow: hidden;
+  }
+
+  .cardSelectionOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30; /* Above turn status and game log */
+    animation: slideLeftIn 300ms ease-out forwards;
+  }
+
+  @keyframes slideLeftIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
+
+/* Ensure children fill their containers */
+.turnStatusContainer > *,
+.gameLogContainer > *,
+.cardSelectionOverlay > * {
+  height: 100%;
+}

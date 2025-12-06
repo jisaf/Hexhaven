@@ -18,6 +18,7 @@ import { ActionModule } from './ActionModule';
 import { CreatureModule } from './CreatureModule';
 
 // Module component type (all modules share similar prop structure)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ModuleComponent = ComponentType<any>;
 
 /**
