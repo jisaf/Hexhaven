@@ -13,6 +13,7 @@ import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
 import { gameStateManager } from '../services/game-state.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
+import { roomSessionManager } from '../services/room-session.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
@@ -70,6 +71,28 @@ export function GameBoard() {
       navigate('/');
     }
   }, [roomCode, navigate]);
+
+  // Initialize game session when component mounts
+  useEffect(() => {
+    if (!roomCode) {
+      return;
+    }
+
+    const initializeGame = async () => {
+      try {
+        console.log('[GameBoard] Ensuring joined to room:', roomCode);
+        // Ensure we're joined to the room with 'refresh' intent
+        // This will trigger the backend to send game_started event with current state
+        await roomSessionManager.ensureJoined('refresh');
+        console.log('[GameBoard] Join request sent successfully');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to join game';
+        console.error('[GameBoard] Failed to join game:', errorMessage);
+      }
+    };
+
+    initializeGame();
+  }, [roomCode]);
 
   const {
     hexGridReady,
