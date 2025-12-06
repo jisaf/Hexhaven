@@ -53,15 +53,55 @@ Reduced verbose logging across backend and frontend to focus on errors, warnings
 **Before:** 18 console.log statements
 **After:** 3 console.log statements (error logging only)
 
-#### 2. Other Frontend Services
+#### 2. i18n Configuration (frontend/src/i18n/index.ts)
+- Disabled debug logging entirely
+- Changed `debug: import.meta.env.DEV` to `debug: false`
+- Eliminates verbose i18next translation loading logs
+
+**Before:** Debug enabled in development
+**After:** Debug disabled for performance
+
+#### 3. API Configuration (frontend/src/config/api.ts)
+- Removed all console.log statements (4 total)
+- Disabled logApiConfig function body
+- Removed logs for:
+  - window.location details
+  - Constructed API/WS URLs
+  - Configuration details
+- Kept function signatures for compatibility
+
+**Before:** 4 console.log statements
+**After:** 0 console.log statements (100% reduction)
+
+#### 4. Lobby Page (frontend/src/pages/Lobby.tsx)
+- Removed debug console test logs
+- Removed player state logging
+- Removed component lifecycle logs
+- Kept error handling
+
+**Before:** 8 console.log statements
+**After:** 0 console.log statements (100% reduction)
+
+#### 5. Room API (frontend/src/services/room.api.ts)
+- Removed verbose request/response logging
+- Simplified to error messages only
+- Removed logs for:
+  - Request URLs
+  - Response status/headers
+  - Detailed error objects
+- Kept only concise error messages
+
+**Before:** 6 console.log statements (verbose)
+**After:** 2 console.error statements (concise)
+
+#### 6. Other Frontend Services
 Logging remains in:
 - room-session.service.ts (23 logs) - Important state management tracking
-- room.api.ts (6 logs) - API request/response tracking
 - Other services with minimal logging
 
 **Overall Frontend:**
 - **Before:** 153 console.log statements
-- **After:** 79 console.log statements (48% reduction)
+- **After:** ~47 console.log statements (69% reduction)
 
 ## Logging Philosophy
 
@@ -99,9 +139,17 @@ Logging remains in:
 - ✅ Frontend builds and bundles correctly
 
 ## Files Modified
+
+### Backend
 - `backend/src/services/session.service.ts`
 - `backend/src/websocket/game.gateway.ts`
+
+### Frontend
 - `frontend/src/services/websocket.service.ts`
+- `frontend/src/i18n/index.ts`
+- `frontend/src/config/api.ts`
+- `frontend/src/pages/Lobby.tsx`
+- `frontend/src/services/room.api.ts`
 
 ## Next Steps
 If further logging reduction is needed:
