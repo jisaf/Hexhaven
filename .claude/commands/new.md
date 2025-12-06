@@ -1,6 +1,7 @@
 ---
 description: Load context, create feature branch, execute task
-model: sonnet
+model: opusplan
+thinking: true
 ---
 
 ## Goal

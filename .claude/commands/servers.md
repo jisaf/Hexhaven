@@ -11,7 +11,7 @@ Intelligently start or restart the frontend and backend development servers usin
 1. **Switch to Haiku**: Use `/model haiku` to set the model to Claude Haiku
 2. **Disable Thinking**: Use `/thinking off` to disable thinking mode
 3. **Manage Servers**: Execute the server management logic below
-4. **Restore Sonnet**: Use `/model sonnet` to switch back to Claude Sonnet
+4. **Restore OpusPlan**: Use `/model opusplan` to switch back to Claude OpusPlan
 5. **Enable Thinking**: Use `/thinking on` to re-enable thinking mode
 
 ## Server Management Logic
