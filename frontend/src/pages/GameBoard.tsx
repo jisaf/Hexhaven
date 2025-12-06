@@ -7,12 +7,13 @@
  * - InfoPanel: TurnStatus + GameLog (or CardSelectionPanel when active)
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
 import { gameStateManager } from '../services/game-state.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
+import { roomSessionManager } from '../services/room-session.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
@@ -32,6 +33,8 @@ export function GameBoard() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const gameState = useGameState();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
 
   // Handle navigation back (exit fullscreen and go to lobby)
   // Memoized to prevent useFullscreen effect from re-running on every render
@@ -70,6 +73,35 @@ export function GameBoard() {
       navigate('/');
     }
   }, [roomCode, navigate]);
+
+  // Initialize game session when component mounts
+  useEffect(() => {
+    if (!roomCode) {
+      return;
+    }
+
+    const initializeGame = async () => {
+      try {
+        console.log('[GameBoard] Initializing game session for room:', roomCode);
+        setIsInitializing(true);
+        setInitError(null);
+
+        // Ensure we're joined to the room with 'refresh' intent
+        // This will trigger the backend to send game_started event with current state
+        await roomSessionManager.ensureJoined('refresh');
+
+        console.log('[GameBoard] Game session initialized successfully');
+        setIsInitializing(false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to initialize game';
+        console.error('[GameBoard] Failed to initialize game session:', errorMessage);
+        setInitError(errorMessage);
+        setIsInitializing(false);
+      }
+    };
+
+    initializeGame();
+  }, [roomCode]);
 
   const {
     hexGridReady,
@@ -181,6 +213,58 @@ export function GameBoard() {
       maxHealth: character?.maxHealth ?? monster?.maxHealth,
     };
   });
+
+  // Show loading state while initializing
+  if (isInitializing) {
+    return (
+      <div className={styles.gameBoardPage}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          color: 'white',
+          fontSize: '1.5rem'
+        }}>
+          Loading game...
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if initialization failed
+  if (initError) {
+    return (
+      <div className={styles.gameBoardPage}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          color: 'white',
+          gap: '1rem'
+        }}>
+          <div style={{ fontSize: '1.5rem', color: '#ff6b6b' }}>Failed to load game</div>
+          <div style={{ fontSize: '1rem' }}>{initError}</div>
+          <button
+            onClick={handleBackToLobby}
+            style={{
+              padding: '0.75rem 1.5rem',
+              fontSize: '1rem',
+              backgroundColor: '#4a90e2',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Back to Lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.gameBoardPage}>
