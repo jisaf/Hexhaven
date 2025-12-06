@@ -11,10 +11,12 @@ import { UserCharacterController } from './api/user-character.controller';
 import { CharacterClassesController } from './api/character-classes.controller';
 import { GameManagementController } from './api/game-management.controller';
 import { CardLayoutTemplatesController } from './api/card-layout-templates.controller';
+import { AbilityCardsController } from './api/ability-cards.controller';
 import { ScenarioService } from './services/scenario.service';
 import { MonsterService } from './services/monster.service';
 import { PrismaService } from './services/prisma.service';
 import { CardLayoutTemplateService } from './services/card-layout-template.service';
+import { AbilityCardService } from './services/ability-card.service';
 
 @Module({
   imports: [],
@@ -29,6 +31,7 @@ import { CardLayoutTemplateService } from './services/card-layout-template.servi
     CharacterClassesController, // Phase 5: Public character classes endpoint
     GameManagementController, // Phase 6: Game state management with event sourcing (002)
     CardLayoutTemplatesController, // Card layout template management
+    AbilityCardsController, // Ability cards API endpoint
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -38,6 +41,7 @@ import { CardLayoutTemplateService } from './services/card-layout-template.servi
     MonsterService,
     PrismaService, // 002: Re-enabled for persistent character integration
     CardLayoutTemplateService, // Card layout template service
+    AbilityCardService, // Ability card data service
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,
