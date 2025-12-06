@@ -18,6 +18,11 @@ coverage/
 # Logs
 logs/
 *.log
+
+# Tests
+test/
+src/**/*.spec.ts
+src/**/*.test.ts
 backend/test/*.d.ts
 backend/test/*.js
 backend/test/*.js.map

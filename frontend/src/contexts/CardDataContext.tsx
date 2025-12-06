@@ -7,7 +7,7 @@
 
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
-import type { AbilityCard } from '../../../shared/types/entities';
+import type { AbilityCard, Action } from '../../../shared/types/entities';
 
 export interface CardData {
   // Core card properties
@@ -17,8 +17,8 @@ export interface CardData {
   level?: number | string;
 
   // Actions
-  topAction?: any;
-  bottomAction?: any;
+  topAction?: Action;
+  bottomAction?: Action;
 
   // Character/class info
   characterClass?: string;
@@ -31,7 +31,7 @@ export interface CardData {
   specialAbilities?: string;
 
   // Allow any additional properties
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface CardDataContextValue {
@@ -74,12 +74,12 @@ export function useCardData(): CardData {
  * Get a nested value from card data using dot notation
  * Example: getCardDataValue(data, "topAction.value") => data.topAction.value
  */
-export function getCardDataValue(data: CardData, path: string): any {
+export function getCardDataValue(data: CardData, path: string): unknown {
   if (!path) return undefined;
 
-  return path.split('.').reduce((obj: any, key: string) => {
-    return obj?.[key];
-  }, data);
+  return path.split('.').reduce((obj: unknown, key: string) => {
+    return (obj as Record<string, unknown>)?.[key];
+  }, data as unknown);
 }
 
 /**

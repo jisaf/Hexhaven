@@ -2,40 +2,67 @@
  * GameBoard Page Component
  *
  * Main game interface with hex grid rendering and character movement.
- * Features:
- * - PixiJS hex grid rendering
- * - Character sprites with tap-to-select
- * - Movement range highlighting
- * - Real-time game state synchronization
- *
- * Implements:
- * - T057: Create GameBoard page component
- * - T071: Implement character movement (tap character → tap hex → emit move event)
+ * Refactored with new layout:
+ * - GamePanel: Hex map container
+ * - InfoPanel: TurnStatus + GameLog (or CardSelectionPanel when active)
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GameBoardData } from '../game/HexGrid';
 import type { CharacterData } from '../game/CharacterSprite';
 import { gameStateManager } from '../services/game-state.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { Monster, HexTile } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
-import { GameHUD } from '../components/game/GameHUD';
+import { GamePanel } from '../components/game/GamePanel';
+import { InfoPanel } from '../components/game/InfoPanel';
+import { TurnStatus } from '../components/game/TurnStatus';
+import { GameLog } from '../components/game/GameLog';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
-import { ActionButtons } from '../components/game/ActionButtons';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
-import TurnOrder from '../components/TurnOrder';
+import { useFullscreen, exitFullscreen } from '../hooks/useFullscreen';
 import styles from './GameBoard.module.css';
 
 export function GameBoard() {
   const navigate = useNavigate();
   const { roomCode } = useParams<{ roomCode: string }>();
-  const containerRef = useRef<HTMLDivElement>(null);
   const gameState = useGameState();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle navigation back (exit fullscreen and go to lobby)
+  // Memoized to prevent useFullscreen effect from re-running on every render
+  const navigateToLobby = useCallback(async () => {
+    // Exit fullscreen if active
+    await exitFullscreen();
+    // Clean up game state
+    gameSessionCoordinator.switchGame();
+    // Navigate to lobby
+    navigate('/');
+  }, [navigate]);
+
+  // Enable fullscreen for game page with ESC key handler
+  useFullscreen(true, navigateToLobby);
+
+  // Handle browser back button
+  useEffect(() => {
+    // Add a history entry when game loads
+    window.history.pushState({ gamePage: true }, '');
+
+    const handlePopState = () => {
+      // User pressed back button - exit and navigate
+      navigateToLobby();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigateToLobby]);
 
   // Redirect to lobby if no roomCode provided
   useEffect(() => {
@@ -81,13 +108,13 @@ export function GameBoard() {
 
   useEffect(() => {
     if (hexGridReady) {
-        showMovementRange(gameState.validMovementHexes);
+      showMovementRange(gameState.validMovementHexes);
     }
   }, [gameState.validMovementHexes, hexGridReady, showMovementRange]);
 
   useEffect(() => {
     if (hexGridReady) {
-        setSelectedHex(gameState.selectedHex);
+      setSelectedHex(gameState.selectedHex);
     }
   }, [gameState.selectedHex, hexGridReady, setSelectedHex]);
 
@@ -100,7 +127,6 @@ export function GameBoard() {
       }
     }
   }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
-
 
   // Render game data when HexGrid is ready
   useEffect(() => {
@@ -122,13 +148,9 @@ export function GameBoard() {
     }
   }, [hexGridReady, gameState.gameData, initializeBoard]);
 
-
   const handleBackToLobby = () => {
-    // Reset all game and room state properly
-    gameSessionCoordinator.switchGame();
-
-    // Navigate back to main lobby
-    navigate('/');
+    // User clicked leave game button - exit and navigate
+    navigateToLobby();
   };
 
   const handleAttackClick = () => {
@@ -145,63 +167,68 @@ export function GameBoard() {
   const attackAction = gameStateManager.getAttackAction();
   const moveAction = gameStateManager.getMoveAction();
 
-  const gameBoardClass = `${styles.gameBoardPage} ${gameState.showCardSelection ? styles.cardSelectionActive : ''}`;
+  // Transform TurnEntity[] to TurnOrderEntity[] with health information
+  const turnOrderWithHealth = gameState.turnOrder.map((entity) => {
+    const character = gameState.gameData?.characters.find((c) => c.id === entity.entityId);
+    const monster = gameState.gameData?.monsters.find((m) => m.id === entity.entityId);
+
+    return {
+      id: entity.entityId,
+      name: entity.name,
+      initiative: entity.initiative,
+      type: entity.entityType,
+      currentHealth: character?.health ?? monster?.health,
+      maxHealth: character?.maxHealth ?? monster?.maxHealth,
+    };
+  });
 
   return (
-    <div className={gameBoardClass}>
-      <div ref={containerRef} className={styles.gameContainer} />
+    <div className={styles.gameBoardPage}>
+      {/* Game Panel - Left/Top: Hex Map */}
+      <GamePanel ref={containerRef} />
 
-      <div className={styles.rightPanel}>
-        {gameState.currentRound > 0 && (
-          <TurnOrder
-            turnOrder={gameState.turnOrder}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog OR CardSelection */}
+      <InfoPanel
+        showCardSelection={gameState.showCardSelection}
+        turnStatus={
+          <TurnStatus
+            turnOrder={turnOrderWithHealth}
             currentTurnEntityId={gameState.currentTurnEntityId}
             currentRound={gameState.currentRound}
-            characters={gameState.gameData?.characters || []}
-            monsters={gameState.gameData?.monsters || []}
-            actionButtons={
-              <ActionButtons
-                hasAttack={attackAction !== null}
-                hasMove={moveAction !== null}
-                attackMode={gameState.attackMode}
-                isMyTurn={gameState.isMyTurn}
-                onAttackClick={handleAttackClick}
-                onMoveClick={handleMoveClick}
-              />
-            }
-          />
-        )}
-        <div className={styles.hudWrapper}>
-          <GameHUD
-            logs={gameState.logs}
+            characters={(gameState.gameData?.characters || []) as Character[]}
+            monsters={(gameState.gameData?.monsters || []) as Monster[]}
             connectionStatus={gameState.connectionStatus}
             isMyTurn={gameState.isMyTurn}
-            onBackToLobby={handleBackToLobby}
+            hasAttack={attackAction !== null}
+            hasMove={moveAction !== null}
+            attackMode={gameState.attackMode}
+            onAttackClick={handleAttackClick}
+            onMoveClick={handleMoveClick}
             onEndTurn={() => gameStateManager.endTurn()}
+            onBackToLobby={handleBackToLobby}
           />
-        </div>
-      </div>
+        }
+        gameLog={<GameLog logs={gameState.logs} />}
+        cardSelection={
+          gameState.showCardSelection ? (
+            <CardSelectionPanel
+              cards={gameState.playerHand}
+              onCardSelect={(card) => gameStateManager.selectCard(card)}
+              onClearSelection={() => gameStateManager.clearCardSelection()}
+              onConfirmSelection={() => gameStateManager.confirmCardSelection()}
+              selectedTopAction={gameState.selectedTopAction}
+              selectedBottomAction={gameState.selectedBottomAction}
+              waiting={gameState.waitingForRoundStart}
+            />
+          ) : undefined
+        }
+      />
 
-      <div className={styles.bottomPlaceholder} />
-
-      {/* T111: Card Selection Panel */}
-      {gameState.showCardSelection && (
-        <CardSelectionPanel
-          cards={gameState.playerHand}
-          onCardSelect={(card) => gameStateManager.selectCard(card)}
-          onClearSelection={() => gameStateManager.clearCardSelection()}
-          onConfirmSelection={() => gameStateManager.confirmCardSelection()}
-          selectedTopAction={gameState.selectedTopAction}
-          selectedBottomAction={gameState.selectedBottomAction}
-          waiting={gameState.waitingForRoundStart}
-        />
-      )}
-
+      {/* Overlays */}
       <GameHints
         attackMode={gameState.attackMode}
         showMovementHint={gameState.selectedCharacterId !== null && gameState.isMyTurn && !gameState.attackMode}
       />
-
       <ReconnectingOverlay show={gameState.connectionStatus === 'reconnecting'} />
     </div>
   );
