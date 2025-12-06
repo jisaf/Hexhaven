@@ -12,7 +12,7 @@ import '../../styles/card-modules.css';
 
 export interface CreatureModuleProps {
   module: CardModule;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   className?: string;
 }
 
@@ -20,8 +20,8 @@ export interface CreatureModuleProps {
  * Get value from nested data object using dot notation
  * e.g., "stats.health" => data.stats.health
  */
-function getNestedValue(data: Record<string, any>, field: string): any {
-  return field.split('.').reduce((obj, key) => obj?.[key], data);
+function getNestedValue(data: Record<string, unknown>, field: string): unknown {
+  return field.split('.').reduce((obj: unknown, key: string) => (obj as Record<string, unknown>)?.[key], data);
 }
 
 /**

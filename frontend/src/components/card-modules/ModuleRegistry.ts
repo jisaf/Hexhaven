@@ -18,7 +18,7 @@ import { ActionModule } from './ActionModule';
 import { CreatureModule } from './CreatureModule';
 
 // Module component type (all modules share similar prop structure)
-export type ModuleComponent = ComponentType<any>;
+export type ModuleComponent = ComponentType<Record<string, unknown>>;
 
 /**
  * Registry mapping module types to components
