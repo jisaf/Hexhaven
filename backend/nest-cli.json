@@ -6,10 +6,12 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "tsConfigPath": "tsconfig.json",
+    "webpack": false,
     "assets": [
       {
         "include": "data/**/*",
-        "watchAssets": true
+        "watchAssets": true,
+        "outDir": "dist"
       }
     ]
   }
