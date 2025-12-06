@@ -16,15 +16,7 @@ export function getApiUrl(): string {
   }
 
   // Auto-detect based on current location
-  const { protocol, hostname, host, port } = window.location;
-
-  console.log('[API Config] window.location:', {
-    href: window.location.href,
-    protocol,
-    hostname,
-    host,
-    port,
-  });
+  const { protocol, hostname, host } = window.location;
 
   // In development, the backend runs on port 3001 (configurable via VITE_BACKEND_PORT)
   // In production with nginx, it's on the same host with /api path
@@ -35,9 +27,7 @@ export function getApiUrl(): string {
   } else {
     // Production or remote access - use same host with /api path
     // Use 'host' which includes the full host (domain:port if present)
-    const apiUrl = `${protocol}//${host}/api`;
-    console.log('[API Config] Constructed API URL:', apiUrl);
-    return apiUrl;
+    return `${protocol}//${host}/api`;
   }
 }
 
@@ -68,23 +58,14 @@ export function getWebSocketUrl(): string {
     // Production or remote access - use same host
     // Convert back to http/https for socket.io (it handles the upgrade)
     // Use host to preserve the full domain
-    const wsUrl = `${protocol}//${host}`;
-    console.log('[API Config] Constructed WebSocket URL:', wsUrl);
-    return wsUrl;
+    return `${protocol}//${host}`;
   }
 }
 
 /**
  * Log current configuration (useful for debugging)
+ * Disabled for performance - use browser devtools if needed
  */
 export function logApiConfig(): void {
-  console.log('API Configuration:', {
-    apiUrl: getApiUrl(),
-    wsUrl: getWebSocketUrl(),
-    location: {
-      protocol: window.location.protocol,
-      hostname: window.location.hostname,
-      port: window.location.port,
-    },
-  });
+  // Verbose logging disabled
 }

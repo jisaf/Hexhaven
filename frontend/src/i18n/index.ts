@@ -38,7 +38,7 @@ void i18n
     supportedLngs: ['en', 'es', 'fr', 'de', 'zh'],
     ns: ['common', 'lobby', 'game'], // Available namespaces
     defaultNS: 'common', // Default namespace
-    debug: import.meta.env.DEV, // Enable debug in development
+    debug: false, // Verbose logging disabled for performance
     interpolation: {
       escapeValue: false, // React already escapes values
     },
