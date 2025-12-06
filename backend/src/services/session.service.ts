@@ -57,7 +57,7 @@ class SessionService {
       };
 
       this.sessions.set(room.id, state);
-      this.logger.log(`Session saved for room ${room.roomCode} (${room.id})`);
+      // Removed verbose logging - only log errors
     } catch (error: any) {
       this.logger.error(
         `Failed to save session for room ${room.id}: ${error.message}`,
@@ -87,9 +87,7 @@ class SessionService {
       return null;
     }
 
-    this.logger.log(
-      `Session restored for room ${session.roomCode} (${roomId})`,
-    );
+    // Removed verbose logging - session restore is normal operation
     return session;
   }
 
@@ -117,10 +115,8 @@ class SessionService {
    * Delete session (called when game completes or is abandoned)
    */
   deleteSession(roomId: string): void {
-    const deleted = this.sessions.delete(roomId);
-    if (deleted) {
-      this.logger.log(`Session deleted for room ${roomId}`);
-    }
+    this.sessions.delete(roomId);
+    // Removed verbose logging - deletion is normal cleanup
   }
 
   /**
@@ -136,13 +132,12 @@ class SessionService {
       if (age > this.SESSION_TTL_MS) {
         this.sessions.delete(roomId);
         cleaned++;
-        this.logger.log(
-          `Expired session cleaned: room ${session.roomCode} (${roomId})`,
-        );
+        // Removed verbose logging - cleanup is routine maintenance
       }
     }
 
-    if (cleaned > 0) {
+    // Only log if significant cleanup occurred
+    if (cleaned > 10) {
       this.logger.log(`Cleaned ${cleaned} expired session(s)`);
     }
 
@@ -161,7 +156,7 @@ class SessionService {
    */
   clearAllSessions(): void {
     this.sessions.clear();
-    this.logger.log('All sessions cleared');
+    // Removed verbose logging - only used in tests
   }
 
   /**
@@ -178,7 +173,7 @@ class SessionService {
       },
       60 * 60 * 1000,
     ); // 1 hour
-    this.logger.log('Session cleanup scheduler started');
+    // Removed verbose logging - scheduler start is initialization
   }
 
   /**
@@ -188,7 +183,7 @@ class SessionService {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      this.logger.log('Session cleanup scheduler stopped');
+      // Removed verbose logging - only used in tests
     }
   }
 

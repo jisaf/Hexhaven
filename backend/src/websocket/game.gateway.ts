@@ -73,12 +73,11 @@ export class GameGateway
     private readonly prisma: PrismaService,
     private readonly scenarioService: ScenarioService,
   ) {
-    this.logger.log('GameGateway constructor called');
+    // Initialization logging removed for performance
   }
 
   afterInit(_server: Server) {
-    this.logger.log('WebSocket Gateway initialized successfully');
-    this.logger.log(`Socket.IO server is running`);
+    // Initialization logging removed for performance
   }
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
@@ -158,7 +157,7 @@ export class GameGateway
       case 'info':
       case 'log':
       default:
-        this.logger.log(logMessage);
+        // Debug console logging only - server log removed
         break;
     }
   }
@@ -229,7 +228,7 @@ export class GameGateway
    * Handle client connection
    */
   handleConnection(client: Socket): void {
-    this.logger.log(`Client connected: ${client.id}`);
+    // Verbose connection log removed
   }
 
   /**
@@ -238,7 +237,7 @@ export class GameGateway
   handleDisconnect(client: Socket): void {
     const playerUUID = this.socketToPlayer.get(client.id);
     if (playerUUID) {
-      this.logger.log(`Player disconnected: ${playerUUID}`);
+      // Player disconnect handled via events
 
       // Update player connection status
       try {
@@ -282,7 +281,7 @@ export class GameGateway
       this.playerToSocket.delete(playerUUID);
     }
 
-    this.logger.log(`Client disconnected: ${client.id}`);
+    // Verbose disconnection log removed
   }
 
   /**
@@ -294,7 +293,7 @@ export class GameGateway
     @MessageBody() payload: JoinRoomPayload,
   ): Promise<void> {
     try {
-      this.logger.log(`Join room request: ${JSON.stringify(payload)}`);
+      // Verbose payload logging removed
       this.logger.log(
         `📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`,
       );
@@ -410,14 +409,14 @@ export class GameGateway
             gameStartedPayload,
             (acknowledged: boolean) => {
               if (acknowledged) {
-                this.logger.log(`✅ Game state acknowledged by ${nickname}`);
+                // Acknowledgment logging removed
               } else {
                 this.logger.warn(
                   `⚠️  Game state NOT acknowledged by ${nickname}, retrying in 500ms...`,
                 );
                 // Retry once after 500ms
                 setTimeout(() => {
-                  this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                  // Retry logging removed (error logged elsewhere)
                   client.emit('game_started', gameStartedPayload);
                 }, 500);
               }
@@ -537,7 +536,7 @@ export class GameGateway
         roomCode = roomData.roomCode;
       }
 
-      this.logger.log(`Player ${playerUUID} leaving room ${roomCode}`);
+      // Verbose leaving log removed
 
       // Remove player from room
       const player = room.players.find((p: Player) => p.uuid === playerUUID);
@@ -577,7 +576,7 @@ export class GameGateway
         sessionService.saveSession(updatedRoom);
       }
 
-      this.logger.log(`Player ${playerUUID} left room ${roomCode}`);
+      // Verbose left log removed
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -604,7 +603,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Select character request from ${playerUUID}:`, payload);
+      // Verbose select character log removed
 
       // Multi-room detection: Check if client is in multiple rooms
       const clientRooms = Array.from(client.rooms).filter(
@@ -724,7 +723,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Start game request from ${playerUUID}`);
+      // Verbose start game request log removed
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -733,7 +732,7 @@ export class GameGateway
       }
 
       const { room, roomCode } = roomData;
-      this.logger.log(`Starting game in room ${roomCode}`);
+      // Game start event sufficient
 
       // Get player from room (not global registry)
       const player = room.getPlayer(playerUUID);
@@ -913,14 +912,14 @@ export class GameGateway
           gameStartedPayload,
           (acknowledged: boolean) => {
             if (acknowledged) {
-              this.logger.log(`✅ Game start acknowledged by ${nickname}`);
+              // Acknowledgment logging removed
             } else {
               this.logger.warn(
                 `⚠️  Game start NOT acknowledged by ${nickname}, retrying in 500ms...`,
               );
               // Retry once after 500ms
               setTimeout(() => {
-                this.logger.log(`🔄 Retrying game_started for ${nickname}`);
+                // Retry logging removed (error logged elsewhere)
                 roomSocket.emit('game_started', gameStartedPayload);
               }, 500);
             }
@@ -953,7 +952,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Move character request from ${playerUUID}`);
+      // Verbose movement log removed
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -1114,7 +1113,7 @@ export class GameGateway
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`Select cards request from ${playerUUID}`);
+      // Verbose card select log removed
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
