@@ -8,7 +8,7 @@
  * CardSelectionPanel can be minimized to see game state underneath.
  */
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import styles from './InfoPanel.module.css';
 
 interface InfoPanelProps {

@@ -14,7 +14,7 @@ import type { CharacterData } from '../game/CharacterSprite';
 import { gameStateManager } from '../services/game-state.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { Monster, HexTile } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
 import { GamePanel } from '../components/game/GamePanel';
 import { InfoPanel } from '../components/game/InfoPanel';
@@ -52,7 +52,7 @@ export function GameBoard() {
     // Add a history entry when game loads
     window.history.pushState({ gamePage: true }, '');
 
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       // User pressed back button - exit and navigate
       navigateToLobby();
     };
@@ -167,6 +167,21 @@ export function GameBoard() {
   const attackAction = gameStateManager.getAttackAction();
   const moveAction = gameStateManager.getMoveAction();
 
+  // Transform TurnEntity[] to TurnOrderEntity[] with health information
+  const turnOrderWithHealth = gameState.turnOrder.map((entity) => {
+    const character = gameState.gameData?.characters.find((c) => c.id === entity.entityId);
+    const monster = gameState.gameData?.monsters.find((m) => m.id === entity.entityId);
+
+    return {
+      id: entity.entityId,
+      name: entity.name,
+      initiative: entity.initiative,
+      type: entity.entityType,
+      currentHealth: character?.health ?? monster?.health,
+      maxHealth: character?.maxHealth ?? monster?.maxHealth,
+    };
+  });
+
   return (
     <div className={styles.gameBoardPage}>
       {/* Game Panel - Left/Top: Hex Map */}
@@ -177,11 +192,11 @@ export function GameBoard() {
         showCardSelection={gameState.showCardSelection}
         turnStatus={
           <TurnStatus
-            turnOrder={gameState.turnOrder}
+            turnOrder={turnOrderWithHealth}
             currentTurnEntityId={gameState.currentTurnEntityId}
             currentRound={gameState.currentRound}
-            characters={gameState.gameData?.characters || []}
-            monsters={gameState.gameData?.monsters || []}
+            characters={(gameState.gameData?.characters || []) as Character[]}
+            monsters={(gameState.gameData?.monsters || []) as Monster[]}
             connectionStatus={gameState.connectionStatus}
             isMyTurn={gameState.isMyTurn}
             hasAttack={attackAction !== null}
