@@ -1,6 +1,6 @@
 ---
 description: Select and fix bug from top 3 with planning and verification
-model: sonnet
+model: opusplan
 thinking: true
 ---
 
@@ -35,10 +35,10 @@ Execute `/new {PROMPT}` to:
 - **Use `AskUserQuestion` tool** to present the 3 bugs and let the user select which one to fix
 - Display the selected bug information
 
-### 3. Switch to Sonnet with Thinking for Planning
+### 3. Switch to OpusPlan with Thinking for Planning
 
-**Restore Sonnet with thinking:**
-- Use `/model sonnet` to switch back to Claude Sonnet
+**Restore OpusPlan with thinking:**
+- Use `/model opusplan` to switch back to Claude OpusPlan
 - Use `/thinking on` to enable thinking mode
 
 ### 4. Enter Planning Mode
@@ -107,7 +107,7 @@ Provide a summary including:
 
 - **Model switching is critical:**
   - Haiku for reading bugs.md (efficient, no thinking needed)
-  - Sonnet with thinking for planning and implementation (comprehensive analysis)
+  - OpusPlan with thinking for planning and implementation (comprehensive analysis)
 - **Planning is mandatory:** Always enter plan mode to ensure thorough analysis
 - **Visual verification is required:** Don't delete bugs without running `/visual`
 - **Only delete if tests pass:** If visual tests fail, leave the bug in the list and report the issue

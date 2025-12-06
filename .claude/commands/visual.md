@@ -10,7 +10,7 @@ Execute visual testing using Playwright MCP browser tools with Chromium on Pixel
 2. **Switch to Haiku**: Use `/model haiku` to set the model to Claude Haiku
 3. **Disable Thinking**: Use `/thinking off` to disable thinking mode
 4. **Execute Visual Test**: Perform the visual test specified below
-5. **Restore Sonnet**: Use `/model sonnet` to switch back to Claude Sonnet
+5. **Restore OpusPlan**: Use `/model opusplan` to switch back to Claude OpusPlan
 6. **Enable Thinking**: Use `/thinking on` to re-enable thinking mode
 
 ## IMPORTANT: This Uses Playwright MCP Tools
