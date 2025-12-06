@@ -70,7 +70,7 @@ export const CreatureModule: React.FC<CreatureModuleProps> = ({
               {stat.label}
             </div>
             <div className="stat-value">
-              {value !== undefined ? value : '-'}
+              {value !== undefined ? String(value) : '-'}
             </div>
           </div>
         );
