@@ -64,16 +64,15 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
       <div
         className={`configurable-card ${compact ? 'compact' : ''} ${isActive ? 'active' : ''} ${className}`}
         style={{
-          display: 'grid',
-          gridTemplateRows: `repeat(${totalRows}, 1fr)`,
-          gap: compact ? 'var(--module-gap-compact, 4px)' : 'var(--card-gap, 8px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: compact ? '2px' : 'var(--card-gap, 8px)',
           background: 'var(--card-bg-gradient)',
           border: 'var(--card-border-width) solid var(--card-border)',
           borderRadius: 'var(--card-border-radius)',
-          padding: compact ? 'var(--module-padding-compact, 4px)' : 'var(--card-padding, 12px)',
+          padding: compact ? '4px' : 'var(--card-padding, 12px)',
           boxShadow: 'var(--card-shadow)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-          overflow: 'hidden',
           width: '100%',
           height: '100%',
         }}
@@ -128,15 +127,24 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
               moduleElement = null;
           }
 
-          // Wrap module in error boundary
+          // Wrap module in error boundary with flex sizing based on rows
           return (
-            <ModuleErrorBoundary
+            <div
               key={module.id}
-              moduleId={module.id}
-              moduleType={module.type}
+              style={{
+                flex: `${module.rows} 1 0`,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
             >
-              {moduleElement}
-            </ModuleErrorBoundary>
+              <ModuleErrorBoundary
+                moduleId={module.id}
+                moduleType={module.type}
+              >
+                {moduleElement}
+              </ModuleErrorBoundary>
+            </div>
           );
         })}
       </div>
