@@ -5,24 +5,45 @@
  * Includes WebSocket connection management and reconnection UI (US4).
  */
 
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { websocketService } from './services/websocket.service';
 import { getWebSocketUrl } from './config/api';
-import { Lobby } from './pages/Lobby';
-import { GameBoard } from './pages/GameBoard';
-import { HexMapDemo } from './pages/HexMapDemo';
-import ScenarioDesigner from './pages/ScenarioDesigner';
-import { TestVideos } from './pages/TestVideos';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { Characters } from './pages/Characters';
-import { CreateCharacter } from './pages/CreateCharacter';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
 import { DebugConsole } from './components/DebugConsole';
 import './App.css';
+
+// Lazy load route components
+const Lobby = lazy(() => import('./pages/Lobby').then(m => ({ default: m.Lobby })));
+const GameBoard = lazy(() => import('./pages/GameBoard').then(m => ({ default: m.GameBoard })));
+const HexMapDemo = lazy(() => import('./pages/HexMapDemo').then(m => ({ default: m.HexMapDemo })));
+const ScenarioDesigner = lazy(() => import('./pages/ScenarioDesigner'));
+const TestVideos = lazy(() => import('./pages/TestVideos').then(m => ({ default: m.TestVideos })));
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
+const Characters = lazy(() => import('./pages/Characters').then(m => ({ default: m.Characters })));
+const CreateCharacter = lazy(() => import('./pages/CreateCharacter').then(m => ({ default: m.CreateCharacter })));
+
+/**
+ * Loading Component
+ * Shows while lazy-loaded routes are being fetched
+ */
+function RouteLoading() {
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      color: '#fff',
+      fontSize: '1.2rem'
+    }}>
+      Loading...
+    </div>
+  );
+}
 
 /**
  * Connection UI Component
@@ -122,18 +143,20 @@ function App() {
     <WebSocketConnectionProvider>
       <BrowserRouter>
         <ConnectionUI />
-        <Routes>
-          <Route path="/" element={<Lobby />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/characters" element={<Characters />} />
-          <Route path="/characters/new" element={<CreateCharacter />} />
-          <Route path="/game/:roomCode" element={<GameBoard />} />
-          <Route path="/demo" element={<HexMapDemo />} />
-          <Route path="/design" element={<ScenarioDesigner />} />
-          <Route path="/test-videos" element={<TestVideos />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteLoading />}>
+          <Routes>
+            <Route path="/" element={<Lobby />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/characters" element={<Characters />} />
+            <Route path="/characters/new" element={<CreateCharacter />} />
+            <Route path="/game/:roomCode" element={<GameBoard />} />
+            <Route path="/demo" element={<HexMapDemo />} />
+            <Route path="/design" element={<ScenarioDesigner />} />
+            <Route path="/test-videos" element={<TestVideos />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
         <DebugConsole />
       </BrowserRouter>
     </WebSocketConnectionProvider>
