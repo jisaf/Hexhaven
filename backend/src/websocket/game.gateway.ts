@@ -59,7 +59,6 @@ import type {
   ScenarioCompletedPayload,
   ErrorPayload,
   DebugLogPayload,
-  ObjectivesLoadedPayload,
   ObjectiveProgressUpdatePayload,
   CharacterExhaustedPayload,
 } from '../../../shared/types/events';
