@@ -125,6 +125,17 @@ export interface GameStartedPayload {
     currentHex: AxialCoordinates;
     conditions: string[];
     isExhausted: boolean;
+    // Added for game rejoin - restore selected cards and action state
+    selectedCards?: {
+      topCardId: string;
+      bottomCardId: string;
+      initiative: number;
+    };
+    effectiveMovement?: number;
+    effectiveAttack?: number;
+    effectiveRange?: number;
+    hasAttackedThisTurn?: boolean;
+    movementUsedThisTurn?: number;
   }[];
 }
 

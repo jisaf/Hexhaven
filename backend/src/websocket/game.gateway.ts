@@ -202,6 +202,13 @@ export class GameGateway
         conditions: charData.conditions,
         isExhausted: charData.exhausted,
         abilityDeck, // Include ability deck for card selection
+        // Include selected cards and action state for game rejoin
+        selectedCards: c.selectedCards, // { topCardId, bottomCardId, initiative }
+        effectiveMovement: c.effectiveMovementThisTurn,
+        effectiveAttack: c.effectiveAttackThisTurn,
+        effectiveRange: c.effectiveRangeThisTurn,
+        hasAttackedThisTurn: c.hasAttackedThisTurn,
+        movementUsedThisTurn: c.movementUsedThisTurn,
       };
     });
 
@@ -979,11 +986,12 @@ export class GameGateway
         throw new Error('Character is immobilized and cannot move');
       }
 
-      // Gloomhaven rule: You can move before OR after attacking, but you cannot split your movement
-      // Once you've used your move action, you cannot move again (even if you have movement left)
-      if (character.hasMovedThisTurn) {
+      // Gloomhaven rule: You can move before OR after attacking, but you cannot split your movement around an attack
+      // You CAN continue moving in multiple steps (e.g., move 2, then move 2 more)
+      // You CANNOT move, attack, then move again (that would split movement around the attack)
+      if (character.hasMovedThisTurn && character.hasAttackedThisTurn) {
         throw new Error(
-          'Character has already used their move action this turn. You cannot split movement.',
+          'Character has already moved and attacked this turn. You cannot split movement around an attack.',
         );
       }
 
