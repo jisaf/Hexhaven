@@ -29,6 +29,14 @@ import { DamageCalculationService } from '../services/damage-calculation.service
 import { ModifierDeckService } from '../services/modifier-deck.service';
 import { PathfindingService } from '../services/pathfinding.service';
 import { MonsterAIService } from '../services/monster-ai.service';
+import { ObjectiveEvaluatorService } from '../services/objective-evaluator.service';
+import { ObjectiveContextBuilderService } from '../services/objective-context-builder.service';
+import { GameResultService } from '../services/game-result.service';
+import type { AccumulatedStats } from '../services/objective-context-builder.service';
+import type {
+  ScenarioObjectives,
+  ObjectiveProgressEntry,
+} from '../../../shared/types/objectives';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -51,6 +59,9 @@ import type {
   ScenarioCompletedPayload,
   ErrorPayload,
   DebugLogPayload,
+  ObjectivesLoadedPayload,
+  ObjectiveProgressUpdatePayload,
+  CharacterExhaustedPayload,
 } from '../../../shared/types/events';
 import {
   ConnectionStatus,
@@ -74,6 +85,7 @@ export class GameGateway
     private readonly scenarioService: ScenarioService,
   ) {
     // Initialization logging removed for performance
+    this.gameResultService = new GameResultService(this.prisma);
   }
 
   afterInit(_server: Server) {
@@ -85,6 +97,10 @@ export class GameGateway
   private readonly modifierDeckService = new ModifierDeckService();
   private readonly pathfindingService = new PathfindingService();
   private readonly monsterAIService = new MonsterAIService();
+  private readonly objectiveEvaluatorService = new ObjectiveEvaluatorService();
+  private readonly objectiveContextBuilderService =
+    new ObjectiveContextBuilderService();
+  private readonly gameResultService: GameResultService;
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 
@@ -100,6 +116,27 @@ export class GameGateway
     string,
     Map<string, number>
   >(); // roomCode -> (monsterType -> initiative)
+
+  // Phase 2: Objective System state
+  private readonly roomObjectives = new Map<string, ScenarioObjectives>(); // roomCode -> scenario objectives
+  private readonly roomObjectiveProgress = new Map<
+    string,
+    Map<string, ObjectiveProgressEntry>
+  >(); // roomCode -> (objectiveId -> progress entry)
+  private readonly roomAccumulatedStats = new Map<string, AccumulatedStats>(); // roomCode -> accumulated stats
+  private readonly roomGameStartTime = new Map<string, number>(); // roomCode -> game start timestamp (ms)
+  private readonly roomPlayerStats = new Map<
+    string,
+    Map<
+      string,
+      {
+        damageDealt: number;
+        damageTaken: number;
+        monstersKilled: number;
+        cardsLost: number;
+      }
+    >
+  >(); // roomCode -> (playerId -> stats)
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -212,6 +249,9 @@ export class GameGateway
     });
 
     // Build game state payload
+    // Get objectives for this room
+    const objectives = this.roomObjectives.get(roomCode);
+
     const gameStartedPayload: GameStartedPayload = {
       scenarioId: room.scenarioId || 'scenario-1',
       scenarioName: 'Black Barrow', // TODO: Get from scenario
@@ -226,6 +266,27 @@ export class GameGateway
         conditions: m.conditions,
       })),
       characters: charactersWithDecks,
+      objectives: objectives
+        ? {
+            primary: {
+              id: objectives.primary.id,
+              description: objectives.primary.description,
+              trackProgress: objectives.primary.trackProgress ?? true,
+            },
+            secondary: (objectives.secondary || []).map((obj) => ({
+              id: obj.id,
+              description: obj.description,
+              trackProgress: obj.trackProgress ?? true,
+              optional: true,
+            })),
+            failureConditions: (objectives.failureConditions || []).map(
+              (fc) => ({
+                id: fc.id,
+                description: fc.description,
+              }),
+            ),
+          }
+        : undefined,
     };
 
     return gameStartedPayload;
@@ -457,6 +518,14 @@ export class GameGateway
             client.emit('turn_started', turnStartedPayload);
             this.logger.log(`Sent current turn info to ${nickname}`);
           }
+
+          // Objectives are now sent as part of game_started payload in buildGameStatePayload
+          const objectives = this.roomObjectives.get(roomCode);
+          if (objectives) {
+            this.logger.log(
+              `Objectives included in game state for ${nickname} in active room`,
+            );
+          }
         } catch (activeGameError) {
           this.logger.error(
             `Error sending game state to ${nickname}:`,
@@ -547,6 +616,8 @@ export class GameGateway
 
       // Remove player from room
       const player = room.players.find((p: Player) => p.uuid === playerUUID);
+      const playerName = player?.nickname || 'Unknown';
+
       roomService.leaveRoom(roomCode, playerUUID);
 
       // Leave socket room
@@ -555,24 +626,37 @@ export class GameGateway
       // Remove from socket mapping
       this.socketToPlayer.delete(client.id);
 
-      // Notify other players in the room
+      // Get updated room to determine players remaining
+      const updatedRoom = roomService.getRoom(roomCode);
+      const playersRemaining = updatedRoom ? updatedRoom.players.length : 0;
+
+      // Notify other players in the room (Phase 5: Enhanced with playersRemaining)
       if (player) {
         client.to(roomCode).emit('player_left', {
           playerId: playerUUID,
-          nickname: player.nickname,
+          nickname: playerName,
+          playersRemaining,
         });
       }
 
-      // Clean up game state if needed
-      const updatedRoom = roomService.getRoom(roomCode);
-      if (!updatedRoom || updatedRoom.players.length === 0) {
+      // Clean up game state if needed (Phase 5: Last player cleanup)
+      if (!updatedRoom || playersRemaining === 0) {
         // Room is empty, clean up all game state
         this.roomMaps.delete(roomCode);
         this.roomMonsters.delete(roomCode);
         this.roomTurnOrder.delete(roomCode);
         this.currentTurnIndex.delete(roomCode);
+        this.currentRound.delete(roomCode);
         this.roomLootTokens.delete(roomCode);
-        this.logger.log(`Room ${roomCode} is empty, cleaning up`);
+        this.modifierDecks.delete(roomCode);
+        this.roomMonsterInitiatives.delete(roomCode);
+        // Phase 2/3: Clean up objective system state
+        this.roomObjectives.delete(roomCode);
+        this.roomObjectiveProgress.delete(roomCode);
+        this.roomAccumulatedStats.delete(roomCode);
+        this.roomGameStartTime.delete(roomCode);
+        this.roomPlayerStats.delete(roomCode);
+        this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
         if (updatedRoom) {
@@ -847,6 +931,30 @@ export class GameGateway
       // Initialize round counter
       this.currentRound.set(room.roomCode, 0);
 
+      // Phase 3: Initialize objective system state
+      this.roomGameStartTime.set(room.roomCode, Date.now());
+      this.initializeObjectiveSystem(room.roomCode, scenario);
+
+      // Initialize player stats for each player
+      const playerStatsMap = new Map<
+        string,
+        {
+          damageDealt: number;
+          damageTaken: number;
+          monstersKilled: number;
+          cardsLost: number;
+        }
+      >();
+      room.players.forEach((p: Player) => {
+        playerStatsMap.set(p.uuid, {
+          damageDealt: 0,
+          damageTaken: 0,
+          monstersKilled: 0,
+          cardsLost: 0,
+        });
+      });
+      this.roomPlayerStats.set(room.roomCode, playerStatsMap);
+
       // Note: Game is already started by roomService.startGame() on line 533
       this.logger.log(
         `Room ${room.roomCode} game started, status set to ACTIVE`,
@@ -886,6 +994,9 @@ export class GameGateway
       });
 
       // Broadcast game started to all players
+      // Get objectives that were initialized above
+      const objectives = this.roomObjectives.get(room.roomCode);
+
       const gameStartedPayload: GameStartedPayload = {
         scenarioId: payload.scenarioId,
         scenarioName: scenario.name,
@@ -900,6 +1011,27 @@ export class GameGateway
           conditions: m.conditions,
         })),
         characters: charactersWithDecks,
+        objectives: objectives
+          ? {
+              primary: {
+                id: objectives.primary.id,
+                description: objectives.primary.description,
+                trackProgress: objectives.primary.trackProgress ?? true,
+              },
+              secondary: (objectives.secondary || []).map((obj) => ({
+                id: obj.id,
+                description: obj.description,
+                trackProgress: obj.trackProgress ?? true,
+                optional: true,
+              })),
+              failureConditions: (objectives.failureConditions || []).map(
+                (fc) => ({
+                  id: fc.id,
+                  description: fc.description,
+                }),
+              ),
+            }
+          : undefined,
       };
 
       // Send game_started individually to each connected client
@@ -1486,8 +1618,33 @@ export class GameGateway
         target.health = Math.max(0, target.health - damage);
         targetHealth = target.health;
         targetDead = target.health === 0;
+
+        // Phase 3: Track player damage dealt and accumulated stats
+        const playerStats = this.roomPlayerStats.get(room.roomCode);
+        if (playerStats) {
+          const stats = playerStats.get(playerUUID);
+          if (stats) {
+            stats.damageDealt += damage;
+          }
+        }
+        const accumulatedStats = this.roomAccumulatedStats.get(room.roomCode);
+        if (accumulatedStats) {
+          accumulatedStats.totalDamageDealt += damage;
+        }
+
         if (targetDead) {
           target.isDead = true;
+
+          // Phase 3: Track monster kills
+          if (playerStats) {
+            const stats = playerStats.get(playerUUID);
+            if (stats) {
+              stats.monstersKilled++;
+            }
+          }
+          if (accumulatedStats) {
+            accumulatedStats.totalMonstersKilled++;
+          }
 
           // Spawn loot token when monster dies
           const scenario = await this.scenarioService.loadScenario(
@@ -1538,12 +1695,11 @@ export class GameGateway
             totalValue: totalValue, // Combined value of all stacked tokens
           });
 
-          // Remove monster from game state after it dies
-          const updatedMonsters = monsters.filter(
-            (m: any) => m.id !== target.id,
+          // DON'T remove monster - keep it in array marked as isDead for objective tracking
+          // The monster is already marked as isDead: true on line 1626
+          this.logger.log(
+            `Monster ${target.id} marked as dead (isDead: true) for objective tracking`,
           );
-          this.roomMonsters.set(room.roomCode, updatedMonsters);
-          this.logger.log(`Monster ${target.id} removed from game state.`);
         }
       } else {
         // Apply damage to character target
@@ -1677,6 +1833,13 @@ export class GameGateway
         totalGold += token.value;
       });
 
+      // Phase 3: Track loot collection in accumulated stats
+      const accumulatedStats = this.roomAccumulatedStats.get(room.roomCode);
+      if (accumulatedStats) {
+        accumulatedStats.totalLootCollected += lootAtPosition.length;
+        accumulatedStats.totalGoldCollected += totalGold;
+      }
+
       // Broadcast loot collected to all players
       const lootCollectedPayload: LootCollectedPayload = {
         playerId: playerUUID,
@@ -1797,6 +1960,13 @@ export class GameGateway
           totalGold += token.value;
           collectedTokenIds.push(token.id);
         });
+
+        // Phase 3: Track loot collection in accumulated stats
+        const accumulatedStats = this.roomAccumulatedStats.get(room.roomCode);
+        if (accumulatedStats) {
+          accumulatedStats.totalLootCollected += lootAtPosition.length;
+          accumulatedStats.totalGoldCollected += totalGold;
+        }
 
         // Broadcast loot collected to all players
         const lootCollectedPayload: LootCollectedPayload = {
@@ -2080,9 +2250,9 @@ export class GameGateway
         }
       });
 
-      // Add all other monster positions (excluding current monster)
+      // Add all other monster positions (excluding current monster and dead monsters)
       monsters.forEach((m: any) => {
-        if (m.id !== monsterId && m.currentHex) {
+        if (m.id !== monsterId && m.currentHex && !m.isDead) {
           occupiedHexes.push(m.currentHex);
         }
       });
@@ -2090,7 +2260,7 @@ export class GameGateway
       this.emitDebugLog(
         roomCode,
         'info',
-        `Found ${occupiedHexes.length} occupied hexes (characters + other monsters)`,
+        `Found ${occupiedHexes.length} occupied hexes (characters + alive monsters)`,
         'MonsterAI',
       );
 
@@ -2192,6 +2362,19 @@ export class GameGateway
         // Apply damage to target
         const actualDamage = focusTarget.takeDamage(finalDamage);
 
+        // Phase 3: Track damage taken by the character
+        const playerStats = this.roomPlayerStats.get(roomCode);
+        if (playerStats) {
+          const stats = playerStats.get(focusTarget.playerId);
+          if (stats) {
+            stats.damageTaken += actualDamage;
+          }
+        }
+        const accumulatedStats = this.roomAccumulatedStats.get(roomCode);
+        if (accumulatedStats) {
+          accumulatedStats.totalDamageTaken += actualDamage;
+        }
+
         this.emitDebugLog(
           roomCode,
           'info',
@@ -2215,7 +2398,8 @@ export class GameGateway
             `Character ${focusTarget.characterClass} was killed`,
             'MonsterAI',
           );
-          // In real implementation, would handle character death/exhaustion
+          // Phase 3: Handle character exhaustion from health reaching 0
+          this.handleCharacterExhaustion(roomCode, focusTarget, 'health');
         }
       } else {
         this.emitDebugLog(
@@ -2356,10 +2540,7 @@ export class GameGateway
    * Handle round completion (shared logic for both player and monster turns)
    * Clears cards, resets flags, draws new initiatives, and notifies clients
    *
-   * TODO (Should-Have - Week 7-8): Add scenario objective checking at end of round
-   * - Check win/loss conditions (e.g., all monsters defeated, treasure looted, turns elapsed)
-   * - Emit scenario_completed event if objectives met
-   * - Reference: PRD Advanced Features (Week 7-8)
+   * Phase 3: Now includes objective checking at end of round
    */
   private handleRoundCompletion(roomCode: string): void {
     const room = roomService.getRoom(roomCode);
@@ -2374,6 +2555,24 @@ export class GameGateway
     this.logger.log(
       `Round ${currentRoundNumber} complete in room ${roomCode}, waiting for card selection`,
     );
+
+    // Phase 3: Update accumulated stats for rounds completed
+    const stats = this.roomAccumulatedStats.get(roomCode);
+    if (stats) {
+      stats.roundsCompleted = currentRoundNumber;
+    }
+
+    // Phase 3: Check scenario completion at round boundary BEFORE starting new round
+    // This ensures objectives like "survive N rounds" are properly evaluated
+    this.checkScenarioCompletion(roomCode);
+
+    // If game completed, don't proceed with new round setup
+    if (room.status === RoomStatus.COMPLETED) {
+      this.logger.log(
+        `Scenario completed at end of round ${currentRoundNumber}, not starting new round`,
+      );
+      return;
+    }
 
     // Clear selected cards and reset action flags for all characters for new round
     room.players.forEach((p: any) => {
@@ -2400,14 +2599,6 @@ export class GameGateway
     if (monsters.length > 0) {
       this.drawMonsterInitiatives(roomCode, monsters);
     }
-
-    // TODO (Should-Have - Week 7-8): Check scenario objectives before emitting round_ended
-    // Example objective checks:
-    // - All monsters defeated → emit scenario_completed with victory: true
-    // - All characters exhausted → emit scenario_completed with victory: false
-    // - Specific treasure looted → check loot tokens collected
-    // - Turn limit exceeded → check currentRoundNumber vs scenario.maxRounds
-    // this.checkScenarioObjectives(roomCode);
 
     // Notify all players that round ended and to select new cards
     // The next round will start automatically when all players have selected cards (in handleSelectCards)
@@ -2449,10 +2640,285 @@ export class GameGateway
     return initiatives;
   }
 
+  // ========== PHASE 3: OBJECTIVE SYSTEM METHODS ==========
+
   /**
-   * Check scenario completion and broadcast if complete (US2 - T100)
+   * Initialize the objective system for a room (Phase 3)
+   * Called when game starts to set up objectives, progress tracking, and accumulated stats
    */
-  private checkScenarioCompletion(roomCode: string): void {
+  private initializeObjectiveSystem(roomCode: string, scenario: any): void {
+    try {
+      // Build scenario objectives from scenario data
+      // If scenario has objectives defined, use them; otherwise use default "kill all monsters"
+      const objectives: ScenarioObjectives =
+        this.buildScenarioObjectives(scenario);
+      this.roomObjectives.set(roomCode, objectives);
+
+      // Initialize progress tracking for all objectives
+      const progressMap = new Map<string, ObjectiveProgressEntry>();
+
+      // Initialize primary objective progress
+      progressMap.set(objectives.primary.id, {
+        objectiveId: objectives.primary.id,
+        progress: { current: 0, target: 1, percent: 0, milestonesReached: [] },
+        lastResult: { complete: false, progress: null },
+        notifiedMilestones: [],
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Initialize secondary objective progress
+      if (objectives.secondary) {
+        for (const secondary of objectives.secondary) {
+          progressMap.set(secondary.id, {
+            objectiveId: secondary.id,
+            progress: {
+              current: 0,
+              target: 1,
+              percent: 0,
+              milestonesReached: [],
+            },
+            lastResult: { complete: false, progress: null },
+            notifiedMilestones: [],
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      this.roomObjectiveProgress.set(roomCode, progressMap);
+
+      // Initialize accumulated stats
+      const initialStats: AccumulatedStats = {
+        totalMonstersKilled: 0,
+        totalDamageDealt: 0,
+        totalDamageTaken: 0,
+        totalLootCollected: 0,
+        totalGoldCollected: 0,
+        roundsCompleted: 0,
+        charactersExhausted: 0,
+        characterDeaths: 0,
+      };
+      this.roomAccumulatedStats.set(roomCode, initialStats);
+
+      // Objectives are now sent as part of game_started payload, not as separate event
+
+      this.logger.log(
+        `Objective system initialized for room ${roomCode}: primary="${objectives.primary.description}"`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize objective system for room ${roomCode}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Build ScenarioObjectives from scenario data
+   * Extracts or generates objectives based on scenario configuration
+   */
+  private buildScenarioObjectives(scenario: any): ScenarioObjectives {
+    // Check if scenario has objectives defined
+    if (scenario.objectives && scenario.objectives.primary) {
+      return scenario.objectives as ScenarioObjectives;
+    }
+
+    // Default objectives based on scenario data
+    // Primary: Kill all monsters (standard Gloomhaven objective)
+    const primaryObjective = {
+      id: 'primary-kill-all',
+      type: 'kill_all_monsters' as const,
+      description: scenario.objectivePrimary || 'Defeat all enemies',
+      trackProgress: true,
+      milestones: [25, 50, 75, 100],
+    };
+
+    // Check for secondary objectives from scenario data
+    const secondaryObjectives: any[] = [];
+    if (scenario.objectiveSecondary) {
+      secondaryObjectives.push({
+        id: 'secondary-bonus',
+        type: 'custom' as const,
+        description: scenario.objectiveSecondary,
+        trackProgress: false,
+        rewards: { experience: 5 },
+      });
+    }
+
+    // Default failure condition: all players exhausted
+    const failureConditions = [
+      {
+        id: 'failure-all-exhausted',
+        type: 'custom' as const,
+        description: 'All characters exhausted',
+        trackProgress: false,
+      },
+    ];
+
+    return {
+      primary: primaryObjective,
+      secondary:
+        secondaryObjectives.length > 0 ? secondaryObjectives : undefined,
+      failureConditions,
+      globalTimeLimit: scenario.roundLimit,
+    };
+  }
+
+  /**
+   * Update objective progress and emit events (Phase 3)
+   * Call this when trackable events occur (monster killed, loot collected, etc.)
+   */
+  private updateObjectiveProgress(
+    roomCode: string,
+    objectiveId: string,
+    current: number,
+    target: number,
+    description: string,
+  ): void {
+    try {
+      const progressMap = this.roomObjectiveProgress.get(roomCode);
+      if (!progressMap) {
+        return;
+      }
+
+      const existingProgress = progressMap.get(objectiveId);
+      const percentage = target > 0 ? Math.floor((current / target) * 100) : 0;
+
+      // Calculate milestones
+      const milestoneThresholds = [25, 50, 75, 100];
+      const currentMilestones = milestoneThresholds.filter(
+        (m) => percentage >= m,
+      );
+      const notifiedMilestones = existingProgress?.notifiedMilestones || [];
+
+      // Check for new milestone reached
+      const newMilestone = currentMilestones.find(
+        (m) => !notifiedMilestones.includes(m),
+      );
+
+      // Update progress entry
+      const updatedEntry: ObjectiveProgressEntry = {
+        objectiveId,
+        progress: {
+          current,
+          target,
+          percent: percentage,
+          milestonesReached: currentMilestones,
+        },
+        lastResult: {
+          complete: percentage >= 100,
+          progress: {
+            current,
+            target,
+            percent: percentage,
+            milestonesReached: currentMilestones,
+          },
+        },
+        notifiedMilestones: newMilestone
+          ? [...notifiedMilestones, newMilestone]
+          : notifiedMilestones,
+        updatedAt: new Date().toISOString(),
+      };
+
+      progressMap.set(objectiveId, updatedEntry);
+
+      // Emit progress update event
+      const progressPayload: ObjectiveProgressUpdatePayload = {
+        objectiveId,
+        description,
+        current,
+        target,
+        percentage,
+        milestone: newMilestone,
+      };
+
+      this.server.to(roomCode).emit('objective_progress', progressPayload);
+
+      if (newMilestone) {
+        this.logger.log(
+          `Objective milestone reached in room ${roomCode}: ${description} - ${newMilestone}%`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to update objective progress: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Update accumulated stats for a room
+   */
+  private updateAccumulatedStats(
+    roomCode: string,
+    update: Partial<AccumulatedStats>,
+  ): void {
+    const stats = this.roomAccumulatedStats.get(roomCode);
+    if (stats) {
+      Object.assign(stats, update);
+    }
+  }
+
+  /**
+   * Handle character exhaustion (Phase 3)
+   * Called when a character becomes exhausted (health reaches 0 or cards depleted)
+   */
+  private handleCharacterExhaustion(
+    roomCode: string,
+    character: any,
+    reason: 'health' | 'cards' | 'manual',
+  ): void {
+    try {
+      // Mark character as exhausted in the database
+      const characterModel = characterService.getCharacterByPlayerId(
+        character.playerId,
+      );
+      if (characterModel) {
+        characterModel.exhaust();
+        this.logger.log(
+          `Character ${character.id} marked as exhausted in database`,
+        );
+      } else {
+        this.logger.error(
+          `Could not find character model for player ${character.playerId}`,
+        );
+      }
+
+      // Emit character exhausted event
+      const payload: CharacterExhaustedPayload = {
+        characterId: character.id,
+        characterName: character.characterClass || character.classType,
+        playerId: character.playerId,
+        reason,
+      };
+
+      this.server.to(roomCode).emit('character_exhausted', payload);
+
+      // Update accumulated stats
+      const stats = this.roomAccumulatedStats.get(roomCode);
+      if (stats) {
+        stats.charactersExhausted++;
+        if (reason === 'health') {
+          stats.characterDeaths++;
+        }
+      }
+
+      this.logger.log(
+        `Character ${character.id} exhausted in room ${roomCode}: ${reason}`,
+      );
+
+      // Check if this triggers scenario completion (all players exhausted = defeat)
+      this.checkScenarioCompletion(roomCode);
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle character exhaustion: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Check scenario completion and broadcast if complete (Phase 3 Enhanced)
+   * Uses ObjectiveEvaluator and ObjectiveContextBuilder for proper objective evaluation
+   */
+  private async checkScenarioCompletion(roomCode: string): Promise<void> {
     try {
       // Get room state
       const room = roomService.getRoom(roomCode);
@@ -2461,40 +2927,305 @@ export class GameGateway
       }
 
       // Get all characters in room
-      // Note: CharacterService returns Character class, but ScenarioService expects Character interface
-      // For now, we cast to any to bypass type checking
       const characters = room.players
         .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
-        .filter((c) => c !== null) as any[];
+        .filter((c) => c !== null);
 
       // Get all monsters in room
       const monsters = this.roomMonsters.get(roomCode) || [];
 
-      // Use ScenarioService to check completion
-      // Note: We don't have the actual scenario object here, so we pass null
-      // In full implementation, would store scenario per room
-      const completion = this.scenarioService.checkScenarioCompletion(
-        characters,
-        monsters,
-        null as any, // Placeholder for scenario
+      // Get loot tokens
+      const lootTokens = this.roomLootTokens.get(roomCode) || [];
+
+      // Get objectives and stats
+      const objectives = this.roomObjectives.get(roomCode);
+      const accumulatedStats = this.roomAccumulatedStats.get(roomCode);
+      const currentRound = this.currentRound.get(roomCode) || 1;
+      const gameStartTime = this.roomGameStartTime.get(roomCode) || Date.now();
+
+      // Build evaluation context
+      const context = this.objectiveContextBuilderService.buildContext({
+        room: room as any,
+        characters: characters as any[],
+        monsters: monsters,
+        lootTokens: lootTokens,
+        currentRound,
+        difficulty: 1, // Default difficulty
+        accumulatedStats: accumulatedStats || undefined,
+      });
+
+      // Check for failure conditions first
+      // 1. All players exhausted
+      const allPlayersExhausted = characters.every(
+        (c: any) => c.exhausted || c.isExhausted,
       );
 
-      // If scenario is complete, broadcast result
-      if (completion.isComplete) {
-        const scenarioCompletedPayload: ScenarioCompletedPayload = {
-          victory: completion.victory,
-          experience: completion.victory ? 10 : 0,
-          loot: [], // Would calculate from collected loot tokens
-          completionTime: 0, // Would calculate from start time
-        };
+      // 2. Check failure conditions from objectives
+      let failureTriggered = false;
+      let failureReason = '';
 
-        this.server
-          .to(roomCode)
-          .emit('scenario_completed', scenarioCompletedPayload);
+      if (objectives?.failureConditions) {
+        for (const failureCondition of objectives.failureConditions) {
+          const result = this.objectiveEvaluatorService.evaluateObjective(
+            failureCondition,
+            context,
+          );
+          if (result.complete) {
+            failureTriggered = true;
+            failureReason = failureCondition.description;
+            break;
+          }
+        }
+      }
 
-        this.logger.log(
-          `Scenario completed in room ${roomCode}: ${completion.reason}`,
+      // 3. Check time limit
+      if (
+        objectives?.globalTimeLimit &&
+        currentRound > objectives.globalTimeLimit
+      ) {
+        failureTriggered = true;
+        failureReason = `Time limit of ${objectives.globalTimeLimit} rounds exceeded`;
+      }
+
+      // Check victory: primary objective complete
+      let primaryComplete = false;
+      let primaryResult: any = { complete: false, progress: null };
+
+      if (objectives?.primary) {
+        primaryResult = this.objectiveEvaluatorService.evaluateObjective(
+          objectives.primary,
+          context,
         );
+        primaryComplete = primaryResult.complete;
+
+        // Update objective progress
+        if (primaryResult.progress) {
+          this.updateObjectiveProgress(
+            roomCode,
+            objectives.primary.id,
+            primaryResult.progress.current,
+            primaryResult.progress.target,
+            objectives.primary.description,
+          );
+        }
+      } else {
+        // Fallback: no objectives defined, use legacy check (all monsters dead)
+        const allMonstersDead = monsters.every((m: any) => m.isDead);
+        primaryComplete = allMonstersDead && monsters.length > 0;
+      }
+
+      // Evaluate secondary objectives
+      const secondaryResults: Map<string, any> = new Map();
+      const completedSecondaryIds: string[] = [];
+
+      if (objectives?.secondary) {
+        for (const secondary of objectives.secondary) {
+          const result = this.objectiveEvaluatorService.evaluateObjective(
+            secondary,
+            context,
+          );
+          secondaryResults.set(secondary.id, result);
+
+          if (result.complete) {
+            completedSecondaryIds.push(secondary.id);
+          }
+
+          // Update progress
+          if (result.progress) {
+            this.updateObjectiveProgress(
+              roomCode,
+              secondary.id,
+              result.progress.current,
+              result.progress.target,
+              secondary.description,
+            );
+          }
+        }
+      }
+
+      // Determine outcome
+      const isDefeat = allPlayersExhausted || failureTriggered;
+      const isVictory = primaryComplete && !isDefeat;
+      const isComplete = isDefeat || isVictory;
+
+      if (!isComplete) {
+        // Scenario still in progress
+        return;
+      }
+
+      // Calculate completion time
+      const completionTime = Date.now() - gameStartTime;
+
+      // Calculate experience
+      let totalExperience = isVictory ? 10 : 0;
+      if (isVictory && objectives?.secondary) {
+        for (const secondary of objectives.secondary) {
+          const result = secondaryResults.get(secondary.id);
+          if (result?.complete && secondary.rewards?.experience) {
+            totalExperience += secondary.rewards.experience;
+          }
+        }
+      }
+
+      // Build loot summary per player
+      const lootByPlayer: Map<string, { gold: number; items: string[] }> =
+        new Map();
+      for (const token of lootTokens) {
+        if (token.isCollected && token.collectedBy) {
+          const existing = lootByPlayer.get(token.collectedBy) || {
+            gold: 0,
+            items: [],
+          };
+          existing.gold += token.value;
+          lootByPlayer.set(token.collectedBy, existing);
+        }
+      }
+
+      // Build objective progress summary
+      const objectiveProgress: Record<
+        string,
+        { current: number; target: number }
+      > = {};
+      const progressMap = this.roomObjectiveProgress.get(roomCode);
+      if (progressMap) {
+        progressMap.forEach((entry, id) => {
+          objectiveProgress[id] = {
+            current: entry.progress.current,
+            target: entry.progress.target,
+          };
+        });
+      }
+
+      // Build player stats
+      const playerStatsMap = this.roomPlayerStats.get(roomCode);
+      const playerStats = room.players.map((p: any) => {
+        const stats = playerStatsMap?.get(p.uuid);
+        return {
+          playerId: p.uuid,
+          damageDealt: stats?.damageDealt || 0,
+          damageTaken: stats?.damageTaken || 0,
+          monstersKilled: stats?.monstersKilled || 0,
+          cardsLost: stats?.cardsLost || 0,
+        };
+      });
+
+      // Build scenario completed payload
+      const scenarioCompletedPayload: ScenarioCompletedPayload = {
+        victory: isVictory,
+        experience: totalExperience,
+        loot: Array.from(lootByPlayer.entries()).map(([playerId, data]) => ({
+          playerId,
+          gold: data.gold,
+          items: data.items,
+        })),
+        completionTime,
+        primaryObjectiveCompleted: primaryComplete,
+        secondaryObjectivesCompleted: completedSecondaryIds,
+        objectiveProgress,
+        playerStats,
+      };
+
+      this.server
+        .to(roomCode)
+        .emit('scenario_completed', scenarioCompletedPayload);
+
+      // Update room status using proper method
+      room.completeGame();
+
+      const reason = isVictory
+        ? 'Primary objective completed'
+        : allPlayersExhausted
+          ? 'All players exhausted'
+          : failureReason || 'Failure condition triggered';
+
+      this.logger.log(
+        `Scenario completed in room ${roomCode}: victory=${isVictory}, reason="${reason}"`,
+      );
+
+      // Phase 4-5: Save game result to database
+      try {
+        // Calculate total loot and gold
+        const totalLootCollected = lootTokens.filter(
+          (t: any) => t.isCollected,
+        ).length;
+        const totalGold = Array.from(lootByPlayer.values()).reduce(
+          (sum, data) => sum + data.gold,
+          0,
+        );
+
+        // Build player results for database
+        const playerResults = await Promise.all(
+          room.players.map(async (p: any) => {
+            const stats = playerStatsMap?.get(p.uuid);
+            const loot = lootByPlayer.get(p.uuid);
+            const character = characterService.getCharacterByPlayerId(p.uuid);
+
+            // Calculate experience for this player
+            let playerExperience = isVictory ? 10 : 0;
+            if (isVictory && objectives?.secondary) {
+              for (const secondary of objectives.secondary) {
+                const result = secondaryResults.get(secondary.id);
+                if (result?.complete && secondary.rewards?.experience) {
+                  playerExperience +=
+                    secondary.rewards.experience / room.players.length; // Distribute evenly
+                }
+              }
+            }
+
+            return {
+              userId: p.uuid,
+              characterId: character?.id || p.uuid,
+              characterClass: p.characterClass || 'Unknown',
+              characterName: p.nickname,
+              survived: !character?.exhausted,
+              wasExhausted: character?.exhausted || false,
+              damageDealt: stats?.damageDealt || 0,
+              damageTaken: stats?.damageTaken || 0,
+              monstersKilled: stats?.monstersKilled || 0,
+              lootCollected: loot
+                ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
+                : 0,
+              cardsLost: stats?.cardsLost || 0,
+              experienceGained: Math.floor(playerExperience),
+              goldGained: loot?.gold || 0,
+            };
+          }),
+        );
+
+        // Save to database
+        await this.gameResultService.saveGameResult({
+          gameId: room.id,
+          roomCode: room.roomCode,
+          scenarioId: room.scenarioId || undefined,
+          scenarioName: objectives?.primary?.description || 'Unknown Scenario',
+          victory: isVictory,
+          roundsCompleted: currentRound,
+          completionTimeMs: completionTime,
+          primaryObjectiveCompleted: primaryComplete,
+          secondaryObjectiveCompleted: completedSecondaryIds.length > 0,
+          objectivesCompletedList: completedSecondaryIds,
+          objectiveProgress: Object.fromEntries(
+            Object.entries(objectiveProgress).map(([id, prog]) => [
+              id,
+              {
+                current: prog.current,
+                target: prog.target,
+                completed: prog.current >= prog.target,
+              },
+            ]),
+          ),
+          totalLootCollected,
+          totalExperience: totalExperience,
+          totalGold,
+          playerResults,
+        });
+
+        this.logger.log(`Game result saved to database for room ${roomCode}`);
+      } catch (dbError) {
+        this.logger.error(
+          `Failed to save game result to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+        );
+        // Don't throw - game completion should still succeed even if DB save fails
       }
     } catch (error) {
       this.logger.error(
