@@ -104,22 +104,17 @@ export function Lobby() {
   // Only reset if we're not currently in an active game or lobby
   useEffect(() => {
     const currentStatus = sessionState.status;
-    console.log('[Lobby] Component mounted with status:', currentStatus);
 
     // Don't reset if we're already in lobby or active game
     // This prevents clearing state when navigating back to lobby mid-game
     if (currentStatus === 'disconnected' || currentStatus === 'joining') {
-      console.log('[Lobby] Resetting session for clean state');
       gameSessionCoordinator.switchGame(); // ✅ Complete atomic operation
-    } else {
-      console.log('[Lobby] Skipping reset - already in active session');
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to game when room status becomes active
   useEffect(() => {
     if (sessionState.status === 'active' && sessionState.roomCode) {
-      console.log(`[Lobby] Game started, navigating to /game/${sessionState.roomCode}`);
       navigate(`/game/${sessionState.roomCode}`);
     } else if (sessionState.status === 'lobby' && sessionState.roomCode) {
       setMode('in-room');
@@ -185,8 +180,6 @@ export function Lobby() {
 
   // Character selection (T069) - Updated for persistent characters
   const handleSelectCharacter = (characterId: string) => {
-    console.log('[Lobby] handleSelectCharacter called with:', characterId);
-    console.log('[Lobby] Current players before selection:', players);
     setSelectedCharacterId(characterId);
     websocketService.selectCharacter(characterId);
   };
@@ -221,19 +214,6 @@ export function Lobby() {
 
   const playersReady = allPlayersReady(players);
   const canStartGame = players.length >= 1 && playersReady;
-
-  // Test log to verify DebugConsole is capturing logs
-  console.log('[Lobby] 🔍 DEBUG CONSOLE TEST - Component rendered');
-
-  // Debug logging
-  console.log('[Lobby] Player state:', {
-    players,
-    playersReady,
-    canStartGame,
-    selectedCharacterId,
-    selectedScenario,
-    isCurrentPlayerHost,
-  });
 
   const defaultTab = myRooms.length > 0 ? 0 : 1;
 
