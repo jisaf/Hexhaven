@@ -91,8 +91,9 @@ export class CardLayoutTemplatesController {
     @Body() createDto: CreateCardLayoutTemplateDto,
   ): Promise<CardLayoutTemplate> {
     // Validate template structure
-    const validation =
-      this.cardLayoutTemplateService.validateTemplate(createDto.modules);
+    const validation = this.cardLayoutTemplateService.validateTemplate(
+      createDto.modules,
+    );
     if (!validation.valid) {
       throw new BadRequestException({
         message: 'Invalid template structure',
@@ -117,8 +118,9 @@ export class CardLayoutTemplatesController {
   ): Promise<CardLayoutTemplate> {
     // Validate template structure if modules are being updated
     if (updateDto.modules) {
-      const validation =
-        this.cardLayoutTemplateService.validateTemplate(updateDto.modules);
+      const validation = this.cardLayoutTemplateService.validateTemplate(
+        updateDto.modules,
+      );
       if (!validation.valid) {
         throw new BadRequestException({
           message: 'Invalid template structure',

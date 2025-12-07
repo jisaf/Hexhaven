@@ -50,7 +50,9 @@ export class CardLayoutTemplateService {
     });
 
     if (!template) {
-      throw new NotFoundException(`Card layout template with ID ${id} not found`);
+      throw new NotFoundException(
+        `Card layout template with ID ${id} not found`,
+      );
     }
 
     return template;
@@ -136,7 +138,10 @@ export class CardLayoutTemplateService {
   /**
    * Validate template modules structure
    */
-  validateTemplate(modules: CardModule[]): { valid: boolean; errors: string[] } {
+  validateTemplate(modules: CardModule[]): {
+    valid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
     if (!Array.isArray(modules)) {

@@ -227,7 +227,7 @@ export class GameGateway
   /**
    * Handle client connection
    */
-  handleConnection(client: Socket): void {
+  handleConnection(_client: Socket): void {
     // Verbose connection log removed
   }
 
@@ -731,7 +731,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room, roomCode: _roomCode } = roomData;
       // Game start event sufficient
 
       // Get player from room (not global registry)
