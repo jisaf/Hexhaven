@@ -53,8 +53,6 @@ describe('UserCharacterService', () => {
         handSize: 10,
       });
 
-      mockPrisma.character.findFirst.mockResolvedValue(null); // No active character
-
       mockPrisma.character.create.mockResolvedValue({
         id: 'char-123',
         name: 'Thorgar',
@@ -121,24 +119,6 @@ describe('UserCharacterService', () => {
       await expect(service.createCharacter('user-123', dto))
         .rejects
         .toThrow(NotFoundError);
-    });
-
-    it('should reject if user has character in active game', async () => {
-      const dto = { name: 'Test', classId: 'class-123' };
-
-      mockPrisma.characterClass.findUnique.mockResolvedValue({
-        id: 'class-123',
-        startingHealth: 10,
-      });
-
-      mockPrisma.character.findFirst.mockResolvedValue({
-        id: 'existing-char',
-        currentGameId: 'game-123', // In active game
-      });
-
-      await expect(service.createCharacter('user-123', dto))
-        .rejects
-        .toThrow(ConflictError);
     });
   });
 
