@@ -7,11 +7,13 @@
  * - Round counter
  * - Connection status
  * - End Turn and Back to Lobby buttons
+ * - Objectives tracker (collapsible)
  *
  * Replaces and combines: TurnOrder, ActionButtons, and parts of GameHUD
  */
 
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { FaSignOutAlt } from 'react-icons/fa';
 import { GiCrossedSwords, GiBootPrints } from 'react-icons/gi';
 import type { Character, Monster } from '../../../../shared/types/entities';
@@ -26,6 +28,7 @@ interface TurnOrderEntity {
   type: 'character' | 'monster';
   currentHealth?: number;
   maxHealth?: number;
+  isExhausted?: boolean;
 }
 
 interface TurnStatusProps {
@@ -43,6 +46,7 @@ interface TurnStatusProps {
   onMoveClick: () => void;
   onEndTurn: () => void;
   onBackToLobby: () => void;
+  objectivesSlot?: ReactNode;
 }
 
 export function TurnStatus({
@@ -60,6 +64,7 @@ export function TurnStatus({
   onMoveClick,
   onEndTurn,
   onBackToLobby,
+  objectivesSlot,
 }: TurnStatusProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const statusClassName = styles[connectionStatus] || '';
@@ -86,6 +91,13 @@ export function TurnStatus({
           <FaSignOutAlt />
         </button>
 
+        {/* Objectives tracker slot - positioned after back button */}
+        {objectivesSlot && (
+          <div className={styles.objectivesSlot}>
+            {objectivesSlot}
+          </div>
+        )}
+
         <div className={styles.roundCounter}>
           Round {currentRound}
         </div>
@@ -110,7 +122,7 @@ export function TurnStatus({
           {turnOrder.map((entity) => {
             const isCurrentTurn = entity.id === currentTurnEntityId;
             const isSelected = entity.id === selectedActorId;
-            const entityClassName = `${styles.turnEntity} ${isCurrentTurn ? styles.currentTurn : ''} ${isSelected ? styles.selected : ''} ${styles[entity.type]}`;
+            const entityClassName = `${styles.turnEntity} ${isCurrentTurn ? styles.currentTurn : ''} ${isSelected ? styles.selected : ''} ${styles[entity.type]} ${entity.isExhausted ? styles.exhausted : ''}`;
 
             return (
               <div
@@ -118,7 +130,10 @@ export function TurnStatus({
                 className={entityClassName}
                 onClick={() => handleActorClick(entity.id)}
               >
-                <div className={styles.entityName}>{entity.name}</div>
+                <div className={styles.entityName}>
+                  {entity.name}
+                  {entity.isExhausted && <span className={styles.exhaustedLabel}> (Exhausted)</span>}
+                </div>
                 <div className={styles.entityInitiative}>{entity.initiative}</div>
                 {entity.currentHealth !== undefined && entity.maxHealth !== undefined && (
                   <div className={styles.entityHealth}>

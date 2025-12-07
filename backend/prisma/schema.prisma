@@ -24,8 +24,9 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   // Relations
-  refreshTokens RefreshToken[]
-  characters    Character[]
+  refreshTokens     RefreshToken[]
+  characters        Character[]
+  playerGameResults PlayerGameResult[]
 
   @@index([username])
   @@index([deletedAt])
@@ -187,6 +188,7 @@ model Game {
   gameState        GameState?
   events           GameEvent[]
   activeCharacters Character[] @relation("CharacterCurrentGame")
+  gameResult       GameResult?
 
   @@index([roomCode])
   @@index([status])
@@ -223,6 +225,79 @@ model GameEvent {
   @@unique([gameId, sequenceNum])
   @@index([gameId, sequenceNum])
   @@map("game_events")
+}
+
+// ========== GAME RESULTS (186 - Game Completion) ==========
+
+model GameResult {
+  id                          String             @id @default(uuid()) @db.Uuid
+  gameId                      String             @unique @db.Uuid
+  roomCode                    String             @db.VarChar(6)
+  scenarioId                  String?            @db.Uuid
+  scenarioName                String?            @db.VarChar(100)
+  victory                     Boolean
+  completedAt                 DateTime           @default(now())
+  roundsCompleted             Int                @db.SmallInt
+  completionTimeMs            Int? // Duration from game start to completion in milliseconds
+
+  // Objective tracking
+  primaryObjectiveCompleted   Boolean            @default(false)
+  secondaryObjectiveCompleted Boolean            @default(false)
+  objectivesCompletedList     Json               @default("[]") // Array of completed objective IDs
+  objectiveProgress           Json               @default("{}") // { objectiveId: { current, target, completed } }
+
+  // Aggregate stats
+  totalLootCollected          Int                @default(0)
+  totalExperience             Int                @default(0)
+  totalGold                   Int                @default(0)
+
+  createdAt                   DateTime           @default(now())
+
+  // Relations
+  game          Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerResults PlayerGameResult[]
+
+  @@index([gameId])
+  @@index([completedAt])
+  @@index([victory])
+  @@map("game_results")
+}
+
+model PlayerGameResult {
+  id              String      @id @default(uuid()) @db.Uuid
+  gameResultId    String      @db.Uuid
+  userId          String      @db.Uuid
+  characterId     String      @db.Uuid
+  characterClass  String      @db.VarChar(50)
+  characterName   String      @db.VarChar(30)
+
+  // Survival stats
+  survived        Boolean     @default(true)
+  wasExhausted    Boolean     @default(false)
+
+  // Combat stats
+  damageDealt     Int         @default(0)
+  damageTaken     Int         @default(0)
+  monstersKilled  Int         @default(0)
+
+  // Resource stats
+  lootCollected   Int         @default(0)
+  cardsLost       Int         @default(0)
+
+  // Rewards
+  experienceGained Int        @default(0)
+  goldGained       Int        @default(0)
+
+  createdAt       DateTime    @default(now())
+
+  // Relations
+  gameResult GameResult @relation(fields: [gameResultId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([gameResultId])
+  @@index([userId])
+  @@index([characterId])
+  @@map("player_game_results")
 }
 
 // ========== CAMPAIGNS (002 - Schema only, features deferred) ==========

@@ -1,0 +1,310 @@
+/* Compact button view - shows by default */
+.objectiveButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.2) 0%, rgba(110, 193, 255, 0.2) 100%);
+  border: 2px solid rgba(74, 158, 255, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+  font-family: inherit;
+}
+
+.objectiveButton:hover {
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.3) 0%, rgba(110, 193, 255, 0.3) 100%);
+  border-color: rgba(74, 158, 255, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.objectiveButton:active {
+  transform: translateY(0);
+}
+
+.compactProgress {
+  flex: 1;
+  height: 20px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.compactProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff 0%, #6ec1ff 100%);
+  transition: width 0.3s ease;
+  border-radius: 9px;
+}
+
+.compactLabel {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.compactPercentage {
+  color: #6ec1ff;
+  font-size: 14px;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Expanded panel view */
+.objectivePanel {
+  position: fixed;
+  top: 40px;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  background: linear-gradient(135deg, rgba(13, 26, 46, 0.98) 0%, rgba(20, 30, 50, 0.98) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  animation: expandDown 0.3s ease-out;
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: scaleY(1);
+  }
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.4);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%);
+}
+
+.panelTitle {
+  margin: 0;
+  color: #ffd700;
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.collapseButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 59, 48, 0.2);
+  border: 2px solid rgba(255, 59, 48, 0.5);
+  border-radius: 6px;
+  color: #ff3b30;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-family: inherit;
+}
+
+.collapseButton:hover {
+  background: rgba(255, 59, 48, 0.3);
+  border-color: rgba(255, 59, 48, 0.8);
+  transform: scale(1.1);
+}
+
+.collapseButton:active {
+  transform: scale(0.95);
+}
+
+.objectivesList {
+  padding: 12px 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.primaryObjective {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(74, 158, 255, 0.2);
+  border-left: 4px solid #4a9eff;
+  border-radius: 6px;
+}
+
+.secondaryObjectives {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.secondaryObjective {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: rgba(110, 193, 255, 0.15);
+  border-left: 3px solid #6ec1ff;
+  border-radius: 6px;
+}
+
+.secondaryObjective:last-child {
+  margin-bottom: 0;
+}
+
+.failureConditions {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 59, 48, 0.08);
+  border-left: 3px solid #ff3b30;
+  border-radius: 6px;
+}
+
+.failureHeader {
+  margin-bottom: 8px;
+}
+
+.failureLabel {
+  color: #ff3b30;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.failureCondition {
+  margin-top: 6px;
+  padding-left: 8px;
+}
+
+.failureText {
+  color: #ffcccc;
+  font-size: 13px;
+}
+
+.objectiveHeader {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: flex-start;
+}
+
+.objectiveLabel {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.objectiveText {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.progressBarContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 18px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff 0%, #6ec1ff 100%);
+  transition: width 0.3s ease;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+}
+
+.progressText {
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* Scrollbar styling for objectives list */
+.objectivesList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.objectivesList::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.objectivesList::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+}
+
+.objectivesList::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .objectiveButton {
+    min-width: 120px;
+    padding: 6px 10px;
+  }
+
+  .compactLabel {
+    font-size: 11px;
+  }
+
+  .compactPercentage {
+    font-size: 12px;
+    min-width: 35px;
+  }
+
+  .objectivePanel {
+    max-width: 90%;
+  }
+
+  .panelTitle {
+    font-size: 16px;
+  }
+
+  .objectiveLabel {
+    font-size: 11px;
+  }
+
+  .objectiveText {
+    font-size: 13px;
+  }
+
+  .progressBar {
+    height: 16px;
+  }
+
+  .progressText {
+    font-size: 11px;
+    min-width: 40px;
+  }
+}

@@ -21,6 +21,10 @@ import type {
   CharacterMovedPayload,
   AttackResolvedPayload,
   MonsterActivatedPayload,
+  ObjectivesLoadedPayload,
+  ObjectiveProgressUpdatePayload,
+  CharacterExhaustedPayload,
+  ScenarioCompletedPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -79,7 +83,12 @@ export interface WebSocketEvents {
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
 
   // Scenario
-  scenario_completed: (data: { victory: boolean; rewards: { experience: number; loot: string[] } }) => void;
+  scenario_completed: (data: ScenarioCompletedPayload) => void;
+
+  // Objectives (Phase 3)
+  objectives_loaded: (data: ObjectivesLoadedPayload) => void;
+  objective_progress: (data: ObjectiveProgressUpdatePayload) => void;
+  character_exhausted: (data: CharacterExhaustedPayload) => void;
 
   // State updates
   game_state_update: (data: { gameState: Record<string, unknown> }) => void;
@@ -345,9 +354,19 @@ class WebSocketService {
 
   /**
    * Select character (002 - Updated for persistent characters)
+   * @param characterIdOrClass - Either a character UUID (persistent character) or a CharacterClass name (legacy)
    */
-  selectCharacter(characterId: string): void {
-    this.emit('select_character', { characterClass: characterId });
+  selectCharacter(characterIdOrClass: string): void {
+    // Check if input is a UUID (contains hyphens) or a character class name
+    const isUUID = characterIdOrClass.includes('-');
+
+    if (isUUID) {
+      // Persistent character selection - send characterId
+      this.emit('select_character', { characterId: characterIdOrClass });
+    } else {
+      // Legacy character class selection - send characterClass
+      this.emit('select_character', { characterClass: characterIdOrClass });
+    }
     // Character selection logging removed
   }
 
