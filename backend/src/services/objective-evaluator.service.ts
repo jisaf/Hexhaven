@@ -167,7 +167,7 @@ export class ObjectiveEvaluatorService {
         return {
           complete: false,
           progress: null,
-          error: `Unknown objective type: ${type}`,
+          error: `Unknown objective type: ${type as string}`,
         };
     }
   }
@@ -835,6 +835,7 @@ export class ObjectiveEvaluatorService {
     try {
       // Build a safe execution environment
       // The function has access only to 'context'
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
       const safeFunction = new Function(
         'context',
         `"use strict";

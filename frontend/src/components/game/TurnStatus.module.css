@@ -39,6 +39,12 @@
   transform: scale(1.05);
 }
 
+.objectivesSlot {
+  position: relative;
+  flex-shrink: 0;
+  /* This container is the positioning context for the absolute panel */
+}
+
 .roundCounter {
   flex: 1;
   text-align: center;
@@ -231,6 +237,28 @@
   font-size: 8px;
   color: rgba(240, 230, 210, 0.7);
   line-height: 1;
+}
+
+/* ===== Exhausted State ===== */
+.turnEntity.exhausted {
+  opacity: 0.5;
+  filter: grayscale(80%);
+}
+
+.turnEntity.exhausted .entityName {
+  text-decoration: line-through;
+  color: rgba(240, 230, 210, 0.5);
+}
+
+.turnEntity.exhausted .entityInitiative {
+  color: rgba(201, 164, 68, 0.5);
+}
+
+.exhaustedLabel {
+  font-size: 8px;
+  color: rgba(255, 107, 107, 0.8);
+  font-style: italic;
+  font-weight: 500;
 }
 
 /* ===== Action Buttons ===== */

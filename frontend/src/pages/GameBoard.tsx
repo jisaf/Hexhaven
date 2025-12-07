@@ -155,6 +155,7 @@ export function GameBoard() {
         secondary: gameState.gameData.objectives.secondary?.length || 0,
         failureConditions: gameState.gameData.objectives.failureConditions?.length || 0,
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setObjectives(gameState.gameData.objectives);
     } else {
       console.log('[GameBoard] ⚠️ No objectives in game state');
