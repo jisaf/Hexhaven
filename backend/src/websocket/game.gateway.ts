@@ -3187,8 +3187,7 @@ export class GameGateway
               experienceGained: Math.floor(playerExperience),
               goldGained: loot?.gold || 0,
             };
-          }),
-        );
+          });
 
         // Save to database
         await this.gameResultService.saveGameResult({
