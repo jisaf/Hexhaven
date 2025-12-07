@@ -3153,8 +3153,7 @@ export class GameGateway
         );
 
         // Build player results for database
-        const playerResults = await Promise.all(
-          room.players.map(async (p: any) => {
+        const playerResults = room.players.map((p: any) => {
             const stats = playerStatsMap?.get(p.uuid);
             const loot = lootByPlayer.get(p.uuid);
             const character = characterService.getCharacterByPlayerId(p.uuid);
