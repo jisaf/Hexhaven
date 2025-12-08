@@ -119,19 +119,6 @@ export function Lobby() {
     }
   }, [sessionState.status, sessionState.roomCode, navigate]);
 
-  // Listen for create game event from header
-  useEffect(() => {
-    const handleHeaderCreateGame = () => {
-      handleCreateRoom();
-    };
-
-    window.addEventListener('header-create-game', handleHeaderCreateGame);
-
-    return () => {
-      window.removeEventListener('header-create-game', handleHeaderCreateGame);
-    };
-  }, [handleCreateRoom]);
-
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
     setError(null);
@@ -143,6 +130,27 @@ export function Lobby() {
       setIsLoading(false);
     }
   };
+
+  // Listen for create game event from header
+  useEffect(() => {
+    const handleHeaderCreateGame = () => {
+      // Reset session state to allow creating new room
+      gameSessionCoordinator.switchGame();
+
+      const storedNickname = getPlayerNickname();
+      if (storedNickname) {
+        proceedWithRoomCreation(storedNickname);
+      } else {
+        setMode('nickname-for-create');
+      }
+    };
+
+    window.addEventListener('header-create-game', handleHeaderCreateGame);
+
+    return () => {
+      window.removeEventListener('header-create-game', handleHeaderCreateGame);
+    };
+  }, []);
 
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
     // Reset session state before joining different room

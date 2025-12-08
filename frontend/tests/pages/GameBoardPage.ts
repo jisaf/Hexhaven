@@ -184,7 +184,7 @@ export class GameBoardPage extends BasePage {
    * Wait for monster turn to complete
    * Waits for turn indicator to update
    */
-  async waitForMonsterTurn(timeout: number = 10000): Promise<void> {
+  async waitForMonsterTurn(_timeout: number = 10000): Promise<void> {
     // Wait a moment for monster AI to process
     await this.waitFor(2000);
 

@@ -396,9 +396,6 @@ export async function waitForMonsterAIComplete(
 ): Promise<void> {
   console.log('[game-actions] Waiting for monster AI...');
 
-  // Wait for turn to change back to player
-  const board = new GameBoardPage(page);
-
   // Wait a moment for AI to start
   await page.waitForTimeout(2000);
 
