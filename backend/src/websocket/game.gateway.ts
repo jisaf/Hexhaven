@@ -90,6 +90,20 @@ export class GameGateway
   afterInit(_server: Server) {
     // Initialization logging removed for performance
   }
+
+  /**
+   * Helper function to get player nickname from character
+   * Falls back to character class if player not found
+   */
+  private getPlayerNickname(
+    roomCode: string,
+    playerId: string,
+    fallback: string,
+  ): string {
+    const room = roomService.getRoom(roomCode);
+    return room?.getPlayer(playerId)?.nickname || fallback;
+  }
+
   private readonly abilityCardService = new AbilityCardService();
   private readonly turnOrderService = new TurnOrderService();
   private readonly damageService = new DamageCalculationService();
@@ -1212,7 +1226,11 @@ export class GameGateway
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
         characterId: character.id,
-        characterName: character.characterClass,
+        characterName: this.getPlayerNickname(
+          room.roomCode,
+          character.playerId,
+          character.characterClass,
+        ),
         fromHex,
         toHex: payload.targetHex,
         movementPath: path,
@@ -1707,19 +1725,25 @@ export class GameGateway
         targetDead = target.isDead;
       }
 
-      const targetName = isMonsterTarget
-        ? target.monsterType
-        : target.characterClass;
-
       // Mark character as having attacked this turn
       attacker.markAttackedThisTurn();
 
       // Broadcast attack resolution
       const attackResolvedPayload: AttackResolvedPayload = {
         attackerId: attacker.id,
-        attackerName: attacker.characterClass,
+        attackerName: this.getPlayerNickname(
+          room.roomCode,
+          attacker.playerId,
+          attacker.characterClass,
+        ),
         targetId: payload.targetId,
-        targetName,
+        targetName: isMonsterTarget
+          ? target.monsterType
+          : this.getPlayerNickname(
+              room.roomCode,
+              target.playerId,
+              target.characterClass,
+            ),
         baseDamage: baseAttack,
         damage,
         modifier: modifierCard.modifier,
@@ -2418,7 +2442,11 @@ export class GameGateway
         monsterId,
         monsterName,
         focusTarget: focusTargetId,
-        focusTargetName: focusTarget.characterClass,
+        focusTargetName: this.getPlayerNickname(
+          roomCode,
+          focusTarget.playerId,
+          focusTarget.characterClass,
+        ),
         movement: movementHex || monster.currentHex, // Use current hex if no movement
         movementDistance,
         attack: attackResult,
@@ -2884,7 +2912,11 @@ export class GameGateway
       // Emit character exhausted event
       const payload: CharacterExhaustedPayload = {
         characterId: character.id,
-        characterName: character.characterClass || character.classType,
+        characterName: this.getPlayerNickname(
+          roomCode,
+          character.playerId,
+          character.characterClass || character.classType,
+        ),
         playerId: character.playerId,
         reason,
       };
