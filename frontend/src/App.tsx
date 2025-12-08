@@ -5,14 +5,16 @@
  * Includes WebSocket connection management and reconnection UI (US4).
  */
 
-import { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, lazy, Suspense, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { websocketService } from './services/websocket.service';
 import { getWebSocketUrl } from './config/api';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
 import { DebugConsole } from './components/DebugConsole';
+import Header from './components/Header';
+import Menu from './components/Menu';
 import './App.css';
 
 // Lazy load route components
@@ -102,6 +104,65 @@ function ConnectionUI() {
   );
 }
 
+/**
+ * Layout Component
+ * Renders Header and Menu on non-game pages, handles menu state
+ */
+function Layout() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Check if current page is GameBoard (hide header/menu on game page)
+  const isGamePage = location.pathname.startsWith('/game/');
+
+  // Check if current page is Lobby (show Create Game button)
+  const isLobbyPage = location.pathname === '/';
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
+  const handleCreateGame = () => {
+    // Dispatch custom event that Lobby component will listen to
+    const event = new CustomEvent('header-create-game');
+    window.dispatchEvent(event);
+    // Close menu if open
+    closeMenu();
+  };
+
+  return (
+    <>
+      {!isGamePage && (
+        <>
+          <Header
+            menuOpen={menuOpen}
+            onMenuToggle={toggleMenu}
+            onCreateGame={handleCreateGame}
+            showCreateGame={isLobbyPage}
+          />
+          <Menu isOpen={menuOpen} onClose={closeMenu} />
+        </>
+      )}
+      <Routes>
+        <Route path="/" element={<Lobby />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/characters" element={<Characters />} />
+        <Route path="/characters/new" element={<CreateCharacter />} />
+        <Route path="/game/:roomCode" element={<GameBoard />} />
+        <Route path="/demo" element={<HexMapDemo />} />
+        <Route path="/design" element={<ScenarioDesigner />} />
+        <Route path="/test-videos" element={<TestVideos />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
+
 function App() {
   // Set background color based on subdomain
   useEffect(() => {
@@ -144,18 +205,7 @@ function App() {
       <BrowserRouter>
         <ConnectionUI />
         <Suspense fallback={<RouteLoading />}>
-          <Routes>
-            <Route path="/" element={<Lobby />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/characters" element={<Characters />} />
-            <Route path="/characters/new" element={<CreateCharacter />} />
-            <Route path="/game/:roomCode" element={<GameBoard />} />
-            <Route path="/demo" element={<HexMapDemo />} />
-            <Route path="/design" element={<ScenarioDesigner />} />
-            <Route path="/test-videos" element={<TestVideos />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Layout />
         </Suspense>
         <DebugConsole />
       </BrowserRouter>

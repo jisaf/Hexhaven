@@ -9,7 +9,9 @@
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
+  padding-top: 64px; /* Account for fixed header */
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  box-sizing: border-box;
 }
 
 .auth-form {

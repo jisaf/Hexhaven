@@ -23,13 +23,11 @@ import { roomSessionManager } from '../services/room-session.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
-import { AuthNav } from '../components/AuthNav';
 import {
   getPlayerNickname,
 } from '../utils/storage';
@@ -133,6 +131,27 @@ export function Lobby() {
     }
   };
 
+  // Listen for create game event from header
+  useEffect(() => {
+    const handleHeaderCreateGame = () => {
+      // Reset session state to allow creating new room
+      gameSessionCoordinator.switchGame();
+
+      const storedNickname = getPlayerNickname();
+      if (storedNickname) {
+        proceedWithRoomCreation(storedNickname);
+      } else {
+        setMode('nickname-for-create');
+      }
+    };
+
+    window.addEventListener('header-create-game', handleHeaderCreateGame);
+
+    return () => {
+      window.removeEventListener('header-create-game', handleHeaderCreateGame);
+    };
+  }, []);
+
   const handleJoinRoom = async (roomCode: string, playerNickname: string) => {
     // Reset session state before joining different room
     gameSessionCoordinator.switchGame();
@@ -145,19 +164,6 @@ export function Lobby() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setIsLoading(false);
-    }
-  };
-
-  // Room creation flow (T067)
-  const handleCreateRoom = () => {
-    // Reset session state to allow creating new room
-    gameSessionCoordinator.switchGame();
-
-    const storedNickname = getPlayerNickname();
-    if (storedNickname) {
-      proceedWithRoomCreation(storedNickname);
-    } else {
-      setMode('nickname-for-create');
     }
   };
 
@@ -218,10 +224,7 @@ export function Lobby() {
   const defaultTab = myRooms.length > 0 ? 0 : 1;
 
   return (
-    <div className={styles.lobbyPage}>
-      <AuthNav />
-      <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
-
+    <div className={styles.lobbyContainer}>
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
           <Tabs
