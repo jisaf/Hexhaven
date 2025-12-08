@@ -7,6 +7,7 @@
 
 import * as PIXI from 'pixi.js';
 import type { Monster, Condition } from '../../../shared/types/entities';
+import { type Axial, updateSpritePosition } from './hex-utils';
 
 export class MonsterSprite extends PIXI.Container {
   private monster: Monster;
@@ -291,6 +292,24 @@ export class MonsterSprite extends PIXI.Container {
    */
   public getMonster(): Monster {
     return this.monster;
+  }
+
+  /**
+   * Update monster position on the grid
+   *
+   * This method updates both the visual sprite position and the internal
+   * monster data to maintain consistency between rendering and game state.
+   * It uses the shared updateSpritePosition utility to ensure PIXI.js
+   * properly recalculates interactive bounds for hit detection.
+   *
+   * @param hex - The target hex coordinates in axial format
+   *
+   * @see updateSpritePosition - Shared utility for sprite positioning
+   */
+  public updatePosition(hex: Axial): void {
+    updateSpritePosition(this, hex);
+    // Update internal data
+    this.monster.currentHex = hex;
   }
 
   /**
