@@ -34,7 +34,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: min(60vw, 500px); /* Max 60% of viewport but not more than 500px */
+  width: min(60vw, 300px); /* Max 60% of viewport but not more than 300px */
   height: 100vh;
   background: var(--primary-bg-color, #0d1a2e);
   z-index: 1001;
