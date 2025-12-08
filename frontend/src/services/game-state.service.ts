@@ -390,9 +390,11 @@ class GameStateManager {
 
       // Update game state monster position to maintain consistency
       // This ensures attack range calculations and targeting use the updated position
-      const monster = this.state.gameData.monsters.find(m => m.id === data.monsterId);
-      if (monster) {
-        monster.currentHex = data.movement;
+      if (this.state.gameData) {
+        const monster = this.state.gameData.monsters.find(m => m.id === data.monsterId);
+        if (monster) {
+          monster.currentHex = data.movement;
+        }
       }
     }
 
