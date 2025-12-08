@@ -166,7 +166,6 @@ test.describe('Accessibility Requirements', () => {
   test('should have alt text on images', async ({ page }) => {
     const landingPage = new LandingPage(page);
     const lobbyPage = new LobbyPage(page);
-    const charSelectPage = new CharacterSelectionPage(page);
 
     await landingPage.navigate();
     await landingPage.clickCreateGame();
@@ -190,7 +189,6 @@ test.describe('Accessibility Requirements', () => {
 
   test('should have semantic HTML form elements', async ({ page }) => {
     const landingPage = new LandingPage(page);
-    const lobbyPage = new LobbyPage(page);
 
     await landingPage.navigate();
     await landingPage.clickJoinGame();
@@ -339,7 +337,7 @@ test.describe('Accessibility Requirements', () => {
     expect(isClickable).toBe(true);
 
     // Check for horizontal overflow
-    const hasOverflow = await page.evaluate(() => {
+    await page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
 

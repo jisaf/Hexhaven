@@ -12,10 +12,9 @@
  * 8. Character selection race conditions
  */
 
-import { test, expect, BrowserContext } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { LandingPage } from '../pages/LandingPage';
 import { LobbyPage } from '../pages/LobbyPage';
-import { CharacterSelectionPage } from '../pages/CharacterSelectionPage';
 import { createTwoPlayerGame, createMultiplayerGame, setupCharactersForAll, startMultiplayerGame } from '../helpers/multiplayer';
 import { assertGameBoardLoaded } from '../helpers/assertions';
 
@@ -89,7 +88,6 @@ test.describe('Edge Cases from Specification', () => {
 
   test('should reject invalid room codes with proper error message', async ({ page }) => {
     const landingPage = new LandingPage(page);
-    const lobbyPage = new LobbyPage(page);
 
     await landingPage.navigate();
     await landingPage.clickJoinGame();
@@ -152,7 +150,6 @@ test.describe('Edge Cases from Specification', () => {
     await page5.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
     // Verify "room is full" error or inability to join
-    const errorMessage = page5.locator('[data-testid="error-message"], .error-message, [role="alert"]');
     const isInLobby = await page5.locator('[data-testid="lobby-page"]').isVisible().catch(() => false);
 
     // Either should show error, or not be in lobby

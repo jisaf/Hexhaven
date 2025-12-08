@@ -89,7 +89,6 @@ test.describe('Performance Requirements', () => {
 
   test('should complete player actions within 3 taps on mobile', async ({ page }) => {
     const landingPage = new LandingPage(page);
-    const lobbyPage = new LobbyPage(page);
     const charSelectPage = new CharacterSelectionPage(page);
 
     let tapCount = 0;
@@ -155,7 +154,7 @@ test.describe('Performance Requirements', () => {
     // Monitor WebSocket connections
     const wsConnections: number[] = [];
 
-    page.on('websocket', ws => {
+    page.on('websocket', () => {
       const connectTime = Date.now();
       wsConnections.push(connectTime);
     });

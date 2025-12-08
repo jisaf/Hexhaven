@@ -130,7 +130,7 @@ export function Lobby() {
     return () => {
       window.removeEventListener('header-create-game', handleHeaderCreateGame);
     };
-  }, []);
+  }, [handleCreateRoom]);
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);

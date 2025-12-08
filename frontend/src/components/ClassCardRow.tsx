@@ -27,7 +27,6 @@ export const ClassCardRow: React.FC<ClassCardRowProps> = ({ className, cards }) 
           <div key={card.id} className="class-card-wrapper">
             <AbilityCard
               card={card}
-              compact={true}
             />
           </div>
         ))}
