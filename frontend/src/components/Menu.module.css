@@ -34,7 +34,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 300px;
+  width: min(60vw, 150px); /* Max 60% of viewport but not more than 150px */
   height: 100vh;
   background: var(--primary-bg-color, #0d1a2e);
   z-index: 1001;
@@ -50,9 +50,34 @@
   transform: translateX(0);
 }
 
+/* Close Button */
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary, #ecf0f1);
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  color: #c9a444;
+  transform: scale(1.1);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
 /* Language Selector Section */
 .languageSelectorSection {
-  padding: 16px 24px;
+  padding: 48px 16px 16px; /* Extra top padding to account for close button */
   display: flex;
   justify-content: center;
 }
@@ -115,64 +140,53 @@
   border-left-color: #ff6b6b;
 }
 
-/* Responsive Design for Tablets */
+/* Responsive Design for Tablets and Mobile */
 @media (max-width: 1024px) {
-  .menuPanel {
-    width: 280px;
-  }
-
   .menuItem {
-    padding: 14px 20px;
-    font-size: 15px;
-  }
-
-  .menuItems {
-    padding: 20px 0;
-    gap: 6px;
-  }
-}
-
-/* Responsive Design for Mobile (768px and below) */
-@media (max-width: 768px) {
-  .menuPanel {
-    width: calc(100vw - 24px);
-    max-width: 300px;
-  }
-
-  .menuItem {
-    padding: 14px 20px;
-    font-size: 15px;
-  }
-
-  .menuItems {
-    padding: 20px 0;
-    gap: 6px;
-  }
-
-  .menuItem:hover {
-    padding-left: 18px;
-  }
-}
-
-/* Small Mobile Devices (480px and below) */
-@media (max-width: 480px) {
-  .menuPanel {
-    width: 100vw;
-    max-width: 100%;
-  }
-
-  .menuItem {
-    padding: 13px 16px;
+    padding: 14px 12px;
     font-size: 14px;
   }
 
   .menuItems {
     padding: 16px 0;
+    gap: 6px;
+  }
+
+  .languageSelectorSection {
+    padding: 40px 12px 12px; /* Adjusted for smaller close button */
+  }
+
+  .closeButton {
+    top: 8px;
+    right: 8px;
+    font-size: 28px;
+  }
+}
+
+/* Small Mobile Devices (480px and below) */
+@media (max-width: 480px) {
+  .menuItem {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  .menuItems {
+    padding: 12px 0;
     gap: 4px;
   }
 
   .menuItem:hover {
-    padding-left: 14px;
+    padding-left: 8px;
+  }
+
+  .languageSelectorSection {
+    padding: 36px 8px 8px; /* Adjusted for even smaller close button */
+  }
+
+  .closeButton {
+    top: 6px;
+    right: 6px;
+    font-size: 24px;
   }
 }
 

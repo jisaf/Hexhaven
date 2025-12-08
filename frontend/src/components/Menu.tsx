@@ -86,6 +86,16 @@ export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
         aria-label="Main navigation"
         aria-hidden={!isOpen}
       >
+        {/* Close Button */}
+        <button
+          className={styles.closeButton}
+          onClick={onClose}
+          aria-label="Close menu"
+          title="Close menu"
+        >
+          ×
+        </button>
+
         {/* Language Selector Section */}
         <div className={styles.languageSelectorSection}>
           <LanguageSelector />
