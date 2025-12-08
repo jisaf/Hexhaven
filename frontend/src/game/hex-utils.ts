@@ -10,6 +10,8 @@
  * - Screen: (x, y) - Pixel coordinates
  */
 
+import * as PIXI from 'pixi.js';
+
 export interface Axial {
   q: number;
   r: number;
@@ -283,4 +285,24 @@ function cubeLerp(a: Cube, b: Cube, t: number): Cube {
     r: a.r * (1 - t) + b.r * t,
     s: a.s * (1 - t) + b.s * t
   };
+}
+
+/**
+ * Update a PIXI sprite's position based on hex coordinates
+ *
+ * This utility function ensures PIXI.js properly recalculates the sprite's
+ * interactive bounds for hit detection. When moving sprites programmatically,
+ * simply calling position.set() may not update the hit area, causing clicks
+ * to register at the old location.
+ *
+ * @param sprite - The PIXI.Container (sprite) to reposition
+ * @param hex - The target hex coordinates in axial format
+ *
+ * @example
+ * const monsterSprite = new MonsterSprite(monsterData);
+ * updateSpritePosition(monsterSprite, { q: 3, r: 2 });
+ */
+export function updateSpritePosition(sprite: PIXI.Container, hex: Axial): void {
+  const pos = axialToScreen(hex);
+  sprite.position.set(pos.x, pos.y);
 }

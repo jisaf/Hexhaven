@@ -12,14 +12,14 @@ import '../../styles/card-modules.css';
 
 export interface TextBoxModuleProps {
   module: CardModule;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   className?: string;
 }
 
 /**
  * Replaces template placeholders like {{fieldName}} with actual values from data
  */
-function replaceTemplateVars(template: string, data: Record<string, any>): string {
+function replaceTemplateVars(template: string, data: Record<string, unknown>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, fieldName) => {
     return data[fieldName] !== undefined ? String(data[fieldName]) : match;
   });

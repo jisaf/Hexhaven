@@ -90,7 +90,7 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
           let moduleElement: React.ReactNode = null;
 
           switch (module.type) {
-            case 'action':
+            case 'action': {
               // ActionModule needs action data and position
               const position = module.config?.position || 'top';
               const action = position === 'top' ? cardData.topAction : cardData.bottomAction;
@@ -104,6 +104,7 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
                 />
               );
               break;
+            }
 
             case 'header':
             case 'footer':

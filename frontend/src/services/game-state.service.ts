@@ -251,17 +251,55 @@ class GameStateManager {
     const myCharacter = data.characters.find(char => char.playerId === playerUUID);
     if (myCharacter) {
       this.state.myCharacterId = myCharacter.id;
-      const characterWithDeck = myCharacter as typeof myCharacter & { abilityDeck?: AbilityCard[] };
+      const characterWithDeck = myCharacter as typeof myCharacter & {
+        abilityDeck?: AbilityCard[];
+        selectedCards?: { topCardId: string; bottomCardId: string; initiative: number };
+        effectiveMovement?: number;
+        effectiveAttack?: number;
+        effectiveRange?: number;
+        hasAttackedThisTurn?: boolean;
+        movementUsedThisTurn?: number;
+      };
+
       if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
         this.state.playerHand = characterWithDeck.abilityDeck;
+      }
+
+      // Restore selected cards if they exist (for game rejoin)
+      if (characterWithDeck.selectedCards) {
+        const { topCardId, bottomCardId } = characterWithDeck.selectedCards;
+
+        // Find the selected cards in the ability deck
+        if (this.state.playerHand.length > 0) {
+          this.state.selectedTopAction = this.state.playerHand.find(card => card.id === topCardId) || null;
+          this.state.selectedBottomAction = this.state.playerHand.find(card => card.id === bottomCardId) || null;
+        }
+
+        // Restore action state
+        if (characterWithDeck.effectiveMovement !== undefined) {
+          this.state.currentMovementPoints = characterWithDeck.effectiveMovement - (characterWithDeck.movementUsedThisTurn || 0);
+        }
+
+        // Don't show card selection if cards are already selected
+        this.state.showCardSelection = false;
+
+        console.log('[GameStateManager] Restored selected cards on rejoin:', {
+          topCardId,
+          bottomCardId,
+          effectiveMovement: characterWithDeck.effectiveMovement,
+          movementUsed: characterWithDeck.movementUsedThisTurn,
+          movementRemaining: this.state.currentMovementPoints,
+        });
+      } else {
+        // No cards selected yet - show card selection
+        if (this.state.playerHand.length > 0) {
+          this.state.showCardSelection = true;
+        }
       }
     }
 
     this.state.gameData = data;
     this.state.currentRound = 1;
-    if (this.state.playerHand.length > 0) {
-        this.state.showCardSelection = true;
-    }
     this.emitStateUpdate();
   }
 
@@ -349,6 +387,15 @@ class GameStateManager {
       }
       // Trigger visual update for monster movement
       this.visualCallbacks.updateMonsterPosition?.(data.monsterId, data.movement);
+
+      // Update game state monster position to maintain consistency
+      // This ensures attack range calculations and targeting use the updated position
+      if (this.state.gameData) {
+        const monster = this.state.gameData.monsters.find(m => m.id === data.monsterId);
+        if (monster) {
+          monster.currentHex = data.movement;
+        }
+      }
     }
 
     // Attack

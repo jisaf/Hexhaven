@@ -41,3 +41,4 @@ export type {
 } from './entities';
 export * from './events';
 export * from './game-state';
+export * from './objectives';

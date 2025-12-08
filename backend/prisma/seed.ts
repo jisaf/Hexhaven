@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as bcrypt from 'bcrypt';
+import { UserCharacterService } from '../src/services/user-character.service';
 
 const prisma = new PrismaClient();
 
@@ -224,6 +226,66 @@ async function seedCardLayoutTemplates() {
   console.log(`✓ Seeded ${templates.length} card layout templates`);
 }
 
+async function seedTestUsers() {
+  console.log('Seeding test users...');
+
+  const userCharacterService = new UserCharacterService(prisma);
+  const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+  const password = 'foobarbaz123';
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+
+  const testUsersData = [
+    { username: 'foo', className: 'Brute' },
+    { username: 'bar', className: 'Tinkerer' },
+    { username: 'baz', className: 'Spellweaver' },
+  ];
+
+  // Fetch all character classes and create a map by name
+  const classes = await prisma.characterClass.findMany();
+  const classMap = new Map(classes.map((c) => [c.name, c]));
+
+  let userCount = 0;
+  let characterCount = 0;
+
+  for (const userData of testUsersData) {
+    // Create or update user
+    const user = await prisma.user.upsert({
+      where: { username: userData.username },
+      update: { passwordHash },
+      create: {
+        username: userData.username,
+        passwordHash,
+      },
+    });
+    userCount++;
+
+    // Check if character already exists
+    const existingCharacter = await prisma.character.findFirst({
+      where: {
+        userId: user.id,
+        name: userData.username,
+      },
+    });
+
+    if (!existingCharacter) {
+      const characterClass = classMap.get(userData.className);
+      if (!characterClass) {
+        console.warn(`Warning: Class "${userData.className}" not found, skipping character for "${userData.username}"`);
+        continue;
+      }
+
+      // Use UserCharacterService to create character
+      await userCharacterService.createCharacter(user.id, {
+        name: userData.username,
+        classId: characterClass.id,
+      });
+      characterCount++;
+    }
+  }
+
+  console.log(`✓ Seeded ${userCount} test users with ${characterCount} new characters`);
+}
+
 async function main() {
   console.log('Starting database seed...\n');
 
@@ -231,6 +293,7 @@ async function main() {
     await seedCardLayoutTemplates();
     await seedCharacterClasses();
     await seedAbilityCards();
+    await seedTestUsers();
     await seedItems();
     await seedScenarios();
 

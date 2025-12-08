@@ -34,19 +34,6 @@ export class UserCharacterService {
       throw new NotFoundError('Character class not found');
     }
 
-    const activeCharacter = await this.prisma.character.findFirst({
-      where: {
-        userId,
-        currentGameId: { not: null },
-      },
-    });
-
-    if (activeCharacter) {
-      throw new ConflictError(
-        'Cannot create a new character while you have an active character in a game',
-      );
-    }
-
     const character = await this.prisma.character.create({
       data: {
         name: dto.name,
@@ -78,9 +65,7 @@ export class UserCharacterService {
       },
     });
 
-    return characters.map((char: any) =>
-      this.mapToCharacterResponse(char),
-    );
+    return characters.map((char: any) => this.mapToCharacterResponse(char));
   }
 
   async getCharacter(

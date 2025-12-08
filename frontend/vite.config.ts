@@ -4,6 +4,30 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    // Enable minification
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+      },
+    },
+    // Manual chunks for better code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'pixi-vendor': ['pixi.js', '@pixi/react', 'pixi-viewport'],
+          'socket-vendor': ['socket.io-client'],
+          'i18n-vendor': ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-resources-to-backend'],
+        },
+      },
+    },
+    // Increase chunk size warning limit for large dependencies
+    chunkSizeWarningLimit: 1000,
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

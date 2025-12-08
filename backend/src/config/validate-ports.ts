@@ -23,6 +23,8 @@ export function validatePortConfiguration(port: number): void {
     }
   } else {
     // Production mode - port is behind Nginx reverse proxy
-    logger.log(`✅ Backend running on port ${port} (internal, proxied by Nginx)`);
+    logger.log(
+      `✅ Backend running on port ${port} (internal, proxied by Nginx)`,
+    );
   }
 }

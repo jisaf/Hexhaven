@@ -9,7 +9,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { HexGrid, type GameBoardData } from '../game/HexGrid';
 import type { LootSpawnedPayload } from '../../../shared/types';
 import type { Axial } from '../game/hex-utils';
-import { axialToScreen } from '../game/hex-utils';
 
 interface UseHexGridOptions {
   onHexClick: (hex: Axial) => void;
@@ -203,21 +202,36 @@ export function useHexGrid(
     }
   }, []);
 
-  // Update monster position
+  /**
+   * Update monster position on the hex grid
+   *
+   * This callback is invoked when a monster moves during their turn. It updates
+   * both the monster's internal data and its visual sprite position. The sprite
+   * is temporarily re-parented to force PIXI.js to recalculate its interactive
+   * bounds, ensuring click detection works at the new location.
+   *
+   * @param monsterId - The unique identifier of the monster to move
+   * @param newHex - The target hex coordinates in axial format
+   */
   const updateMonsterPosition = useCallback((monsterId: string, newHex: Axial) => {
     if (hexGridRef.current) {
-      const monster = hexGridRef.current.getMonster(monsterId);
-      if (monster) {
-        const monsterData = monster.getMonster();
-        // Update monster with new position
+      const sprite = hexGridRef.current.getMonster(monsterId);
+      if (sprite) {
+        // Update monster data
+        const monsterData = sprite.getMonster();
         const updatedMonster = { ...monsterData, currentHex: newHex };
         hexGridRef.current.updateMonster(monsterId, updatedMonster);
 
-        // Update sprite position using proper hex-to-screen conversion
-        const sprite = hexGridRef.current.getMonster(monsterId);
-        if (sprite) {
-          const pos = axialToScreen(newHex);
-          sprite.position.set(pos.x, pos.y);
+        // Update sprite position
+        sprite.updatePosition(newHex);
+
+        // Force PIXI to recalculate interactive bounds by re-parenting the sprite
+        // This ensures hit detection works at the new location
+        const parent = sprite.parent;
+        if (parent) {
+          const index = parent.getChildIndex(sprite);
+          parent.removeChild(sprite);
+          parent.addChildAt(sprite, index);
         }
       }
     }

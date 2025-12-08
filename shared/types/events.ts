@@ -90,6 +90,7 @@ export interface PlayerJoinedPayload {
 export interface PlayerLeftPayload {
   playerId: string;
   nickname: string;
+  playersRemaining: number;
 }
 
 export interface CharacterSelectedPayload {
@@ -125,7 +126,35 @@ export interface GameStartedPayload {
     currentHex: AxialCoordinates;
     conditions: string[];
     isExhausted: boolean;
+    // Added for game rejoin - restore selected cards and action state
+    selectedCards?: {
+      topCardId: string;
+      bottomCardId: string;
+      initiative: number;
+    };
+    effectiveMovement?: number;
+    effectiveAttack?: number;
+    effectiveRange?: number;
+    hasAttackedThisTurn?: boolean;
+    movementUsedThisTurn?: number;
   }[];
+  objectives?: {
+    primary: {
+      id: string;
+      description: string;
+      trackProgress: boolean;
+    };
+    secondary: Array<{
+      id: string;
+      description: string;
+      trackProgress: boolean;
+      optional: boolean;
+    }>;
+    failureConditions?: Array<{
+      id: string;
+      description: string;
+    }>;
+  };
 }
 
 export interface CardsSelectedPayload {
@@ -220,7 +249,19 @@ export interface ScenarioCompletedPayload {
     gold: number;
     items: string[];
   }[];
-  completionTime: number; // seconds
+  completionTime: number; // milliseconds from game start
+
+  // Phase 3: Enhanced objective completion fields
+  primaryObjectiveCompleted: boolean;
+  secondaryObjectivesCompleted: string[]; // IDs of completed secondary objectives
+  objectiveProgress: Record<string, { current: number; target: number }>;
+  playerStats: Array<{
+    playerId: string;
+    damageDealt: number;
+    damageTaken: number;
+    monstersKilled: number;
+    cardsLost: number;
+  }>;
 }
 
 export interface MonsterDiedPayload {
@@ -260,6 +301,54 @@ export interface DebugLogPayload {
   message: string;
   category?: string; // e.g., 'MonsterAI', 'Combat', 'Movement'
   data?: any;
+}
+
+// ========== PHASE 3: OBJECTIVE SYSTEM EVENTS ==========
+
+/**
+ * Payload for objectives_loaded event
+ * Sent when game starts to inform clients of scenario objectives
+ */
+export interface ObjectivesLoadedPayload {
+  primary: {
+    id: string;
+    description: string;
+    trackProgress: boolean;
+  };
+  secondary: Array<{
+    id: string;
+    description: string;
+    trackProgress: boolean;
+    optional: boolean;
+  }>;
+  failureConditions?: Array<{
+    id: string;
+    description: string;
+  }>;
+}
+
+/**
+ * Payload for objective_progress event
+ * Sent when objective progress updates
+ */
+export interface ObjectiveProgressUpdatePayload {
+  objectiveId: string;
+  description: string;
+  current: number;
+  target: number;
+  percentage: number;
+  milestone?: number; // 25, 50, 75, 100
+}
+
+/**
+ * Payload for character_exhausted event
+ * Sent when a character becomes exhausted
+ */
+export interface CharacterExhaustedPayload {
+  characterId: string;
+  characterName: string;
+  playerId: string;
+  reason: 'health' | 'cards' | 'manual';
 }
 
 // ========== EVENT TYPE MAPPING ==========
@@ -315,4 +404,8 @@ export interface ServerEvents {
   game_state_update: GameStateUpdatePayload;
   error: ErrorPayload;
   debug_log: DebugLogPayload;
+  // Phase 3: Objective system events
+  objectives_loaded: ObjectivesLoadedPayload;
+  objective_progress: ObjectiveProgressUpdatePayload;
+  character_exhausted: CharacterExhaustedPayload;
 }

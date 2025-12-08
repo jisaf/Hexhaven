@@ -24,6 +24,7 @@ This Product Requirements Document outlines the development of a server-authorit
 7. [Implementation Details](#implementation-details)
 8. [Risk Mitigation](#risk-mitigation)
 9. [Success Metrics](#success-metrics)
+10. [Refactor & Technical Debt](#refactor--technical-debt)
 
 ## Core Architecture
 
@@ -1181,6 +1182,91 @@ if (validation.valid) {
   });
 }
 ```
+
+## Refactor & Technical Debt
+
+This section documents architectural concerns and potential refactoring opportunities identified during development. These are tracked for future evaluation and are not blockers for current functionality.
+
+### R1: Single Source of Truth for Game State
+
+**Status:** Identified 2025-12-08
+**Priority:** Medium
+**Complexity:** High
+
+**Current Architecture Issue:**
+
+The game maintains monster positions in two separate places:
+1. **Game State** (`gameStateManager.state.gameData.monsters[]`) - The canonical game state
+2. **Visual Sprites** (PIXI MonsterSprite instances) - The rendered representation
+
+When a monster moves, both must be updated independently:
+```typescript
+// Current pattern (error-prone)
+Backend Event → Game State Service
+                ├─> Update Visual Callback (sprite.updatePosition)
+                └─> Update Game State (monster.currentHex)
+```
+
+**Problem:**
+- Dual-update pattern is error-prone (both must be kept in sync manually)
+- State and visuals can desync, causing bugs like:
+  - Monsters clickable at old position after moving
+  - Attack range highlights appearing at stale locations
+  - Hit detection using outdated coordinates
+
+**Recommended Architecture:**
+
+Implement unidirectional data flow where game state is the single source of truth:
+```typescript
+// Proposed pattern (robust)
+Backend Event → Update Game State ONLY
+                     ↓
+                State Change → React/Observer → Update Visuals
+```
+
+**Implementation Approach:**
+
+1. **Remove Direct Visual Callbacks**
+   - Remove `visualCallbacks` from `game-state.service.ts`
+   - State updates should only modify `gameStateManager.state`
+
+2. **Observer Pattern for Visual Updates**
+   - PIXI components subscribe to state changes
+   - Visual layer derives entirely from state
+   - Use React hooks (`useEffect`) or custom observers
+
+3. **Animation Handling**
+   - State changes include animation metadata (e.g., movement path)
+   - Visual layer interprets animation data from state
+   - Maintains fine-grained control over PIXI animations
+
+**Benefits:**
+- **Impossible to desync** - Visuals always derive from state
+- **Easier debugging** - Single source of truth
+- **Better testability** - State changes can be tested independently
+- **Clearer architecture** - Unidirectional data flow is easier to reason about
+
+**Trade-offs:**
+- **Initial complexity** - Refactor requires touching many files
+- **Performance considerations** - React re-renders vs direct PIXI updates
+- **Animation control** - May need creative solutions for complex animations
+
+**When to Implement:**
+- When adding 3+ new entity types with similar patterns
+- During a major refactor of the rendering system
+- If sync bugs continue to appear despite manual fixes
+
+**Related Files:**
+- `frontend/src/services/game-state.service.ts` - State management
+- `frontend/src/hooks/useHexGrid.ts` - Visual update callbacks
+- `frontend/src/game/MonsterSprite.ts` - PIXI sprite management
+- `frontend/src/game/HexGrid.ts` - Grid rendering
+
+**References:**
+- Issue #194: Monster location not updating for targeting purposes
+- Fix commit: Added manual state sync as temporary solution
+
+---
 
 ## Development Principles
 

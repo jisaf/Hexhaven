@@ -21,6 +21,10 @@ import type {
   CharacterMovedPayload,
   AttackResolvedPayload,
   MonsterActivatedPayload,
+  ObjectivesLoadedPayload,
+  ObjectiveProgressUpdatePayload,
+  CharacterExhaustedPayload,
+  ScenarioCompletedPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -79,7 +83,12 @@ export interface WebSocketEvents {
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
 
   // Scenario
-  scenario_completed: (data: { victory: boolean; rewards: { experience: number; loot: string[] } }) => void;
+  scenario_completed: (data: ScenarioCompletedPayload) => void;
+
+  // Objectives (Phase 3)
+  objectives_loaded: (data: ObjectivesLoadedPayload) => void;
+  objective_progress: (data: ObjectiveProgressUpdatePayload) => void;
+  character_exhausted: (data: CharacterExhaustedPayload) => void;
 
   // State updates
   game_state_update: (data: { gameState: Record<string, unknown> }) => void;
@@ -143,13 +152,12 @@ class WebSocketService {
       this.reconnectAttempts = 0;
 
       // Register all queued events with the connected socket
-      console.log('WebSocket connected - registering queued events');
       for (const event of this.eventHandlers.keys()) {
         this.registerEventWithSocket(event as EventName);
       }
 
       this.emit('ws_connected');
-      console.log('WebSocket connected', { playerUUID: this.playerUUID });
+      // Verbose connection logging removed
 
       // Auto-rejoin removed - RoomSessionManager now handles room joining
       // See /home/opc/hexhaven/ROOM_JOIN_UNIFIED_ARCHITECTURE.md for architecture details
@@ -158,7 +166,7 @@ class WebSocketService {
     this.socket.on('disconnect', (reason) => {
       this.connectionStatus = 'disconnected';
       this.emit('ws_disconnected');
-      console.log('WebSocket disconnected:', reason);
+      // Disconnection handled via events
 
       // Clear registered events so they can be re-registered on reconnect
       this.registeredEvents.clear();
@@ -173,13 +181,13 @@ class WebSocketService {
       this.connectionStatus = 'reconnecting';
       this.reconnectAttempts = attemptNumber;
       this.emit('ws_reconnecting');
-      console.log(`Reconnecting... (attempt ${attemptNumber}/${this.maxReconnectAttempts})`);
+      // Reconnection handled via UI
     });
 
-    this.socket.on('reconnect', (attemptNumber) => {
+    this.socket.on('reconnect', () => {
       this.connectionStatus = 'connected';
       this.emit('ws_reconnected');
-      console.log(`WebSocket reconnected after ${attemptNumber} attempts`);
+      // Reconnection success handled via UI
     });
 
     this.socket.on('reconnect_failed', () => {
@@ -207,7 +215,6 @@ class WebSocketService {
     this.socket.on(
       'player_disconnected',
       (data: { playerId: string; nickname: string; willReconnect: boolean }) => {
-        console.log('Player disconnected:', data);
         // Emit to application layer for UI updates
         this.emit('player_disconnected', {
           playerId: data.playerId,
@@ -218,7 +225,6 @@ class WebSocketService {
 
     // Handle other players reconnecting (US4 - T160)
     this.socket.on('player_reconnected', (data: { playerId: string; nickname: string }) => {
-      console.log('Player reconnected:', data);
       // Emit to application layer for UI updates
       this.emit('player_reconnected', {
         playerId: data.playerId,
@@ -270,23 +276,17 @@ class WebSocketService {
     // Create a wrapper that calls ALL handlers for this event
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wrappedHandler = ((...args: any[]): void => {
-      // Debug logging for all events
-      console.log(`🔔 WebSocket event "${event}" received`, args.length > 0 ? args[0] : '(no data)');
-
       // Call ALL registered handlers for this event
       const handlers = this.eventHandlers.get(event);
       if (handlers) {
-        console.log(`   Calling ${handlers.size} handler(s) for "${event}"`);
         for (const handler of handlers) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (handler as any)(...args);
           } catch (error) {
-            console.error(`   ❌ Error in handler for "${event}":`, error);
+            console.error(`Error in handler for "${event}":`, error);
           }
         }
-      } else {
-        console.warn(`   ⚠️  No handlers found for "${event}"`);
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
@@ -294,7 +294,7 @@ class WebSocketService {
     // Register with socket.io (one listener per event)
     this.socket.on(event, wrappedHandler);
     this.registeredEvents.add(event);
-    console.log(`✅ Registered Socket.IO listener for event: ${event}`);
+    // Event registration logging removed
   }
 
   /**
@@ -338,7 +338,7 @@ class WebSocketService {
     saveLastRoomCode(roomCode);
 
     this.emit('join_room', { roomCode, nickname, playerUUID, intent });
-    console.log('Joining room:', { roomCode, nickname, playerUUID, intent });
+    // Verbose join logging removed - events handle this
   }
 
   /**
@@ -354,10 +354,20 @@ class WebSocketService {
 
   /**
    * Select character (002 - Updated for persistent characters)
+   * @param characterIdOrClass - Either a character UUID (persistent character) or a CharacterClass name (legacy)
    */
-  selectCharacter(characterId: string): void {
-    console.log('[WebSocketService] Emitting select_character with:', { characterId });
-    this.emit('select_character', { characterClass: characterId });
+  selectCharacter(characterIdOrClass: string): void {
+    // Check if input is a UUID (contains hyphens) or a character class name
+    const isUUID = characterIdOrClass.includes('-');
+
+    if (isUUID) {
+      // Persistent character selection - send characterId
+      this.emit('select_character', { characterId: characterIdOrClass });
+    } else {
+      // Legacy character class selection - send characterClass
+      this.emit('select_character', { characterClass: characterIdOrClass });
+    }
+    // Character selection logging removed
   }
 
   /**

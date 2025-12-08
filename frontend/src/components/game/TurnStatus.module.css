@@ -1,0 +1,423 @@
+.turnStatus {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--primary-bg-color, #0d1a2e);
+  color: #f0e6d2;
+}
+
+/* ===== Control Bar ===== */
+.controlBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: rgba(201, 164, 68, 0.1);
+  border-bottom: 1px solid #c9a444;
+  gap: 8px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(201, 164, 68, 0.2);
+  border: 1px solid #c9a444;
+  border-radius: 4px;
+  color: #c9a444;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background: rgba(201, 164, 68, 0.3);
+  transform: scale(1.05);
+}
+
+.objectivesSlot {
+  position: relative;
+  flex-shrink: 0;
+  /* This container is the positioning context for the absolute panel */
+}
+
+.roundCounter {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.statusGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.connected {
+  background-color: #51cf66;
+  box-shadow: 0 0 8px rgba(81, 207, 102, 0.6);
+}
+
+.statusDot.disconnected {
+  background-color: #ff6b6b;
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+}
+
+.statusDot.reconnecting {
+  background-color: #ffd43b;
+  box-shadow: 0 0 8px rgba(255, 212, 59, 0.6);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.endTurnButton {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #c9a444 0%, #a67c00 100%);
+  border: 1px solid #c9a444;
+  border-radius: 4px;
+  color: #0d1a2e;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.endTurnButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e0b84e 0%, #c9a444 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(201, 164, 68, 0.3);
+}
+
+.endTurnButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #555;
+  border-color: #666;
+}
+
+/* ===== Turn Order (Horizontal Scroll) ===== */
+.turnOrderContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
+  overflow: hidden;
+}
+
+.turnOrderLabel {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(240, 230, 210, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.turnOrderScroll {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+  scroll-behavior: smooth;
+}
+
+/* Custom horizontal scrollbar */
+.turnOrderScroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.turnOrderScroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.turnOrderScroll::-webkit-scrollbar-thumb {
+  background: rgba(201, 164, 68, 0.4);
+  border-radius: 3px;
+}
+
+.turnOrderScroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 164, 68, 0.6);
+}
+
+.turnEntity {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(201, 164, 68, 0.3);
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.turnEntity.character {
+  border-color: rgba(74, 171, 247, 0.5);
+}
+
+.turnEntity.monster {
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.turnEntity.currentTurn {
+  background: rgba(201, 164, 68, 0.2);
+  border-color: #c9a444;
+  border-width: 3px;
+  box-shadow: 0 0 12px rgba(201, 164, 68, 0.4);
+  transform: scale(1.05);
+}
+
+.turnEntity.selected {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: #2ecc71;
+  border-width: 3px;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+}
+
+.turnEntity {
+  cursor: pointer;
+}
+
+.turnEntity:hover {
+  transform: scale(1.02);
+  opacity: 1;
+}
+
+.entityName {
+  font-size: 9px;
+  font-weight: 600;
+  color: #f0e6d2;
+  text-align: center;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.entityInitiative {
+  font-size: 16px;
+  font-weight: 700;
+  color: #c9a444;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+.entityHealth {
+  font-size: 8px;
+  color: rgba(240, 230, 210, 0.7);
+  line-height: 1;
+}
+
+/* ===== Exhausted State ===== */
+.turnEntity.exhausted {
+  opacity: 0.5;
+  filter: grayscale(80%);
+}
+
+.turnEntity.exhausted .entityName {
+  text-decoration: line-through;
+  color: rgba(240, 230, 210, 0.5);
+}
+
+.turnEntity.exhausted .entityInitiative {
+  color: rgba(201, 164, 68, 0.5);
+}
+
+.exhaustedLabel {
+  font-size: 8px;
+  color: rgba(255, 107, 107, 0.8);
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* ===== Action Buttons ===== */
+.actionButtons {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.moveButton,
+.attackButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(201, 164, 68, 0.2);
+  border: 2px solid #c9a444;
+  border-radius: 4px;
+  color: #f0e6d2;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.moveButton {
+  border-color: #4dabf7;
+  color: #4dabf7;
+}
+
+.attackButton {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.moveButton:hover {
+  background: rgba(77, 171, 247, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+}
+
+.attackButton:hover {
+  background: rgba(255, 107, 107, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.attackButton.active {
+  background: rgba(255, 107, 107, 0.4);
+  border-width: 3px;
+  box-shadow: 0 0 16px rgba(255, 107, 107, 0.5);
+}
+
+.moveButton svg,
+.attackButton svg {
+  font-size: 16px;
+}
+
+/* ===== Details Panel ===== */
+.detailsPanel {
+  flex-shrink: 0;
+  padding: 8px;
+  background: rgba(46, 204, 113, 0.1);
+  border-top: 2px solid #2ecc71;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
+}
+
+.detailsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.detailsName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2ecc71;
+  text-transform: uppercase;
+}
+
+.closeDetails {
+  background: none;
+  border: none;
+  color: rgba(240, 230, 210, 0.7);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.closeDetails:hover {
+  color: #f0e6d2;
+}
+
+.detailsStats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.statLabel {
+  color: rgba(240, 230, 210, 0.7);
+  font-weight: 600;
+}
+
+.statValue {
+  color: #f0e6d2;
+  font-weight: 700;
+}
+
+.conditionsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.condition {
+  padding: 2px 6px;
+  background: rgba(155, 89, 182, 0.3);
+  border: 1px solid #9b59b6;
+  border-radius: 4px;
+  color: #9b59b6;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .turnEntity {
+    min-width: 70px;
+    padding: 6px 10px;
+  }
+}
