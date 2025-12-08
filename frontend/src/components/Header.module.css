@@ -38,11 +38,17 @@
   font-family: Georgia, serif;
   letter-spacing: 2px;
   cursor: pointer;
-  transition: text-shadow 0.2s ease;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
 .brand:hover {
   text-shadow: 0 0 10px rgba(201, 164, 68, 0.5);
+  transform: scale(1.02);
+}
+
+.brand:active {
+  transform: scale(0.98);
 }
 
 /* Center: Flex spacer */

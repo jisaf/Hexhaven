@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -24,11 +25,19 @@ export const Header: React.FC<HeaderProps> = ({
   onCreateGame,
   showCreateGame = false
 }) => {
+  const navigate = useNavigate();
+
+  const handleBrandClick = () => {
+    navigate('/');
+  };
+
   return (
     <header className={styles.header}>
       {/* Left: Hexhaven Logo/Branding */}
       <div className={styles.headerLeft}>
-        <h1 className={styles.brand}>Hexhaven</h1>
+        <h1 className={styles.brand} onClick={handleBrandClick}>
+          Hexhaven
+        </h1>
       </div>
 
       {/* Center: Spacer */}
