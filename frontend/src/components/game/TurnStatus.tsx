@@ -29,6 +29,8 @@ interface TurnOrderEntity {
   currentHealth?: number;
   maxHealth?: number;
   isExhausted?: boolean;
+  classType?: string; // For characters
+  isElite?: boolean; // For monsters
 }
 
 interface TurnStatusProps {
@@ -124,12 +126,28 @@ export function TurnStatus({
             const isSelected = entity.id === selectedActorId;
             const entityClassName = `${styles.turnEntity} ${isCurrentTurn ? styles.currentTurn : ''} ${isSelected ? styles.selected : ''} ${styles[entity.type]} ${entity.isExhausted ? styles.exhausted : ''}`;
 
+            // Determine avatar path
+            const avatarPath = entity.type === 'character' && entity.classType
+              ? `/avatars/characters/${entity.classType.toLowerCase()}.svg`
+              : entity.type === 'monster'
+              ? entity.isElite
+                ? '/avatars/monsters/monster-elite.svg'
+                : '/avatars/monsters/monster-normal.svg'
+              : null;
+
             return (
               <div
                 key={entity.id}
                 className={entityClassName}
                 onClick={() => handleActorClick(entity.id)}
               >
+                {avatarPath && (
+                  <img
+                    src={avatarPath}
+                    alt={entity.name}
+                    className={styles.entityAvatar}
+                  />
+                )}
                 <div className={styles.entityName}>
                   {entity.name}
                   {entity.isExhausted && <span className={styles.exhaustedLabel}> (Exhausted)</span>}

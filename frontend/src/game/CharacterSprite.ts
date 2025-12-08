@@ -37,7 +37,7 @@ export class CharacterSprite extends PIXI.Container {
   private data: CharacterData;
   private options: CharacterSpriteOptions;
 
-  private body: PIXI.Graphics;
+  private body: PIXI.Sprite;
   private healthBar: PIXI.Graphics;
   private selectionRing: PIXI.Graphics;
   private conditionIcons: PIXI.Container;
@@ -83,32 +83,22 @@ export class CharacterSprite extends PIXI.Container {
   }
 
   /**
-   * Create character body (colored circle with class initial)
+   * Create character body (SVG avatar sprite)
    */
-  private createBody(): PIXI.Graphics {
-    const graphic = new PIXI.Graphics();
-    const color = this.getClassColor(this.classType);
-    const radius = HEX_SIZE * 0.4;
+  private createBody(): PIXI.Sprite {
+    // Load SVG avatar based on class type
+    const avatarPath = `/avatars/characters/${this.classType.toLowerCase()}.svg`;
+    const sprite = PIXI.Sprite.from(avatarPath);
 
-    // Draw character circle
-    graphic.beginFill(color, 1);
-    graphic.lineStyle(3, 0xFFFFFF, 1);
-    graphic.drawCircle(0, 0, radius);
-    graphic.endFill();
+    // Size the avatar to match the hex size
+    const avatarSize = HEX_SIZE * 0.8;
+    sprite.width = avatarSize;
+    sprite.height = avatarSize;
 
-    // Add class initial text
-    const text = new PIXI.Text(this.classType.charAt(0), {
-      fontFamily: 'Arial',
-      fontSize: 24,
-      fontWeight: 'bold',
-      fill: 0xFFFFFF,
-      align: 'center'
-    });
+    // Center the sprite
+    sprite.anchor.set(0.5);
 
-    text.anchor.set(0.5);
-    graphic.addChild(text);
-
-    return graphic;
+    return sprite;
   }
 
   /**
@@ -367,28 +357,6 @@ export class CharacterSprite extends PIXI.Container {
       if (data.isExhausted) {
         this.setSelected(false);
       }
-    }
-  }
-
-  /**
-   * Get color for character class
-   */
-  private getClassColor(classType: CharacterClass): number {
-    switch (classType) {
-      case 'Brute':
-        return 0xCC3333;  // Red
-      case 'Tinkerer':
-        return 0x3399CC;  // Blue
-      case 'Spellweaver':
-        return 0x9933CC;  // Purple
-      case 'Scoundrel':
-        return 0x33CC33;  // Green
-      case 'Cragheart':
-        return 0xCC9933;  // Orange
-      case 'Mindthief':
-        return 0xCC33CC;  // Magenta
-      default:
-        return 0x999999;  // Gray
     }
   }
 

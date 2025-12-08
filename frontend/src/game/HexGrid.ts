@@ -146,6 +146,20 @@ export class HexGrid {
     // Center the viewport on the world origin
     this.viewport.moveCenter(0, 0);
 
+    // Preload SVG avatar assets
+    const avatarAssets = [
+      '/avatars/characters/brute.svg',
+      '/avatars/characters/tinkerer.svg',
+      '/avatars/characters/spellweaver.svg',
+      '/avatars/characters/scoundrel.svg',
+      '/avatars/characters/cragheart.svg',
+      '/avatars/characters/mindthief.svg',
+      '/avatars/monsters/monster-normal.svg',
+      '/avatars/monsters/monster-elite.svg',
+    ];
+
+    await Promise.all(avatarAssets.map(path => PIXI.Assets.load(path)));
+
     // Create layers
     this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();

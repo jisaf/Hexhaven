@@ -11,7 +11,7 @@ import { type Axial, updateSpritePosition } from './hex-utils';
 
 export class MonsterSprite extends PIXI.Container {
   private monster: Monster;
-  private sprite: PIXI.Graphics;
+  private sprite: PIXI.Sprite;
   private healthBar: PIXI.Graphics;
   private healthText: PIXI.Text;
   private nameText: PIXI.Text;
@@ -55,51 +55,21 @@ export class MonsterSprite extends PIXI.Container {
     this.updateVisuals();
   }
 
-  private createSprite(): PIXI.Graphics {
-    const sprite = new PIXI.Graphics();
+  private createSprite(): PIXI.Sprite {
+    // Load SVG avatar based on elite status
+    const avatarPath = this.monster.isElite
+      ? '/avatars/monsters/monster-elite.svg'
+      : '/avatars/monsters/monster-normal.svg';
 
-    // Monster body
-    if (this.monster.isElite) {
-      // Elite monsters - gold/yellow
-      sprite.beginFill(0xf39c12);
-    } else {
-      // Normal monsters - red
-      sprite.beginFill(0xe74c3c);
-    }
+    const sprite = PIXI.Sprite.from(avatarPath);
 
-    // Draw hexagon shape for monster
-    const size = 30;
-    sprite.drawPolygon([
-      0, -size,
-      size * 0.866, -size * 0.5,
-      size * 0.866, size * 0.5,
-      0, size,
-      -size * 0.866, size * 0.5,
-      -size * 0.866, -size * 0.5,
-    ]);
-    sprite.endFill();
+    // Size the avatar sprite
+    const avatarSize = 60;
+    sprite.width = avatarSize;
+    sprite.height = avatarSize;
 
-    // Add border
-    sprite.lineStyle(3, this.monster.isElite ? 0xffdc00 : 0xc0392b);
-    sprite.drawPolygon([
-      0, -size,
-      size * 0.866, -size * 0.5,
-      size * 0.866, size * 0.5,
-      0, size,
-      -size * 0.866, size * 0.5,
-      -size * 0.866, -size * 0.5,
-    ]);
-
-    // Add eyes (scary!)
-    sprite.beginFill(0xffffff);
-    sprite.drawCircle(-8, -5, 4);
-    sprite.drawCircle(8, -5, 4);
-    sprite.endFill();
-
-    sprite.beginFill(0x000000);
-    sprite.drawCircle(-8, -5, 2);
-    sprite.drawCircle(8, -5, 2);
-    sprite.endFill();
+    // Center the sprite
+    sprite.anchor.set(0.5);
 
     return sprite;
   }
