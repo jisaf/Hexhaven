@@ -167,19 +167,6 @@ export function Lobby() {
     }
   };
 
-  // Room creation flow (T067)
-  const handleCreateRoom = () => {
-    // Reset session state to allow creating new room
-    gameSessionCoordinator.switchGame();
-
-    const storedNickname = getPlayerNickname();
-    if (storedNickname) {
-      proceedWithRoomCreation(storedNickname);
-    } else {
-      setMode('nickname-for-create');
-    }
-  };
-
   const handleNicknameSubmit = (submittedNickname: string) => {
     proceedWithRoomCreation(submittedNickname);
   };
