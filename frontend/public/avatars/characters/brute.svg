@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <!-- Background circle -->
-  <circle cx="50" cy="50" r="48" fill="#CC3333" stroke="#FFF" stroke-width="3"/>
+  <circle cx="50" cy="50" r="48" fill="#666666" stroke="#FFF" stroke-width="3"/>
 
   <!-- Horned helmet -->
   <path d="M 30 35 Q 30 25 35 20 L 35 15 L 30 20 Q 25 25 25 35 Z" fill="#8B4513" stroke="#000" stroke-width="1.5"/>

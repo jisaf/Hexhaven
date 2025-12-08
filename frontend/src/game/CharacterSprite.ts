@@ -366,7 +366,7 @@ export class CharacterSprite extends PIXI.Container {
   private getClassColor(classType: CharacterClass): number {
     switch (classType) {
       case 'Brute':
-        return 0xCC3333;  // Red
+        return 0x666666;  // Dark Gray/Steel
       case 'Tinkerer':
         return 0x3399CC;  // Blue
       case 'Spellweaver':
