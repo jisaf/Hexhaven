@@ -14,20 +14,18 @@
 import { test, expect } from '@playwright/test';
 import { LandingPage } from '../pages/LandingPage';
 import { LobbyPage } from '../pages/LobbyPage';
-import { createTwoPlayerGame, createMultiplayerGame, verifyAllPlayersInSameRoom, verifyAllPlayersSeeEachOther } from '../helpers/multiplayer';
+import { createTwoPlayerGame, verifyAllPlayersInSameRoom, verifyAllPlayersSeeEachOther } from '../helpers/multiplayer';
 import { assertPlayerCount } from '../helpers/assertions';
 
 test.describe('User Story 1: Join Game Room', () => {
-  test('should join an existing room with valid code', async ({ page, context }) => {
+  test('should join an existing room with valid code', async ({ context }) => {
     // Create 2-player game using helper
     const session = await createTwoPlayerGame(context, {
       player1Name: 'Host',
       player2Name: 'Player2'
     });
 
-    const hostPage = session.hostPage;
     const player2Page = session.players[1].page;
-    const lobbyPage2 = new LobbyPage(player2Page);
 
     // Verify room codes match
     await verifyAllPlayersInSameRoom(session);
