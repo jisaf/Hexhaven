@@ -30,6 +30,8 @@ import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
 import {
   getPlayerNickname,
+  getDisplayName,
+  isUserAuthenticated,
 } from '../utils/storage';
 import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
@@ -137,9 +139,9 @@ export function Lobby() {
       // Reset session state to allow creating new room
       gameSessionCoordinator.switchGame();
 
-      const storedNickname = getPlayerNickname();
-      if (storedNickname) {
-        proceedWithRoomCreation(storedNickname);
+      const displayName = getDisplayName();
+      if (displayName) {
+        proceedWithRoomCreation(displayName);
       } else {
         setMode('nickname-for-create');
       }
@@ -176,9 +178,9 @@ export function Lobby() {
     // Reset session state before joining different room
     gameSessionCoordinator.switchGame();
 
-    const storedNickname = getPlayerNickname();
-    if (storedNickname) {
-      handleJoinRoom(roomCode, storedNickname);
+    const displayName = getDisplayName();
+    if (displayName) {
+      handleJoinRoom(roomCode, displayName);
     } else {
       setMode('joining');
     }
@@ -302,7 +304,8 @@ export function Lobby() {
                 onSubmit={handleJoinRoom}
                 isLoading={isLoading}
                 error={error || undefined}
-                initialNickname={getPlayerNickname() || ''}
+                initialNickname={getDisplayName() || ''}
+                isAuthenticated={isUserAuthenticated()}
               />
             </div>
           </div>

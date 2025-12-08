@@ -3154,40 +3154,40 @@ export class GameGateway
 
         // Build player results for database
         const playerResults = room.players.map((p: any) => {
-            const stats = playerStatsMap?.get(p.uuid);
-            const loot = lootByPlayer.get(p.uuid);
-            const character = characterService.getCharacterByPlayerId(p.uuid);
+          const stats = playerStatsMap?.get(p.uuid);
+          const loot = lootByPlayer.get(p.uuid);
+          const character = characterService.getCharacterByPlayerId(p.uuid);
 
-            // Calculate experience for this player
-            let playerExperience = isVictory ? 10 : 0;
-            if (isVictory && objectives?.secondary) {
-              for (const secondary of objectives.secondary) {
-                const result = secondaryResults.get(secondary.id);
-                if (result?.complete && secondary.rewards?.experience) {
-                  playerExperience +=
-                    secondary.rewards.experience / room.players.length; // Distribute evenly
-                }
+          // Calculate experience for this player
+          let playerExperience = isVictory ? 10 : 0;
+          if (isVictory && objectives?.secondary) {
+            for (const secondary of objectives.secondary) {
+              const result = secondaryResults.get(secondary.id);
+              if (result?.complete && secondary.rewards?.experience) {
+                playerExperience +=
+                  secondary.rewards.experience / room.players.length; // Distribute evenly
               }
             }
+          }
 
-            return {
-              userId: p.uuid,
-              characterId: character?.id || p.uuid,
-              characterClass: p.characterClass || 'Unknown',
-              characterName: p.nickname,
-              survived: !character?.exhausted,
-              wasExhausted: character?.exhausted || false,
-              damageDealt: stats?.damageDealt || 0,
-              damageTaken: stats?.damageTaken || 0,
-              monstersKilled: stats?.monstersKilled || 0,
-              lootCollected: loot
-                ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
-                : 0,
-              cardsLost: stats?.cardsLost || 0,
-              experienceGained: Math.floor(playerExperience),
-              goldGained: loot?.gold || 0,
-            };
-          });
+          return {
+            userId: p.uuid,
+            characterId: character?.id || p.uuid,
+            characterClass: p.characterClass || 'Unknown',
+            characterName: p.nickname,
+            survived: !character?.exhausted,
+            wasExhausted: character?.exhausted || false,
+            damageDealt: stats?.damageDealt || 0,
+            damageTaken: stats?.damageTaken || 0,
+            monstersKilled: stats?.monstersKilled || 0,
+            lootCollected: loot
+              ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
+              : 0,
+            cardsLost: stats?.cardsLost || 0,
+            experienceGained: Math.floor(playerExperience),
+            goldGained: loot?.gold || 0,
+          };
+        });
 
         // Save to database
         await this.gameResultService.saveGameResult({
