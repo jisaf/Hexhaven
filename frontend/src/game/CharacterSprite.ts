@@ -361,28 +361,6 @@ export class CharacterSprite extends PIXI.Container {
   }
 
   /**
-   * Get color for character class
-   */
-  private getClassColor(classType: CharacterClass): number {
-    switch (classType) {
-      case 'Brute':
-        return 0x666666;  // Dark Gray/Steel
-      case 'Tinkerer':
-        return 0x3399CC;  // Blue
-      case 'Spellweaver':
-        return 0x9933CC;  // Purple
-      case 'Scoundrel':
-        return 0x33CC33;  // Green
-      case 'Cragheart':
-        return 0xCC9933;  // Orange
-      case 'Mindthief':
-        return 0xCC33CC;  // Magenta
-      default:
-        return 0x999999;  // Gray
-    }
-  }
-
-  /**
    * Get color for health bar based on percentage
    */
   private getHealthColor(percent: number): number {
