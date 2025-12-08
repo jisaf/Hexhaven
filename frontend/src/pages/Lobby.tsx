@@ -29,7 +29,6 @@ import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
-import { AuthNav } from '../components/AuthNav';
 import {
   getPlayerNickname,
 } from '../utils/storage';
@@ -219,7 +218,6 @@ export function Lobby() {
 
   return (
     <div className={styles.lobbyPage}>
-      <AuthNav />
       <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
 
       <main className={styles.lobbyContent}>

@@ -1,0 +1,196 @@
+/**
+ * Menu Component Styles
+ *
+ * Sliding menu panel from the right with:
+ * - Smooth slide-in/out animation (transform: translateX)
+ * - Semi-transparent backdrop overlay
+ * - Responsive width for mobile/tablet/desktop
+ * - Menu items with hover and active states
+ */
+
+/* Backdrop Overlay */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: backdropFadeIn 300ms ease-in-out;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Menu Panel Container */
+.menuPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100vh;
+  background: var(--primary-bg-color, #0d1a2e);
+  z-index: 1001;
+  transform: translateX(100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+}
+
+.menuPanel.menuOpen {
+  transform: translateX(0);
+}
+
+/* Menu Items Container */
+.menuItems {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  gap: 8px;
+}
+
+/* Individual Menu Item */
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: var(--text-primary, #ecf0f1);
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  border-left: 4px solid transparent;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: #c9a444;
+  padding-left: 20px;
+}
+
+.menuItem:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.menuItemText {
+  display: block;
+  text-transform: none;
+  font-weight: normal;
+}
+
+/* Menu Divider */
+.menuDivider {
+  height: 1px;
+  background: var(--divider-color, rgba(255, 255, 255, 0.1));
+  margin: 8px 0;
+}
+
+/* Danger Menu Item (Logout) */
+.menuItemDanger {
+  color: #ff6b6b;
+}
+
+.menuItemDanger:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-left-color: #ff6b6b;
+}
+
+/* Responsive Design for Tablets */
+@media (max-width: 1024px) {
+  .menuPanel {
+    width: 280px;
+  }
+
+  .menuItem {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+
+  .menuItems {
+    padding: 20px 0;
+    gap: 6px;
+  }
+}
+
+/* Responsive Design for Mobile (768px and below) */
+@media (max-width: 768px) {
+  .menuPanel {
+    width: calc(100vw - 24px);
+    max-width: 300px;
+  }
+
+  .menuItem {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+
+  .menuItems {
+    padding: 20px 0;
+    gap: 6px;
+  }
+
+  .menuItem:hover {
+    padding-left: 18px;
+  }
+}
+
+/* Small Mobile Devices (480px and below) */
+@media (max-width: 480px) {
+  .menuPanel {
+    width: 100vw;
+    max-width: 100%;
+  }
+
+  .menuItem {
+    padding: 13px 16px;
+    font-size: 14px;
+  }
+
+  .menuItems {
+    padding: 16px 0;
+    gap: 4px;
+  }
+
+  .menuItem:hover {
+    padding-left: 14px;
+  }
+}
+
+/* Support for iOS safe area insets */
+@supports (padding: max(0px)) {
+  .menuPanel {
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+}
+
+/* Scrollbar styling for menu (optional) */
+.menuPanel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menuPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menuPanel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.menuPanel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
