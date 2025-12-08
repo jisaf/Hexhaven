@@ -17,6 +17,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Menu.module.css';
 import { authService } from '../services/auth.service';
+import LanguageSelector from './LanguageSelector';
 
 interface MenuProps {
   isOpen: boolean;
@@ -85,6 +86,13 @@ export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
         aria-label="Main navigation"
         aria-hidden={!isOpen}
       >
+        {/* Language Selector Section */}
+        <div className={styles.languageSelectorSection}>
+          <LanguageSelector />
+        </div>
+
+        <div className={styles.menuDivider}></div>
+
         {/* Menu Items */}
         <div className={styles.menuItems}>
           {!isAuthenticated ? (

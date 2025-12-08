@@ -111,9 +111,13 @@ function ConnectionUI() {
 function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Check if current page is GameBoard (hide header/menu on game page)
   const isGamePage = location.pathname.startsWith('/game/');
+
+  // Check if current page is Lobby (show Create Game button)
+  const isLobbyPage = location.pathname === '/';
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -123,11 +127,24 @@ function Layout() {
     setMenuOpen(false);
   };
 
+  const handleCreateGame = () => {
+    // Dispatch custom event that Lobby component will listen to
+    const event = new CustomEvent('header-create-game');
+    window.dispatchEvent(event);
+    // Close menu if open
+    closeMenu();
+  };
+
   return (
     <>
       {!isGamePage && (
         <>
-          <Header menuOpen={menuOpen} onMenuToggle={toggleMenu} />
+          <Header
+            menuOpen={menuOpen}
+            onMenuToggle={toggleMenu}
+            onCreateGame={handleCreateGame}
+            showCreateGame={isLobbyPage}
+          />
           <Menu isOpen={menuOpen} onClose={closeMenu} />
         </>
       )}

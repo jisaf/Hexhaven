@@ -50,11 +50,18 @@
   transform: translateX(0);
 }
 
+/* Language Selector Section */
+.languageSelectorSection {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
+}
+
 /* Menu Items Container */
 .menuItems {
   display: flex;
   flex-direction: column;
-  padding: 24px 0;
+  padding: 16px 0;
   gap: 8px;
 }
 

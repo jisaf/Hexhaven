@@ -23,7 +23,6 @@ import { roomSessionManager } from '../services/room-session.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { NicknameInput } from '../components/NicknameInput';
-import { LobbyHeader } from '../components/lobby/LobbyHeader';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
@@ -119,6 +118,19 @@ export function Lobby() {
       setMode('in-room');
     }
   }, [sessionState.status, sessionState.roomCode, navigate]);
+
+  // Listen for create game event from header
+  useEffect(() => {
+    const handleHeaderCreateGame = () => {
+      handleCreateRoom();
+    };
+
+    window.addEventListener('header-create-game', handleHeaderCreateGame);
+
+    return () => {
+      window.removeEventListener('header-create-game', handleHeaderCreateGame);
+    };
+  }, []);
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
@@ -217,9 +229,7 @@ export function Lobby() {
   const defaultTab = myRooms.length > 0 ? 0 : 1;
 
   return (
-    <div className={styles.lobbyPage}>
-      <LobbyHeader playerNickname={getPlayerNickname()} onCreateRoom={handleCreateRoom} />
-
+    <div className={styles.lobbyContainer}>
       <main className={styles.lobbyContent}>
         {mode === 'initial' && (
           <Tabs
