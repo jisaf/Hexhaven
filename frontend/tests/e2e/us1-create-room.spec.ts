@@ -1,5 +1,6 @@
 /**
  * E2E Test: Create Game Room and Receive Room Code (US1 - T035)
+ * REFACTORED: Uses Page Object Model and smart waits
  *
  * Test Scenario:
  * 1. User navigates to the app landing page
@@ -10,78 +11,67 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { LandingPage } from '../pages/LandingPage';
+import { LobbyPage } from '../pages/LobbyPage';
+import { assertValidRoomCode, assertPlayerCount } from '../helpers/assertions';
 
 test.describe('User Story 1: Create Game Room', () => {
   test('should create a game room and display room code', async ({ page }) => {
-    // Navigate to the app
-    await page.goto('/');
+    const landingPage = new LandingPage(page);
+    const lobbyPage = new LobbyPage(page);
 
-    // Verify landing page elements
-    await expect(page.locator('h1')).toContainText('Hexhaven');
+    // Navigate to the app
+    await landingPage.navigate();
+    await landingPage.verifyPageLoaded();
 
     // Click "Create Game" button
-    const createButton = page.locator('button:has-text("Create Game")');
-    await expect(createButton).toBeVisible();
-    await createButton.click();
+    await landingPage.clickCreateGame();
 
-    // Fill in nickname using the component (not browser dialog)
-    const nicknameInput = page.locator('[data-testid="nickname-input"]');
-    await expect(nicknameInput).toBeVisible({ timeout: 5000 });
-    await nicknameInput.fill('TestPlayer');
-
-    // Click submit button
-    const submitButton = page.locator('[data-testid="nickname-submit"]');
-    await expect(submitButton).toBeEnabled();
-    await submitButton.click();
-
-    // Wait for room code to be displayed
-    const roomCodeDisplay = page.locator('[data-testid="room-code"]');
-    await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
+    // Fill in nickname
+    await lobbyPage.enterNickname('TestPlayer');
 
     // Verify room code format (6 alphanumeric characters)
-    const roomCode = await roomCodeDisplay.textContent();
-    expect(roomCode).toMatch(/^[A-Z0-9]{6}$/);
+    const roomCode = await lobbyPage.getRoomCode();
+    await assertValidRoomCode(roomCode);
 
     // Verify user is in lobby
-    await expect(page.locator('[data-testid="lobby-page"]')).toBeVisible();
+    await lobbyPage.verifyLobbyLoaded();
 
     // Verify user is marked as host
-    const hostIndicator = page.locator('[data-testid="host-indicator"]');
-    await expect(hostIndicator).toBeVisible();
+    await lobbyPage.verifyIsHost();
 
     // Verify player list contains the host
-    const playerList = page.locator('[data-testid="player-list"]');
-    await expect(playerList).toBeVisible();
-    await expect(playerList.locator('[data-testid="player-item"]')).toHaveCount(1);
+    await assertPlayerCount(page, 1);
   });
 
   test('should generate unique room codes for multiple games', async ({ page, context }) => {
+    const landingPage1 = new LandingPage(page);
+    const lobbyPage1 = new LobbyPage(page);
+
     // Create first game
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
-
-    // Fill in nickname for first game
-    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer1');
-    await page.locator('[data-testid="nickname-submit"]').click();
-
-    const roomCode1 = await page.locator('[data-testid="room-code"]').textContent();
+    await landingPage1.navigate();
+    await landingPage1.clickCreateGame();
+    await lobbyPage1.enterNickname('TestPlayer1');
+    const roomCode1 = await lobbyPage1.getRoomCode();
 
     // Open second tab and create another game
     const page2 = await context.newPage();
-    await page2.goto('/');
-    await page2.locator('button:has-text("Create Game")').click();
+    const landingPage2 = new LandingPage(page2);
+    const lobbyPage2 = new LobbyPage(page2);
 
-    // Fill in nickname for second game
-    await page2.locator('[data-testid="nickname-input"]').fill('TestPlayer2');
-    await page2.locator('[data-testid="nickname-submit"]').click();
-
-    const roomCode2 = await page2.locator('[data-testid="room-code"]').textContent();
+    await landingPage2.navigate();
+    await landingPage2.clickCreateGame();
+    await lobbyPage2.enterNickname('TestPlayer2');
+    const roomCode2 = await lobbyPage2.getRoomCode();
 
     // Verify codes are different
     expect(roomCode1).not.toBe(roomCode2);
   });
 
   test('should show error message if room creation fails', async ({ page }) => {
+    const landingPage = new LandingPage(page);
+    const lobbyPage = new LobbyPage(page);
+
     // Intercept API call to simulate failure
     await page.route('**/api/rooms', (route) => {
       route.fulfill({
@@ -90,32 +80,32 @@ test.describe('User Story 1: Create Game Room', () => {
       });
     });
 
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await landingPage.navigate();
+    await landingPage.clickCreateGame();
+    await lobbyPage.enterNickname('TestPlayer');
 
-    // Fill in nickname
-    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer');
-    await page.locator('[data-testid="nickname-submit"]').click();
-
-    // Verify error message is displayed (use more specific selector)
+    // Verify error message is displayed
     const errorMessage = page.locator('.error-banner[role="alert"]');
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
     await expect(errorMessage).toContainText('Failed to create room');
   });
 
-  test('should allow copying room code to clipboard', async ({ page, context }) => {
+  test('should allow copying room code to clipboard', async ({ page, context, browserName }) => {
+    // Firefox doesn't support clipboard-read permission
+    test.skip(browserName === 'firefox', 'Firefox does not support clipboard-read permission');
+
+    const landingPage = new LandingPage(page);
+    const lobbyPage = new LobbyPage(page);
+
     // Grant clipboard permissions
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-    await page.goto('/');
-    await page.locator('button:has-text("Create Game")').click();
+    await landingPage.navigate();
+    await landingPage.clickCreateGame();
+    await lobbyPage.enterNickname('TestPlayer');
 
-    // Fill in nickname
-    await page.locator('[data-testid="nickname-input"]').fill('TestPlayer');
-    await page.locator('[data-testid="nickname-submit"]').click();
-
-    // Wait for room code
-    const roomCode = await page.locator('[data-testid="room-code"]').textContent();
+    // Get room code
+    const roomCode = await lobbyPage.getRoomCode();
 
     // Click copy button
     const copyButton = page.locator('[data-testid="copy-room-code"]');
