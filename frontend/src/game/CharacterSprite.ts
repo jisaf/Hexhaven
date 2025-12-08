@@ -88,8 +88,7 @@ export class CharacterSprite extends PIXI.Container {
   private createBody(): PIXI.Sprite {
     // Load SVG avatar based on class type
     const avatarPath = `/avatars/characters/${this.classType.toLowerCase()}.svg`;
-    const texture = PIXI.Texture.from(avatarPath);
-    const sprite = new PIXI.Sprite(texture);
+    const sprite = PIXI.Sprite.from(avatarPath);
 
     // Size the avatar to match the hex size
     const avatarSize = HEX_SIZE * 0.8;

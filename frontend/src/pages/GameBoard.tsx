@@ -321,6 +321,8 @@ export function GameBoard() {
       currentHealth: character?.health ?? monster?.health,
       maxHealth: character?.maxHealth ?? monster?.maxHealth,
       isExhausted: character?.isExhausted ?? false,
+      classType: character?.classType,
+      isElite: monster?.isElite,
     };
   });
 

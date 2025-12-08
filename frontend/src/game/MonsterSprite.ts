@@ -61,8 +61,7 @@ export class MonsterSprite extends PIXI.Container {
       ? '/avatars/monsters/monster-elite.svg'
       : '/avatars/monsters/monster-normal.svg';
 
-    const texture = PIXI.Texture.from(avatarPath);
-    const sprite = new PIXI.Sprite(texture);
+    const sprite = PIXI.Sprite.from(avatarPath);
 
     // Size the avatar sprite
     const avatarSize = 60;
