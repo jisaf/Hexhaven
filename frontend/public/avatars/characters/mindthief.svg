@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#CC33CC" stroke="#FFF" stroke-width="3"/>
+
+  <!-- Rat-like head/ears -->
+  <ellipse cx="50" cy="42" rx="18" ry="15" fill="#8B8B8B" stroke="#000" stroke-width="1.5"/>
+
+  <!-- Large ears -->
+  <ellipse cx="35" cy="32" rx="8" ry="12" fill="#8B8B8B" stroke="#000" stroke-width="1.5"/>
+  <ellipse cx="65" cy="32" rx="8" ry="12" fill="#8B8B8B" stroke="#000" stroke-width="1.5"/>
+  <ellipse cx="35" cy="32" rx="5" ry="8" fill="#FFC0CB" stroke="#000" stroke-width="0.5"/>
+  <ellipse cx="65" cy="32" rx="5" ry="8" fill="#FFC0CB" stroke="#000" stroke-width="0.5"/>
+
+  <!-- Snout -->
+  <ellipse cx="50" cy="48" rx="8" ry="6" fill="#A9A9A9" stroke="#000" stroke-width="1"/>
+  <ellipse cx="50" cy="52" rx="3" ry="2" fill="#000"/>
+
+  <!-- Beady eyes -->
+  <circle cx="43" cy="40" r="3" fill="#000"/>
+  <circle cx="57" cy="40" r="3" fill="#000"/>
+  <circle cx="44" cy="39" r="1" fill="#FFF" opacity="0.8"/>
+  <circle cx="58" cy="39" r="1" fill="#FFF" opacity="0.8"/>
+
+  <!-- Whiskers -->
+  <line x1="32" y1="46" x2="25" y2="44" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+  <line x1="32" y1="48" x2="24" y2="48" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+  <line x1="32" y1="50" x2="25" y2="52" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+  <line x1="68" y1="46" x2="75" y2="44" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+  <line x1="68" y1="48" x2="76" y2="48" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+  <line x1="68" y1="50" x2="75" y2="52" stroke="#000" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- Psychic mind waves -->
+  <path d="M 30 60 Q 25 58 22 62" fill="none" stroke="#9370DB" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 70 60 Q 75 58 78 62" fill="none" stroke="#9370DB" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 35 65 Q 32 63 28 66" fill="none" stroke="#9370DB" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 65 65 Q 68 63 72 66" fill="none" stroke="#9370DB" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Small dagger -->
+  <g transform="translate(50, 72) rotate(20)">
+    <rect x="-1.5" y="0" width="3" height="12" fill="#654321" stroke="#000" stroke-width="0.5"/>
+    <path d="M -3 0 L 0 -6 L 3 0 Z" fill="#C0C0C0" stroke="#000" stroke-width="1"/>
+  </g>
+</svg>

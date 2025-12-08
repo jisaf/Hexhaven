@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#33CC33" stroke="#FFF" stroke-width="3"/>
+
+  <!-- Hood -->
+  <path d="M 30 25 Q 50 15 70 25 L 70 50 Q 50 40 30 50 Z" fill="#2C5F2D" stroke="#000" stroke-width="2"/>
+  <ellipse cx="50" cy="50" rx="20" ry="15" fill="#2C5F2D" stroke="#000" stroke-width="2"/>
+
+  <!-- Shadow over face -->
+  <ellipse cx="50" cy="42" rx="18" ry="10" fill="#1a3d1a" opacity="0.6"/>
+
+  <!-- Eyes glowing from shadow -->
+  <ellipse cx="44" cy="42" rx="3" ry="2" fill="#90EE90"/>
+  <ellipse cx="56" cy="42" rx="3" ry="2" fill="#90EE90"/>
+
+  <!-- Mask/bandana over lower face -->
+  <path d="M 35 48 L 35 54 Q 50 56 65 54 L 65 48 Z" fill="#000" opacity="0.7"/>
+
+  <!-- Dual daggers crossed -->
+  <g transform="translate(50, 70) rotate(-30)">
+    <rect x="-2" y="0" width="4" height="20" fill="#8B4513" stroke="#000" stroke-width="1"/>
+    <path d="M -4 0 L 0 -8 L 4 0 Z" fill="#C0C0C0" stroke="#000" stroke-width="1.5"/>
+    <line x1="0" y1="-6" x2="0" y2="-2" stroke="#FFF" stroke-width="0.5"/>
+  </g>
+
+  <g transform="translate(50, 70) rotate(30)">
+    <rect x="-2" y="0" width="4" height="20" fill="#8B4513" stroke="#000" stroke-width="1"/>
+    <path d="M -4 0 L 0 -8 L 4 0 Z" fill="#C0C0C0" stroke="#000" stroke-width="1.5"/>
+    <line x1="0" y1="-6" x2="0" y2="-2" stroke="#FFF" stroke-width="0.5"/>
+  </g>
+</svg>

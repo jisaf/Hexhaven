@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background hexagon (matching MonsterSprite hex shape) -->
+  <path d="M 50 5 L 85 27.5 L 85 72.5 L 50 95 L 15 72.5 L 15 27.5 Z" fill="#f39c12" stroke="#000" stroke-width="3"/>
+
+  <!-- Monster head/body -->
+  <ellipse cx="50" cy="45" rx="22" ry="18" fill="#B8860B" stroke="#000" stroke-width="2"/>
+
+  <!-- Crown (elite marker) -->
+  <path d="M 35 30 L 38 24 L 41 28 L 44 22 L 47 28 L 50 20 L 53 28 L 56 22 L 59 28 L 62 24 L 65 30 Z" fill="#FFD700" stroke="#000" stroke-width="1.5"/>
+  <rect x="35" y="30" width="30" height="4" fill="#FFD700" stroke="#000" stroke-width="1.5"/>
+  <!-- Crown gems -->
+  <circle cx="44" cy="25" r="1.5" fill="#FF0000"/>
+  <circle cx="50" cy="23" r="1.5" fill="#FF0000"/>
+  <circle cx="56" cy="25" r="1.5" fill="#FF0000"/>
+
+  <!-- Horns (larger for elite) -->
+  <path d="M 30 36 Q 24 28 20 22 L 26 26 Q 30 32 32 36 Z" fill="#4A4A4A" stroke="#000" stroke-width="1.5"/>
+  <path d="M 70 36 Q 76 28 80 22 L 74 26 Q 70 32 68 36 Z" fill="#4A4A4A" stroke="#000" stroke-width="1.5"/>
+
+  <!-- Eyes (angry, glowing) -->
+  <ellipse cx="42" cy="42" rx="5" ry="6" fill="#FFD700" stroke="#000" stroke-width="1"/>
+  <ellipse cx="58" cy="42" rx="5" ry="6" fill="#FFD700" stroke="#000" stroke-width="1"/>
+  <circle cx="42" cy="43" r="3" fill="#FF4500"/>
+  <circle cx="58" cy="43" r="3" fill="#FF4500"/>
+  <circle cx="41" cy="42" r="1" fill="#FFF" opacity="0.8"/>
+  <circle cx="57" cy="42" r="1" fill="#FFF" opacity="0.8"/>
+
+  <!-- Angry brow -->
+  <line x1="36" y1="38" x2="46" y2="40" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+  <line x1="54" y1="40" x2="64" y2="38" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Mouth with fangs (larger fangs for elite) -->
+  <path d="M 38 52 Q 50 58 62 52" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 42 52 L 39 58 L 42 58 Z" fill="#FFF" stroke="#000" stroke-width="1"/>
+  <path d="M 48 53 L 46 58 L 48 58 Z" fill="#FFF" stroke="#000" stroke-width="1"/>
+  <path d="M 52 53 L 50 58 L 52 58 Z" fill="#FFF" stroke="#000" stroke-width="1"/>
+  <path d="M 58 52 L 55 58 L 58 58 Z" fill="#FFF" stroke="#000" stroke-width="1"/>
+
+  <!-- Claws/arms -->
+  <g transform="translate(28, 55)">
+    <path d="M 0 0 L -5 8 L -3 8 L 2 2 Z" fill="#B8860B" stroke="#000" stroke-width="1"/>
+    <path d="M -5 8 L -8 12 L -6 12 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  </g>
+  <g transform="translate(72, 55)">
+    <path d="M 0 0 L 5 8 L 3 8 L -2 2 Z" fill="#B8860B" stroke="#000" stroke-width="1"/>
+    <path d="M 5 8 L 8 12 L 6 12 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  </g>
+
+  <!-- Spikes on back (more spikes for elite) -->
+  <path d="M 38 35 L 36 26 L 40 32 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  <path d="M 45 33 L 43 24 L 47 30 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  <path d="M 50 32 L 48 22 L 52 28 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  <path d="M 55 33 L 53 24 L 57 30 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+  <path d="M 62 35 L 60 26 L 64 32 Z" fill="#4A4A4A" stroke="#000" stroke-width="1"/>
+</svg>

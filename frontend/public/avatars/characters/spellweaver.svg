@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#9933CC" stroke="#FFF" stroke-width="3"/>
+
+  <!-- Wizard hat -->
+  <path d="M 50 15 L 35 45 L 65 45 Z" fill="#4B0082" stroke="#000" stroke-width="2"/>
+  <ellipse cx="50" cy="45" rx="20" ry="5" fill="#4B0082" stroke="#000" stroke-width="2"/>
+
+  <!-- Stars on hat -->
+  <path d="M 50 25 L 51 28 L 54 28 L 52 30 L 53 33 L 50 31 L 47 33 L 48 30 L 46 28 L 49 28 Z" fill="#FFD700"/>
+
+  <!-- Face -->
+  <ellipse cx="50" cy="55" rx="15" ry="12" fill="#FFE4C4" stroke="#000" stroke-width="1"/>
+
+  <!-- Eyes -->
+  <circle cx="45" cy="53" r="2" fill="#4B0082"/>
+  <circle cx="55" cy="53" r="2" fill="#4B0082"/>
+
+  <!-- Magic orb -->
+  <circle cx="70" cy="70" r="8" fill="#9370DB" stroke="#4B0082" stroke-width="2"/>
+  <circle cx="68" cy="68" r="2" fill="#FFF" opacity="0.7"/>
+
+  <!-- Staff/wand -->
+  <line x1="30" y1="65" x2="30" y2="85" stroke="#8B4513" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="30" cy="65" r="5" fill="#9370DB" stroke="#4B0082" stroke-width="1.5"/>
+  <path d="M 28 60 L 30 58 L 32 60" fill="none" stroke="#FFD700" stroke-width="1" stroke-linecap="round"/>
+  <path d="M 26 63 L 30 61 L 34 63" fill="none" stroke="#FFD700" stroke-width="1" stroke-linecap="round"/>
+</svg>
