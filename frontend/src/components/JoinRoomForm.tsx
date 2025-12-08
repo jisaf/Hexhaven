@@ -12,13 +12,15 @@ export interface JoinRoomFormProps {
   isLoading?: boolean;
   error?: string;
   initialNickname?: string;
+  isAuthenticated?: boolean;
 }
 
 export function JoinRoomForm({
   onSubmit,
   isLoading,
   error,
-  initialNickname = ''
+  initialNickname = '',
+  isAuthenticated = false
 }: JoinRoomFormProps) {
   const { t } = useTranslation('lobby');
   const [roomCode, setRoomCode] = useState('');
@@ -27,7 +29,8 @@ export function JoinRoomForm({
 
   const isRoomCodeValid = roomCode.length === 6 && /^[A-Z0-9]{6}$/.test(roomCode);
   const isNicknameValid = nickname.length >= 1 && nickname.length <= 50;
-  const isFormValid = isRoomCodeValid && isNicknameValid;
+  // For authenticated users, nickname is pre-filled and always valid
+  const isFormValid = isRoomCodeValid && (isAuthenticated || isNicknameValid);
 
   const handleRoomCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -79,23 +82,25 @@ export function JoinRoomForm({
         </div>
 
         <div className="field-group">
-          <label htmlFor="nickname-input">{t('nickname', 'Nickname')}</label>
+          <label htmlFor="nickname-input">
+            {isAuthenticated ? t('username', 'Username') : t('nickname', 'Nickname')}
+          </label>
           <input
             id="nickname-input"
             type="text"
             value={nickname}
             onChange={handleNicknameChange}
             onBlur={() => setTouched(prev => ({ ...prev, nickname: true }))}
-            placeholder={t('enterNickname', 'Enter your nickname')}
+            placeholder={isAuthenticated ? '' : t('enterNickname', 'Enter your nickname')}
             maxLength={50}
-            disabled={isLoading}
+            disabled={isLoading || isAuthenticated}
             className={`input-field ${showNicknameError ? 'error' : ''} ${isNicknameValid ? 'valid' : ''}`}
-            aria-label={t('nicknameLabel', 'Nickname')}
+            aria-label={isAuthenticated ? t('usernameLabel', 'Username') : t('nicknameLabel', 'Nickname')}
             aria-invalid={showNicknameError ? 'true' : 'false'}
             autoComplete="off"
             data-testid="nickname-input"
           />
-          {showNicknameError && (
+          {showNicknameError && !isAuthenticated && (
             <span className="error-message">
               {t('invalidNickname', 'Nickname must be 1-50 characters')}
             </span>
