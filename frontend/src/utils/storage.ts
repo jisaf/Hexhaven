@@ -72,6 +72,46 @@ export function getPlayerNickname(): string | null {
 }
 
 /**
+ * Get display name for the current user
+ * - For authenticated users: returns username
+ * - For anonymous users: returns stored nickname
+ * - Returns null if neither is available
+ */
+export function getDisplayName(): string | null {
+  try {
+    // Check if user is authenticated
+    const userJson = localStorage.getItem('hexhaven_user');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      if (user && user.username) {
+        return user.username;
+      }
+    }
+
+    // Fall back to nickname for anonymous users
+    return getPlayerNickname();
+  } catch (error) {
+    console.error('Failed to get display name:', error);
+    return getPlayerNickname();
+  }
+}
+
+/**
+ * Check if user is authenticated
+ * Helper function to avoid importing authService in storage utils
+ */
+export function isUserAuthenticated(): boolean {
+  try {
+    const accessToken = localStorage.getItem('hexhaven_access_token');
+    const userJson = localStorage.getItem('hexhaven_user');
+    return !!(accessToken && userJson);
+  } catch (error) {
+    console.error('Failed to check authentication:', error);
+    return false;
+  }
+}
+
+/**
  * Store last room code for quick rejoin
  */
 export function saveLastRoomCode(roomCode: string): void {

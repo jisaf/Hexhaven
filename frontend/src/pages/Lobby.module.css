@@ -2,6 +2,7 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  padding-top: 64px; /* Account for fixed header */
 }
 
 .lobbyContent {

@@ -181,6 +181,14 @@
   transition: all 0.3s;
 }
 
+.entityAvatar {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .turnEntity.character {
   border-color: rgba(74, 171, 247, 0.5);
 }

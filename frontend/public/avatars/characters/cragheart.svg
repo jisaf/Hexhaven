@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#CC9933" stroke="#FFF" stroke-width="3"/>
+
+  <!-- Rocky head/body -->
+  <path d="M 35 30 L 40 20 L 45 25 L 50 18 L 55 24 L 60 20 L 65 30 L 60 45 L 55 50 L 45 50 L 40 45 Z" fill="#8B7355" stroke="#000" stroke-width="2"/>
+
+  <!-- Stone texture lines -->
+  <path d="M 42 28 L 48 30" stroke="#654321" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M 52 26 L 58 28" stroke="#654321" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M 45 35 L 55 35" stroke="#654321" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M 43 40 L 50 42" stroke="#654321" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M 52 40 L 57 42" stroke="#654321" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Eyes (glowing from rock crevices) -->
+  <ellipse cx="43" cy="32" rx="2.5" ry="3" fill="#FFD700"/>
+  <ellipse cx="57" cy="32" rx="2.5" ry="3" fill="#FFD700"/>
+
+  <!-- Boulder/hammer weapon -->
+  <g transform="translate(68, 65)">
+    <!-- Handle -->
+    <rect x="-2" y="0" width="4" height="22" fill="#654321" stroke="#000" stroke-width="1"/>
+    <!-- Boulder head -->
+    <path d="M -8 -5 L -6 -10 L 0 -12 L 6 -10 L 8 -5 L 6 0 L -6 0 Z" fill="#8B7355" stroke="#000" stroke-width="1.5"/>
+    <!-- Rock texture on boulder -->
+    <line x1="-4" y1="-8" x2="2" y2="-6" stroke="#654321" stroke-width="1"/>
+    <line x1="-2" y1="-4" x2="4" y2="-2" stroke="#654321" stroke-width="1"/>
+  </g>
+
+  <!-- Rock/earth symbol on chest -->
+  <path d="M 45 55 L 50 52 L 55 55 L 53 60 L 47 60 Z" fill="#654321" stroke="#000" stroke-width="1"/>
+</svg>

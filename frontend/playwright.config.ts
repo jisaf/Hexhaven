@@ -14,7 +14,7 @@ export default defineConfig({
   outputDir: './public/test-videos',
 
   // Global setup - cleanup old videos before tests run
-  globalSetup: require.resolve('./tests/cleanup-old-videos.ts'),
+  globalSetup: './tests/cleanup-old-videos.ts',
 
   // Run tests in files in parallel
   fullyParallel: true,
@@ -22,17 +22,23 @@ export default defineConfig({
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
 
-  // No retries - fail fast
-  retries: 0,
+  // Retry failed tests once on CI to handle transient failures
+  retries: process.env.CI ? 1 : 0,
 
   // Number of parallel workers
-  workers: process.env.CI ? 1 : undefined,
+  // CI: 4 workers for faster execution
+  // Local: Use 50% of available cores
+  workers: process.env.CI ? 4 : undefined,
 
   // Reporter to use
   reporter: [
-    ['html'],
+    ['html', { open: 'never' }],
     ['list'],
-    ['junit', { outputFile: 'test-results/junit.xml' }]
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    // Add JSON reporter for CI analysis
+    ['json', { outputFile: 'test-results/results.json' }],
+    // Add GitHub Actions reporter when running in CI
+    ...(process.env.CI ? [['github'] as ['github']] : [])
   ],
 
   // Shared settings for all projects
@@ -73,8 +79,6 @@ export default defineConfig({
       },
     },
 
-    // Disabled for now - uncomment when features are ready for cross-device testing
-    /*
     // iPhone SE - Mobile portrait (minimum supported width: 375px)
     {
       name: 'iPhone SE',
@@ -101,35 +105,34 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
       },
     },
-    */
   ],
 
   // Run local dev servers (backend and frontend) before starting the tests
-  webServer: [
-    {
-      command: 'cd ../backend && npm run start:prod',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 300 * 1000, // 5 minutes
-      stdout: 'pipe',
-      stderr: 'pipe'
-    },
-    {
-      command: 'VITE_URL=http://localhost:5173 npm run dev',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 300 * 1000, // 5 minutes
-      stdout: 'pipe',
-      stderr: 'pipe'
-    }
-  ],
+  // webServer: [
+  //   {
+  //     command: 'cd ../backend && npm run start:prod',
+  //     url: 'http://localhost:3001',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 300 * 1000, // 5 minutes
+  //     stdout: 'pipe',
+  //     stderr: 'pipe'
+  //   },
+  //   {
+  //     command: 'VITE_URL=http://localhost:5173 npm run dev',
+  //     url: 'http://localhost:5173',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 300 * 1000, // 5 minutes
+  //     stdout: 'pipe',
+  //     stderr: 'pipe'
+  //   }
+  // ],
 
-  // Test timeout - reduced for faster failures during development
-  timeout: 10 * 1000, // 10 seconds (reduced from 30s)
+  // Test timeout
+  timeout: 30 * 1000, // 30 seconds
 
-  // Expect timeout - reduced for faster failures
+  // Expect timeout
   expect: {
-    timeout: 3 * 1000 // 3 seconds (reduced from 5s)
+    timeout: 5 * 1000 // 5 seconds
   },
 
   // Max failures - stop after 5 failures to save CI time

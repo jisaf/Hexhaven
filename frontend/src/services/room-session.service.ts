@@ -23,11 +23,12 @@
 import { websocketService } from './websocket.service';
 import {
   getLastRoomCode,
-  getPlayerNickname,
   getPlayerUUID,
   getOrCreatePlayerUUID,
   saveLastRoomCode,
   savePlayerNickname,
+  getDisplayName,
+  isUserAuthenticated,
 } from '../utils/storage';
 import { getApiUrl } from '../config/api';
 import type { GameStartedPayload } from '../../../shared/types/events';
@@ -229,7 +230,7 @@ class RoomSessionManager {
       const roomCode = intent === 'create'
         ? getLastRoomCode() || this.state.roomCode
         : this.state.roomCode || getLastRoomCode();
-      const nickname = getPlayerNickname();
+      const nickname = getDisplayName();
       const uuid = getPlayerUUID();
 
       // Validation
@@ -345,12 +346,23 @@ class RoomSessionManager {
 
     const data = await response.json();
     saveLastRoomCode(data.room.roomCode);
-    savePlayerNickname(nickname);
+
+    // Only save nickname for anonymous users
+    // Authenticated users use their username dynamically
+    if (!isUserAuthenticated()) {
+      savePlayerNickname(nickname);
+    }
+
     await this.ensureJoined('create');
   }
 
   public async joinRoom(roomCode: string, nickname: string): Promise<void> {
-    savePlayerNickname(nickname);
+    // Only save nickname for anonymous users
+    // Authenticated users use their username dynamically
+    if (!isUserAuthenticated()) {
+      savePlayerNickname(nickname);
+    }
+
     saveLastRoomCode(roomCode);
     await this.ensureJoined('join');
   }
