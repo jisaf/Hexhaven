@@ -56,8 +56,13 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
   // Sort modules by order
   const sortedModules = [...template.modules].sort((a, b) => a.order - b.order);
 
-  // Calculate total rows for grid
-  const totalRows = sortedModules.reduce((sum, module) => sum + module.rows, 0);
+  // Build grid template rows: auto for header/footer/divider, 1fr for actions
+  const gridRows = sortedModules.map((module) => {
+    if (module.type === 'header' || module.type === 'footer' || module.type === 'divider') {
+      return 'auto';
+    }
+    return '1fr'; // action modules share remaining space
+  }).join(' ');
 
   return (
     <CardDataProvider data={cardData}>
@@ -65,14 +70,17 @@ export const ConfigurableCard: React.FC<ConfigurableCardProps> = ({
         className={`configurable-card ${compact ? 'compact' : ''} ${isActive ? 'active' : ''} ${className}`}
         style={{
           display: 'grid',
-          gridTemplateRows: `repeat(${totalRows}, 1fr)`,
-          gap: 'var(--card-gap, 8px)',
+          gridTemplateRows: gridRows,
+          gap: '2px',
           background: 'var(--card-bg-gradient)',
           border: 'var(--card-border-width) solid var(--card-border)',
           borderRadius: 'var(--card-border-radius)',
-          padding: 'var(--card-padding, 12px)',
+          padding: '6px',
           boxShadow: 'var(--card-shadow)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          height: '100%',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {sortedModules.map((module) => {
