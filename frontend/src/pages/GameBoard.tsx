@@ -16,8 +16,8 @@ import { gameSessionCoordinator } from '../services/game-session-coordinator.ser
 import { roomSessionManager } from '../services/room-session.service';
 import { websocketService } from '../services/websocket.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { Monster, HexTile, Character, AbilityCard } from '../../../shared/types/entities.ts';
-import { TerrainType } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile, Character, AbilityCard } from '../../../shared/types/entities';
+import { TerrainType } from '../../../shared/types/entities';
 import type {
   ObjectivesLoadedPayload,
   ObjectiveProgressUpdatePayload,
