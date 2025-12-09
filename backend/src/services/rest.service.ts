@@ -45,7 +45,7 @@ export class RestService {
    * @param type - Rest type (short or long)
    * @returns Validation result
    */
-  canRest(character: Character, type: 'short' | 'long'): ValidationResult {
+  canRest(character: Character, _type: 'short' | 'long'): ValidationResult {
     // Must have 2+ cards in discard
     if (character.discardPile.length < 2) {
       return {

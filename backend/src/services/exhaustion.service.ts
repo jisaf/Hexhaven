@@ -18,10 +18,7 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import type {
-  Character,
-  ActiveCardEffect,
-} from '../../../shared/types/entities';
+import type { Character } from '../../../shared/types/entities';
 
 export type ExhaustionReason = 'damage' | 'insufficient_cards';
 

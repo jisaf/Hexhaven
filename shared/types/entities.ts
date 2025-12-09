@@ -178,7 +178,7 @@ export interface Monster {
 
 export interface AbilityCard {
   id: string;
-  characterClass: CharacterClass | string;
+  characterClass: CharacterClass;
   name: string;
   level: number | 'X';
   initiative: number;

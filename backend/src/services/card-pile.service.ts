@@ -12,7 +12,6 @@
 
 import { Injectable } from '@nestjs/common';
 import type { Character } from '../../../shared/types/entities';
-import { CardTemplateCache } from '../utils/card-template-cache';
 
 export type CardPile = 'hand' | 'discard' | 'lost';
 
