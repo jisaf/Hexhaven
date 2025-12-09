@@ -10,6 +10,7 @@ import type {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { Condition } from '../../../shared/types/entities';
+import { AbilityCard } from './ability-card.model';
 
 export interface CharacterStats {
   health: number;
@@ -28,6 +29,9 @@ export interface CharacterData {
   currentHealth: number;
   conditions: Condition[];
   exhausted: boolean;
+  hand: string[]; // Card IDs in hand
+  discardPile: string[]; // Card IDs in discard pile
+  lostPile: string[]; // Card IDs in lost pile
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +45,9 @@ export class Character {
   private _currentHealth: number;
   private _conditions: Set<Condition>;
   private _exhausted: boolean;
+  private _hand: string[]; // Card IDs in hand
+  private _discardPile: string[]; // Card IDs in discard pile
+  private _lostPile: string[]; // Card IDs in lost pile
   private _selectedCards?: {
     topCardId: string;
     bottomCardId: string;
@@ -64,6 +71,9 @@ export class Character {
     this._currentHealth = data.currentHealth;
     this._conditions = new Set(data.conditions);
     this._exhausted = data.exhausted;
+    this._hand = data.hand || [];
+    this._discardPile = data.discardPile || [];
+    this._lostPile = data.lostPile || [];
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
   }
@@ -182,6 +192,66 @@ export class Character {
 
   get hasAttackedThisTurn(): boolean {
     return this._hasAttackedThisTurn;
+  }
+
+  get hand(): string[] {
+    return [...this._hand];
+  }
+
+  set hand(cards: string[]) {
+    this._hand = [...cards];
+    this._updatedAt = new Date();
+  }
+
+  get discardPile(): string[] {
+    return [...this._discardPile];
+  }
+
+  set discardPile(cards: string[]) {
+    this._discardPile = [...cards];
+    this._updatedAt = new Date();
+  }
+
+  get lostPile(): string[] {
+    return [...this._lostPile];
+  }
+
+  set lostPile(cards: string[]) {
+    this._lostPile = [...cards];
+    this._updatedAt = new Date();
+  }
+
+  // Card pile management methods
+  removeFromHand(cardId: string): boolean {
+    const index = this._hand.indexOf(cardId);
+    if (index === -1) return false;
+    this._hand.splice(index, 1);
+    this._updatedAt = new Date();
+    return true;
+  }
+
+  addToDiscard(cardId: string): void {
+    this._discardPile.push(cardId);
+    this._updatedAt = new Date();
+  }
+
+  addToLost(cardId: string): void {
+    this._lostPile.push(cardId);
+    this._updatedAt = new Date();
+  }
+
+  removeFromDiscard(cardId: string): boolean {
+    const index = this._discardPile.indexOf(cardId);
+    if (index === -1) return false;
+    this._discardPile.splice(index, 1);
+    this._updatedAt = new Date();
+    return true;
+  }
+
+  moveDiscardToHand(): void {
+    this._hand.push(...this._discardPile);
+    this._discardPile = [];
+    this._updatedAt = new Date();
   }
 
   // Methods
@@ -338,6 +408,9 @@ export class Character {
       currentHealth: this._currentHealth,
       conditions: Array.from(this._conditions),
       exhausted: this._exhausted,
+      hand: [...this._hand],
+      discardPile: [...this._discardPile],
+      lostPile: [...this._lostPile],
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };
@@ -354,6 +427,10 @@ export class Character {
     const now = new Date();
     const stats = Character.getStatsForClass(characterClass);
 
+    // Get starter deck and extract card IDs
+    const starterDeck = AbilityCard.getStarterDeck(characterClass);
+    const cardIds = starterDeck.map(card => card.id);
+
     return new Character({
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       playerId,
@@ -363,6 +440,9 @@ export class Character {
       currentHealth: stats.maxHealth,
       conditions: [],
       exhausted: false,
+      hand: cardIds, // Start with all cards in hand
+      discardPile: [], // Empty discard pile
+      lostPile: [], // Empty lost pile
       createdAt: now,
       updatedAt: now,
     });

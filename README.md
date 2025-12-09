@@ -23,6 +23,9 @@
 - **🔄 Reconnection**: Automatic reconnect with state restoration
 - **✋ Touch Optimized**: Pinch-zoom, pan, swipe, long-press gestures
 - **🧪 Visual Testing**: Playwright MCP integration with 5-day screenshot retention
+- **🏆 Game Completion**: Template-based objectives, progress tracking, match history
+- **📊 Player Statistics**: Damage dealt/taken, monsters killed, experience/gold earned
+- **🎯 Flexible Objectives**: 12 templates + custom JavaScript for unique scenarios
 
 ---
 
@@ -217,6 +220,14 @@ npm test -- --coverage
 - **[Implementation Plan](specs/001-gloomhaven-multiplayer/plan.md)** - Technical approach
 - **[Tasks](specs/001-gloomhaven-multiplayer/tasks.md)** - Task breakdown
 - **[API Contracts](specs/001-gloomhaven-multiplayer/contracts/)** - WebSocket & REST API specs
+
+### Game Completion System
+
+- **[Game Completion System](docs/game-completion-system.md)** - Complete architecture and flow
+- **[Objective System Guide](docs/objective-system-guide.md)** - Creating and managing objectives
+- **[Scenario Migration Guide](docs/scenario-migration-guide.md)** - Migrating scenarios to new format
+- **[API Reference](docs/api-reference.md)** - Match history REST API documentation
+- **[Development Todos](docs/todos.md)** - Feature roadmap and completed work
 
 ---
 

@@ -84,6 +84,7 @@ interface GameState {
 
   // Player state
   myCharacterId: string | null;
+  abilityDeck: AbilityCard[]; // Master copy of ALL cards (never modified)
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
   selectedBottomAction: AbilityCard | null;
@@ -105,6 +106,31 @@ interface GameState {
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
   showCardSelection: boolean;
   waitingForRoundStart: boolean;
+
+  // Rest state
+  restState: RestState | null;
+
+  // Exhaustion state
+  exhaustionState: ExhaustionState | null;
+}
+
+interface ExhaustionState {
+  characterId: string;
+  characterName: string;
+  reason: 'damage' | 'insufficient_cards';
+}
+
+interface RestState {
+  stage: 'rest-started' | 'card-selected' | 'awaiting-decision' | 'long-selection' | 'complete' | 'error';
+  characterId: string;
+  restType: 'short' | 'long' | null;
+  randomCardId: string | null;
+  canReroll: boolean;
+  currentHealth: number;
+  errorMessage: string | null;
+  // Long rest fields
+  discardPileCards?: string[]; // Card IDs available to choose from for long rest
+  selectedCardToLose?: string; // Card ID player selected to lose
 }
 
 interface VisualUpdateCallbacks {
@@ -181,6 +207,7 @@ class GameStateManager {
     currentTurnEntityId: null,
     isMyTurn: false,
     myCharacterId: null,
+    abilityDeck: [],
     playerHand: [],
     selectedTopAction: null,
     selectedBottomAction: null,
@@ -196,6 +223,8 @@ class GameStateManager {
     connectionStatus: 'connected',
     showCardSelection: false,
     waitingForRoundStart: false,
+    restState: null,
+    exhaustionState: null,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -228,6 +257,7 @@ class GameStateManager {
     websocketService.on('monster_died', this.handleMonsterDied.bind(this));
     websocketService.on('loot_spawned', this.handleLootSpawned.bind(this));
     websocketService.on('loot_collected', this.handleLootCollected.bind(this));
+    websocketService.on('rest-event', this.handleRestEvent.bind(this));
     websocketService.on('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -262,7 +292,26 @@ class GameStateManager {
       };
 
       if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-        this.state.playerHand = characterWithDeck.abilityDeck;
+        // Store master copy of ALL cards (never modified)
+        this.state.abilityDeck = characterWithDeck.abilityDeck;
+
+        // Check if character already has card piles (from backend during rejoin)
+        // If not, initialize them (new game)
+        if (!myCharacter.hand || myCharacter.hand.length === 0) {
+          // New game - all cards start in hand
+          const cardIds = characterWithDeck.abilityDeck.map(card => card.id);
+          myCharacter.hand = cardIds;
+          myCharacter.discardPile = [];
+          myCharacter.lostPile = [];
+          this.state.playerHand = characterWithDeck.abilityDeck;
+        } else {
+          // Rejoining game - use existing card piles from backend
+          // Filter playerHand to only show cards currently in hand
+          this.state.playerHand = characterWithDeck.abilityDeck.filter(card =>
+            myCharacter.hand.includes(card.id)
+          );
+          console.log(`[GameStateManager] Rejoined game - playerHand filtered to ${this.state.playerHand.length} cards (hand: ${myCharacter.hand.length}, discard: ${myCharacter.discardPile?.length || 0}, lost: ${myCharacter.lostPile?.length || 0})`);
+        }
       }
 
       // Restore selected cards if they exist (for game rejoin)
@@ -351,6 +400,30 @@ class GameStateManager {
 
   private handleRoundEnded(data: { roundNumber: number }): void {
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
+
+    // Move played cards to discard pile BEFORE clearing selection
+    if (this.state.selectedTopAction && this.state.selectedBottomAction && this.state.gameData) {
+      const myCharacter = this.state.gameData.characters.find(c => c.id === this.state.myCharacterId);
+      if (myCharacter && myCharacter.hand && myCharacter.discardPile) {
+        const topCardId = this.state.selectedTopAction.id;
+        const bottomCardId = this.state.selectedBottomAction.id;
+
+        // Remove played cards from hand pile
+        myCharacter.hand = myCharacter.hand.filter(id => id !== topCardId && id !== bottomCardId);
+
+        // Add played cards to discard pile
+        myCharacter.discardPile.push(topCardId, bottomCardId);
+
+        // Also remove from playerHand so they don't appear in card selection
+        this.state.playerHand = this.state.playerHand.filter(card =>
+          card.id !== topCardId && card.id !== bottomCardId
+        );
+
+        console.log(`[GameStateManager] Moved played cards to discard: ${topCardId}, ${bottomCardId}`);
+        console.log(`[GameStateManager] Remaining hand: ${myCharacter.hand.length}, Discard: ${myCharacter.discardPile.length}`);
+      }
+    }
+
     // Clear previously selected cards so players can select new ones for next round
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
@@ -358,7 +431,7 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
-    private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
+  private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
     const myTurn = data.entityType === 'character' && data.entityId === this.state.myCharacterId;
     this.state.isMyTurn = myTurn;
     this.state.currentTurnEntityId = data.entityId;
@@ -433,9 +506,11 @@ class GameStateManager {
         const targetCharacter = this.state.gameData.characters.find(c => c.id === targetId);
         if (targetCharacter) {
           const newHealth = Math.max(0, targetCharacter.health - damage);
-          targetCharacter.health = newHealth;
+          // Use immutable update for character health
+          this.updateCharacter(targetId, { health: newHealth });
           // Trigger visual update for character health
           this.visualCallbacks.updateCharacterHealth?.(targetId, newHealth);
+          console.log(`[GameStateManager] Updated character health to ${newHealth} after monster attack (took ${damage} damage)`);
         }
       }
     } else {
@@ -482,12 +557,12 @@ class GameStateManager {
       const isCharacter = this.state.gameData.characters.some(c => c.id === data.targetId);
 
       if (isCharacter) {
-         const char = this.state.gameData.characters.find(c => c.id === data.targetId);
-         if(char) {
-           char.health = data.targetHealth;
-           this.visualCallbacks.updateCharacterHealth?.(data.targetId, data.targetHealth);
-         }
+         // Use immutable update for character health
+         this.updateCharacter(data.targetId, { health: data.targetHealth });
+         this.visualCallbacks.updateCharacterHealth?.(data.targetId, data.targetHealth);
+         console.log(`[GameStateManager] Updated character health to ${data.targetHealth} after attack`);
       } else {
+         // TODO: Should also use immutable update for monsters
          const monster = this.state.gameData.monsters.find(m => m.id === data.targetId);
          if(monster) {
            monster.health = data.targetHealth;
@@ -547,6 +622,38 @@ class GameStateManager {
 
   private emitStateUpdate(): void {
     this.subscribers.forEach(callback => callback({ ...this.state }));
+  }
+
+  /**
+   * Immutably update a character in gameData
+   * Creates new objects to ensure React detects the change
+   *
+   * @param characterId - ID of character to update
+   * @param updates - Partial character updates or update function
+   * @returns Updated character or undefined if not found
+   */
+  private updateCharacter(
+    characterId: string,
+    updates: Partial<Character> | ((char: Character) => Partial<Character>)
+  ): Character | undefined {
+    if (!this.state.gameData) return undefined;
+
+    const character = this.state.gameData.characters.find(c => c.id === characterId);
+    if (!character) return undefined;
+
+    // Apply updates (either object or function)
+    const updatedFields = typeof updates === 'function' ? updates(character) : updates;
+    const updatedCharacter = { ...character, ...updatedFields };
+
+    // Create new gameData with updated character
+    this.state.gameData = {
+      ...this.state.gameData,
+      characters: this.state.gameData.characters.map(c =>
+        c.id === characterId ? updatedCharacter : c
+      ),
+    };
+
+    return updatedCharacter;
   }
 
   public subscribe(callback: (state: GameState) => void): () => void {
@@ -744,6 +851,257 @@ class GameStateManager {
       this.emitStateUpdate();
   }
 
+  /**
+   * Handle rest event from backend (event stream pattern)
+   * Manages rest state transitions for short rest, long rest, and exhaustion
+   */
+  private handleRestEvent(data: any): void {
+    console.log(`[GameStateManager] handleRestEvent received:`, data);
+
+    const character = this.state.gameData?.characters.find(c => c.id === data.characterId);
+    const characterName = character?.classType || 'Character';
+
+    switch (data.type) {
+      case 'rest-started':
+        this.state.restState = {
+          stage: 'rest-started',
+          characterId: data.characterId,
+          restType: data.restType,
+          randomCardId: null,
+          canReroll: false,
+          currentHealth: 0,
+          errorMessage: null,
+          discardPileCards: undefined,
+          selectedCardToLose: undefined,
+        };
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ` initiated ${data.restType} rest` },
+        ]);
+        break;
+
+      case 'long-selection':
+        if (this.state.restState) {
+          this.state.restState = {
+            ...this.state.restState,
+            stage: 'long-selection',
+            discardPileCards: data.discardPileCards || [],
+            currentHealth: data.currentHealth,
+          };
+        }
+        break;
+
+      case 'card-selected':
+        if (this.state.restState) {
+          this.state.restState = {
+            ...this.state.restState,
+            stage: 'card-selected',
+            randomCardId: data.randomCardId,
+            canReroll: data.canReroll,
+          };
+        }
+        this.addLog([
+          { text: 'Random card selected for loss', color: 'orange' },
+        ]);
+        break;
+
+      case 'awaiting-decision':
+        if (this.state.restState) {
+          this.state.restState = {
+            ...this.state.restState,
+            stage: 'awaiting-decision',
+            currentHealth: data.currentHealth,
+          };
+        }
+        break;
+
+      case 'damage-taken':
+        this.updateCharacter(data.characterId, { health: data.currentHealth });
+        console.log(`[GameStateManager] Updated character health to ${data.currentHealth} after damage`);
+
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' took ', color: 'white' },
+          { text: `${data.damage}`, color: 'red' },
+          { text: ' damage from reroll', color: 'white' },
+        ]);
+        break;
+
+      case 'rest-declared':
+        // Long rest has been declared (initiative 99 set, round will start)
+        // Actual rest actions (heal, move cards) happen at END of turn
+        this.state.restState = null;
+        this.state.showCardSelection = false;
+
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' declared long rest (initiative 99)', color: 'gray' },
+        ]);
+        break;
+
+      case 'rest-complete':
+        this.state.restState = null;
+
+        // Close card selection panel since rest has been declared
+        this.state.showCardSelection = false;
+
+        // Update character state using utility method
+        const updatedCharacter = this.updateCharacter(data.characterId, (character) => {
+          const updates: Partial<Character> = {};
+
+          // Update card piles from backend response
+          if (data.cardLost) {
+            // Card was moved to lost pile
+            const lostPile = character.lostPile || [];
+            updates.lostPile = lostPile.includes(data.cardLost)
+              ? lostPile
+              : [...lostPile, data.cardLost];
+
+            // Remove from discard pile and move to hand
+            updates.discardPile = [];
+            updates.hand = [
+              ...(character.hand || []),
+              ...character.discardPile.filter(id => id !== data.cardLost)
+            ];
+
+            // Rebuild playerHand from master abilityDeck using current hand IDs
+            if (this.state.abilityDeck && this.state.abilityDeck.length > 0) {
+              this.state.playerHand = this.state.abilityDeck.filter(card =>
+                updates.hand!.includes(card.id)
+              );
+
+              console.log(`[GameStateManager] Rebuilt playerHand from abilityDeck: ${this.state.playerHand.length} cards available for selection (should match hand: ${updates.hand!.length})`);
+            }
+
+            console.log(`[GameStateManager] Updated card piles after rest: Hand=${updates.hand!.length}, Discard=${updates.discardPile.length}, Lost=${updates.lostPile.length}`);
+          }
+
+          // Update health
+          if (data.healthHealed) {
+            updates.health = character.health + data.healthHealed;
+            console.log(`[GameStateManager] Updated character health to ${updates.health} after healing ${data.healthHealed} HP`);
+          }
+
+          return updates;
+        });
+
+        // Log healing if it occurred
+        if (data.healthHealed && updatedCharacter) {
+          this.addLog([
+            { text: characterName, color: 'lightblue' },
+            { text: ' healed ', color: 'white' },
+            { text: `${data.healthHealed}`, color: 'green' },
+            { text: ' HP from long rest', color: 'white' },
+          ]);
+        }
+
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' completed rest' },
+        ]);
+        break;
+
+      case 'exhaustion':
+        this.state.restState = null;
+
+        // Update character exhaustion state
+        this.updateCharacter(data.characterId, { isExhausted: true });
+
+        // Set exhaustion state to show modal
+        this.state.exhaustionState = {
+          characterId: data.characterId,
+          characterName,
+          reason: data.reason || 'insufficient_cards',
+        };
+
+        this.addLog([
+          { text: characterName, color: 'lightblue' },
+          { text: ' is exhausted! ', color: 'red' },
+          { text: `(${data.reason})`, color: 'gray' },
+        ]);
+        break;
+
+      case 'error':
+        if (this.state.restState) {
+          this.state.restState = {
+            ...this.state.restState,
+            stage: 'error',
+            errorMessage: data.message,
+          };
+        }
+        this.addLog([
+          { text: 'Rest error: ', color: 'red' },
+          { text: data.message, color: 'white' },
+        ]);
+        break;
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Execute rest action (called by UI)
+   */
+  public executeRest(type: 'short' | 'long', cardToLose?: string): void {
+    console.log(`[GameStateManager] executeRest called: type=${type}, cardToLose=${cardToLose}`);
+    console.log(`[GameStateManager] myCharacterId:`, this.state.myCharacterId);
+
+    if (!this.state.myCharacterId) {
+      console.error('[GameStateManager] ❌ Cannot execute rest: myCharacterId is null');
+      return;
+    }
+
+    console.log(`[GameStateManager] ✅ Emitting execute-rest event:`, {
+      characterId: this.state.myCharacterId,
+      type,
+      cardToLose,
+    });
+
+    websocketService.emit('execute-rest', {
+      characterId: this.state.myCharacterId,
+      type,
+      cardToLose,
+    });
+
+    console.log(`[GameStateManager] ✅ execute-rest event emitted successfully`);
+  }
+
+  /**
+   * Handle rest action (accept or reroll)
+   */
+  public handleRestAction(action: 'accept' | 'reroll'): void {
+    if (!this.state.myCharacterId || !this.state.restState) return;
+
+    websocketService.emit('rest-action', {
+      characterId: this.state.myCharacterId,
+      action,
+    });
+  }
+
+  /**
+   * Confirm long rest card selection
+   */
+  public confirmLongRest(cardId: string): void {
+    if (!this.state.myCharacterId || !this.state.restState) return;
+
+    // Update local state to show selected card
+    if (this.state.restState) {
+      this.state.restState.selectedCardToLose = cardId;
+      this.emitStateUpdate();
+    }
+
+    // Execute long rest with selected card
+    this.executeRest('long', cardId);
+  }
+
+  /**
+   * Acknowledge exhaustion and clear modal
+   */
+  public acknowledgeExhaustion(): void {
+    this.state.exhaustionState = null;
+    this.emitStateUpdate();
+  }
+
   public endTurn(): void {
       if(this.state.isMyTurn) {
           websocketService.endTurn();
@@ -777,6 +1135,8 @@ class GameStateManager {
         connectionStatus: 'connected',
         showCardSelection: false,
         waitingForRoundStart: false,
+        restState: null,
+        exhaustionState: null,
     };
     this.emitStateUpdate();
   }

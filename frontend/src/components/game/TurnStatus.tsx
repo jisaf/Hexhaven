@@ -46,6 +46,8 @@ interface TurnStatusProps {
   onMoveClick: () => void;
   onEndTurn: () => void;
   onBackToLobby: () => void;
+  onShortRest?: () => void;
+  canShortRest?: boolean;
   objectivesSlot?: ReactNode;
 }
 
@@ -64,6 +66,8 @@ export function TurnStatus({
   onMoveClick,
   onEndTurn,
   onBackToLobby,
+  onShortRest,
+  canShortRest = false,
   objectivesSlot,
 }: TurnStatusProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
@@ -187,7 +191,7 @@ export function TurnStatus({
       )}
 
       {/* Action buttons - only show when it's player's turn */}
-      {isMyTurn && (hasAttack || hasMove) && (
+      {isMyTurn && (hasAttack || hasMove || canShortRest) && (
         <div className={styles.actionButtons}>
           {hasMove && (
             <button
@@ -207,6 +211,16 @@ export function TurnStatus({
             >
               <GiCrossedSwords />
               <span>Attack</span>
+            </button>
+          )}
+          {canShortRest && onShortRest && (
+            <button
+              onClick={onShortRest}
+              className={styles.restButton}
+              aria-label="Short Rest"
+              title="Short Rest: Randomly lose 1 card from discard, return rest to hand"
+            >
+              <span>Short Rest</span>
             </button>
           )}
         </div>

@@ -6,6 +6,28 @@
       "difficulty": 1,
       "objectivePrimary": "Kill all enemies",
       "objectiveSecondary": "Loot the treasure chest",
+      "objectives": {
+        "primary": {
+          "id": "primary-1",
+          "type": "kill_all_monsters",
+          "description": "Defeat all enemies",
+          "trackProgress": true
+        },
+        "secondary": [
+          {
+            "id": "secondary-1",
+            "type": "collect_treasure",
+            "description": "Loot the treasure chest",
+            "params": {
+              "target": 1
+            },
+            "trackProgress": true,
+            "rewards": {
+              "gold": 10
+            }
+          }
+        ]
+      },
       "mapLayout": [
         { "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
         { "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
@@ -73,6 +95,30 @@
       "difficulty": 2,
       "objectivePrimary": "Survive 6 rounds",
       "objectiveSecondary": "Kill all undead before round 6",
+      "objectives": {
+        "primary": {
+          "id": "primary-1",
+          "type": "survive_rounds",
+          "description": "Survive for 6 rounds",
+          "params": {
+            "rounds": 6
+          },
+          "trackProgress": true
+        },
+        "secondary": [
+          {
+            "id": "secondary-1",
+            "type": "custom",
+            "description": "Kill all undead before round 6",
+            "customFunction": "const allUndead = context.monsters.filter(m => m.type === 'Living Bones'); const deadUndead = allUndead.filter(m => m.isDead); const complete = allUndead.length > 0 && deadUndead.length === allUndead.length && context.game.currentRound < 6; return complete;",
+            "trackProgress": false,
+            "rewards": {
+              "experience": 5,
+              "gold": 15
+            }
+          }
+        ]
+      },
       "mapLayout": [
         { "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
         { "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
@@ -138,6 +184,41 @@
       "difficulty": 2,
       "objectivePrimary": "Kill the Inox Shaman (boss)",
       "objectiveSecondary": "Complete in 8 rounds or less",
+      "objectives": {
+        "primary": {
+          "id": "primary-1",
+          "type": "kill_boss",
+          "description": "Defeat the Inox Shaman",
+          "params": {
+            "monsterType": "Inox Shaman"
+          },
+          "trackProgress": true,
+          "milestones": [25, 50, 75]
+        },
+        "secondary": [
+          {
+            "id": "secondary-1",
+            "type": "custom",
+            "description": "Complete in 8 rounds or less",
+            "customFunction": "const boss = context.monsters.find(m => m.type === 'Inox Shaman'); if (!boss || !boss.isDead) return false; return context.game.currentRound <= 8;",
+            "trackProgress": false,
+            "rewards": {
+              "experience": 3,
+              "gold": 10
+            }
+          }
+        ],
+        "failureConditions": [
+          {
+            "id": "fail-1",
+            "type": "time_limit",
+            "description": "Time limit exceeded",
+            "params": {
+              "rounds": 12
+            }
+          }
+        ]
+      },
       "mapLayout": [
         { "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
         { "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
@@ -205,6 +286,27 @@
       "difficulty": 1,
       "objectivePrimary": "Kill all enemies",
       "objectiveSecondary": "Do not let any Vermlings escape (reach the exit)",
+      "objectives": {
+        "primary": {
+          "id": "primary-1",
+          "type": "kill_all_monsters",
+          "description": "Defeat all enemies",
+          "trackProgress": true
+        },
+        "secondary": [
+          {
+            "id": "secondary-1",
+            "type": "custom",
+            "description": "Don't let any Vermlings escape",
+            "customFunction": "const exitHex = { q: 3, r: 2 }; const vermlings = context.monsters.filter(m => m.type.includes('Vermling')); const escaped = vermlings.filter(m => !m.isDead && m.position.q === exitHex.q && m.position.r === exitHex.r); return escaped.length === 0;",
+            "trackProgress": false,
+            "rewards": {
+              "experience": 4,
+              "gold": 8
+            }
+          }
+        ]
+      },
       "mapLayout": [
         { "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
         { "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
@@ -267,6 +369,42 @@
       "difficulty": 3,
       "objectivePrimary": "Kill all elemental demons",
       "objectiveSecondary": "Use each element at least once during battle",
+      "objectives": {
+        "primary": {
+          "id": "primary-1",
+          "type": "kill_monster_type",
+          "description": "Defeat all elemental demons",
+          "params": {
+            "monsterTypes": ["Flame Demon", "Frost Demon", "Earth Demon"]
+          },
+          "trackProgress": true
+        },
+        "secondary": [
+          {
+            "id": "secondary-1",
+            "type": "custom",
+            "description": "Use each element at least once",
+            "customFunction": "const elements = context.game.elementsActive; const usedElements = [elements.fire, elements.ice, elements.air, elements.earth, elements.light, elements.dark].filter(state => state !== 'inert'); return usedElements.length === 6;",
+            "trackProgress": false,
+            "rewards": {
+              "experience": 6,
+              "gold": 12
+            }
+          },
+          {
+            "id": "secondary-2",
+            "type": "collect_treasure",
+            "description": "Collect the treasure",
+            "params": {
+              "target": 1
+            },
+            "trackProgress": true,
+            "rewards": {
+              "gold": 15
+            }
+          }
+        ]
+      },
       "mapLayout": [
         { "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },
         { "coordinates": { "q": 1, "r": 0 }, "terrain": "hazardous", "occupiedBy": null, "hasLoot": false, "hasTreasure": false },

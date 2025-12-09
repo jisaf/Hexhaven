@@ -10,6 +10,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { ColorMatrixFilter } from 'pixi.js';
 import { type Axial, axialToScreen, HEX_SIZE } from './hex-utils';
 
 export type CharacterClass = 'Brute' | 'Tinkerer' | 'Spellweaver' | 'Scoundrel' | 'Cragheart' | 'Mindthief';
@@ -41,6 +42,7 @@ export class CharacterSprite extends PIXI.Container {
   private healthBar: PIXI.Graphics;
   private selectionRing: PIXI.Graphics;
   private conditionIcons: PIXI.Container;
+  private exhaustedOverlay: PIXI.Graphics | null = null;
 
   private _isSelected: boolean = false;
   private _isHovered: boolean = false;
@@ -76,10 +78,62 @@ export class CharacterSprite extends PIXI.Container {
       this.setupInteractivity();
     }
 
-    // Make exhausted characters semi-transparent
+    // Apply exhaustion visual effects
     if (data.isExhausted) {
-      this.alpha = 0.5;
+      this.setExhausted(true);
     }
+  }
+
+  /**
+   * Set exhaustion visual state
+   */
+  public setExhausted(exhausted: boolean): void {
+    if (exhausted) {
+      // Add grayscale filter
+      const colorMatrix = new ColorMatrixFilter();
+      colorMatrix.desaturate();
+      this.body.filters = [colorMatrix];
+
+      // Reduce opacity
+      this.alpha = 0.5;
+
+      // Add X overlay
+      if (!this.exhaustedOverlay) {
+        this.exhaustedOverlay = this.createExhaustedOverlay();
+        this.addChild(this.exhaustedOverlay);
+      }
+      this.exhaustedOverlay.visible = true;
+    } else {
+      // Remove filters
+      this.body.filters = null;
+
+      // Restore opacity
+      this.alpha = 1.0;
+
+      // Hide X overlay
+      if (this.exhaustedOverlay) {
+        this.exhaustedOverlay.visible = false;
+      }
+    }
+  }
+
+  /**
+   * Create exhausted overlay (X mark)
+   */
+  private createExhaustedOverlay(): PIXI.Graphics {
+    const graphic = new PIXI.Graphics();
+    const size = HEX_SIZE * 0.6;
+    const thickness = 4;
+
+    graphic.lineStyle(thickness, 0xFF0000, 0.8);
+
+    // Draw X
+    graphic.moveTo(-size / 2, -size / 2);
+    graphic.lineTo(size / 2, size / 2);
+    graphic.moveTo(size / 2, -size / 2);
+    graphic.lineTo(-size / 2, size / 2);
+
+    return graphic;
   }
 
   /**
@@ -363,7 +417,7 @@ export class CharacterSprite extends PIXI.Container {
 
     // Update exhausted state
     if (data.isExhausted !== undefined) {
-      this.alpha = data.isExhausted ? 0.5 : 1.0;
+      this.setExhausted(data.isExhausted);
       if (data.isExhausted) {
         this.setSelected(false);
       }

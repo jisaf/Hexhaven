@@ -42,6 +42,9 @@ export class PrismaService
     await this.cardEnhancement.deleteMany();
     await this.character.deleteMany();
     await this.refreshToken.deleteMany();
+    // Game results (186) - delete before users due to foreign key
+    await this.playerGameResult.deleteMany();
+    await this.gameResult.deleteMany();
     await this.user.deleteMany();
     await this.gameEvent.deleteMany();
     await this.gameState.deleteMany();

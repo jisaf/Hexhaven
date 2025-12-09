@@ -12,11 +12,16 @@ import { CharacterClassesController } from './api/character-classes.controller';
 import { GameManagementController } from './api/game-management.controller';
 import { CardLayoutTemplatesController } from './api/card-layout-templates.controller';
 import { AbilityCardsController } from './api/ability-cards.controller';
+import { GameHistoryController } from './api/game-history.controller';
 import { ScenarioService } from './services/scenario.service';
 import { MonsterService } from './services/monster.service';
 import { PrismaService } from './services/prisma.service';
 import { CardLayoutTemplateService } from './services/card-layout-template.service';
 import { AbilityCardService } from './services/ability-card.service';
+import { DeckManagementService } from './services/deck-management.service';
+import { CardPileService } from './services/card-pile.service';
+import { RestService } from './services/rest.service';
+import { ExhaustionService } from './services/exhaustion.service';
 
 @Module({
   imports: [],
@@ -32,6 +37,7 @@ import { AbilityCardService } from './services/ability-card.service';
     GameManagementController, // Phase 6: Game state management with event sourcing (002)
     CardLayoutTemplatesController, // Card layout template management
     AbilityCardsController, // Ability cards API endpoint
+    GameHistoryController, // Phase 9: Match history and game statistics (186)
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -42,6 +48,10 @@ import { AbilityCardService } from './services/ability-card.service';
     PrismaService, // 002: Re-enabled for persistent character integration
     CardLayoutTemplateService, // Card layout template service
     AbilityCardService, // Ability card data service
+    DeckManagementService, // Deck management facade (player deck rules implementation)
+    CardPileService, // Card pile operations (hand, discard, lost)
+    RestService, // Rest mechanics (short rest, long rest)
+    ExhaustionService, // Exhaustion detection and execution
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

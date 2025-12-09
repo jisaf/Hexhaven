@@ -54,6 +54,9 @@ export function AuthNav() {
           <Link to="/characters" className="auth-nav-link">
             My Characters
           </Link>
+          <Link to="/history" className="auth-nav-link">
+            Match History
+          </Link>
           <button onClick={handleLogout} className="auth-nav-logout">
             Logout
           </button>

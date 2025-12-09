@@ -134,9 +134,30 @@ export interface Character {
   hand: string[];
   discardPile: string[];
   lostPile: string[];
-  activeCards: { top: string; bottom: string } | null;
+  activeCards: { top: string; bottom: string } | null; // Currently selected cards (backward compatible)
   conditions: Condition[];
   isExhausted: boolean;
+
+  // NEW FIELDS (backward compatible additions for deck management)
+  activeEffects?: ActiveCardEffect[]; // Cards in active area with persistent effects
+  isResting?: boolean; // True if long rest this round
+  restType?: 'none' | 'short' | 'long';
+  shortRestState?: ShortRestState | null; // Minimal state for short rest
+  exhaustionReason?: 'damage' | 'insufficient_cards' | null;
+}
+
+export interface ActiveCardEffect {
+  cardId: string;
+  effectType: 'persistent' | 'round';
+  remainingUses?: number; // For persistent effects with limited uses
+  appliedAt: number; // Round number when applied
+}
+
+export interface ShortRestState {
+  randomCardId: string; // Server's random selection
+  randomSeed: number; // For validation/replay
+  hasRerolled: boolean; // True after one reroll
+  timestamp: number;
 }
 
 export interface Monster {
@@ -177,6 +198,24 @@ export interface Action {
     effect: string;
     value: number;
   };
+}
+
+// Card Enhancement interface (matches Prisma model)
+export interface CardEnhancement {
+  id: string;
+  characterId: string;
+  cardId: string;
+  slot: 'TOP' | 'BOTTOM';
+  enhancementType: string;
+  appliedAt: Date;
+}
+
+// Enhanced Ability Card (base card + enhancements)
+export interface EnhancedAbilityCard extends AbilityCard {
+  enhancements: CardEnhancement[];
+  isLost: boolean; // Has loss icon
+  isPersistent: boolean; // Has persistent effect
+  isRoundBonus: boolean; // Has round bonus effect
 }
 
 export interface Scenario {

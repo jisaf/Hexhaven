@@ -26,14 +26,31 @@ export class TurnOrderService {
   /**
    * Calculate initiative from two selected ability cards
    * Returns the lower initiative value (lower goes first)
+   *
+   * Long Rest: Per Gloomhaven rules, long rest has initiative 99 (always goes last)
    */
   calculateInitiative(
-    topCardInitiative: number,
+    topCardInitiative: number | null,
     bottomCardInitiative: number | null,
+    isLongRest: boolean = false,
   ): number {
-    if (bottomCardInitiative === null) {
-      return topCardInitiative;
+    // Long rest always has initiative 99 (goes last in round)
+    if (isLongRest) {
+      return 99;
     }
+
+    if (topCardInitiative === null && bottomCardInitiative === null) {
+      throw new Error('Cannot calculate initiative without card selections');
+    }
+
+    if (bottomCardInitiative === null) {
+      return topCardInitiative!;
+    }
+
+    if (topCardInitiative === null) {
+      return bottomCardInitiative;
+    }
+
     return Math.min(topCardInitiative, bottomCardInitiative);
   }
 
