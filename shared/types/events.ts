@@ -3,7 +3,7 @@
  * Based on contracts/websocket-events.yaml
  */
 
-import type { AxialCoordinates, CharacterClass, ElementType } from './entities';
+import type { AxialCoordinates, CharacterClass, ElementType, AbilityCard } from './entities';
 
 // ========== CLIENT -> SERVER EVENTS ==========
 
@@ -123,9 +123,12 @@ export interface GameStartedPayload {
     classType: string;
     health: number;
     maxHealth: number;
-    currentHex: AxialCoordinates;
+    experience?: number;
+    level?: number;
+    currentHex: AxialCoordinates | null;
     conditions: string[];
     isExhausted: boolean;
+    activeCards?: { top: string; bottom: string } | null;
     // Added for game rejoin - restore selected cards and action state
     selectedCards?: {
       topCardId: string;
@@ -137,6 +140,11 @@ export interface GameStartedPayload {
     effectiveRange?: number;
     hasAttackedThisTurn?: boolean;
     movementUsedThisTurn?: number;
+    // Deck management fields
+    hand: string[];
+    discardPile: string[];
+    lostPile: string[];
+    abilityDeck: AbilityCard[];
   }[];
   objectives?: {
     primary: {
@@ -351,6 +359,31 @@ export interface CharacterExhaustedPayload {
   reason: 'health' | 'cards' | 'manual';
 }
 
+/**
+ * Payload for rest-event events
+ * Sent during rest mechanics (short/long rest)
+ */
+export interface RestEventPayload {
+  type: 'rest-started' | 'long-selection' | 'card-selected' | 'awaiting-decision' | 'damage-taken' | 'rest-declared' | 'rest-complete' | 'exhaustion' | 'error';
+  characterId: string;
+  restType?: 'short' | 'long';
+  randomCardId?: string;
+  selectedCardToLose?: string;
+  canReroll?: boolean;
+  damage?: number;
+  currentHealth?: number;
+  message?: string;
+  // Long rest selection fields
+  discardPileCards?: string[];
+  cardToLose?: string;
+  initiative?: number;
+  // Rest completion fields
+  cardLost?: string;
+  healthHealed?: number;
+  cardsInHand?: number;
+  reason?: 'damage' | 'insufficient_cards';
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -408,4 +441,6 @@ export interface ServerEvents {
   objectives_loaded: ObjectivesLoadedPayload;
   objective_progress: ObjectiveProgressUpdatePayload;
   character_exhausted: CharacterExhaustedPayload;
+  // Phase 4: Rest mechanics events
+  'rest-event': RestEventPayload;
 }

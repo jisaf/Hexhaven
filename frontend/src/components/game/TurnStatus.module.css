@@ -278,7 +278,8 @@
 }
 
 .moveButton,
-.attackButton {
+.attackButton,
+.restButton {
   flex: 1;
   display: flex;
   align-items: center;
@@ -307,6 +308,11 @@
   color: #ff6b6b;
 }
 
+.restButton {
+  border-color: #9b59b6;
+  color: #9b59b6;
+}
+
 .moveButton:hover {
   background: rgba(77, 171, 247, 0.3);
   transform: translateY(-2px);
@@ -317,6 +323,12 @@
   background: rgba(255, 107, 107, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.restButton:hover {
+  background: rgba(155, 89, 182, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
 }
 
 .attackButton.active {

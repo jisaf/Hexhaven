@@ -3,17 +3,19 @@ import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
 import './CardSelectionPanel.css';
-import { GiScrollUnfurled, GiScrollQuill } from 'react-icons/gi';
 
 interface CardSelectionPanelProps {
   cards: AbilityCardType[];
   onCardSelect: (card: AbilityCardType) => void;
   onClearSelection: () => void;
   onConfirmSelection: () => void;
+  onLongRest?: () => void;
   selectedTopAction: AbilityCardType | null;
   selectedBottomAction: AbilityCardType | null;
   disabled?: boolean;
   waiting?: boolean;
+  canLongRest?: boolean;
+  discardPileCount?: number;
 }
 
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -23,34 +25,35 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   onCardSelect,
   onClearSelection,
   onConfirmSelection,
+  onLongRest,
   selectedTopAction,
   selectedBottomAction,
   disabled = false,
   waiting = false,
+  canLongRest = false,
+  discardPileCount = 0,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const isPortrait = useMediaQuery('(orientation: portrait)');
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
-  const panelClassName = `card-selection-panel ${isCollapsed ? 'collapsed' : ''} ${isPortrait ? 'portrait' : ''}`;
+  const mustRest = cards.length < 2 && canLongRest;
+  const panelClassName = `card-selection-panel ${isPortrait ? 'portrait' : ''}`;
 
   return (
     <div className={panelClassName}>
-      <button className="collapse-toggle" onClick={() => setIsCollapsed(!isCollapsed)}>
-        {isCollapsed ? <GiScrollQuill /> : <GiScrollUnfurled />}
-      </button>
-
       <div className="selection-instructions">
         <h3>Select Your Actions</h3>
         <p>
           {waiting
             ? 'Waiting for other players...'
-            : !selectedTopAction
-              ? 'Select a card for your TOP action'
-              : !selectedBottomAction
-                ? 'Select a card for your BOTTOM action'
-                : 'Cards selected! Ready to confirm.'}
+            : mustRest
+              ? `Cannot play 2 cards (${cards.length} in hand). Must rest.`
+              : !selectedTopAction
+                ? 'Select a card for your TOP action'
+                : !selectedBottomAction
+                  ? 'Select a card for your BOTTOM action'
+                  : 'Cards selected! Ready to confirm.'}
         </p>
       </div>
 
@@ -87,20 +90,44 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
       </div>
 
       <div className="action-buttons">
-        <button
-          className="btn-clear"
-          onClick={onClearSelection}
-          disabled={!selectedTopAction && !selectedBottomAction || disabled || waiting}
-        >
-          Clear
-        </button>
-        <button
-          className="btn-confirm"
-          onClick={onConfirmSelection}
-          disabled={!canConfirm || disabled || waiting}
-        >
-          {waiting ? 'Waiting...' : 'Confirm'}
-        </button>
+        {!mustRest && canLongRest && (
+          <button
+            className="btn-long-rest"
+            onClick={onLongRest}
+            disabled={disabled || waiting}
+            title={`Long Rest: Heal 2 HP, refresh items (${discardPileCount} cards in discard)`}
+          >
+            Long Rest (Initiative 99)
+          </button>
+        )}
+        {!mustRest && (
+          <>
+            <button
+              className="btn-clear"
+              onClick={onClearSelection}
+              disabled={!selectedTopAction && !selectedBottomAction || disabled || waiting}
+            >
+              Clear
+            </button>
+            <button
+              className="btn-confirm"
+              onClick={onConfirmSelection}
+              disabled={!canConfirm || disabled || waiting}
+            >
+              {waiting ? 'Waiting...' : 'Confirm'}
+            </button>
+          </>
+        )}
+        {mustRest && canLongRest && (
+          <button
+            className="btn-long-rest must-rest"
+            onClick={onLongRest}
+            disabled={disabled || waiting}
+            title="You must rest - not enough cards to play"
+          >
+            Long Rest (Initiative 99)
+          </button>
+        )}
       </div>
     </div>
   );

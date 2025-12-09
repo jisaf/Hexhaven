@@ -1,0 +1,375 @@
+/**
+ * RestModal Component Styles
+ *
+ * Styling for rest modal (short rest, long rest, exhaustion)
+ */
+
+.rest-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rest-modal {
+  background-color: #2a2a2a;
+  border: 2px solid #4a4a4a;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.rest-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.rest-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #f0f0f0;
+  margin: 0;
+  text-align: center;
+}
+
+.rest-title-error {
+  color: #ff6b6b;
+}
+
+.rest-message {
+  font-size: 1.1rem;
+  color: #c0c0c0;
+  text-align: center;
+  margin: 0;
+}
+
+.rest-error-message {
+  font-size: 1.1rem;
+  color: #ff6b6b;
+  text-align: center;
+  margin: 0;
+}
+
+/* Spinner */
+.rest-spinner {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rest-spinner .spinner {
+  border: 4px solid #4a4a4a;
+  border-top: 4px solid #f0f0f0;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success/Error Icons */
+.rest-success-icon,
+.rest-error-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.rest-success-icon {
+  background-color: #4caf50;
+  color: white;
+}
+
+.rest-error-icon {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Card Display */
+.rest-card-display {
+  background-color: #1a1a1a;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 100%;
+  text-align: center;
+}
+
+.random-card-label {
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.random-card-id {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #ff9800;
+  font-family: monospace;
+  padding: 0.5rem;
+  background-color: #0a0a0a;
+  border-radius: 4px;
+}
+
+/* Reroll Option */
+.reroll-option {
+  width: 100%;
+  background-color: #1a1a1a;
+  border: 1px dashed #666;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.reroll-warning {
+  font-size: 0.95rem;
+  color: #ffa726;
+  margin: 0 0 0.5rem 0;
+}
+
+.current-health {
+  font-size: 1rem;
+  color: #c0c0c0;
+  margin: 0;
+}
+
+.health-value {
+  font-weight: bold;
+  color: #4caf50;
+  font-size: 1.2rem;
+}
+
+/* Long Rest Card Selection */
+.rest-instructions {
+  font-size: 1rem;
+  color: #c0c0c0;
+  text-align: center;
+  margin: 0;
+}
+
+.discard-pile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background-color: #1a1a1a;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+}
+
+.card-option {
+  padding: 1rem 0.5rem;
+  background-color: #2a2a2a;
+  border: 2px solid #4a4a4a;
+  border-radius: 6px;
+  color: #c0c0c0;
+  font-size: 0.85rem;
+  font-family: monospace;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  word-break: break-word;
+}
+
+.card-option:hover {
+  background-color: #3a3a3a;
+  border-color: #6a6a6a;
+  transform: translateY(-2px);
+}
+
+.card-option.selected {
+  background-color: #ff9800;
+  border-color: #ff9800;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 0 12px rgba(255, 152, 0, 0.6);
+}
+
+.rest-benefits {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.benefit-item {
+  font-size: 1rem;
+  color: #4caf50;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rest-btn-confirm {
+  background-color: #4caf50;
+  color: white;
+}
+
+.rest-btn-confirm:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+/* Action Buttons */
+.rest-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.rest-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rest-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.rest-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.rest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rest-btn-accept {
+  background-color: #4caf50;
+  color: white;
+}
+
+.rest-btn-accept:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.rest-btn-reroll {
+  background-color: #ff9800;
+  color: white;
+}
+
+.rest-btn-reroll:hover:not(:disabled) {
+  background-color: #fb8c00;
+}
+
+.rest-btn-close {
+  background-color: #2196f3;
+  color: white;
+}
+
+.rest-btn-close:hover {
+  background-color: #0b7dda;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .rest-modal {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .rest-title {
+    font-size: 1.5rem;
+  }
+
+  .rest-message {
+    font-size: 1rem;
+  }
+
+  .rest-btn {
+    font-size: 1rem;
+    padding: 0.7rem 1.2rem;
+    min-width: 100px;
+  }
+
+  .rest-actions {
+    flex-direction: column;
+  }
+
+  .rest-btn {
+    width: 100%;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .rest-modal-overlay,
+  .rest-modal,
+  .rest-spinner .spinner {
+    animation: none;
+  }
+
+  .rest-btn:hover:not(:disabled) {
+    transform: none;
+  }
+}

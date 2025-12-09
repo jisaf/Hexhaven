@@ -58,11 +58,13 @@ export interface CharacterClass {
 
 export interface AbilityCard {
   id: string;
+  characterClass: string;
   name: string;
-  level: number;
+  level: number | 'X';
   initiative: number;
   topAction: unknown;
   bottomAction: unknown;
+  imageUrl?: string;
 }
 
 export interface CardEnhancement {

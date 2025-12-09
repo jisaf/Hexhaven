@@ -9,7 +9,6 @@ import type {
   RegisterCredentials,
   TokenPair,
   AuthResponse,
-  AuthError,
 } from '../types/auth.types';
 import { getApiUrl } from '../config/api';
 
@@ -36,8 +35,9 @@ class AuthService {
     });
 
     if (!response.ok) {
-      const error: AuthError = await response.json();
-      throw new Error(error.error.message || 'Registration failed');
+      const errorData = await response.json();
+      const errorMessage = this.extractErrorMessage(errorData, 'Registration failed');
+      throw new Error(errorMessage);
     }
 
     const data: AuthResponse = await response.json();
@@ -62,8 +62,9 @@ class AuthService {
     });
 
     if (!response.ok) {
-      const error: AuthError = await response.json();
-      throw new Error(error.error.message || 'Login failed');
+      const errorData = await response.json();
+      const errorMessage = this.extractErrorMessage(errorData, 'Login failed');
+      throw new Error(errorMessage);
     }
 
     const data: AuthResponse = await response.json();
@@ -238,6 +239,32 @@ class AuthService {
     }
 
     return response;
+  }
+
+  /**
+   * Extract error message from error response
+   * Handles both ErrorResponse format and NestJS default format
+   */
+  private extractErrorMessage(errorData: Record<string, unknown>, fallback: string): string {
+    // Try ErrorResponse format: { error: { message: "..." } }
+    const error = errorData?.error as Record<string, unknown> | undefined;
+    if (error?.message && typeof error.message === 'string') {
+      return error.message;
+    }
+
+    // Try NestJS default format: { message: "..." } or { message: ["...", "..."] }
+    const message = errorData?.message;
+    if (message) {
+      if (Array.isArray(message)) {
+        return message.join(', ');
+      }
+      if (typeof message === 'string') {
+        return message;
+      }
+    }
+
+    // Fallback
+    return fallback;
   }
 }
 

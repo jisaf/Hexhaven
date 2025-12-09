@@ -6,6 +6,9 @@ import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { GameGateway } from './websocket/game.gateway';
 import { validatePortConfiguration } from './config/validate-ports';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { CardTemplateCache } from './utils/card-template-cache';
+import { PrismaService } from './services/prisma.service';
 
 // Load environment variables from .env file
 // In production, this loads from /opt/hexhaven/.env
@@ -28,6 +31,15 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   logger.log('NestJS application created successfully');
+
+  // Initialize CardTemplateCache (load all card templates once)
+  const prismaService = app.get(PrismaService);
+  await CardTemplateCache.initialize(prismaService);
+  logger.log('CardTemplateCache initialized');
+
+  // Apply global exception filter for consistent error responses
+  app.useGlobalFilters(new HttpExceptionFilter());
+  logger.log('Global exception filter registered');
 
   // Log startup environment info
   logger.log(`Node environment: ${process.env.NODE_ENV || 'development'}`);
@@ -156,6 +168,14 @@ async function bootstrap() {
 
     socket.on('end_turn', (payload) => {
       gameGateway.handleEndTurn(socket, payload);
+    });
+
+    socket.on('execute-rest', (payload) => {
+      gameGateway.handleExecuteRest(socket, payload);
+    });
+
+    socket.on('rest-action', (payload) => {
+      gameGateway.handleRestAction(socket, payload);
     });
   });
 

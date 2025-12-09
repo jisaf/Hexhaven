@@ -138,6 +138,12 @@ export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
               </button>
               <button
                 className={styles.menuItem}
+                onClick={() => handleMenuItemClick('/history')}
+              >
+                <span className={styles.menuItemText}>Match History</span>
+              </button>
+              <button
+                className={styles.menuItem}
                 onClick={() => handleMenuItemClick('/')}
               >
                 <span className={styles.menuItemText}>New Game</span>

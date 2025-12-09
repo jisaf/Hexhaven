@@ -16,8 +16,8 @@ import { gameSessionCoordinator } from '../services/game-session-coordinator.ser
 import { roomSessionManager } from '../services/room-session.service';
 import { websocketService } from '../services/websocket.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
-import { TerrainType } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile, Character, AbilityCard } from '../../../shared/types/entities';
+import { TerrainType } from '../../../shared/types/entities';
 import type {
   ObjectivesLoadedPayload,
   ObjectiveProgressUpdatePayload,
@@ -25,6 +25,8 @@ import type {
 } from '../../../shared/types/events';
 import type { ScenarioResult } from '../components/ScenarioCompleteModal';
 import { ScenarioCompleteModal } from '../components/ScenarioCompleteModal';
+import { RestModal } from '../components/RestModal';
+import { ExhaustionModal } from '../components/ExhaustionModal';
 import { GamePanel } from '../components/game/GamePanel';
 import { InfoPanel } from '../components/game/InfoPanel';
 import { TurnStatus } from '../components/game/TurnStatus';
@@ -32,6 +34,7 @@ import { GameLog } from '../components/game/GameLog';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
+import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
 import { useFullscreen, exitFullscreen } from '../hooks/useFullscreen';
@@ -47,6 +50,11 @@ export function GameBoard() {
   const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
   const [objectives, setObjectives] = useState<ObjectivesLoadedPayload | null>(null);
   const [objectiveProgress, setObjectiveProgress] = useState<Map<string, ObjectiveProgressUpdatePayload>>(new Map());
+
+  // Card pile selection state
+  const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
+  const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
+  const [showPileView, setShowPileView] = useState(false);
 
   // Handle navigation back (exit fullscreen and go to lobby)
   // Memoized to prevent useFullscreen effect from re-running on every render
@@ -308,6 +316,55 @@ export function GameBoard() {
   const attackAction = gameStateManager.getAttackAction();
   const moveAction = gameStateManager.getMoveAction();
 
+  // Get my character's card pile counts
+  const myCharacter = gameState.myCharacterId
+    ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)
+    : null;
+  const handCount = myCharacter?.hand?.length || 0;
+  const discardCount = myCharacter?.discardPile?.length || 0;
+  const lostCount = myCharacter?.lostPile?.length || 0;
+
+  // Handle card pile clicks
+  const handlePileClick = (pile: PileType) => {
+    // Toggle selection - if clicking the same pile, close it
+    if (selectedPile === pile) {
+      setSelectedPile(null);
+      setPileViewCards([]);
+      setShowPileView(false);
+      return;
+    }
+
+    // Select the pile and get its cards
+    setSelectedPile(pile);
+
+    if (!myCharacter) {
+      setPileViewCards([]);
+      setShowPileView(false);
+      return;
+    }
+
+    let cardIds: string[] = [];
+    switch (pile) {
+      case 'hand':
+        cardIds = myCharacter.hand || [];
+        break;
+      case 'discard':
+        cardIds = myCharacter.discardPile || [];
+        break;
+      case 'lost':
+        cardIds = myCharacter.lostPile || [];
+        break;
+    }
+
+    // Convert card IDs to full card objects by looking up from playerHand
+    const cardObjects = cardIds
+      .map(id => gameState.playerHand.find(card => card.id === id))
+      .filter((card): card is AbilityCard => card !== undefined);
+
+    setPileViewCards(cardObjects);
+    setShowPileView(true);
+  };
+
   // Transform TurnEntity[] to TurnOrderEntity[] with health information
   const turnOrderWithHealth = gameState.turnOrder.map((entity) => {
     const character = gameState.gameData?.characters.find((c) => c.id === entity.entityId);
@@ -331,9 +388,9 @@ export function GameBoard() {
       {/* Game Panel - Left/Top: Hex Map */}
       <GamePanel ref={containerRef} />
 
-      {/* Info Panel - Right/Bottom: TurnStatus + GameLog OR CardSelection */}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection */}
       <InfoPanel
-        showCardSelection={gameState.showCardSelection}
+        showCardSelection={gameState.showCardSelection || showPileView}
         turnStatus={
           <TurnStatus
             turnOrder={turnOrderWithHealth}
@@ -350,10 +407,26 @@ export function GameBoard() {
             onMoveClick={handleMoveClick}
             onEndTurn={() => gameStateManager.endTurn()}
             onBackToLobby={handleBackToLobby}
+            onShortRest={() => gameStateManager.executeRest('short')}
+            canShortRest={
+              gameState.myCharacterId && gameState.isMyTurn
+                ? ((gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length) >= 2
+                : false
+            }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
           />
         }
         gameLog={<GameLog logs={gameState.logs} />}
+        cardPileBar={
+          <CardPileIndicator
+            handCount={handCount}
+            discardCount={discardCount}
+            lostCount={lostCount}
+            canRest={discardCount >= 2}
+            onPileClick={handlePileClick}
+            selectedPile={selectedPile}
+          />
+        }
         cardSelection={
           gameState.showCardSelection ? (
             <CardSelectionPanel
@@ -361,9 +434,37 @@ export function GameBoard() {
               onCardSelect={(card) => gameStateManager.selectCard(card)}
               onClearSelection={() => gameStateManager.clearCardSelection()}
               onConfirmSelection={() => gameStateManager.confirmCardSelection()}
+              onLongRest={() => gameStateManager.executeRest('long')}
               selectedTopAction={gameState.selectedTopAction}
               selectedBottomAction={gameState.selectedBottomAction}
               waiting={gameState.waitingForRoundStart}
+              canLongRest={
+                gameState.myCharacterId
+                  ? ((gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length) >= 2
+                  : false
+              }
+              discardPileCount={
+                gameState.myCharacterId
+                  ? (gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length
+                  : 0
+              }
+            />
+          ) : showPileView ? (
+            <CardSelectionPanel
+              cards={pileViewCards}
+              onCardSelect={() => {}} // No-op in view mode
+              onClearSelection={() => {
+                setShowPileView(false);
+                setSelectedPile(null);
+                setPileViewCards([]);
+              }}
+              onConfirmSelection={() => {}} // No-op in view mode
+              onLongRest={() => {}} // No-op in view mode
+              selectedTopAction={null}
+              selectedBottomAction={null}
+              waiting={true} // Disable interaction in view mode
+              canLongRest={false}
+              discardPileCount={discardCount}
             />
           ) : undefined
         }
@@ -383,6 +484,27 @@ export function GameBoard() {
           onClose={() => setScenarioResult(null)}
           onReturnToLobby={handleReturnToLobby}
           onPlayAgain={handlePlayAgain}
+        />
+      )}
+
+      {/* Rest Modal */}
+      <RestModal
+        restState={gameState.restState}
+        onAccept={() => gameStateManager.handleRestAction('accept')}
+        onReroll={() => gameStateManager.handleRestAction('reroll')}
+        onConfirmLongRest={(cardId) => gameStateManager.confirmLongRest(cardId)}
+        onClose={() => {
+          // Clear rest state (auto-closes when rest completes)
+        }}
+      />
+
+      {/* Exhaustion Modal */}
+      {gameState.exhaustionState && (
+        <ExhaustionModal
+          visible={true}
+          characterName={gameState.exhaustionState.characterName}
+          reason={gameState.exhaustionState.reason}
+          onAcknowledge={() => gameStateManager.acknowledgeExhaustion()}
         />
       )}
     </div>

@@ -32,6 +32,7 @@ import { MonsterAIService } from '../services/monster-ai.service';
 import { ObjectiveEvaluatorService } from '../services/objective-evaluator.service';
 import { ObjectiveContextBuilderService } from '../services/objective-context-builder.service';
 import { GameResultService } from '../services/game-result.service';
+import { DeckManagementService } from '../services/deck-management.service';
 import type { AccumulatedStats } from '../services/objective-context-builder.service';
 import type {
   ScenarioObjectives,
@@ -82,6 +83,7 @@ export class GameGateway
   constructor(
     private readonly prisma: PrismaService,
     private readonly scenarioService: ScenarioService,
+    private readonly deckManagement: DeckManagementService,
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -221,12 +223,22 @@ export class GameGateway
       });
     }
 
-    // Load ability decks for all characters
+    // Load ability decks for all characters (using hybrid approach)
     const charactersWithDecks = characters.map((c: any) => {
       const charData = c.toJSON();
-      const abilityDeck = this.abilityCardService.getCardsByClass(
+
+      // Get all cards for this class using CardTemplateCache (efficient)
+      const classCards = this.abilityCardService.getCardsByClass(
         charData.characterClass,
       );
+      const abilityDeckIds = classCards.map((card) => card.id);
+
+      // Initialize deck piles (all cards start in hand at game start)
+      // TODO: Load from database when persistence is implemented
+      const hand = abilityDeckIds; // All cards start in hand
+      const discardPile: string[] = [];
+      const lostPile: string[] = [];
+
       return {
         id: charData.id,
         playerId: charData.playerId,
@@ -236,7 +248,19 @@ export class GameGateway
         currentHex: charData.position,
         conditions: charData.conditions,
         isExhausted: charData.exhausted,
-        abilityDeck, // Include ability deck for card selection
+
+        // Deck management fields (hybrid approach: store IDs, hydrate on demand)
+        abilityDeck: classCards, // Full card objects for initial hand selection
+        hand, // Card IDs in hand
+        discardPile, // Card IDs in discard pile
+        lostPile, // Card IDs in lost pile
+        activeCards: null, // Currently selected card pair
+        activeEffects: [], // Cards with persistent effects
+        isResting: false,
+        restType: 'none' as const,
+        shortRestState: null,
+        exhaustionReason: null,
+
         // Include selected cards and action state for game rejoin
         selectedCards: c.selectedCards, // { topCardId, bottomCardId, initiative }
         effectiveMovement: c.effectiveMovementThisTurn,
@@ -1918,6 +1942,23 @@ export class GameGateway
         throw new Error('It is not your turn');
       }
 
+      // Move played cards to discard pile before resetting action flags
+      if (character.selectedCards) {
+        const topCardId = character.selectedCards.topCardId;
+        const bottomCardId = character.selectedCards.bottomCardId;
+
+        // Remove cards from hand and add to discard pile
+        character.removeFromHand(topCardId);
+        character.addToDiscard(topCardId);
+
+        character.removeFromHand(bottomCardId);
+        character.addToDiscard(bottomCardId);
+
+        this.logger.log(
+          `Moved played cards to discard: ${topCardId}, ${bottomCardId}. Hand: ${character.hand.length}, Discard: ${character.discardPile.length}`,
+        );
+      }
+
       // Reset action flags for this character's turn ending
       character.resetActionFlags();
 
@@ -1984,6 +2025,48 @@ export class GameGateway
         );
       }
 
+      // Execute pending rest at END of turn (Gloomhaven rules)
+      const pendingRest = (character as any).pendingRest;
+      if (pendingRest && pendingRest.type === 'long') {
+        this.logger.log(`Executing long rest at end of ${character.id}'s turn`);
+
+        // Execute the rest (heal, move cards)
+        const result = this.deckManagement.executeLongRest(
+          character as any,
+          pendingRest.cardToLose,
+        );
+
+        // Update card piles using setters
+        character.hand = result.hand;
+        character.discardPile = result.discardPile;
+        character.lostPile = result.lostPile;
+
+        // Heal using the Character model's heal method
+        const healthBefore = character.currentHealth;
+        const healthHealed = character.heal(2);
+        const healthAfter = character.currentHealth;
+
+        this.logger.log(
+          `Long rest healing: ${healthBefore} HP + ${healthHealed} healed = ${healthAfter} HP`,
+        );
+
+        // Clear pending rest
+        (character as any).pendingRest = null;
+
+        // Emit rest complete NOW (at end of turn)
+        this.server.to(room.roomCode).emit('rest-event', {
+          type: 'rest-complete',
+          characterId: character.id,
+          cardLost: pendingRest.cardToLose,
+          cardsInHand: result.hand.length,
+          healthHealed: healthHealed,
+        });
+
+        this.logger.log(
+          `Long rest complete for ${character.id}: healed ${healthHealed} HP, cards moved`,
+        );
+      }
+
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(
         currentIndex,
@@ -2033,6 +2116,282 @@ export class GameGateway
         message: errorMessage,
       };
       client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Execute rest (short or long)
+   * Handles initial rest request from player
+   */
+  @SubscribeMessage('execute-rest')
+  handleExecuteRest(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      gameId: string;
+      characterId: string;
+      type: 'short' | 'long';
+      cardToLose?: string; // Only for long rest
+    },
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room, roomCode } = roomData;
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Validate can rest
+      // TODO: Reconcile Character model vs Character interface types
+      const validation = this.deckManagement.canRest(
+        character as any,
+        payload.type,
+      );
+      if (!validation.valid) {
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'error',
+          characterId: character.id,
+          message: validation.reason || 'Cannot rest',
+        });
+        return;
+      }
+
+      // Emit rest started
+      this.server.to(roomCode).emit('rest-event', {
+        type: 'rest-started',
+        characterId: character.id,
+        restType: payload.type,
+      });
+
+      if (payload.type === 'short') {
+        // Execute short rest (server-side randomization)
+        // TODO: Reconcile Character model vs Character interface types
+        const result = this.deckManagement.executeShortRest(character as any);
+
+        // Update character state (replace with updated character)
+        Object.assign(character, result.character);
+
+        // Emit card selected
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'card-selected',
+          characterId: character.id,
+          randomCardId: result.randomCard,
+          canReroll: !result.character.shortRestState?.hasRerolled,
+        });
+
+        // Emit awaiting decision
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'awaiting-decision',
+          characterId: character.id,
+          currentHealth: result.character.health,
+          rerollCost: 1,
+        });
+      } else {
+        // Long rest - two-step flow
+        if (!payload.cardToLose) {
+          // Step 1: Show card selection UI to player
+          // TODO: Reconcile Character model vs Character interface types
+          const discardPile = (character as any).discardPile || [];
+
+          if (discardPile.length === 0) {
+            this.server.to(roomCode).emit('rest-event', {
+              type: 'error',
+              characterId: character.id,
+              message: 'No cards in discard pile to lose',
+            });
+            return;
+          }
+
+          // Emit long-selection event with available cards
+          // TODO: Reconcile Character model vs Character interface types
+          this.server.to(roomCode).emit('rest-event', {
+            type: 'long-selection',
+            characterId: character.id,
+            discardPileCards: discardPile,
+            currentHealth: (character as any).health || character.currentHealth,
+          });
+        } else {
+          // Step 2: Mark character as resting with selected card
+          // Actual rest execution (heal, move cards) happens at END of turn
+          // Store the card to lose in a pending rest state
+          (character as any).pendingRest = {
+            type: 'long',
+            cardToLose: payload.cardToLose,
+          };
+
+          // Set initiative to 99 for long rest (goes last in turn order)
+          character.selectedCards = {
+            topCardId: 'rest',
+            bottomCardId: 'rest',
+            initiative: 99,
+          };
+
+          // Emit rest declared (not complete yet - that happens at end of turn)
+          this.server.to(roomCode).emit('rest-event', {
+            type: 'rest-declared',
+            characterId: character.id,
+            cardToLose: payload.cardToLose,
+            initiative: 99,
+          });
+
+          // Check if all players have selected cards (or rested), then start round
+          const allCharacters = room.players
+            .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+            .filter((c: any): c is any => Boolean(c && !c.exhausted));
+
+          const allSelected = allCharacters.every((c: any): c is any =>
+            Boolean(c && c.selectedCards !== undefined),
+          );
+
+          if (allSelected) {
+            this.startNewRound(roomCode);
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Execute rest error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      const roomData = this.getRoomFromSocket(client);
+      if (roomData) {
+        this.server.to(roomData.roomCode).emit('rest-event', {
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Rest failed',
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle rest action (accept or reroll for short rest)
+   */
+  @SubscribeMessage('rest-action')
+  handleRestAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      gameId: string;
+      characterId: string;
+      action: 'accept' | 'reroll';
+    },
+  ): void {
+    try {
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        throw new Error('Player not authenticated');
+      }
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room: _room, roomCode } = roomData;
+
+      // Get player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      if (payload.action === 'reroll') {
+        // Reroll short rest
+        // TODO: Reconcile Character model vs Character interface types
+        const result = this.deckManagement.rerollShortRest(character as any);
+
+        // Update character state
+        Object.assign(character, result.character);
+
+        // Emit new card selected
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'card-selected',
+          characterId: character.id,
+          randomCardId: result.randomCard,
+          canReroll: false, // Can only reroll once
+        });
+
+        // Emit damage taken
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'damage-taken',
+          characterId: character.id,
+          damage: result.damageTaken || 0,
+          currentHealth: result.character.health,
+        });
+
+        // Emit awaiting decision again
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'awaiting-decision',
+          characterId: character.id,
+          currentHealth: result.character.health,
+          rerollCost: 1,
+        });
+      } else {
+        // Accept card
+        // TODO: Reconcile Character model vs Character interface types
+        const result = this.deckManagement.finalizeShortRest(character as any);
+
+        // Update character state
+        Object.assign(character, result);
+
+        // Emit rest complete
+        this.server.to(roomCode).emit('rest-event', {
+          type: 'rest-complete',
+          characterId: character.id,
+          cardLost: result.lostPile[result.lostPile.length - 1],
+          cardsInHand: result.hand.length,
+        });
+
+        // Check for exhaustion after rest
+        const exhaustionCheck = this.deckManagement.checkExhaustion(result);
+        if (exhaustionCheck.isExhausted) {
+          const exhausted = this.deckManagement.executeExhaustion(
+            result,
+            exhaustionCheck.reason!,
+          );
+          Object.assign(character, exhausted);
+
+          // Emit exhaustion event
+          this.server.to(roomCode).emit('rest-event', {
+            type: 'exhaustion',
+            characterId: character.id,
+            reason: exhaustionCheck.reason!,
+            message: exhaustionCheck.message,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Rest action error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      const roomData = this.getRoomFromSocket(client);
+      if (roomData) {
+        this.server.to(roomData.roomCode).emit('rest-event', {
+          type: 'error',
+          message:
+            error instanceof Error ? error.message : 'Rest action failed',
+        });
+      }
     }
   }
 

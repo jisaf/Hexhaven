@@ -42,8 +42,20 @@ export class AbilityCardService {
 
       const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
 
-      const data = JSON.parse(fileContent) as { abilityCards: AbilityCard[] };
-      this.abilityCards = data.abilityCards;
+      // Raw type for JSON data where characterClass is a string
+      type RawAbilityCard = Omit<AbilityCard, 'characterClass'> & {
+        characterClass: string;
+      };
+
+      const rawData = JSON.parse(fileContent) as {
+        abilityCards: RawAbilityCard[];
+      };
+
+      // Convert string to CharacterClass enum at the JSON boundary
+      this.abilityCards = rawData.abilityCards.map((card) => ({
+        ...card,
+        characterClass: card.characterClass as CharacterClass,
+      }));
       console.log(
         `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
       );

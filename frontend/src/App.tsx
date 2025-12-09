@@ -27,6 +27,7 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
 const Characters = lazy(() => import('./pages/Characters').then(m => ({ default: m.Characters })));
 const CreateCharacter = lazy(() => import('./pages/CreateCharacter').then(m => ({ default: m.CreateCharacter })));
+const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ default: m.MatchHistory })));
 
 /**
  * Loading Component
@@ -153,6 +154,7 @@ function Layout() {
         <Route path="/register" element={<Register />} />
         <Route path="/characters" element={<Characters />} />
         <Route path="/characters/new" element={<CreateCharacter />} />
+        <Route path="/history" element={<MatchHistory />} />
         <Route path="/game/:roomCode" element={<GameBoard />} />
         <Route path="/demo" element={<HexMapDemo />} />
         <Route path="/design" element={<ScenarioDesigner />} />

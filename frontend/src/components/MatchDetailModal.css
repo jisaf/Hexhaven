@@ -1,0 +1,499 @@
+/**
+ * MatchDetailModal Styles (186 - Phase 9)
+ * Modal for displaying comprehensive game result details
+ * Reuses styling patterns from ScenarioCompleteModal for consistency
+ */
+
+.match-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.match-detail-modal {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-radius: 16px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Custom Scrollbar */
+.match-detail-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.match-detail-modal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.match-detail-modal::-webkit-scrollbar-thumb {
+  background: rgba(52, 152, 219, 0.5);
+  border-radius: 8px;
+}
+
+.match-detail-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 152, 219, 0.7);
+}
+
+/* Header */
+.match-detail-header {
+  padding: 32px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-detail-header.victory {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  box-shadow: 0 4px 20px rgba(46, 204, 113, 0.3);
+}
+
+.match-detail-header.defeat {
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  box-shadow: 0 4px 20px rgba(231, 76, 60, 0.3);
+}
+
+.header-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+
+.header-title {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.header-subtitle {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.header-date {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+/* Summary Section */
+.match-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #95a5a6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ecf0f1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Generic Section */
+.match-detail-section {
+  padding: 24px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: bold;
+  color: #3498db;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Objectives */
+.objectives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.objective-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(46, 204, 113, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #2ecc71;
+}
+
+.objective-check {
+  font-size: 24px;
+  color: #2ecc71;
+}
+
+.objective-text {
+  font-size: 14px;
+  color: #ecf0f1;
+  flex: 1;
+}
+
+/* Progress Items */
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.progress-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-name {
+  font-size: 14px;
+  color: #ecf0f1;
+  font-weight: 500;
+}
+
+.progress-value {
+  font-size: 13px;
+  color: #95a5a6;
+}
+
+.progress-completed {
+  color: #2ecc71;
+  margin-left: 4px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #5dade2);
+  transition: width 0.5s ease;
+}
+
+.progress-fill.completed {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+/* Loot Summary */
+.loot-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.loot-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 2px solid rgba(241, 196, 15, 0.3);
+  transition: all 0.3s ease;
+}
+
+.loot-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(241, 196, 15, 0.5);
+  transform: translateY(-2px);
+}
+
+.loot-icon {
+  font-size: 32px;
+}
+
+.loot-label {
+  font-size: 12px;
+  color: #95a5a6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.loot-value {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f39c12;
+}
+
+/* Player Stats */
+.players-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player-stats-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  border: 2px solid rgba(52, 152, 219, 0.3);
+  transition: all 0.3s ease;
+}
+
+.player-stats-card:hover {
+  border-color: rgba(52, 152, 219, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-stats-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ecf0f1;
+}
+
+.player-stats-class {
+  font-size: 14px;
+  color: #3498db;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.player-stats-status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-survived {
+  color: #2ecc71;
+}
+
+.status-died {
+  color: #e74c3c;
+}
+
+.player-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.player-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.player-stat .stat-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-stat .stat-label {
+  font-size: 11px;
+  color: #95a5a6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.player-stat .stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #f39c12;
+}
+
+/* Actions */
+.match-detail-actions {
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-close {
+  min-width: 160px;
+  min-height: 44px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+  color: white;
+}
+
+.btn-close:hover {
+  background: linear-gradient(135deg, #707b7c 0%, #7f8c8d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(127, 140, 141, 0.3);
+}
+
+.btn-close:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .match-detail-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .loot-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .player-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .match-detail-modal {
+    border-radius: 12px;
+  }
+
+  .match-detail-header {
+    padding: 24px 16px;
+  }
+
+  .header-icon {
+    font-size: 48px;
+  }
+
+  .header-title {
+    font-size: 24px;
+  }
+
+  .header-subtitle {
+    font-size: 16px;
+  }
+
+  .match-detail-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-value {
+    font-size: 20px;
+  }
+
+  .match-detail-section {
+    padding: 16px;
+  }
+
+  .player-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-close {
+    width: 100%;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .match-detail-overlay,
+  .match-detail-modal {
+    animation: none;
+  }
+
+  .summary-item:hover,
+  .loot-item:hover,
+  .player-stats-card:hover,
+  .btn-close:hover {
+    transform: none;
+  }
+}
