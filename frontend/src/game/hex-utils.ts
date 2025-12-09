@@ -8,9 +8,10 @@
  * - Axial: (q, r) - 2D representation for storage
  * - Cube: (q, r, s) where q + r + s = 0 - 3D representation for algorithms
  * - Screen: (x, y) - Pixel coordinates
+ *
+ * NOTE: This file intentionally avoids importing pixi.js to prevent
+ * the large PixiJS bundle from being loaded on non-game pages.
  */
-
-import * as PIXI from 'pixi.js';
 
 export interface Axial {
   q: number;
@@ -285,24 +286,4 @@ function cubeLerp(a: Cube, b: Cube, t: number): Cube {
     r: a.r * (1 - t) + b.r * t,
     s: a.s * (1 - t) + b.s * t
   };
-}
-
-/**
- * Update a PIXI sprite's position based on hex coordinates
- *
- * This utility function ensures PIXI.js properly recalculates the sprite's
- * interactive bounds for hit detection. When moving sprites programmatically,
- * simply calling position.set() may not update the hit area, causing clicks
- * to register at the old location.
- *
- * @param sprite - The PIXI.Container (sprite) to reposition
- * @param hex - The target hex coordinates in axial format
- *
- * @example
- * const monsterSprite = new MonsterSprite(monsterData);
- * updateSpritePosition(monsterSprite, { q: 3, r: 2 });
- */
-export function updateSpritePosition(sprite: PIXI.Container, hex: Axial): void {
-  const pos = axialToScreen(hex);
-  sprite.position.set(pos.x, pos.y);
 }

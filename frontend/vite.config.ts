@@ -16,12 +16,15 @@ export default defineConfig({
     // Manual chunks for better code splitting
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separate vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'pixi-vendor': ['pixi.js', '@pixi/react', 'pixi-viewport'],
-          'socket-vendor': ['socket.io-client'],
-          'i18n-vendor': ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-resources-to-backend'],
+        manualChunks(id) {
+          // Socket.io - needed for multiplayer (loaded early for lobby)
+          if (id.includes('socket.io-client')) {
+            return 'socket-vendor';
+          }
+          // PixiJS and related - let Rollup handle naturally via lazy imports
+          // NOT grouping into manual chunk to avoid modulepreload injection
+          // Let Rollup handle other chunks automatically
+          return undefined;
         },
       },
     },

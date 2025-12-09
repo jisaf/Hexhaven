@@ -8,11 +8,24 @@
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Preload the font file itself for faster loading -->
+    <link
+      rel="preload"
+      href="https://fonts.gstatic.com/s/medievalsharp/v28/EvOJzAlL3oU5AQl2mP5KdgptMqhwMinUPDg.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <!-- Load fonts with font-display: swap to prevent render blocking -->
     <link
       href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet" />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
