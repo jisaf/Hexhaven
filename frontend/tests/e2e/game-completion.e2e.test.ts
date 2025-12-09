@@ -132,8 +132,7 @@ test.describe('Game Completion Flow', () => {
   test('should return to lobby when clicking Return to Lobby button', async ({ page }) => {
     // Setup game and trigger completion
     await page.click('[data-testid="create-room-button"]');
-    const roomCodeElement = await page.locator('text=Room Code:').textContent();
-    const roomCode = roomCodeElement?.split(':')[1]?.trim();
+    await page.locator('text=Room Code:').textContent();
 
     await page.click('[data-testid="character-card-Brute"]');
     await page.click('button:has-text("🎮 Start Game")');

@@ -158,7 +158,7 @@ export class RestService {
       character,
       randomCardId,
       'discard',
-      'lost'
+      'lost',
     );
 
     // Move remaining discard to hand
@@ -200,14 +200,14 @@ export class RestService {
       character,
       cardToLose,
       'discard',
-      'lost'
+      'lost',
     );
 
     // Move remaining discard to hand
     updated = this.cardPile.moveAllCards(updated, 'discard', 'hand');
 
-    // Heal 2 HP (up to max)
-    const healthGained = Math.min(2, updated.maxHealth - updated.health);
+    // Heal 2 HP (up to max) - calculate for potential future logging/events
+    const _healthGained = Math.min(2, updated.maxHealth - updated.health);
 
     updated = {
       ...updated,

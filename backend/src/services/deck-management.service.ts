@@ -14,14 +14,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { CardPileService } from './card-pile.service';
 import { RestService, ValidationResult, ShortRestResult } from './rest.service';
-import { ExhaustionService, ExhaustionCheck, ExhaustionReason } from './exhaustion.service';
+import {
+  ExhaustionService,
+  ExhaustionCheck,
+  ExhaustionReason,
+} from './exhaustion.service';
 import { CardTemplateCache } from '../utils/card-template-cache';
 import { CardUtils } from '../utils/card';
 import type {
   Character,
   EnhancedAbilityCard,
-  AbilityCard,
-  CardEnhancement,
 } from '../../../shared/types/entities';
 
 @Injectable()
@@ -30,7 +32,7 @@ export class DeckManagementService {
     private prisma: PrismaService,
     private cardPile: CardPileService,
     private rest: RestService,
-    private exhaustion: ExhaustionService
+    private exhaustion: ExhaustionService,
   ) {}
 
   /**
@@ -52,8 +54,8 @@ export class DeckManagementService {
       throw new Error(`Character not found: ${characterId}`);
     }
 
-    // Get enhancements for this character
-    const enhancements = await this.prisma.cardEnhancement.findMany({
+    // Get enhancements for this character (will be used in future enhancement system)
+    const _enhancements = await this.prisma.cardEnhancement.findMany({
       where: { characterId },
     });
 
@@ -81,7 +83,7 @@ export class DeckManagementService {
   playCards(
     character: Character,
     topCard: string,
-    bottomCard: string
+    bottomCard: string,
   ): Character {
     // Get card templates to check for loss icons
     const topTemplate = CardTemplateCache.get(topCard);
@@ -95,7 +97,7 @@ export class DeckManagementService {
       topCard,
       bottomCard,
       topHasLoss,
-      bottomHasLoss
+      bottomHasLoss,
     );
   }
 
@@ -178,10 +180,7 @@ export class DeckManagementService {
    * @param reason - Reason for exhaustion
    * @returns Exhausted character
    */
-  executeExhaustion(
-    character: Character,
-    reason: ExhaustionReason
-  ): Character {
+  executeExhaustion(character: Character, reason: ExhaustionReason): Character {
     return this.exhaustion.executeExhaustion(character, reason);
   }
 
@@ -218,7 +217,7 @@ export class DeckManagementService {
     character: Character,
     cardId: string,
     from: 'hand' | 'discard' | 'lost',
-    to: 'hand' | 'discard' | 'lost'
+    to: 'hand' | 'discard' | 'lost',
   ): Character {
     return this.cardPile.moveCard(character, cardId, from, to);
   }

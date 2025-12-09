@@ -18,7 +18,10 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import type { Character, ActiveCardEffect } from '../../../shared/types/entities';
+import type {
+  Character,
+  ActiveCardEffect,
+} from '../../../shared/types/entities';
 
 export type ExhaustionReason = 'damage' | 'insufficient_cards';
 
@@ -114,15 +117,12 @@ export class ExhaustionService {
    * @param reason - Reason for exhaustion
    * @returns Exhausted character
    */
-  executeExhaustion(
-    character: Character,
-    reason: ExhaustionReason
-  ): Character {
+  executeExhaustion(character: Character, reason: ExhaustionReason): Character {
     // Collect all cards from all piles
     const allCards = [
       ...character.hand,
       ...character.discardPile,
-      ...(character.activeEffects?.map(e => e.cardId) || []),
+      ...(character.activeEffects?.map((e) => e.cardId) || []),
     ];
 
     return {
@@ -159,7 +159,7 @@ export class ExhaustionService {
       return false;
     }
 
-    return characters.every(char => char.isExhausted);
+    return characters.every((char) => char.isExhausted);
   }
 
   /**
@@ -180,7 +180,8 @@ export class ExhaustionService {
 
     // Warning: Low on cards or health
     const lowHealth = character.health <= 2;
-    const lowCards = character.hand.length <= 2 && character.discardPile.length <= 2;
+    const lowCards =
+      character.hand.length <= 2 && character.discardPile.length <= 2;
 
     if (lowHealth || lowCards) {
       return 'warning';

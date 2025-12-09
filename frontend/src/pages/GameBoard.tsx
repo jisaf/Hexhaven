@@ -16,9 +16,8 @@ import { gameSessionCoordinator } from '../services/game-session-coordinator.ser
 import { roomSessionManager } from '../services/room-session.service';
 import { websocketService } from '../services/websocket.service';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
-import type { Monster, HexTile, Character } from '../../../shared/types/entities.ts';
+import type { Monster, HexTile, Character, AbilityCard } from '../../../shared/types/entities.ts';
 import { TerrainType } from '../../../shared/types/entities.ts';
-import type { AbilityCard } from '../types/character.types';
 import type {
   ObjectivesLoadedPayload,
   ObjectiveProgressUpdatePayload,
@@ -54,7 +53,7 @@ export function GameBoard() {
 
   // Card pile selection state
   const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
-  const [pileViewCards, setPileViewCards] = useState<string[]>([]);
+  const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
   const [showPileView, setShowPileView] = useState(false);
 
   // Handle navigation back (exit fullscreen and go to lobby)

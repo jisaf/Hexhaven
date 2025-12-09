@@ -124,18 +124,18 @@ export interface GameRoom {
 export interface Character {
   id: string;
   playerId: string;
-  classType: CharacterClass;
+  classType: CharacterClass | string;
   health: number;
   maxHealth: number;
-  experience: number;
-  level: number;
+  experience?: number;
+  level?: number;
   currentHex: AxialCoordinates | null;
-  abilityDeck: string[]; // Array of AbilityCard UUIDs
+  abilityDeck: string[] | AbilityCard[]; // Array of AbilityCard UUIDs or full objects
   hand: string[];
   discardPile: string[];
   lostPile: string[];
-  activeCards: { top: string; bottom: string } | null; // Currently selected cards (backward compatible)
-  conditions: Condition[];
+  activeCards?: { top: string; bottom: string } | null; // Currently selected cards (backward compatible)
+  conditions: Condition[] | string[];
   isExhausted: boolean;
 
   // NEW FIELDS (backward compatible additions for deck management)
@@ -178,7 +178,7 @@ export interface Monster {
 
 export interface AbilityCard {
   id: string;
-  characterClass: CharacterClass;
+  characterClass: CharacterClass | string;
   name: string;
   level: number | 'X';
   initiative: number;

@@ -65,7 +65,7 @@ export class CardTemplateCache {
 
       const duration = Date.now() - startTime;
       console.log(
-        `[CardTemplateCache] Loaded ${this.templates.size} card templates in ${duration}ms`
+        `[CardTemplateCache] Loaded ${this.templates.size} card templates in ${duration}ms`,
       );
 
       this.initialized = true;
@@ -87,7 +87,7 @@ export class CardTemplateCache {
   static get(cardId: string): AbilityCard {
     if (!this.initialized) {
       throw new Error(
-        'CardTemplateCache not initialized. Call initialize() first.'
+        'CardTemplateCache not initialized. Call initialize() first.',
       );
     }
 

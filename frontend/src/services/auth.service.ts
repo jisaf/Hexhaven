@@ -245,18 +245,22 @@ class AuthService {
    * Extract error message from error response
    * Handles both ErrorResponse format and NestJS default format
    */
-  private extractErrorMessage(errorData: any, fallback: string): string {
+  private extractErrorMessage(errorData: Record<string, unknown>, fallback: string): string {
     // Try ErrorResponse format: { error: { message: "..." } }
-    if (errorData?.error?.message) {
-      return errorData.error.message;
+    const error = errorData?.error as Record<string, unknown> | undefined;
+    if (error?.message && typeof error.message === 'string') {
+      return error.message;
     }
 
     // Try NestJS default format: { message: "..." } or { message: ["...", "..."] }
-    if (errorData?.message) {
-      if (Array.isArray(errorData.message)) {
-        return errorData.message.join(', ');
+    const message = errorData?.message;
+    if (message) {
+      if (Array.isArray(message)) {
+        return message.join(', ');
       }
-      return errorData.message;
+      if (typeof message === 'string') {
+        return message;
+      }
     }
 
     // Fallback

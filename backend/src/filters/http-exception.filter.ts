@@ -160,20 +160,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
    * Map HTTP status codes to error codes
    */
   private getErrorCode(status: number): string {
+    // Compare using explicit numeric values to satisfy @typescript-eslint/no-unsafe-enum-comparison
     switch (status) {
-      case HttpStatus.BAD_REQUEST:
+      case 400: // HttpStatus.BAD_REQUEST
         return 'VALIDATION_ERROR';
-      case HttpStatus.UNAUTHORIZED:
+      case 401: // HttpStatus.UNAUTHORIZED
         return 'AUTH_ERROR';
-      case HttpStatus.FORBIDDEN:
+      case 403: // HttpStatus.FORBIDDEN
         return 'FORBIDDEN';
-      case HttpStatus.NOT_FOUND:
+      case 404: // HttpStatus.NOT_FOUND
         return 'NOT_FOUND';
-      case HttpStatus.CONFLICT:
+      case 409: // HttpStatus.CONFLICT
         return 'CONFLICT';
-      case HttpStatus.TOO_MANY_REQUESTS:
+      case 429: // HttpStatus.TOO_MANY_REQUESTS
         return 'RATE_LIMIT_EXCEEDED';
-      case HttpStatus.INTERNAL_SERVER_ERROR:
+      case 500: // HttpStatus.INTERNAL_SERVER_ERROR
         return 'INTERNAL_SERVER_ERROR';
       default:
         return 'UNKNOWN_ERROR';

@@ -429,7 +429,7 @@ export class Character {
 
     // Get starter deck and extract card IDs
     const starterDeck = AbilityCard.getStarterDeck(characterClass);
-    const cardIds = starterDeck.map(card => card.id);
+    const cardIds = starterDeck.map((card) => card.id);
 
     return new Character({
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

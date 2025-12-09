@@ -29,7 +29,7 @@ export class CardUtils {
    */
   static enhanceCard(
     template: AbilityCard,
-    enhancements: CardEnhancement[]
+    enhancements: CardEnhancement[],
   ): EnhancedAbilityCard {
     return {
       ...template,
@@ -47,9 +47,12 @@ export class CardUtils {
     // Check if action has 'loss' in effects
     // This is a placeholder - actual implementation depends on
     // how loss icons are stored in Action type
-    return action.effects?.some(effect =>
-      typeof effect === 'string' && effect.toLowerCase().includes('loss')
-    ) || false;
+    return (
+      action.effects?.some(
+        (effect) =>
+          typeof effect === 'string' && effect.toLowerCase().includes('loss'),
+      ) || false
+    );
   }
 
   /**
@@ -60,10 +63,13 @@ export class CardUtils {
    */
   static hasPersistentEffect(action: Action): boolean {
     // Check for persistent bonus indicators
-    return action.effects?.some(effect =>
-      typeof effect === 'string' &&
-      (effect.includes('persistent') || effect.includes('until'))
-    ) || false;
+    return (
+      action.effects?.some(
+        (effect) =>
+          typeof effect === 'string' &&
+          (effect.includes('persistent') || effect.includes('until')),
+      ) || false
+    );
   }
 
   /**
@@ -74,9 +80,11 @@ export class CardUtils {
    */
   static hasRoundBonus(action: Action): boolean {
     // Check for round bonus indicators
-    return action.effects?.some(effect =>
-      typeof effect === 'string' && effect.includes('this round')
-    ) || false;
+    return (
+      action.effects?.some(
+        (effect) => typeof effect === 'string' && effect.includes('this round'),
+      ) || false
+    );
   }
 
   /**

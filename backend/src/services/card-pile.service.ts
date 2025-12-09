@@ -32,7 +32,7 @@ export class CardPileService {
     character: Character,
     cardId: string,
     from: CardPile,
-    to: CardPile
+    to: CardPile,
   ): Character {
     // Get source and destination piles
     const sourcePile = this.getPile(character, from);
@@ -44,7 +44,7 @@ export class CardPileService {
     }
 
     // Remove from source
-    const updatedSource = sourcePile.filter(id => id !== cardId);
+    const updatedSource = sourcePile.filter((id) => id !== cardId);
 
     // Add to destination
     const updatedDest = [...destPile, cardId];
@@ -52,9 +52,24 @@ export class CardPileService {
     // Return updated character with both piles updated
     return {
       ...character,
-      hand: from === 'hand' ? updatedSource : to === 'hand' ? updatedDest : character.hand,
-      discardPile: from === 'discard' ? updatedSource : to === 'discard' ? updatedDest : character.discardPile,
-      lostPile: from === 'lost' ? updatedSource : to === 'lost' ? updatedDest : character.lostPile,
+      hand:
+        from === 'hand'
+          ? updatedSource
+          : to === 'hand'
+            ? updatedDest
+            : character.hand,
+      discardPile:
+        from === 'discard'
+          ? updatedSource
+          : to === 'discard'
+            ? updatedDest
+            : character.discardPile,
+      lostPile:
+        from === 'lost'
+          ? updatedSource
+          : to === 'lost'
+            ? updatedDest
+            : character.lostPile,
     };
   }
 
@@ -85,7 +100,7 @@ export class CardPileService {
     character: Character,
     cardIds: string[],
     from: CardPile,
-    to: CardPile
+    to: CardPile,
   ): Character {
     let updated = character;
 
@@ -112,7 +127,7 @@ export class CardPileService {
     topCardId: string,
     bottomCardId: string,
     topHasLoss: boolean = false,
-    bottomHasLoss: boolean = false
+    bottomHasLoss: boolean = false,
   ): Character {
     // Validate both cards are in hand
     if (!character.hand.includes(topCardId)) {
@@ -124,7 +139,7 @@ export class CardPileService {
 
     // Remove both cards from hand
     const hand = character.hand.filter(
-      id => id !== topCardId && id !== bottomCardId
+      (id) => id !== topCardId && id !== bottomCardId,
     );
 
     // Add to appropriate piles
@@ -159,20 +174,31 @@ export class CardPileService {
    * @param to - Destination pile
    * @returns Updated character
    */
-  moveAllCards(
-    character: Character,
-    from: CardPile,
-    to: CardPile
-  ): Character {
+  moveAllCards(character: Character, from: CardPile, to: CardPile): Character {
     const sourcePile = this.getPile(character, from);
     const destPile = this.getPile(character, to);
     const cards = [...sourcePile];
 
     return {
       ...character,
-      hand: from === 'hand' ? [] : to === 'hand' ? [...destPile, ...cards] : character.hand,
-      discardPile: from === 'discard' ? [] : to === 'discard' ? [...destPile, ...cards] : character.discardPile,
-      lostPile: from === 'lost' ? [] : to === 'lost' ? [...destPile, ...cards] : character.lostPile,
+      hand:
+        from === 'hand'
+          ? []
+          : to === 'hand'
+            ? [...destPile, ...cards]
+            : character.hand,
+      discardPile:
+        from === 'discard'
+          ? []
+          : to === 'discard'
+            ? [...destPile, ...cards]
+            : character.discardPile,
+      lostPile:
+        from === 'lost'
+          ? []
+          : to === 'lost'
+            ? [...destPile, ...cards]
+            : character.lostPile,
     };
   }
 

@@ -81,7 +81,7 @@ describe('ScenarioCompleteModal', () => {
     });
 
     it('should display results summary with correct values', () => {
-      const { container } = render(
+      render(
         <ScenarioCompleteModal
           result={mockVictoryResult}
           onClose={mockOnClose}

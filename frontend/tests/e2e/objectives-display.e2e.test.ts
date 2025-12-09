@@ -13,7 +13,7 @@
  * 6. Verify console logs show objectives loaded from game state
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Objectives Display E2E', () => {
   test.beforeEach(async ({ page }) => {
@@ -76,9 +76,6 @@ test.describe('Objectives Display E2E', () => {
   });
 
   test('should NOT emit deprecated objectives_loaded event', async ({ page }) => {
-    // Listen for WebSocket events
-    const websocketMessages: any[] = [];
-
     await page.evaluateOnNewDocument(() => {
       // Intercept WebSocket messages
       const originalSend = WebSocket.prototype.send;
@@ -116,8 +113,7 @@ test.describe('Objectives Display E2E', () => {
   test('should display objectives after page refresh (rejoin scenario)', async ({ page }) => {
     // Step 1: Create and start a game
     await page.click('[data-testid="create-room-button"]');
-    const roomCodeElement = await page.locator('text=Room Code:').textContent();
-    const roomCode = roomCodeElement?.split(':')[1]?.trim();
+    await page.locator('text=Room Code:').textContent();
 
     await page.click('[data-testid="character-card-Brute"]');
     await page.click('button:has-text("🎮 Start Game")');

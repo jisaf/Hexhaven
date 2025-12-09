@@ -96,6 +96,9 @@ export interface WebSocketEvents {
   // Debug logging
   debug_log: (data: DebugLogPayload) => void;
 
+  // Rest mechanics
+  'rest-event': (data: import('../../../shared/types/events').RestEventPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

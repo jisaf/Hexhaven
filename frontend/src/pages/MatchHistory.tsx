@@ -168,7 +168,7 @@ export const MatchHistory: React.FC = () => {
             <select
               id="victory-filter"
               value={victoryFilter}
-              onChange={(e) => setVictoryFilter(e.target.value as any)}
+              onChange={(e) => setVictoryFilter(e.target.value as 'all' | 'victory' | 'defeat')}
             >
               <option value="all">All</option>
               <option value="victory">Victory</option>

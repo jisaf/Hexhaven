@@ -231,11 +231,11 @@ export class GameGateway
       const classCards = this.abilityCardService.getCardsByClass(
         charData.characterClass,
       );
-      const abilityDeckIds = classCards.map(card => card.id);
+      const abilityDeckIds = classCards.map((card) => card.id);
 
       // Initialize deck piles (all cards start in hand at game start)
       // TODO: Load from database when persistence is implemented
-      const hand = abilityDeckIds;  // All cards start in hand
+      const hand = abilityDeckIds; // All cards start in hand
       const discardPile: string[] = [];
       const lostPile: string[] = [];
 
@@ -251,11 +251,11 @@ export class GameGateway
 
         // Deck management fields (hybrid approach: store IDs, hydrate on demand)
         abilityDeck: classCards, // Full card objects for initial hand selection
-        hand,                    // Card IDs in hand
-        discardPile,             // Card IDs in discard pile
-        lostPile,                // Card IDs in lost pile
-        activeCards: null,       // Currently selected card pair
-        activeEffects: [],       // Cards with persistent effects
+        hand, // Card IDs in hand
+        discardPile, // Card IDs in discard pile
+        lostPile, // Card IDs in lost pile
+        activeCards: null, // Currently selected card pair
+        activeEffects: [], // Cards with persistent effects
         isResting: false,
         restType: 'none' as const,
         shortRestState: null,
@@ -2046,7 +2046,9 @@ export class GameGateway
         const healthHealed = character.heal(2);
         const healthAfter = character.currentHealth;
 
-        this.logger.log(`Long rest healing: ${healthBefore} HP + ${healthHealed} healed = ${healthAfter} HP`);
+        this.logger.log(
+          `Long rest healing: ${healthBefore} HP + ${healthHealed} healed = ${healthAfter} HP`,
+        );
 
         // Clear pending rest
         (character as any).pendingRest = null;
@@ -2060,7 +2062,9 @@ export class GameGateway
           healthHealed: healthHealed,
         });
 
-        this.logger.log(`Long rest complete for ${character.id}: healed ${healthHealed} HP, cards moved`);
+        this.logger.log(
+          `Long rest complete for ${character.id}: healed ${healthHealed} HP, cards moved`,
+        );
       }
 
       // Get next living entity in turn order
@@ -2120,15 +2124,16 @@ export class GameGateway
    * Handles initial rest request from player
    */
   @SubscribeMessage('execute-rest')
-  async handleExecuteRest(
+  handleExecuteRest(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: {
+    @MessageBody()
+    payload: {
       gameId: string;
       characterId: string;
       type: 'short' | 'long';
       cardToLose?: string; // Only for long rest
     },
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -2156,7 +2161,10 @@ export class GameGateway
 
       // Validate can rest
       // TODO: Reconcile Character model vs Character interface types
-      const validation = this.deckManagement.canRest(character as any, payload.type);
+      const validation = this.deckManagement.canRest(
+        character as any,
+        payload.type,
+      );
       if (!validation.valid) {
         this.server.to(roomCode).emit('rest-event', {
           type: 'error',
@@ -2277,14 +2285,15 @@ export class GameGateway
    * Handle rest action (accept or reroll for short rest)
    */
   @SubscribeMessage('rest-action')
-  async handleRestAction(
+  handleRestAction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: {
+    @MessageBody()
+    payload: {
       gameId: string;
       characterId: string;
       action: 'accept' | 'reroll';
     },
-  ): Promise<void> {
+  ): void {
     try {
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
@@ -2297,7 +2306,7 @@ export class GameGateway
         throw new Error('Player not in any room or room not found');
       }
 
-      const { room, roomCode } = roomData;
+      const { room: _room, roomCode } = roomData;
 
       // Get player's character
       const character = characterService.getCharacterByPlayerId(playerUUID);
@@ -2379,7 +2388,8 @@ export class GameGateway
       if (roomData) {
         this.server.to(roomData.roomCode).emit('rest-event', {
           type: 'error',
-          message: error instanceof Error ? error.message : 'Rest action failed',
+          message:
+            error instanceof Error ? error.message : 'Rest action failed',
         });
       }
     }

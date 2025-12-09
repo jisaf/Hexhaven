@@ -1,6 +1,7 @@
 import { websocketService } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload } from '../../../shared/types';
+import type { Character } from '../../../shared/types/entities';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -120,7 +121,7 @@ interface ExhaustionState {
   reason: 'damage' | 'insufficient_cards';
 }
 
-interface RestState {
+export interface RestState {
   stage: 'rest-started' | 'card-selected' | 'awaiting-decision' | 'long-selection' | 'complete' | 'error';
   characterId: string;
   restType: 'short' | 'long' | null;
@@ -646,11 +647,12 @@ class GameStateManager {
     const updatedCharacter = { ...character, ...updatedFields };
 
     // Create new gameData with updated character
+    // Type assertion needed because updateCharacter merges payload character with Character updates
     this.state.gameData = {
       ...this.state.gameData,
       characters: this.state.gameData.characters.map(c =>
         c.id === characterId ? updatedCharacter : c
-      ),
+      ) as typeof this.state.gameData.characters,
     };
 
     return updatedCharacter;
@@ -855,7 +857,7 @@ class GameStateManager {
    * Handle rest event from backend (event stream pattern)
    * Manages rest state transitions for short rest, long rest, and exhaustion
    */
-  private handleRestEvent(data: any): void {
+  private handleRestEvent(data: RestEventPayload): void {
     console.log(`[GameStateManager] handleRestEvent received:`, data);
 
     const character = this.state.gameData?.characters.find(c => c.id === data.characterId);
@@ -866,7 +868,7 @@ class GameStateManager {
         this.state.restState = {
           stage: 'rest-started',
           characterId: data.characterId,
-          restType: data.restType,
+          restType: data.restType ?? null,
           randomCardId: null,
           canReroll: false,
           currentHealth: 0,
@@ -886,7 +888,7 @@ class GameStateManager {
             ...this.state.restState,
             stage: 'long-selection',
             discardPileCards: data.discardPileCards || [],
-            currentHealth: data.currentHealth,
+            currentHealth: data.currentHealth ?? this.state.restState.currentHealth,
           };
         }
         break;
@@ -896,8 +898,8 @@ class GameStateManager {
           this.state.restState = {
             ...this.state.restState,
             stage: 'card-selected',
-            randomCardId: data.randomCardId,
-            canReroll: data.canReroll,
+            randomCardId: data.randomCardId ?? null,
+            canReroll: data.canReroll ?? false,
           };
         }
         this.addLog([
@@ -910,7 +912,7 @@ class GameStateManager {
           this.state.restState = {
             ...this.state.restState,
             stage: 'awaiting-decision',
-            currentHealth: data.currentHealth,
+            currentHealth: data.currentHealth ?? this.state.restState.currentHealth,
           };
         }
         break;
@@ -935,11 +937,11 @@ class GameStateManager {
 
         this.addLog([
           { text: characterName, color: 'lightblue' },
-          { text: ' declared long rest (initiative 99)', color: 'gray' },
+          { text: ' declared long rest (initiative 99)', color: 'white' },
         ]);
         break;
 
-      case 'rest-complete':
+      case 'rest-complete': {
         this.state.restState = null;
 
         // Close card selection panel since rest has been declared
@@ -1000,6 +1002,7 @@ class GameStateManager {
           { text: ' completed rest' },
         ]);
         break;
+      }
 
       case 'exhaustion':
         this.state.restState = null;
@@ -1017,7 +1020,7 @@ class GameStateManager {
         this.addLog([
           { text: characterName, color: 'lightblue' },
           { text: ' is exhausted! ', color: 'red' },
-          { text: `(${data.reason})`, color: 'gray' },
+          { text: `(${data.reason || 'unknown'})`, color: 'white' },
         ]);
         break;
 
@@ -1026,12 +1029,12 @@ class GameStateManager {
           this.state.restState = {
             ...this.state.restState,
             stage: 'error',
-            errorMessage: data.message,
+            errorMessage: data.message ?? null,
           };
         }
         this.addLog([
           { text: 'Rest error: ', color: 'red' },
-          { text: data.message, color: 'white' },
+          { text: data.message ?? 'Unknown error', color: 'white' },
         ]);
         break;
     }
@@ -1137,6 +1140,7 @@ class GameStateManager {
         waitingForRoundStart: false,
         restState: null,
         exhaustionState: null,
+        abilityDeck: [],
     };
     this.emitStateUpdate();
   }
