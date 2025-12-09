@@ -478,3 +478,16 @@
     align-items: flex-start;
   }
 }
+
+/* DEBUG: Show card row layout with 1px red borders */
+.card-module {
+  border: 1px solid red !important;
+}
+
+.header-module,
+.footer-module,
+.action-module,
+.divider-module,
+.row-module {
+  border: 1px solid red !important;
+}

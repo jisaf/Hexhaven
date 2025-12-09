@@ -4,8 +4,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 8px;
+  padding: 8px 8px 8px 8px;
   background-color: rgba(13, 26, 46, 0.98);
   border-top: 2px solid #c9a444;
   overflow: hidden;
@@ -50,15 +50,17 @@
 
 .selection-instructions {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  max-width: 300px;
+  top: 12px;
+  right: 12px;
+  max-width: 280px;
   text-align: left;
-  padding: 12px;
-  background: rgba(13, 26, 46, 0.9);
-  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(13, 26, 46, 0.95);
+  border-radius: 6px;
   border: 1px solid #c9a444;
   z-index: 200;
+  max-height: 80px;
+  overflow: hidden;
 }
 
 .selection-instructions h3 {
@@ -79,8 +81,9 @@
   overflow-x: auto;
   overflow-y: visible; /* Allow cards to pop out vertically */
   gap: 8px;
-  padding: 60px 10px 20px 10px; /* Adjust padding for instructions */
+  padding: 10px 10px 20px 10px; /* Reduced top padding to fit cards within container */
   flex-grow: 1;
+  max-height: 100%; /* Ensure container respects parent height */
 }
 
 .cards-container::-webkit-scrollbar {
@@ -96,15 +99,17 @@
   flex: 0 0 auto;
   transition: all 0.3s ease;
   position: relative; /* For z-index to work */
+  width: var(--card-width);
+  height: var(--card-height);
 }
 
 .card-wrapper.focused {
-  transform: scale(1.05) translateY(-10px);
+  transform: scale(1.05) translateY(-8px);
   z-index: 10; /* Ensure focused card is on top */
 }
 
 .card-wrapper.selected {
-  transform: scale(1.02) translateY(-20px);
+  transform: scale(1.02) translateY(-12px);
 }
 
 .card-wrapper:not(.focused) {

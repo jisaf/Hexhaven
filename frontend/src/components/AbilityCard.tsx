@@ -109,7 +109,7 @@ export const AbilityCard: React.FC<AbilityCardProps> = ({
       {/* Selection Indicator */}
       {isSelected && (
         <div className="selection-indicator">
-          <span>✓</span>
+          <span></span>
         </div>
       )}
     </div>

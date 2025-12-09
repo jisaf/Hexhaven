@@ -36,7 +36,6 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         data-testid="hand-pile"
         onClick={() => onPileClick('hand')}
       >
-        <span className={styles.icon}>🃏</span>
         <span className={styles.label}>Hand</span>
         <span className={styles.count}>{handCount}</span>
       </button>
@@ -47,10 +46,9 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         data-testid="discard-pile"
         onClick={() => onPileClick('discard')}
       >
-        <span className={styles.icon}>📥</span>
         <span className={styles.label}>Discard</span>
         <span className={styles.count}>{discardCount}</span>
-        {canRest && <span className={styles.restBadge}>Rest ✓</span>}
+        {canRest && <span className={styles.restBadge}>Rest</span>}
       </button>
 
       <button
@@ -59,7 +57,6 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         data-testid="lost-pile"
         onClick={() => onPileClick('lost')}
       >
-        <span className={styles.icon}>🔥</span>
         <span className={styles.label}>Lost</span>
         <span className={styles.count}>{lostCount}</span>
       </button>
