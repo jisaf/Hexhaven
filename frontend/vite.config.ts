@@ -46,7 +46,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.png'],
       manifest: {
         name: 'Hexhaven Multiplayer',
@@ -147,9 +147,9 @@ export default defineConfig({
             },
           },
         ],
-        // Skip waiting and claim clients
-        skipWaiting: true,
-        clientsClaim: true,
+        // Wait for user confirmation before activating new service worker
+        skipWaiting: false,
+        clientsClaim: false,
       },
       devOptions: {
         enabled: true,
