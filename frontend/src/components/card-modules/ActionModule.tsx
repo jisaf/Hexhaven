@@ -67,7 +67,6 @@ export const ActionModule: React.FC<ActionModuleProps> = ({
         style={{ gridRow: `span ${module.rows} / span ${module.rows}` }}
         data-position={position}
       >
-        <div className="section-label">{position === 'top' ? 'Top' : 'Bottom'}</div>
         <div className="action-display">
           <div className="action-main">No action</div>
         </div>
@@ -83,8 +82,6 @@ export const ActionModule: React.FC<ActionModuleProps> = ({
       data-position={position}
       data-testid={`action-module-${position}`}
     >
-      <div className="section-label">{position === 'top' ? 'Top' : 'Bottom'}</div>
-
       <div className="action-display">
         {/* Main action (type, value, range) */}
         <div className="action-main">

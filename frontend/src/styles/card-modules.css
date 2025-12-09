@@ -13,6 +13,7 @@
   flex-direction: column;
   background: var(--module-bg);
   transition: all var(--transition-fast);
+  min-height: 0; /* Allow grid items to shrink below content size */
 }
 
 .card-module.compact {
@@ -57,9 +58,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--module-padding);
-  padding-bottom: calc(var(--module-padding) * 0.67);
-  border-bottom: 2px solid var(--divider-color);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--divider-color);
 }
 
 .header-module.compact {
@@ -74,7 +74,7 @@
 }
 
 .header-module .card-name {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: bold;
   color: var(--text-primary);
   flex: 1;
@@ -88,12 +88,12 @@
 }
 
 .header-module .card-initiative {
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   font-weight: bold;
   color: var(--text-initiative);
   background: rgba(243, 156, 18, 0.2);
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: 2px 4px;
+  border-radius: 3px;
   white-space: nowrap;
 }
 
@@ -205,10 +205,10 @@
 /* ========== ACTION MODULE ========== */
 
 .action-module {
-  padding: var(--module-padding);
+  padding: 4px;
   background: var(--module-bg);
-  border-radius: 6px;
-  margin: calc(var(--module-gap) * 0.67) 0;
+  border-radius: 4px;
+  margin: 0;
   transition: all var(--transition-fast);
 }
 
@@ -240,7 +240,7 @@
 .action-module .action-display {
   display: flex;
   flex-direction: column;
-  gap: var(--module-gap);
+  gap: 2px;
 }
 
 .action-module.compact .action-display {
@@ -250,8 +250,8 @@
 .action-module .action-main {
   display: flex;
   align-items: center;
-  gap: var(--module-gap);
-  font-size: 1.125rem;
+  gap: 4px;
+  font-size: 0.875rem;
 }
 
 .action-module.compact .action-main {
@@ -260,7 +260,7 @@
 }
 
 .action-module .action-icon {
-  font-size: 1.5rem;
+  font-size: 1rem;
 }
 
 .action-module.compact .action-icon {
@@ -268,7 +268,7 @@
 }
 
 .action-module .action-value {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #e74c3c;
 }
@@ -477,4 +477,17 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* DEBUG: Show card row layout with 1px red borders */
+.card-module {
+  border: 1px solid red !important;
+}
+
+.header-module,
+.footer-module,
+.action-module,
+.divider-module,
+.row-module {
+  border: 1px solid red !important;
 }
