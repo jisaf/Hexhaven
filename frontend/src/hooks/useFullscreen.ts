@@ -5,7 +5,7 @@
  * - Enters fullscreen on mount
  * - Exits on unmount
  * - Handles ESC key to exit fullscreen AND navigate back
- * - No automatic navigation on system fullscreen changes
+ * - Does NOT navigate when fullscreen exits due to tab switching or visibility changes
  */
 
 import { useEffect } from 'react';
@@ -15,6 +15,7 @@ export function useFullscreen(enabled: boolean = true, onUserExit?: () => void) 
     if (!enabled) return;
 
     let isInitialized = false;
+    let userPressedEsc = false;
 
     const enterFullscreen = async () => {
       try {
@@ -40,11 +41,19 @@ export function useFullscreen(enabled: boolean = true, onUserExit?: () => void) 
       }
     };
 
-    // Handle fullscreen change - only navigate if user initiated it
+    // Track when user explicitly presses ESC key
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.fullscreenElement) {
+        userPressedEsc = true;
+      }
+    };
+
+    // Handle fullscreen change - only navigate if user explicitly pressed ESC
     const handleFullscreenChange = () => {
-      // Only process if we're initialized and exiting fullscreen
-      if (isInitialized && !document.fullscreenElement && onUserExit) {
-        // User exited fullscreen (via ESC or browser UI) - navigate back
+      // Only process if user explicitly pressed ESC to exit fullscreen
+      // Do NOT navigate if fullscreen exited due to tab switching or visibility change
+      if (isInitialized && !document.fullscreenElement && userPressedEsc && onUserExit) {
+        userPressedEsc = false; // Reset the flag
         setTimeout(() => {
           onUserExit();
         }, 100);
@@ -54,12 +63,15 @@ export function useFullscreen(enabled: boolean = true, onUserExit?: () => void) 
     // Enter fullscreen on mount
     enterFullscreen();
 
+    // Listen for keydown to detect ESC press
+    document.addEventListener('keydown', handleKeyDown);
     // Listen for fullscreen changes
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     // Exit fullscreen on unmount
     return () => {
       isInitialized = false; // Prevent navigation on unmount
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       exitFullscreen();
     };
