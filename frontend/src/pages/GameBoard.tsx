@@ -15,6 +15,7 @@ import { gameStateManager } from '../services/game-state.service';
 import { gameSessionCoordinator } from '../services/game-session-coordinator.service';
 import { roomSessionManager } from '../services/room-session.service';
 import { websocketService } from '../services/websocket.service';
+import { saveLastRoomCode } from '../utils/storage';
 import { CardSelectionPanel } from '../components/CardSelectionPanel';
 import type { Monster, HexTile, Character, AbilityCard } from '../../../shared/types/entities';
 import { TerrainType } from '../../../shared/types/entities';
@@ -103,6 +104,9 @@ export function GameBoard() {
     const initializeGame = async () => {
       try {
         console.log('[GameBoard] Ensuring joined to room:', roomCode);
+        // Save URL roomCode to localStorage so ensureJoined uses the correct room
+        // This is critical when navigating directly to /game/:roomCode via URL
+        saveLastRoomCode(roomCode);
         // Ensure we're joined to the room with 'refresh' intent
         // This will trigger the backend to send game_started event with current state
         await roomSessionManager.ensureJoined('refresh');
@@ -130,6 +134,8 @@ export function GameBoard() {
     removeMonster,
     spawnLootToken,
     collectLootToken,
+    setBackgroundImage, // Issue #191
+    centerBackgroundOnTiles, // Issue #191
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
@@ -258,25 +264,70 @@ export function GameBoard() {
     }
   }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
 
-  // Render game data when HexGrid is ready
+  // Track whether the board has been initialized to prevent re-initialization on every state change
+  const boardInitializedRef = useRef(false);
+
+  // Reset boardInitializedRef when HexGrid is destroyed (hexGridReady becomes false)
+  // This ensures we re-initialize when the grid is recreated (e.g., after fullscreen toggle)
   useEffect(() => {
-    if (hexGridReady && gameState.gameData) {
-      const typedTiles: HexTile[] = gameState.gameData.mapLayout.map(tile => ({
-        ...tile,
-        terrain: tile.terrain as TerrainType,
-        features: (tile as HexTile).features ?? [],
-        triggers: (tile as HexTile).triggers ?? [],
-      }));
-
-      const boardData: GameBoardData = {
-        tiles: typedTiles,
-        characters: gameState.gameData.characters as CharacterData[],
-        monsters: (gameState.gameData.monsters as Monster[]) || [],
-      };
-
-      initializeBoard(boardData);
+    if (!hexGridReady) {
+      boardInitializedRef.current = false;
+      console.log('[GameBoard] HexGrid destroyed, reset boardInitializedRef');
     }
-  }, [hexGridReady, gameState.gameData, initializeBoard]);
+  }, [hexGridReady]);
+
+  // Initialize board AND background once when HexGrid is ready and game data is available
+  // This effect should only run once per game session, not on every state update
+  useEffect(() => {
+    if (!hexGridReady || !gameState.gameData || boardInitializedRef.current) {
+      return;
+    }
+
+    console.log('[GameBoard] Initializing board (one-time)');
+
+    const typedTiles: HexTile[] = gameState.gameData.mapLayout.map(tile => ({
+      ...tile,
+      terrain: tile.terrain as TerrainType,
+      features: (tile as HexTile).features ?? [],
+      triggers: (tile as HexTile).triggers ?? [],
+    }));
+
+    const boardData: GameBoardData = {
+      tiles: typedTiles,
+      characters: gameState.gameData.characters as CharacterData[],
+      monsters: (gameState.gameData.monsters as Monster[]) || [],
+    };
+
+    initializeBoard(boardData);
+    boardInitializedRef.current = true;
+
+    // Load background image immediately after board initialization
+    const { backgroundImageUrl, backgroundOpacity = 1, backgroundScale = 1 } = gameState.gameData;
+
+    console.log('[GameBoard] Background check:', {
+      url: backgroundImageUrl,
+      opacity: backgroundOpacity,
+      scale: backgroundScale,
+    });
+
+    if (backgroundImageUrl) {
+      console.log('[GameBoard] Loading background image');
+
+      setBackgroundImage(
+        backgroundImageUrl,
+        backgroundOpacity,
+        0, // Initial offset - will be repositioned
+        0, // Initial offset - will be repositioned
+        backgroundScale
+      ).then(() => {
+        // After image loads, center it on the tile bounds
+        centerBackgroundOnTiles();
+        console.log('[GameBoard] Background loaded and centered');
+      }).catch((error) => {
+        console.error('[GameBoard] Failed to load background image:', error);
+      });
+    }
+  }, [hexGridReady, gameState.gameData, initializeBoard, setBackgroundImage, centerBackgroundOnTiles]);
 
   const handleBackToLobby = () => {
     // User clicked leave game button - exit and navigate
