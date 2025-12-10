@@ -28,17 +28,25 @@ import { Prisma as PrismaErrors } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage, StorageEngine } from 'multer';
 import { Request } from 'express';
-import { extname, join, resolve } from 'path';
+import { extname, resolve } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import prisma from '../db/client';
 import { Prisma } from '@prisma/client';
 
 // Configure multer for file uploads
 // Resolve to project root (one level up from backend) for consistent path resolution
-const backgroundsDir = resolve(process.cwd(), '..', 'frontend/public/backgrounds');
+const backgroundsDir = resolve(
+  process.cwd(),
+  '..',
+  'frontend/public/backgrounds',
+);
 const backgroundStorage: StorageEngine = diskStorage({
   destination: backgroundsDir,
-  filename: (req: Request, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+  filename: (
+    req: Request,
+    file: Express.Multer.File,
+    callback: (error: Error | null, filename: string) => void,
+  ) => {
     const scenarioId = req.params.id;
     const timestamp = Date.now();
     const ext = extname(file.originalname).toLowerCase();
@@ -56,7 +64,12 @@ const imageFileFilter = (
   if (allowedMimes.includes(file.mimetype)) {
     callback(null, true);
   } else {
-    callback(new BadRequestException('Only image files (JPEG, PNG, GIF, WebP) are allowed'), false);
+    callback(
+      new BadRequestException(
+        'Only image files (JPEG, PNG, GIF, WebP) are allowed',
+      ),
+      false,
+    );
   }
 };
 
@@ -76,8 +89,6 @@ interface CreateScenarioDto {
   backgroundOffsetY?: number;
   backgroundScale?: number;
 }
-
-interface UpdateScenarioDto extends Partial<CreateScenarioDto> {}
 
 @Controller('api/scenarios')
 export class ScenariosController {
@@ -136,8 +147,14 @@ export class ScenariosController {
       throw new BadRequestException('Scenario name is required');
     }
 
-    if (!dto.mapLayout || !Array.isArray(dto.mapLayout) || (dto.mapLayout as unknown[]).length === 0) {
-      throw new BadRequestException('Map layout is required and must have at least one hex');
+    if (
+      !dto.mapLayout ||
+      !Array.isArray(dto.mapLayout) ||
+      (dto.mapLayout as unknown[]).length === 0
+    ) {
+      throw new BadRequestException(
+        'Map layout is required and must have at least one hex',
+      );
     }
 
     // Create objectives object
@@ -202,7 +219,10 @@ export class ScenariosController {
    * Update an existing scenario
    */
   @Put(':id')
-  async updateScenario(@Param('id') id: string, @Body() dto: UpdateScenarioDto) {
+  async updateScenario(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateScenarioDto>,
+  ) {
     // Check if scenario exists
     const existing = await prisma.scenario.findUnique({
       where: { id },
@@ -231,11 +251,18 @@ export class ScenariosController {
       updateData.monsterGroups = dto.monsterGroups;
     }
 
-    if (dto.objectivePrimary !== undefined || dto.objectiveSecondary !== undefined) {
+    if (
+      dto.objectivePrimary !== undefined ||
+      dto.objectiveSecondary !== undefined
+    ) {
       updateData.objectives = {
         primary: {
           type: 'custom',
-          description: dto.objectivePrimary || (existing.objectives as { primary?: { description?: string } })?.primary?.description || 'Complete the scenario',
+          description:
+            dto.objectivePrimary ||
+            (existing.objectives as { primary?: { description?: string } })
+              ?.primary?.description ||
+            'Complete the scenario',
         },
         secondary: dto.objectiveSecondary
           ? [{ type: 'custom', description: dto.objectiveSecondary }]
@@ -257,7 +284,10 @@ export class ScenariosController {
     }
 
     if (dto.backgroundOpacity !== undefined) {
-      updateData.backgroundOpacity = Math.max(0, Math.min(1, dto.backgroundOpacity));
+      updateData.backgroundOpacity = Math.max(
+        0,
+        Math.min(1, dto.backgroundOpacity),
+      );
     }
 
     if (dto.backgroundOffsetX !== undefined) {
@@ -269,7 +299,10 @@ export class ScenariosController {
     }
 
     if (dto.backgroundScale !== undefined) {
-      updateData.backgroundScale = Math.max(0.5, Math.min(3, dto.backgroundScale));
+      updateData.backgroundScale = Math.max(
+        0.5,
+        Math.min(3, dto.backgroundScale),
+      );
     }
 
     const scenario = await prisma.scenario.update({
