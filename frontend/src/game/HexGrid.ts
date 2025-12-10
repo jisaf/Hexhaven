@@ -28,6 +28,7 @@ export interface HexGridOptions {
   onCharacterSelect?: (characterId: string) => void;
   onMonsterSelect?: (monsterId: string) => void;
   onLootTokenClick?: (tokenId: string) => void;
+  onBackgroundTransformChange?: (offsetX: number, offsetY: number, scale: number) => void;
 }
 
 export interface GameBoardData {
@@ -68,6 +69,21 @@ export class HexGrid {
 
   // Viewport for pan/zoom (US3 - T133)
   private viewport!: Viewport;
+
+  // Background image (Issue #191)
+  private backgroundSprite: PIXI.Sprite | null = null;
+  private backgroundLayer!: PIXI.Container;
+  private isBackgroundDragging: boolean = false;
+  private backgroundDragStart: { x: number; y: number } | null = null;
+  private backgroundInitialPos: { x: number; y: number } | null = null;
+  // Pinch-to-zoom state for mobile
+  private backgroundPinchData: {
+    initialDistance: number;
+    initialScale: number;
+    centerX: number;
+    centerY: number;
+  } | null = null;
+  private activePointers: Map<number, { x: number; y: number }> = new Map();
 
   constructor(container: HTMLElement, options: HexGridOptions) {
     this.container = container;
@@ -160,13 +176,15 @@ export class HexGrid {
 
     await Promise.all(avatarAssets.map(path => PIXI.Assets.load(path)));
 
-    // Create layers
+    // Create layers (order matters: background first, entities last)
+    this.backgroundLayer = new PIXI.Container(); // Issue #191 - Background image layer
     this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
     this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
+    this.viewport.addChild(this.backgroundLayer); // Background behind everything
     this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
@@ -317,6 +335,17 @@ export class HexGrid {
       sprite.destroy();
       this.monsters.delete(monsterId);
     }
+  }
+
+  /**
+   * Clear all monsters from the board
+   */
+  public clearMonsters(): void {
+    for (const monster of this.monsters.values()) {
+      this.entitiesLayer?.removeChild(monster);
+      monster.destroy();
+    }
+    this.monsters.clear();
   }
 
   /**
@@ -810,11 +839,361 @@ export class HexGrid {
     graphic.closePath();
   }
 
-  public setBackgroundImage(imageUrl: string): void {
-    const sprite = PIXI.Sprite.from(imageUrl);
-    sprite.width = this.app.screen.width;
-    sprite.height = this.app.screen.height;
-    this.app.stage.addChildAt(sprite, 0);
+  /**
+   * Set the background image for the map (Issue #191)
+   * @param imageUrl URL of the background image
+   * @param opacity Opacity value between 0 and 1 (default: 1)
+   * @param offsetX X offset in pixels (default: 0)
+   * @param offsetY Y offset in pixels (default: 0)
+   * @param scale Scale multiplier (default: 1)
+   */
+  public async setBackgroundImage(
+    imageUrl: string,
+    opacity: number = 1,
+    offsetX: number = 0,
+    offsetY: number = 0,
+    scale: number = 1
+  ): Promise<void> {
+    // Remove existing background if present
+    this.removeBackgroundImage();
+
+    try {
+      // Use Image element for all URLs - more reliable than Assets.load()
+      // Assets.load() can return null for certain image types/sizes
+      const texture = await new Promise<PIXI.Texture>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const tex = PIXI.Texture.from(img);
+            // Note: texture.valid might be false initially but becomes valid after first render
+            resolve(tex);
+          } catch (err) {
+            reject(new Error(`Failed to create texture: ${err}`));
+          }
+        };
+        img.onerror = () => {
+          reject(new Error(`Failed to load image: ${imageUrl}`));
+        };
+        img.src = imageUrl;
+      });
+
+      // Create sprite from texture
+      this.backgroundSprite = new PIXI.Sprite(texture);
+
+      // Apply transforms
+      this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
+      this.backgroundSprite.position.set(offsetX, offsetY);
+      this.backgroundSprite.scale.set(scale, scale);
+
+      console.log('[HexGrid] Background loaded:', {
+        imageUrl,
+        textureSize: { width: texture.width, height: texture.height },
+        position: { x: offsetX, y: offsetY },
+        scale,
+        opacity,
+        spriteWorldBounds: this.backgroundSprite.getBounds(),
+      });
+
+      // Setup background interaction handlers (starts non-interactive by default)
+      this.setupBackgroundInteraction();
+      // Start with interaction disabled so users can add hexes
+      this.backgroundSprite.eventMode = 'none';
+      this.backgroundSprite.cursor = 'default';
+
+      // Add to background layer (behind hex tiles)
+      this.backgroundLayer.addChild(this.backgroundSprite);
+    } catch (error) {
+      console.error('Failed to load background image:', error);
+    }
+  }
+
+  /**
+   * Setup drag and zoom interaction for the background image
+   * Supports both mouse (drag + wheel zoom) and touch (drag + pinch zoom)
+   */
+  private setupBackgroundInteraction(): void {
+    if (!this.backgroundSprite) return;
+
+    const sprite = this.backgroundSprite;
+    sprite.eventMode = 'static';
+    sprite.cursor = 'move';
+
+    // Helper to calculate distance between two touch points
+    const getDistance = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+      return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    };
+
+    // Helper to get center point between two touches
+    const getCenter = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
+      return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    };
+
+    // Pointer down - track all active pointers
+    sprite.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+      // Only handle left mouse button or touch
+      if (event.button !== 0) return;
+
+      this.activePointers.set(event.pointerId, { x: event.globalX, y: event.globalY });
+      event.stopPropagation();
+
+      // Pause viewport dragging while interacting with background
+      this.viewport.pause = true;
+
+      if (this.activePointers.size === 1) {
+        // Single pointer - start drag
+        this.isBackgroundDragging = true;
+        this.backgroundDragStart = { x: event.globalX, y: event.globalY };
+        this.backgroundInitialPos = { x: sprite.position.x, y: sprite.position.y };
+      } else if (this.activePointers.size === 2) {
+        // Two pointers - start pinch
+        this.isBackgroundDragging = false;
+        const pointers = Array.from(this.activePointers.values());
+        const distance = getDistance(pointers[0], pointers[1]);
+        const center = getCenter(pointers[0], pointers[1]);
+
+        this.backgroundPinchData = {
+          initialDistance: distance,
+          initialScale: sprite.scale.x,
+          centerX: center.x,
+          centerY: center.y,
+        };
+      }
+    });
+
+    // Pointer move - handle drag or pinch
+    sprite.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
+      if (!this.activePointers.has(event.pointerId)) return;
+
+      // Update pointer position
+      this.activePointers.set(event.pointerId, { x: event.globalX, y: event.globalY });
+
+      if (this.activePointers.size === 2 && this.backgroundPinchData) {
+        // Pinch zoom
+        const pointers = Array.from(this.activePointers.values());
+        const currentDistance = getDistance(pointers[0], pointers[1]);
+        const center = getCenter(pointers[0], pointers[1]);
+
+        // Calculate scale factor
+        const scaleFactor = currentDistance / this.backgroundPinchData.initialDistance;
+        const newScale = Math.max(0.1, Math.min(5, this.backgroundPinchData.initialScale * scaleFactor));
+
+        // Get pinch center in world coordinates
+        const worldCenter = this.viewport.toWorld(center.x, center.y);
+        const initialWorldCenter = this.viewport.toWorld(
+          this.backgroundPinchData.centerX,
+          this.backgroundPinchData.centerY
+        );
+
+        // Calculate the point on the sprite being zoomed
+        const currentScale = sprite.scale.x;
+        const spriteLocalX = (initialWorldCenter.x - sprite.position.x) / currentScale;
+        const spriteLocalY = (initialWorldCenter.y - sprite.position.y) / currentScale;
+
+        // Update scale
+        sprite.scale.set(newScale, newScale);
+
+        // Adjust position to zoom towards pinch center
+        sprite.position.set(
+          worldCenter.x - spriteLocalX * newScale,
+          worldCenter.y - spriteLocalY * newScale
+        );
+
+        this.notifyBackgroundTransformChange();
+      } else if (this.isBackgroundDragging && this.backgroundDragStart && this.backgroundInitialPos) {
+        // Single pointer drag
+        const scale = this.viewport.scale.x;
+        const deltaX = (event.globalX - this.backgroundDragStart.x) / scale;
+        const deltaY = (event.globalY - this.backgroundDragStart.y) / scale;
+
+        sprite.position.set(
+          this.backgroundInitialPos.x + deltaX,
+          this.backgroundInitialPos.y + deltaY
+        );
+
+        this.notifyBackgroundTransformChange();
+      }
+    });
+
+    // Pointer up/cancel - clean up
+    const endInteraction = (event: PIXI.FederatedPointerEvent) => {
+      this.activePointers.delete(event.pointerId);
+
+      if (this.activePointers.size === 0) {
+        // All pointers released
+        this.isBackgroundDragging = false;
+        this.backgroundDragStart = null;
+        this.backgroundInitialPos = null;
+        this.backgroundPinchData = null;
+        this.viewport.pause = false;
+      } else if (this.activePointers.size === 1) {
+        // Transition from pinch to drag
+        this.backgroundPinchData = null;
+        const [pointer] = Array.from(this.activePointers.values());
+        this.isBackgroundDragging = true;
+        this.backgroundDragStart = { x: pointer.x, y: pointer.y };
+        this.backgroundInitialPos = { x: sprite.position.x, y: sprite.position.y };
+      }
+    };
+
+    sprite.on('pointerup', endInteraction);
+    sprite.on('pointerupoutside', endInteraction);
+    sprite.on('pointercancel', endInteraction);
+
+    // Wheel zoom on background (desktop)
+    sprite.on('wheel', (event: PIXI.FederatedWheelEvent) => {
+      event.stopPropagation();
+
+      const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1; // Zoom out/in
+      const currentScale = sprite.scale.x;
+      const newScale = Math.max(0.1, Math.min(5, currentScale * zoomFactor));
+
+      // Get mouse position in world coordinates
+      const worldPos = this.viewport.toWorld(event.globalX, event.globalY);
+
+      // Calculate the point on the sprite being zoomed
+      const spriteLocalX = (worldPos.x - sprite.position.x) / currentScale;
+      const spriteLocalY = (worldPos.y - sprite.position.y) / currentScale;
+
+      // Update scale
+      sprite.scale.set(newScale, newScale);
+
+      // Adjust position to zoom towards mouse cursor
+      sprite.position.set(
+        worldPos.x - spriteLocalX * newScale,
+        worldPos.y - spriteLocalY * newScale
+      );
+
+      this.notifyBackgroundTransformChange();
+    });
+  }
+
+  /**
+   * Notify parent about background transform changes
+   */
+  private notifyBackgroundTransformChange(): void {
+    if (!this.backgroundSprite || !this.options.onBackgroundTransformChange) return;
+
+    this.options.onBackgroundTransformChange(
+      this.backgroundSprite.position.x,
+      this.backgroundSprite.position.y,
+      this.backgroundSprite.scale.x
+    );
+  }
+
+  /**
+   * Enable or disable background image interaction (drag/zoom)
+   * When disabled, clicks pass through to hex tiles
+   */
+  public setBackgroundInteractive(interactive: boolean): void {
+    if (!this.backgroundSprite) return;
+
+    if (interactive) {
+      this.backgroundSprite.eventMode = 'static';
+      this.backgroundSprite.cursor = 'move';
+    } else {
+      this.backgroundSprite.eventMode = 'none';
+      this.backgroundSprite.cursor = 'default';
+      // Clear any active interaction state
+      this.activePointers.clear();
+      this.isBackgroundDragging = false;
+      this.backgroundDragStart = null;
+      this.backgroundInitialPos = null;
+      this.backgroundPinchData = null;
+    }
+  }
+
+  /**
+   * Update the background image transforms without reloading (Issue #191)
+   * @param opacity Opacity value between 0 and 1
+   * @param offsetX X offset in pixels
+   * @param offsetY Y offset in pixels
+   * @param scale Scale multiplier
+   */
+  public setBackgroundTransform(
+    opacity: number,
+    offsetX: number,
+    offsetY: number,
+    scale: number
+  ): void {
+    if (!this.backgroundSprite) return;
+
+    this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
+    this.backgroundSprite.position.set(offsetX, offsetY);
+    this.backgroundSprite.scale.set(scale, scale);
+  }
+
+  /**
+   * Remove the background image (Issue #191)
+   */
+  public removeBackgroundImage(): void {
+    if (this.backgroundSprite) {
+      this.backgroundLayer.removeChild(this.backgroundSprite);
+      this.backgroundSprite.destroy();
+      this.backgroundSprite = null;
+    }
+  }
+
+  /**
+   * Check if a background image is currently set (Issue #191)
+   */
+  public hasBackgroundImage(): boolean {
+    return this.backgroundSprite !== null;
+  }
+
+  /**
+   * Get the current background transforms (Issue #191)
+   * Returns null if no background image is set
+   */
+  public getBackgroundTransform(): { opacity: number; offsetX: number; offsetY: number; scale: number } | null {
+    if (!this.backgroundSprite) return null;
+
+    return {
+      opacity: this.backgroundSprite.alpha,
+      offsetX: this.backgroundSprite.position.x,
+      offsetY: this.backgroundSprite.position.y,
+      scale: this.backgroundSprite.scale.x,
+    };
+  }
+
+  /**
+   * Center the background image on the tile bounds (Issue #191)
+   * This positions the background so its center aligns with the center of all tiles
+   */
+  public centerBackgroundOnTiles(): void {
+    if (!this.backgroundSprite || !this.tilesLayer || this.tiles.size === 0) return;
+
+    // Force render to ensure bounds are accurate
+    this.app.renderer.render(this.app.stage);
+
+    // Get the bounds of all tiles
+    const tileBounds = this.tilesLayer.getBounds();
+    const tileCenterX = tileBounds.x + tileBounds.width / 2;
+    const tileCenterY = tileBounds.y + tileBounds.height / 2;
+
+    // Get the background sprite dimensions (accounting for scale)
+    const bgWidth = this.backgroundSprite.width;
+    const bgHeight = this.backgroundSprite.height;
+
+    // Position background so its center aligns with the tile center
+    const bgX = tileCenterX - bgWidth / 2;
+    const bgY = tileCenterY - bgHeight / 2;
+
+    this.backgroundSprite.position.set(bgX, bgY);
+
+    // Force another render after positioning to ensure both layers are visible
+    // This fixes the issue where background and tiles appear mutually exclusive
+    this.app.renderer.render(this.app.stage);
+
+    console.log('[HexGrid] Centered background on tiles:', {
+      tileBounds: { x: tileBounds.x, y: tileBounds.y, width: tileBounds.width, height: tileBounds.height },
+      tileCenter: { x: tileCenterX, y: tileCenterY },
+      backgroundSize: { width: bgWidth, height: bgHeight },
+      backgroundPosition: { x: bgX, y: bgY },
+      backgroundLayerVisible: this.backgroundLayer.visible,
+      tilesLayerVisible: this.tilesLayer.visible,
+      backgroundSpriteAlpha: this.backgroundSprite.alpha,
+    });
   }
 
   public async exportToPng(): Promise<void> {
@@ -845,6 +1224,13 @@ export class HexGrid {
       this.clearBoard();
     } catch (error) {
       console.error('Error clearing board:', error);
+    }
+
+    // Clean up background image (Issue #191)
+    try {
+      this.removeBackgroundImage();
+    } catch (error) {
+      console.error('Error removing background image:', error);
     }
 
     try {

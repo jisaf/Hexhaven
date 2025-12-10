@@ -163,6 +163,12 @@ export interface GameStartedPayload {
       description: string;
     }>;
   };
+  // Background image configuration (Issue #191)
+  backgroundImageUrl?: string;
+  backgroundOpacity?: number;
+  backgroundOffsetX?: number;
+  backgroundOffsetY?: number;
+  backgroundScale?: number;
 }
 
 export interface CardsSelectedPayload {

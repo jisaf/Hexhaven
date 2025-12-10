@@ -113,8 +113,8 @@ function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
-  // Check if current page is GameBoard (hide header/menu on game page)
-  const isGamePage = location.pathname.startsWith('/game/');
+  // Check if current page should hide header (game and scenario designer pages)
+  const isGamePage = location.pathname.startsWith('/game/') || location.pathname === '/design';
 
   // Check if current page is Lobby (show Create Game button)
   const isLobbyPage = location.pathname === '/';

@@ -330,6 +330,13 @@ model Scenario {
   playerStartPositions Json? // Array of starting hex coordinates
   createdAt            DateTime @default(now())
 
+  // Background image configuration (Issue #191)
+  backgroundImageUrl   String?  @db.VarChar(500) // URL or path to background image
+  backgroundOpacity    Float?   @default(1.0) // Opacity 0.0 to 1.0
+  backgroundOffsetX    Int?     @default(0) // X offset in pixels
+  backgroundOffsetY    Int?     @default(0) // Y offset in pixels
+  backgroundScale      Float?   @default(1.0) // Scale multiplier (0.5 to 3.0)
+
   // Relations
   games Game[]
 

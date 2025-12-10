@@ -61,6 +61,9 @@ export class HexTile extends PIXI.Container {
     }
   }
 
+  // Hex tile transparency (0.2 = 80% transparent so background is visible)
+  private static readonly TILE_ALPHA = 0.2;
+
   /**
    * Create the hex background based on terrain type
    */
@@ -68,7 +71,7 @@ export class HexTile extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const color = this.getTerrainColor(this.terrain);
 
-    graphic.beginFill(color, 1);
+    graphic.beginFill(color, HexTile.TILE_ALPHA);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE - 2);
     graphic.endFill();
 
@@ -312,9 +315,11 @@ export class HexTile extends PIXI.Container {
 
   public setExportMode(enabled: boolean): void {
     const color = enabled ? 0x00ff00 : this.getTerrainColor(this.terrain);
+    // Export mode uses full opacity, normal mode uses transparent
+    const alpha = enabled ? 1 : HexTile.TILE_ALPHA;
     this.background.destroy();
     this.background = new PIXI.Graphics();
-    this.background.beginFill(color, 1);
+    this.background.beginFill(color, alpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
     this.addChildAt(this.background, 0);
@@ -335,9 +340,9 @@ export class HexTile extends PIXI.Container {
   public setHighlight(color: number | null): void {
     const newColor = color === null ? this.originalBackgroundColor : color;
 
-    // Redraw the background with the new color
+    // Redraw the background with the new color (keep transparency)
     this.background.clear();
-    this.background.beginFill(newColor, 1);
+    this.background.beginFill(newColor, HexTile.TILE_ALPHA);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
   }

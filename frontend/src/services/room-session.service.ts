@@ -225,9 +225,10 @@ class RoomSessionManager {
       }
 
       // Get room info from state or localStorage
-      // When creating a new room, always use fresh roomCode from localStorage
-      // to avoid using stale roomCode from previous game session
-      const roomCode = intent === 'create'
+      // - 'create': Use fresh roomCode from localStorage (just created)
+      // - 'refresh': Prefer localStorage (URL roomCode saved by GameBoard) to handle direct URL navigation
+      // - 'join'/'rejoin': Use state first, fallback to localStorage
+      const roomCode = (intent === 'create' || intent === 'refresh')
         ? getLastRoomCode() || this.state.roomCode
         : this.state.roomCode || getLastRoomCode();
       const nickname = getDisplayName();

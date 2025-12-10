@@ -5,8 +5,11 @@ import { MonsterType } from '../../../shared/types/entities';
 
 @Injectable()
 export class MonsterService {
+  // Path goes up from dist/backend/src/services to dist/data
   private readonly monsterTypesPath = path.join(
     __dirname,
+    '..',
+    '..',
     '..',
     'data',
     'monster-types.json',

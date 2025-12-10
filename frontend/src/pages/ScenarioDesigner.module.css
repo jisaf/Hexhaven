@@ -1,0 +1,20 @@
+/**
+ * Scenario Designer Page Styles
+ *
+ * Layout with sidebar on the left and canvas on the right
+ */
+
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+.canvasContainer {
+  flex: 1;
+  height: 100vh;
+  position: relative;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}

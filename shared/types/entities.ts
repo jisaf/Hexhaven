@@ -230,6 +230,12 @@ export interface Scenario {
   objectivePrimary: string;
   objectiveSecondary?: string;
   treasures?: TreasureLocation[];
+  // Background image configuration (Issue #191)
+  backgroundImageUrl?: string;
+  backgroundOpacity?: number;
+  backgroundOffsetX?: number;
+  backgroundOffsetY?: number;
+  backgroundScale?: number;
 }
 
 export interface HexTile {
