@@ -903,6 +903,9 @@ export class HexGrid {
 
       // Add to background layer (behind hex tiles)
       this.backgroundLayer.addChild(this.backgroundSprite);
+
+      // Update tile opacity to make them semi-transparent over background
+      this.updateTileOpacity();
     } catch (error) {
       console.error('Failed to load background image:', error);
     }
@@ -933,6 +936,13 @@ export class HexGrid {
     sprite.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
       // Only handle left mouse button or touch
       if (event.button !== 0) return;
+
+      // If alignment mode is active, handle the click and don't start drag
+      if (this.alignmentClickHandler) {
+        this.handleAlignmentClick(event);
+        event.stopPropagation();
+        return;
+      }
 
       this.activePointers.set(event.pointerId, { x: event.globalX, y: event.globalY });
       event.stopPropagation();
@@ -1081,6 +1091,9 @@ export class HexGrid {
     );
   }
 
+  // Alignment mode handler for two-anchor system (Issue #191)
+  private alignmentClickHandler: ((imageX: number, imageY: number) => void) | null = null;
+
   /**
    * Enable or disable background image interaction (drag/zoom)
    * When disabled, clicks pass through to hex tiles
@@ -1101,6 +1114,105 @@ export class HexGrid {
       this.backgroundInitialPos = null;
       this.backgroundPinchData = null;
     }
+  }
+
+  /**
+   * Set alignment mode click handler (Issue #191)
+   * When set, clicking on the background captures image-relative coordinates (0-1)
+   * @param handler Callback with image-relative x,y (0-1 range)
+   */
+  public setAlignmentClickHandler(handler: ((imageX: number, imageY: number) => void) | null): void {
+    this.alignmentClickHandler = handler;
+
+    if (!this.backgroundSprite) return;
+
+    if (handler) {
+      // Enable static mode and change cursor to crosshair for alignment
+      this.backgroundSprite.eventMode = 'static';
+      this.backgroundSprite.cursor = 'crosshair';
+    } else {
+      // Restore non-interactive mode
+      this.backgroundSprite.eventMode = 'none';
+      this.backgroundSprite.cursor = 'default';
+    }
+  }
+
+  /**
+   * Handle alignment mode click on background (Issue #191)
+   * Calculates image-relative coordinates from click position
+   */
+  private handleAlignmentClick(event: PIXI.FederatedPointerEvent): void {
+    if (!this.alignmentClickHandler || !this.backgroundSprite) return;
+
+    // Get the click position relative to the background sprite
+    const localPos = this.backgroundSprite.toLocal(event.global);
+
+    // Get the original texture dimensions (before scaling)
+    const textureWidth = this.backgroundSprite.texture.width;
+    const textureHeight = this.backgroundSprite.texture.height;
+
+    // Convert to 0-1 range
+    const imageX = localPos.x / textureWidth;
+    const imageY = localPos.y / textureHeight;
+
+    // Validate the click is within the image bounds
+    if (imageX >= 0 && imageX <= 1 && imageY >= 0 && imageY <= 1) {
+      this.alignmentClickHandler(imageX, imageY);
+    }
+  }
+
+  /**
+   * Calculate and apply alignment from two anchors (Issue #191)
+   *
+   * Given two anchor points that map image positions to hex coordinates,
+   * calculate the scale and offset needed to align the background image.
+   *
+   * @param anchor1 First anchor mapping image position to hex coordinate
+   * @param anchor2 Second anchor mapping image position to hex coordinate
+   * @returns The calculated transforms or null if calculation fails
+   */
+  public applyAlignmentFromAnchors(
+    anchor1: { imageX: number; imageY: number; hexQ: number; hexR: number },
+    anchor2: { imageX: number; imageY: number; hexQ: number; hexR: number }
+  ): { offsetX: number; offsetY: number; scale: number } | null {
+    if (!this.backgroundSprite) return null;
+
+    const textureWidth = this.backgroundSprite.texture.width;
+    const textureHeight = this.backgroundSprite.texture.height;
+
+    // Convert hex coordinates to screen positions
+    const hex1Screen = axialToScreen({ q: anchor1.hexQ, r: anchor1.hexR });
+    const hex2Screen = axialToScreen({ q: anchor2.hexQ, r: anchor2.hexR });
+
+    // Calculate image positions in pixels (relative to top-left of original image)
+    const img1X = anchor1.imageX * textureWidth;
+    const img1Y = anchor1.imageY * textureHeight;
+    const img2X = anchor2.imageX * textureWidth;
+    const img2Y = anchor2.imageY * textureHeight;
+
+    // Calculate distances between anchor points
+    const imgDistance = Math.sqrt(Math.pow(img2X - img1X, 2) + Math.pow(img2Y - img1Y, 2));
+    const hexDistance = Math.sqrt(Math.pow(hex2Screen.x - hex1Screen.x, 2) + Math.pow(hex2Screen.y - hex1Screen.y, 2));
+
+    // Avoid division by zero
+    if (imgDistance < 1) return null;
+
+    // Calculate scale factor
+    const scale = hexDistance / imgDistance;
+
+    // Calculate offset: position image so that anchor1's image point aligns with anchor1's hex screen position
+    // After scaling, the image point at (img1X, img1Y) should be at hex1Screen
+    const offsetX = hex1Screen.x - (img1X * scale);
+    const offsetY = hex1Screen.y - (img1Y * scale);
+
+    // Apply the transforms
+    this.backgroundSprite.scale.set(scale, scale);
+    this.backgroundSprite.position.set(offsetX, offsetY);
+
+    // Notify about the transform change
+    this.notifyBackgroundTransformChange();
+
+    return { offsetX, offsetY, scale };
   }
 
   /**
@@ -1131,7 +1243,21 @@ export class HexGrid {
       this.backgroundLayer.removeChild(this.backgroundSprite);
       this.backgroundSprite.destroy();
       this.backgroundSprite = null;
+
+      // Restore full opacity to tiles when background is removed
+      this.updateTileOpacity();
     }
+  }
+
+  /**
+   * Update all tile opacities based on background presence (Issue #191)
+   * Tiles become semi-transparent when a background is present
+   */
+  private updateTileOpacity(): void {
+    const hasBackground = this.hasBackgroundImage();
+    this.tiles.forEach((tile) => {
+      tile.setBackgroundMode(hasBackground);
+    });
   }
 
   /**

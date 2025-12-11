@@ -236,6 +236,30 @@ export interface Scenario {
   backgroundOffsetX?: number;
   backgroundOffsetY?: number;
   backgroundScale?: number;
+  // Two-anchor alignment system for device-independent positioning
+  backgroundAnchors?: BackgroundAnchors;
+}
+
+/**
+ * Two-anchor alignment system for background images (Issue #191)
+ *
+ * Instead of storing absolute pixel offsets that break on different screens,
+ * store the relationship between image points and hex positions.
+ * This allows the background to be correctly positioned regardless of
+ * viewport size or zoom level.
+ */
+export interface BackgroundAnchor {
+  // Position on the background image as percentage (0-1)
+  imageX: number;
+  imageY: number;
+  // The hex coordinate this image point should align with
+  hexQ: number;
+  hexR: number;
+}
+
+export interface BackgroundAnchors {
+  anchor1: BackgroundAnchor;
+  anchor2?: BackgroundAnchor; // Optional second anchor for scale calculation
 }
 
 export interface HexTile {

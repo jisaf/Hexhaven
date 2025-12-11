@@ -115,7 +115,10 @@ export class ScenarioService {
         // Transform monsterGroups format (supports both old {level, positions} and new {isElite, spawnPoints})
         const monsterGroups = dbMonsterGroups.map((group: any) => {
           // Support both formats: isElite (new) and level (old)
-          const isElite = group.isElite !== undefined ? group.isElite : group.level === 'elite';
+          const isElite =
+            group.isElite !== undefined
+              ? group.isElite
+              : group.level === 'elite';
           // Support both formats: spawnPoints (new) and positions (old)
           const rawPositions = group.spawnPoints || group.positions || [];
           const spawnPoints = rawPositions.map((pos: any) => ({

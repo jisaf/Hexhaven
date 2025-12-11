@@ -24,54 +24,13 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { Prisma as PrismaErrors } from '@prisma/client';
+import { Prisma as PrismaErrors, Prisma } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, StorageEngine } from 'multer';
-import { Request } from 'express';
-import { extname, resolve } from 'path';
-import { existsSync, unlinkSync } from 'fs';
 import prisma from '../db/client';
-import { Prisma } from '@prisma/client';
-
-// Configure multer for file uploads
-// Resolve to project root (one level up from backend) for consistent path resolution
-const backgroundsDir = resolve(
-  process.cwd(),
-  '..',
-  'frontend/public/backgrounds',
-);
-const backgroundStorage: StorageEngine = diskStorage({
-  destination: backgroundsDir,
-  filename: (
-    req: Request,
-    file: Express.Multer.File,
-    callback: (error: Error | null, filename: string) => void,
-  ) => {
-    const scenarioId = req.params.id;
-    const timestamp = Date.now();
-    const ext = extname(file.originalname).toLowerCase();
-    callback(null, `scenario-${scenarioId}-${timestamp}${ext}`);
-  },
-});
-
-// File filter for images only
-const imageFileFilter = (
-  req: Request,
-  file: Express.Multer.File,
-  callback: (error: Error | null, acceptFile: boolean) => void,
-) => {
-  const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (allowedMimes.includes(file.mimetype)) {
-    callback(null, true);
-  } else {
-    callback(
-      new BadRequestException(
-        'Only image files (JPEG, PNG, GIF, WebP) are allowed',
-      ),
-      false,
-    );
-  }
-};
+import {
+  BackgroundUploadService,
+  backgroundUploadConfig,
+} from '../services/background-upload.service';
 
 // DTO for creating/updating scenarios
 interface CreateScenarioDto {
@@ -88,10 +47,14 @@ interface CreateScenarioDto {
   backgroundOffsetX?: number;
   backgroundOffsetY?: number;
   backgroundScale?: number;
+  backgroundAnchors?: Prisma.InputJsonValue;
 }
 
 @Controller('api/scenarios')
 export class ScenariosController {
+  constructor(
+    private readonly backgroundUploadService: BackgroundUploadService,
+  ) {}
   /**
    * GET /api/scenarios
    * List all available scenarios from database
@@ -193,6 +156,7 @@ export class ScenariosController {
           backgroundOffsetX: dto.backgroundOffsetX,
           backgroundOffsetY: dto.backgroundOffsetY,
           backgroundScale,
+          backgroundAnchors: dto.backgroundAnchors,
         },
       });
 
@@ -305,6 +269,10 @@ export class ScenariosController {
       );
     }
 
+    if (dto.backgroundAnchors !== undefined) {
+      updateData.backgroundAnchors = dto.backgroundAnchors;
+    }
+
     const scenario = await prisma.scenario.update({
       where: { id },
       data: updateData,
@@ -321,69 +289,16 @@ export class ScenariosController {
    * Upload a background image for a scenario
    */
   @Post(':id/background')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: backgroundStorage,
-      fileFilter: imageFileFilter,
-      limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB max
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('image', backgroundUploadConfig))
   async uploadBackground(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    // Check if scenario exists
-    const existing = await prisma.scenario.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      // Clean up uploaded file if scenario doesn't exist
-      if (file && existsSync(file.path)) {
-        unlinkSync(file.path);
-      }
-      throw new NotFoundException(`Scenario with id ${id} not found`);
-    }
-
     if (!file) {
       throw new BadRequestException('No image file provided');
     }
 
-    // Delete old background image if it exists
-    if (existing.backgroundImageUrl) {
-      const oldPath = resolve(
-        process.cwd(),
-        '..',
-        'frontend/public',
-        existing.backgroundImageUrl,
-      );
-      if (existsSync(oldPath)) {
-        try {
-          unlinkSync(oldPath);
-        } catch {
-          // Ignore errors deleting old file
-        }
-      }
-    }
-
-    // Generate URL path for the uploaded file
-    const url = `/backgrounds/${file.filename}`;
-
-    // Update scenario with new background URL
-    await prisma.scenario.update({
-      where: { id },
-      data: {
-        backgroundImageUrl: url,
-      },
-    });
-
-    return {
-      success: true,
-      url,
-      filename: file.filename,
-    };
+    return this.backgroundUploadService.uploadBackground(id, file);
   }
 
   /**
@@ -392,46 +307,6 @@ export class ScenariosController {
    */
   @Delete(':id/background')
   async deleteBackground(@Param('id') id: string) {
-    const existing = await prisma.scenario.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Scenario with id ${id} not found`);
-    }
-
-    // Delete the background file if it exists
-    if (existing.backgroundImageUrl) {
-      const filePath = resolve(
-        process.cwd(),
-        '..',
-        'frontend/public',
-        existing.backgroundImageUrl,
-      );
-      if (existsSync(filePath)) {
-        try {
-          unlinkSync(filePath);
-        } catch {
-          // Ignore errors deleting file
-        }
-      }
-    }
-
-    // Clear background fields in database
-    await prisma.scenario.update({
-      where: { id },
-      data: {
-        backgroundImageUrl: null,
-        backgroundOpacity: 1.0,
-        backgroundOffsetX: 0,
-        backgroundOffsetY: 0,
-        backgroundScale: 1.0,
-      },
-    });
-
-    return {
-      success: true,
-      message: 'Background removed',
-    };
+    return this.backgroundUploadService.deleteBackground(id);
   }
 }

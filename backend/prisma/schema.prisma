@@ -336,6 +336,7 @@ model Scenario {
   backgroundOffsetX    Int?     @default(0) // X offset in pixels
   backgroundOffsetY    Int?     @default(0) // Y offset in pixels
   backgroundScale      Float?   @default(1.0) // Scale multiplier (0.5 to 3.0)
+  backgroundAnchors    Json?    // Two-anchor alignment data (Issue #191)
 
   // Relations
   games Game[]

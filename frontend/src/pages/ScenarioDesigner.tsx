@@ -18,11 +18,21 @@ import {
   type MonsterType,
   type MonsterGroup,
   type Monster,
+  type BackgroundAnchor,
+  type BackgroundAnchors,
 } from '../../../shared/types/entities.ts';
 import { Sidebar } from '../components/ScenarioDesigner/Sidebar';
 import { usePrevious } from '../hooks/usePrevious';
 import { getApiUrl } from '../config/api';
+import { debounce } from '../utils/responsive';
+import { offlineQueueService } from '../services/offline-queue.service';
 import styles from './ScenarioDesigner.module.css';
+
+// Save status for visual feedback
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+// Alignment mode for two-anchor system (Issue #191)
+type AlignmentMode = 'off' | 'anchor1-image' | 'anchor1-hex' | 'anchor2-image' | 'anchor2-hex' | 'complete';
 
 // Background transform state (Issue #191)
 interface BackgroundState {
@@ -33,6 +43,7 @@ interface BackgroundState {
   scale: number;
   isUploading: boolean;
   fileName: string | null;
+  anchors: BackgroundAnchors | null;
 }
 
 interface ScenarioState {
@@ -92,6 +103,7 @@ const ScenarioDesigner: React.FC = () => {
         scale: parsed.scale ?? 1,
         isUploading: false,
         fileName: parsed.fileName || null,
+        anchors: parsed.anchors || null,
       };
     }
     return {
@@ -102,12 +114,55 @@ const ScenarioDesigner: React.FC = () => {
       scale: 1,
       isUploading: false,
       fileName: null,
+      anchors: null,
     };
   });
   const [scenarioId, setScenarioId] = useState<string | null>(null);
   const [backgroundEditMode, setBackgroundEditMode] = useState(false);
+  const [alignmentMode, setAlignmentMode] = useState<AlignmentMode>('off');
+  const [pendingAnchor, setPendingAnchor] = useState<Partial<BackgroundAnchor> | null>(null);
   const [savedScenarios, setSavedScenarios] = useState<Array<{ id: string; name: string; difficulty: number }>>([]);
   const [pendingBackgroundFile, setPendingBackgroundFile] = useState<File | null>(null);
+  const [transformSaveStatus, setTransformSaveStatus] = useState<SaveStatus>('idle');
+
+  // Debounced save for background transforms (Issue #191)
+  // Saves to server 500ms after user stops dragging/zooming
+  const saveBackgroundTransforms = useRef(
+    debounce(
+      async (
+        id: string,
+        transforms: { opacity: number; offsetX: number; offsetY: number; scale: number }
+      ) => {
+        setTransformSaveStatus('saving');
+        try {
+          const response = await fetch(`${getApiUrl()}/scenarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              backgroundOpacity: transforms.opacity,
+              backgroundOffsetX: Math.round(transforms.offsetX),
+              backgroundOffsetY: Math.round(transforms.offsetY),
+              backgroundScale: transforms.scale,
+            }),
+          });
+
+          if (response.ok) {
+            setTransformSaveStatus('saved');
+            // Reset to idle after 2 seconds
+            setTimeout(() => setTransformSaveStatus('idle'), 2000);
+          } else {
+            setTransformSaveStatus('error');
+            setTimeout(() => setTransformSaveStatus('idle'), 3000);
+          }
+        } catch (error) {
+          console.error('Failed to save background transforms:', error);
+          setTransformSaveStatus('error');
+          setTimeout(() => setTransformSaveStatus('idle'), 3000);
+        }
+      },
+      500
+    )
+  ).current;
 
   // Handler for toggling background edit mode
   const handleBackgroundEditModeChange = useCallback(
@@ -137,17 +192,143 @@ const ScenarioDesigner: React.FC = () => {
       scale: 1,
       isUploading: false,
       fileName: null,
+      anchors: null,
     });
     setScenarioId(null);
     setSelectedHex(null);
     setPendingBackgroundFile(null);
+    setAlignmentMode('off');
+    setPendingAnchor(null);
     if (gridRef.current) {
       gridRef.current.clearBoard();
       gridRef.current.removeBackgroundImage();
+      gridRef.current.setAlignmentClickHandler(null);
+    }
+  }, []);
+
+  // Start alignment mode (Issue #191)
+  const handleStartAlignment = useCallback(() => {
+    setAlignmentMode('anchor1-image');
+    setPendingAnchor(null);
+    setBackgroundEditMode(false); // Disable drag mode
+
+    // Set up the alignment click handler on the grid
+    if (gridRef.current) {
+      gridRef.current.setAlignmentClickHandler((imageX: number, imageY: number) => {
+        setPendingAnchor((prev) => ({ ...prev, imageX, imageY }));
+
+        // Advance to next step based on current mode
+        setAlignmentMode((mode) => {
+          if (mode === 'anchor1-image') return 'anchor1-hex';
+          if (mode === 'anchor2-image') return 'anchor2-hex';
+          return mode;
+        });
+
+        // Disable the image click handler until we need it again
+        if (gridRef.current) {
+          gridRef.current.setAlignmentClickHandler(null);
+        }
+      });
+    }
+  }, []);
+
+  // Cancel alignment mode (Issue #191)
+  const handleCancelAlignment = useCallback(() => {
+    setAlignmentMode('off');
+    setPendingAnchor(null);
+    if (gridRef.current) {
+      gridRef.current.setAlignmentClickHandler(null);
+    }
+  }, []);
+
+  // Clear existing anchors (Issue #191)
+  const handleClearAnchors = useCallback(() => {
+    setBackgroundState((prev) => ({ ...prev, anchors: null }));
+    setAlignmentMode('off');
+    setPendingAnchor(null);
+    if (gridRef.current) {
+      gridRef.current.setAlignmentClickHandler(null);
     }
   }, []);
 
   const handleHexClick = useCallback((hex: AxialCoordinates) => {
+    // Handle alignment mode hex selection (Issue #191)
+    if (alignmentMode === 'anchor1-hex' || alignmentMode === 'anchor2-hex') {
+      // Complete the current anchor with hex coordinates
+      const completedAnchor: BackgroundAnchor = {
+        imageX: pendingAnchor?.imageX ?? 0,
+        imageY: pendingAnchor?.imageY ?? 0,
+        hexQ: hex.q,
+        hexR: hex.r,
+      };
+
+      if (alignmentMode === 'anchor1-hex') {
+        // First anchor complete - store and move to second anchor
+        setBackgroundState((prev) => ({
+          ...prev,
+          anchors: { anchor1: completedAnchor },
+        }));
+        setPendingAnchor(null);
+
+        // Set up for second anchor image click
+        setAlignmentMode('anchor2-image');
+        if (gridRef.current) {
+          gridRef.current.setAlignmentClickHandler((imageX: number, imageY: number) => {
+            setPendingAnchor({ imageX, imageY });
+            setAlignmentMode('anchor2-hex');
+            if (gridRef.current) {
+              gridRef.current.setAlignmentClickHandler(null);
+            }
+          });
+        }
+      } else if (alignmentMode === 'anchor2-hex') {
+        // Second anchor complete - store and apply alignment
+        setBackgroundState((prev) => {
+          // We need anchor1 to exist to create anchor2
+          if (!prev.anchors?.anchor1) {
+            return { ...prev, anchors: { anchor1: completedAnchor } };
+          }
+
+          const newAnchors: BackgroundAnchors = {
+            anchor1: prev.anchors.anchor1,
+            anchor2: completedAnchor,
+          };
+
+          // Apply the alignment calculation
+          if (gridRef.current && newAnchors.anchor2) {
+            const result = gridRef.current.applyAlignmentFromAnchors(
+              newAnchors.anchor1,
+              newAnchors.anchor2
+            );
+
+            if (result) {
+              // Update state with calculated transforms
+              return {
+                ...prev,
+                anchors: newAnchors,
+                offsetX: result.offsetX,
+                offsetY: result.offsetY,
+                scale: result.scale,
+              };
+            }
+          }
+
+          return { ...prev, anchors: newAnchors };
+        });
+        setPendingAnchor(null);
+        setAlignmentMode('complete');
+
+        // Clean up
+        if (gridRef.current) {
+          gridRef.current.setAlignmentClickHandler(null);
+        }
+
+        // After a brief moment, return to normal mode
+        setTimeout(() => setAlignmentMode('off'), 500);
+      }
+      return;
+    }
+
     const key = `${hex.q},${hex.r}`;
     setScenarioState((prevState) => {
       const newActiveHexes = new Map(prevState.activeHexes);
@@ -169,7 +350,7 @@ const ScenarioDesigner: React.FC = () => {
         return { ...prevState, activeHexes: newActiveHexes };
       }
     });
-  }, []);
+  }, [alignmentMode, pendingAnchor]);
 
   const handleScenarioChange = useCallback((updates: Partial<ScenarioState>) => {
     setScenarioState((prev) => ({ ...prev, ...updates }));
@@ -410,6 +591,7 @@ const ScenarioDesigner: React.FC = () => {
       backgroundOffsetX: backgroundState.offsetX,
       backgroundOffsetY: backgroundState.offsetY,
       backgroundScale: backgroundState.scale,
+      backgroundAnchors: backgroundState.anchors,
     };
 
     try {
@@ -545,6 +727,35 @@ const ScenarioDesigner: React.FC = () => {
         }
       } catch (error) {
         console.error('Error uploading background:', error);
+
+        // If offline, queue the upload for later
+        if (!navigator.onLine) {
+          try {
+            await offlineQueueService.addToQueue({
+              scenarioId: scenarioId!,
+              file,
+              transforms: {
+                opacity: backgroundState.opacity,
+                offsetX: backgroundState.offsetX,
+                offsetY: backgroundState.offsetY,
+                scale: backgroundState.scale,
+              },
+            });
+            // Show local preview while queued
+            const blobUrl = URL.createObjectURL(file);
+            setBackgroundState((prev) => ({
+              ...prev,
+              imageUrl: blobUrl,
+              fileName,
+              isUploading: false,
+            }));
+            alert('You are offline. The image will be uploaded when you reconnect.');
+            return;
+          } catch (queueError) {
+            console.error('Failed to queue upload:', queueError);
+          }
+        }
+
         alert('An error occurred while uploading the background image.');
         setBackgroundState((prev) => ({ ...prev, isUploading: false }));
       }
@@ -555,25 +766,45 @@ const ScenarioDesigner: React.FC = () => {
   const handleBackgroundOpacityChange = useCallback(
     (value: number) => {
       const opacity = value / 100;
-      setBackgroundState((prev) => ({ ...prev, opacity }));
-      if (gridRef.current) {
-        gridRef.current.setBackgroundTransform(
-          opacity,
-          backgroundState.offsetX,
-          backgroundState.offsetY,
-          backgroundState.scale
-        );
-      }
+      setBackgroundState((prev) => {
+        const newState = { ...prev, opacity };
+
+        // Apply to grid
+        if (gridRef.current) {
+          gridRef.current.setBackgroundTransform(
+            opacity,
+            prev.offsetX,
+            prev.offsetY,
+            prev.scale
+          );
+        }
+
+        // Auto-save if editing an existing scenario
+        if (scenarioId) {
+          saveBackgroundTransforms(scenarioId, newState);
+        }
+
+        return newState;
+      });
     },
-    [backgroundState]
+    [scenarioId, saveBackgroundTransforms]
   );
 
   // Callback when background is dragged or zoomed via gestures
   const handleBackgroundTransformChange = useCallback(
     (offsetX: number, offsetY: number, scale: number) => {
-      setBackgroundState((prev) => ({ ...prev, offsetX, offsetY, scale }));
+      setBackgroundState((prev) => {
+        const newState = { ...prev, offsetX, offsetY, scale };
+
+        // Auto-save transforms if editing an existing scenario
+        if (scenarioId) {
+          saveBackgroundTransforms(scenarioId, newState);
+        }
+
+        return newState;
+      });
     },
-    []
+    [scenarioId, saveBackgroundTransforms]
   );
 
   const handleRemoveBackground = useCallback(async () => {
@@ -595,10 +826,14 @@ const ScenarioDesigner: React.FC = () => {
       scale: 1,
       isUploading: false,
       fileName: null,
+      anchors: null,
     });
+    setAlignmentMode('off');
+    setPendingAnchor(null);
 
     if (gridRef.current) {
       gridRef.current.removeBackgroundImage();
+      gridRef.current.setAlignmentClickHandler(null);
     }
   }, [scenarioId]);
 
@@ -755,11 +990,14 @@ const ScenarioDesigner: React.FC = () => {
         scale: scenario.backgroundScale ?? 1,
         isUploading: false,
         fileName: null,
+        anchors: scenario.backgroundAnchors || null,
       });
 
       setScenarioId(loadScenarioId);
       setSelectedHex(null);
       setPendingBackgroundFile(null);
+      setAlignmentMode('off');
+      setPendingAnchor(null);
 
       // Update the hex grid (background will be loaded via useEffect watching backgroundState)
       if (gridRef.current) {
@@ -854,17 +1092,22 @@ const ScenarioDesigner: React.FC = () => {
       <Sidebar
         scenarioState={scenarioState}
         backgroundState={backgroundState}
+        transformSaveStatus={transformSaveStatus}
         selectedHex={selectedHex}
         selectedPlayerCount={selectedPlayerCount}
         monsterTypes={monsterTypes}
         backgroundEditMode={backgroundEditMode}
         savedScenarios={savedScenarios}
         currentScenarioId={scenarioId}
+        alignmentMode={alignmentMode}
         onScenarioChange={handleScenarioChange}
         onBackgroundUpload={handleBackgroundUpload}
         onBackgroundOpacityChange={handleBackgroundOpacityChange}
         onBackgroundEditModeChange={handleBackgroundEditModeChange}
         onRemoveBackground={handleRemoveBackground}
+        onStartAlignment={handleStartAlignment}
+        onCancelAlignment={handleCancelAlignment}
+        onClearAnchors={handleClearAnchors}
         onDeleteHex={handleDeleteHex}
         onTerrainChange={handleTerrainChange}
         onAddFeature={handleAddFeature}

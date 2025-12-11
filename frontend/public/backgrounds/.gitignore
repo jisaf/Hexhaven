@@ -1,0 +1,12 @@
+# Ignore uploaded background images (generated at runtime)
+# These are user-uploaded files that should not be committed
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.md
+
+# Keep this file and the .gitkeep
+!.gitignore
+!.gitkeep

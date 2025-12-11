@@ -61,8 +61,11 @@ export class HexTile extends PIXI.Container {
     }
   }
 
-  // Hex tile transparency (0.2 = 80% transparent so background is visible)
-  private static readonly TILE_ALPHA = 0.2;
+  // Tile opacity - can be changed dynamically based on background presence
+  // Default is full opacity (1), reduced to 0.2 when background is present
+  private static readonly DEFAULT_ALPHA = 1;
+  private static readonly BACKGROUND_ALPHA = 0.2;
+  private currentAlpha: number = HexTile.DEFAULT_ALPHA;
 
   /**
    * Create the hex background based on terrain type
@@ -71,7 +74,7 @@ export class HexTile extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const color = this.getTerrainColor(this.terrain);
 
-    graphic.beginFill(color, HexTile.TILE_ALPHA);
+    graphic.beginFill(color, this.currentAlpha);
     this.drawHexagon(graphic, 0, 0, HEX_SIZE - 2);
     graphic.endFill();
 
@@ -315,8 +318,8 @@ export class HexTile extends PIXI.Container {
 
   public setExportMode(enabled: boolean): void {
     const color = enabled ? 0x00ff00 : this.getTerrainColor(this.terrain);
-    // Export mode uses full opacity, normal mode uses transparent
-    const alpha = enabled ? 1 : HexTile.TILE_ALPHA;
+    // Export mode uses full opacity, normal mode uses current alpha
+    const alpha = enabled ? 1 : this.currentAlpha;
     this.background.destroy();
     this.background = new PIXI.Graphics();
     this.background.beginFill(color, alpha);
@@ -340,9 +343,25 @@ export class HexTile extends PIXI.Container {
   public setHighlight(color: number | null): void {
     const newColor = color === null ? this.originalBackgroundColor : color;
 
-    // Redraw the background with the new color (keep transparency)
+    // Redraw the background with the new color (keep current transparency)
     this.background.clear();
-    this.background.beginFill(newColor, HexTile.TILE_ALPHA);
+    this.background.beginFill(newColor, this.currentAlpha);
+    this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
+    this.background.endFill();
+  }
+
+  /**
+   * Set the tile opacity (Issue #191)
+   * Called by HexGrid when background is added/removed
+   * @param hasBackground - true if a background image is present
+   */
+  public setBackgroundMode(hasBackground: boolean): void {
+    this.currentAlpha = hasBackground ? HexTile.BACKGROUND_ALPHA : HexTile.DEFAULT_ALPHA;
+
+    // Redraw background with new alpha
+    const color = this.getTerrainColor(this.terrain);
+    this.background.clear();
+    this.background.beginFill(color, this.currentAlpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
     this.background.endFill();
   }

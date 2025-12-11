@@ -22,6 +22,7 @@ import { DeckManagementService } from './services/deck-management.service';
 import { CardPileService } from './services/card-pile.service';
 import { RestService } from './services/rest.service';
 import { ExhaustionService } from './services/exhaustion.service';
+import { BackgroundUploadService } from './services/background-upload.service';
 
 @Module({
   imports: [],
@@ -52,6 +53,7 @@ import { ExhaustionService } from './services/exhaustion.service';
     CardPileService, // Card pile operations (hand, discard, lost)
     RestService, // Rest mechanics (short rest, long rest)
     ExhaustionService, // Exhaustion detection and execution
+    BackgroundUploadService, // Issue #191: Background image upload handling
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

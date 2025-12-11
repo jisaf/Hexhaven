@@ -19,6 +19,7 @@ import {
   HexFeatureType,
   TriggerType,
   type MonsterType,
+  type BackgroundAnchors,
 } from '../../../../shared/types/entities';
 
 interface BackgroundState {
@@ -29,7 +30,14 @@ interface BackgroundState {
   scale: number;
   isUploading: boolean;
   fileName: string | null;
+  anchors: BackgroundAnchors | null;
 }
+
+// Alignment mode for two-anchor system (Issue #191)
+type AlignmentMode = 'off' | 'anchor1-image' | 'anchor1-hex' | 'anchor2-image' | 'anchor2-hex' | 'complete';
+
+// Save status for visual feedback
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface ScenarioState {
   name: string;
@@ -54,17 +62,22 @@ interface SavedScenario {
 interface SidebarProps {
   scenarioState: ScenarioState;
   backgroundState: BackgroundState;
+  transformSaveStatus?: SaveStatus;
   selectedHex: AxialCoordinates | null;
   selectedPlayerCount: number;
   monsterTypes: MonsterType[];
   backgroundEditMode: boolean;
   savedScenarios: SavedScenario[];
   currentScenarioId: string | null;
+  alignmentMode?: AlignmentMode;
   onScenarioChange: (updates: Partial<ScenarioState>) => void;
   onBackgroundUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBackgroundOpacityChange: (value: number) => void;
   onBackgroundEditModeChange: (editMode: boolean) => void;
   onRemoveBackground: () => void;
+  onStartAlignment?: () => void;
+  onCancelAlignment?: () => void;
+  onClearAnchors?: () => void;
   onDeleteHex: () => void;
   onTerrainChange: (terrain: TerrainType) => void;
   onAddFeature: (type: HexFeatureType) => void;
@@ -87,17 +100,22 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   scenarioState,
   backgroundState,
+  transformSaveStatus = 'idle',
   selectedHex,
   selectedPlayerCount,
   monsterTypes,
   backgroundEditMode,
   savedScenarios,
   currentScenarioId,
+  alignmentMode = 'off',
   onScenarioChange,
   onBackgroundUpload,
   onBackgroundOpacityChange,
   onBackgroundEditModeChange,
   onRemoveBackground,
+  onStartAlignment,
+  onCancelAlignment,
+  onClearAnchors,
   onDeleteHex,
   onTerrainChange,
   onAddFeature,
@@ -290,6 +308,82 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       ? 'Drag to move, scroll/pinch to zoom'
                       : 'Click grid to add/edit hexes'}
                   </p>
+                  {/* Save status indicator for auto-saved transforms */}
+                  {transformSaveStatus !== 'idle' && (
+                    <div
+                      className={`${styles.saveStatus} ${styles[transformSaveStatus]}`}
+                    >
+                      {transformSaveStatus === 'saving' && 'Saving...'}
+                      {transformSaveStatus === 'saved' && 'Saved'}
+                      {transformSaveStatus === 'error' && 'Save failed'}
+                    </div>
+                  )}
+
+                  {/* Two-anchor alignment system (Issue #191) */}
+                  <div className={styles.field} style={{ marginTop: '12px' }}>
+                    <label className={styles.label}>Alignment</label>
+                    {alignmentMode === 'off' && !backgroundState.anchors && (
+                      <button
+                        className={styles.actionButton}
+                        onClick={onStartAlignment}
+                        disabled={!onStartAlignment}
+                        style={{ width: '100%' }}
+                      >
+                        Start Alignment
+                      </button>
+                    )}
+                    {alignmentMode === 'off' && backgroundState.anchors && (
+                      <div className={styles.fieldRow}>
+                        <span className={styles.hint} style={{ flex: 1 }}>
+                          Aligned ({backgroundState.anchors.anchor2 ? '2' : '1'} anchor{backgroundState.anchors.anchor2 ? 's' : ''})
+                        </span>
+                        <button
+                          className={styles.smallButton}
+                          onClick={onClearAnchors}
+                          title="Clear alignment"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                    {alignmentMode !== 'off' && alignmentMode !== 'complete' && (
+                      <div className={styles.alignmentGuide}>
+                        <div className={styles.alignmentStep}>
+                          {alignmentMode === 'anchor1-image' && (
+                            <>
+                              <span className={styles.stepNumber}>1/4</span>
+                              <span>Click a point on the image</span>
+                            </>
+                          )}
+                          {alignmentMode === 'anchor1-hex' && (
+                            <>
+                              <span className={styles.stepNumber}>2/4</span>
+                              <span>Click the hex it should align to</span>
+                            </>
+                          )}
+                          {alignmentMode === 'anchor2-image' && (
+                            <>
+                              <span className={styles.stepNumber}>3/4</span>
+                              <span>Click another point on the image</span>
+                            </>
+                          )}
+                          {alignmentMode === 'anchor2-hex' && (
+                            <>
+                              <span className={styles.stepNumber}>4/4</span>
+                              <span>Click the hex it should align to</span>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          className={styles.smallButton}
+                          onClick={onCancelAlignment}
+                          style={{ marginTop: '8px' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </section>

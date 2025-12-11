@@ -324,7 +324,9 @@ export class GameGateway
 
     // Debug logging for background issue
     if (scenario?.backgroundImageUrl) {
-      this.logger.log(`🖼️ Background configured: ${scenario.backgroundImageUrl}`);
+      this.logger.log(
+        `🖼️ Background configured: ${scenario.backgroundImageUrl}`,
+      );
     } else {
       this.logger.log(`🖼️ No background image for scenario`);
     }
