@@ -496,6 +496,16 @@ gloomhaven-hex-game/
 - Drag-and-drop placement
 - Visual highlighting for selection/range
 
+#### Background Image System (Issue #191)
+- Upload PNG/JPG background images via Scenario Designer
+- Auto-fit images to fixed 1024×1024 pixel world bounds
+- Background renders behind hex grid (semi-transparent tiles)
+- Server-side image storage with nginx static serving
+- Adjustable opacity (0-100%)
+- Gold world border indicates play area bounds
+- Images persist across sessions via database URL storage
+- SELinux-compatible file storage for production deployment
+
 #### Entity Management
 - Player character placement and movement
 - Monster placement with standee numbers

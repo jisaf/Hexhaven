@@ -95,32 +95,28 @@ export class LootTokenSprite extends PIXI.Container {
       goldColor = 0xff8c00; // Orange-gold for 3 gold
     }
 
-    // Draw glow effect
+    // Draw glow effect (PixiJS v8 API)
     const glowAlpha = this.isHovered ? 0.4 : 0.2;
     const glowRadius = this.isHovered ? 35 : 30;
-    this.glowEffect.beginFill(goldColor, glowAlpha);
-    this.glowEffect.drawCircle(0, 0, glowRadius);
-    this.glowEffect.endFill();
+    this.glowEffect.circle(0, 0, glowRadius);
+    this.glowEffect.fill({ color: goldColor, alpha: glowAlpha });
 
-    // Draw background circle
-    this.background.beginFill(0x000000, 0.3);
-    this.background.drawCircle(0, 0, 22);
-    this.background.endFill();
+    // Draw background circle (PixiJS v8 API)
+    this.background.circle(0, 0, 22);
+    this.background.fill({ color: 0x000000, alpha: 0.3 });
 
-    // Draw coin
-    this.coinSprite.beginFill(goldColor);
-    this.coinSprite.drawCircle(0, 0, 18);
-    this.coinSprite.endFill();
+    // Draw coin (PixiJS v8 API)
+    this.coinSprite.circle(0, 0, 18);
+    this.coinSprite.fill({ color: goldColor });
 
     // Add coin details (inner circle)
-    this.coinSprite.lineStyle(2, 0xffed4e, 0.8);
-    this.coinSprite.drawCircle(0, 0, 14);
+    this.coinSprite.circle(0, 0, 14);
+    this.coinSprite.stroke({ width: 2, color: 0xffed4e, alpha: 0.8 });
 
     // Add shine effect
     const shineGradient = new PIXI.Graphics();
-    shineGradient.beginFill(0xffffff, 0.4);
-    shineGradient.drawEllipse(-6, -6, 8, 6);
-    shineGradient.endFill();
+    shineGradient.ellipse(-6, -6, 8, 6);
+    shineGradient.fill({ color: 0xffffff, alpha: 0.4 });
     this.coinSprite.addChild(shineGradient);
 
     // Position value text
@@ -201,8 +197,9 @@ export class LootTokenSprite extends PIXI.Container {
   public highlight(enabled: boolean): void {
     if (enabled && !this.isCollected) {
       this.glowEffect.clear();
-      this.glowEffect.lineStyle(3, 0x4ade80, 0.8);
-      this.glowEffect.drawCircle(0, 0, 32);
+      // PixiJS v8 API: draw then stroke
+      this.glowEffect.circle(0, 0, 32);
+      this.glowEffect.stroke({ width: 3, color: 0x4ade80, alpha: 0.8 });
     } else {
       this.draw();
     }

@@ -30,6 +30,7 @@ import prisma from '../db/client';
 import {
   BackgroundUploadService,
   backgroundUploadConfig,
+  standaloneBackgroundUploadConfig,
 } from '../services/background-upload.service';
 
 // DTO for creating/updating scenarios
@@ -282,6 +283,21 @@ export class ScenariosController {
       success: true,
       scenario,
     };
+  }
+
+  /**
+   * POST /api/backgrounds
+   * Upload a standalone background image (not tied to a scenario)
+   * Used for immediate uploads when scenario doesn't exist yet
+   */
+  @Post('backgrounds')
+  @UseInterceptors(FileInterceptor('image', standaloneBackgroundUploadConfig))
+  uploadStandaloneBackground(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No image file provided');
+    }
+
+    return this.backgroundUploadService.uploadStandaloneBackground(file);
   }
 
   /**

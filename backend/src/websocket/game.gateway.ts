@@ -1086,6 +1086,11 @@ export class GameGateway
         backgroundScale: scenario.backgroundScale,
       };
 
+      // Debug: Log background URL being sent
+      this.logger.log(
+        `🖼️ Background for game_started: scenarioId=${scenario.id}, backgroundImageUrl=${scenario.backgroundImageUrl || 'NONE'}, opacity=${scenario.backgroundOpacity}, scale=${scenario.backgroundScale}`,
+      );
+
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();

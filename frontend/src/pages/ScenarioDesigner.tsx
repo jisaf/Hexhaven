@@ -18,32 +18,23 @@ import {
   type MonsterType,
   type MonsterGroup,
   type Monster,
-  type BackgroundAnchor,
-  type BackgroundAnchors,
 } from '../../../shared/types/entities.ts';
 import { Sidebar } from '../components/ScenarioDesigner/Sidebar';
 import { usePrevious } from '../hooks/usePrevious';
 import { getApiUrl } from '../config/api';
 import { debounce } from '../utils/responsive';
-import { offlineQueueService } from '../services/offline-queue.service';
+// offlineQueueService removed - images are now uploaded immediately
 import styles from './ScenarioDesigner.module.css';
 
 // Save status for visual feedback
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-// Alignment mode for two-anchor system (Issue #191)
-type AlignmentMode = 'off' | 'anchor1-image' | 'anchor1-hex' | 'anchor2-image' | 'anchor2-hex' | 'complete';
-
-// Background transform state (Issue #191)
+// Background state (Issue #191) - simplified, auto-fits to 20x20 world
 interface BackgroundState {
   imageUrl: string | null;
   opacity: number;
-  offsetX: number;
-  offsetY: number;
-  scale: number;
   isUploading: boolean;
   fileName: string | null;
-  anchors: BackgroundAnchors | null;
 }
 
 interface ScenarioState {
@@ -89,8 +80,12 @@ const ScenarioDesigner: React.FC = () => {
   const [selectedPlayerCount, setSelectedPlayerCount] = useState<number>(2);
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HexGrid | null>(null);
+  // Track if initial background has been loaded to handle initial load vs URL change
+  const initialBackgroundLoadedRef = useRef(false);
+  // Track if initial board has been rendered (for handling reload with localStorage state)
+  const initialBoardRenderedRef = useRef(false);
 
-  // Background state (Issue #191)
+  // Background state (Issue #191) - simplified, auto-fits to 20x20 world
   const [backgroundState, setBackgroundState] = useState<BackgroundState>(() => {
     const savedBg = localStorage.getItem('scenarioDesignerBackground');
     if (savedBg) {
@@ -98,64 +93,44 @@ const ScenarioDesigner: React.FC = () => {
       return {
         imageUrl: parsed.imageUrl || null,
         opacity: parsed.opacity ?? 1,
-        offsetX: parsed.offsetX ?? 0,
-        offsetY: parsed.offsetY ?? 0,
-        scale: parsed.scale ?? 1,
         isUploading: false,
         fileName: parsed.fileName || null,
-        anchors: parsed.anchors || null,
       };
     }
     return {
       imageUrl: null,
       opacity: 1,
-      offsetX: 0,
-      offsetY: 0,
-      scale: 1,
       isUploading: false,
       fileName: null,
-      anchors: null,
     };
   });
   const [scenarioId, setScenarioId] = useState<string | null>(null);
-  const [backgroundEditMode, setBackgroundEditMode] = useState(false);
-  const [alignmentMode, setAlignmentMode] = useState<AlignmentMode>('off');
-  const [pendingAnchor, setPendingAnchor] = useState<Partial<BackgroundAnchor> | null>(null);
   const [savedScenarios, setSavedScenarios] = useState<Array<{ id: string; name: string; difficulty: number }>>([]);
-  const [pendingBackgroundFile, setPendingBackgroundFile] = useState<File | null>(null);
+  // Note: pendingBackgroundFile state removed - images are now uploaded immediately
   const [transformSaveStatus, setTransformSaveStatus] = useState<SaveStatus>('idle');
+  const [gridReady, setGridReady] = useState(false);
 
-  // Debounced save for background transforms (Issue #191)
-  // Saves to server 500ms after user stops dragging/zooming
-  const saveBackgroundTransforms = useRef(
+  // Debounced save for background opacity (Issue #191)
+  const saveBackgroundOpacity = useRef(
     debounce(
-      async (
-        id: string,
-        transforms: { opacity: number; offsetX: number; offsetY: number; scale: number }
-      ) => {
+      async (id: string, opacity: number) => {
         setTransformSaveStatus('saving');
         try {
           const response = await fetch(`${getApiUrl()}/scenarios/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              backgroundOpacity: transforms.opacity,
-              backgroundOffsetX: Math.round(transforms.offsetX),
-              backgroundOffsetY: Math.round(transforms.offsetY),
-              backgroundScale: transforms.scale,
-            }),
+            body: JSON.stringify({ backgroundOpacity: opacity }),
           });
 
           if (response.ok) {
             setTransformSaveStatus('saved');
-            // Reset to idle after 2 seconds
             setTimeout(() => setTransformSaveStatus('idle'), 2000);
           } else {
             setTransformSaveStatus('error');
             setTimeout(() => setTransformSaveStatus('idle'), 3000);
           }
         } catch (error) {
-          console.error('Failed to save background transforms:', error);
+          console.error('Failed to save background opacity:', error);
           setTransformSaveStatus('error');
           setTimeout(() => setTransformSaveStatus('idle'), 3000);
         }
@@ -163,17 +138,6 @@ const ScenarioDesigner: React.FC = () => {
       500
     )
   ).current;
-
-  // Handler for toggling background edit mode
-  const handleBackgroundEditModeChange = useCallback(
-    (editMode: boolean) => {
-      setBackgroundEditMode(editMode);
-      if (gridRef.current) {
-        gridRef.current.setBackgroundInteractive(editMode);
-      }
-    },
-    []
-  );
 
   const handleReset = useCallback(() => {
     setScenarioState({
@@ -187,148 +151,21 @@ const ScenarioDesigner: React.FC = () => {
     setBackgroundState({
       imageUrl: null,
       opacity: 1,
-      offsetX: 0,
-      offsetY: 0,
-      scale: 1,
       isUploading: false,
       fileName: null,
-      anchors: null,
     });
     setScenarioId(null);
     setSelectedHex(null);
-    setPendingBackgroundFile(null);
-    setAlignmentMode('off');
-    setPendingAnchor(null);
+    // Reset background and board loaded flags
+    initialBackgroundLoadedRef.current = false;
+    initialBoardRenderedRef.current = false;
     if (gridRef.current) {
       gridRef.current.clearBoard();
       gridRef.current.removeBackgroundImage();
-      gridRef.current.setAlignmentClickHandler(null);
-    }
-  }, []);
-
-  // Start alignment mode (Issue #191)
-  const handleStartAlignment = useCallback(() => {
-    setAlignmentMode('anchor1-image');
-    setPendingAnchor(null);
-    setBackgroundEditMode(false); // Disable drag mode
-
-    // Set up the alignment click handler on the grid
-    if (gridRef.current) {
-      gridRef.current.setAlignmentClickHandler((imageX: number, imageY: number) => {
-        setPendingAnchor((prev) => ({ ...prev, imageX, imageY }));
-
-        // Advance to next step based on current mode
-        setAlignmentMode((mode) => {
-          if (mode === 'anchor1-image') return 'anchor1-hex';
-          if (mode === 'anchor2-image') return 'anchor2-hex';
-          return mode;
-        });
-
-        // Disable the image click handler until we need it again
-        if (gridRef.current) {
-          gridRef.current.setAlignmentClickHandler(null);
-        }
-      });
-    }
-  }, []);
-
-  // Cancel alignment mode (Issue #191)
-  const handleCancelAlignment = useCallback(() => {
-    setAlignmentMode('off');
-    setPendingAnchor(null);
-    if (gridRef.current) {
-      gridRef.current.setAlignmentClickHandler(null);
-    }
-  }, []);
-
-  // Clear existing anchors (Issue #191)
-  const handleClearAnchors = useCallback(() => {
-    setBackgroundState((prev) => ({ ...prev, anchors: null }));
-    setAlignmentMode('off');
-    setPendingAnchor(null);
-    if (gridRef.current) {
-      gridRef.current.setAlignmentClickHandler(null);
     }
   }, []);
 
   const handleHexClick = useCallback((hex: AxialCoordinates) => {
-    // Handle alignment mode hex selection (Issue #191)
-    if (alignmentMode === 'anchor1-hex' || alignmentMode === 'anchor2-hex') {
-      // Complete the current anchor with hex coordinates
-      const completedAnchor: BackgroundAnchor = {
-        imageX: pendingAnchor?.imageX ?? 0,
-        imageY: pendingAnchor?.imageY ?? 0,
-        hexQ: hex.q,
-        hexR: hex.r,
-      };
-
-      if (alignmentMode === 'anchor1-hex') {
-        // First anchor complete - store and move to second anchor
-        setBackgroundState((prev) => ({
-          ...prev,
-          anchors: { anchor1: completedAnchor },
-        }));
-        setPendingAnchor(null);
-
-        // Set up for second anchor image click
-        setAlignmentMode('anchor2-image');
-        if (gridRef.current) {
-          gridRef.current.setAlignmentClickHandler((imageX: number, imageY: number) => {
-            setPendingAnchor({ imageX, imageY });
-            setAlignmentMode('anchor2-hex');
-            if (gridRef.current) {
-              gridRef.current.setAlignmentClickHandler(null);
-            }
-          });
-        }
-      } else if (alignmentMode === 'anchor2-hex') {
-        // Second anchor complete - store and apply alignment
-        setBackgroundState((prev) => {
-          // We need anchor1 to exist to create anchor2
-          if (!prev.anchors?.anchor1) {
-            return { ...prev, anchors: { anchor1: completedAnchor } };
-          }
-
-          const newAnchors: BackgroundAnchors = {
-            anchor1: prev.anchors.anchor1,
-            anchor2: completedAnchor,
-          };
-
-          // Apply the alignment calculation
-          if (gridRef.current && newAnchors.anchor2) {
-            const result = gridRef.current.applyAlignmentFromAnchors(
-              newAnchors.anchor1,
-              newAnchors.anchor2
-            );
-
-            if (result) {
-              // Update state with calculated transforms
-              return {
-                ...prev,
-                anchors: newAnchors,
-                offsetX: result.offsetX,
-                offsetY: result.offsetY,
-                scale: result.scale,
-              };
-            }
-          }
-
-          return { ...prev, anchors: newAnchors };
-        });
-        setPendingAnchor(null);
-        setAlignmentMode('complete');
-
-        // Clean up
-        if (gridRef.current) {
-          gridRef.current.setAlignmentClickHandler(null);
-        }
-
-        // After a brief moment, return to normal mode
-        setTimeout(() => setAlignmentMode('off'), 500);
-      }
-      return;
-    }
-
     const key = `${hex.q},${hex.r}`;
     setScenarioState((prevState) => {
       const newActiveHexes = new Map(prevState.activeHexes);
@@ -350,7 +187,7 @@ const ScenarioDesigner: React.FC = () => {
         return { ...prevState, activeHexes: newActiveHexes };
       }
     });
-  }, [alignmentMode, pendingAnchor]);
+  }, []);
 
   const handleScenarioChange = useCallback((updates: Partial<ScenarioState>) => {
     setScenarioState((prev) => ({ ...prev, ...updates }));
@@ -549,18 +386,26 @@ const ScenarioDesigner: React.FC = () => {
   const fetchSavedScenarios = useCallback(async () => {
     try {
       const response = await fetch(`${getApiUrl()}/scenarios`);
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.ok) {
+        console.error('Failed to fetch scenarios:', response.status);
+        return;
+      }
+      const data = await response.json();
+      if (data.scenarios && Array.isArray(data.scenarios)) {
         setSavedScenarios(
-          data.scenarios?.map((s: { id: string; name: string; difficulty: number }) => ({
+          data.scenarios.map((s: { id: string; name: string; difficulty: number }) => ({
             id: s.id,
             name: s.name,
             difficulty: s.difficulty,
-          })) || []
+          }))
         );
+      } else {
+        console.error('Invalid scenarios data:', data);
+        setSavedScenarios([]);
       }
     } catch (error) {
       console.error('Error fetching scenarios:', error);
+      setSavedScenarios([]);
     }
   }, []);
 
@@ -569,15 +414,19 @@ const ScenarioDesigner: React.FC = () => {
   }, [fetchSavedScenarios]);
 
   const handleSaveToServer = useCallback(async () => {
+    console.log('[handleSaveToServer] Starting save');
+    console.log('[handleSaveToServer] backgroundState.imageUrl:', backgroundState.imageUrl);
+
     if (!scenarioState.name) {
       alert('Please enter a name for the scenario.');
       return;
     }
 
-    // Don't include blob URLs in the save - they'll be uploaded separately
-    const backgroundUrlToSave = backgroundState.imageUrl?.startsWith('blob:')
-      ? null
-      : backgroundState.imageUrl;
+    // With immediate uploads, backgroundImageUrl is always a server URL (or null)
+    // Warn if somehow we have a blob URL (should not happen with new architecture)
+    if (backgroundState.imageUrl?.startsWith('blob:')) {
+      console.warn('[handleSaveToServer] Blob URL detected - image may not persist. This is unexpected with immediate uploads.');
+    }
 
     const scenarioData = {
       name: scenarioState.name,
@@ -586,17 +435,14 @@ const ScenarioDesigner: React.FC = () => {
       mapLayout: Array.from(scenarioState.activeHexes.values()),
       monsterGroups: scenarioState.monsterGroups,
       playerStartPositions: scenarioState.playerStartPositions,
-      backgroundImageUrl: backgroundUrlToSave,
+      backgroundImageUrl: backgroundState.imageUrl,
       backgroundOpacity: backgroundState.opacity,
-      backgroundOffsetX: backgroundState.offsetX,
-      backgroundOffsetY: backgroundState.offsetY,
-      backgroundScale: backgroundState.scale,
-      backgroundAnchors: backgroundState.anchors,
     };
 
     try {
       const url = scenarioId ? `${getApiUrl()}/scenarios/${scenarioId}` : `${getApiUrl()}/scenarios`;
       const method = scenarioId ? 'PUT' : 'POST';
+      console.log('[handleSaveToServer] Saving scenario, method:', method, 'url:', url);
 
       const response = await fetch(url, {
         method,
@@ -609,56 +455,15 @@ const ScenarioDesigner: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         const savedScenarioId = data.scenario?.id || scenarioId;
-        let backgroundUploadFailed = false;
+        console.log('[handleSaveToServer] Scenario saved, id:', savedScenarioId, 'backgroundImageUrl:', scenarioData.backgroundImageUrl);
 
         if (savedScenarioId) {
           setScenarioId(savedScenarioId);
-
-          // Upload pending background file if exists
-          if (pendingBackgroundFile) {
-            try {
-              const formData = new FormData();
-              formData.append('image', pendingBackgroundFile);
-
-              const bgResponse = await fetch(`${getApiUrl()}/scenarios/${savedScenarioId}/background`, {
-                method: 'POST',
-                body: formData,
-              });
-
-              if (bgResponse.ok) {
-                const bgData = await bgResponse.json();
-                setBackgroundState((prev) => ({
-                  ...prev,
-                  imageUrl: bgData.url,
-                }));
-                setPendingBackgroundFile(null);
-
-                // Update scenario with the uploaded background URL
-                await fetch(`${getApiUrl()}/scenarios/${savedScenarioId}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ backgroundImageUrl: bgData.url }),
-                });
-              } else {
-                backgroundUploadFailed = true;
-                const errorData = await bgResponse.json().catch(() => ({}));
-                const errorMsg = errorData.message || errorData.error?.message || `HTTP ${bgResponse.status}`;
-                console.error('Failed to upload background image:', errorMsg, bgResponse.status);
-              }
-            } catch (bgError) {
-              backgroundUploadFailed = true;
-              console.error('Error uploading background:', bgError);
-            }
-          }
         }
 
         // Refresh the saved scenarios list
         fetchSavedScenarios();
-        if (backgroundUploadFailed) {
-          alert('Scenario saved, but background image upload failed. You can try uploading the background again by editing the scenario.');
-        } else {
-          alert('Scenario saved successfully!');
-        }
+        alert('Scenario saved successfully!');
       } else {
         const errorData = await response.json().catch(() => ({}));
         // Server returns { error: { message: ... } } structure
@@ -669,7 +474,7 @@ const ScenarioDesigner: React.FC = () => {
       console.error('Error saving scenario:', error);
       alert('An error occurred while saving the scenario.');
     }
-  }, [scenarioState, backgroundState, scenarioId, fetchSavedScenarios, pendingBackgroundFile]);
+  }, [scenarioState, backgroundState, scenarioId, fetchSavedScenarios]);
 
   const handleExportToPng = useCallback(() => {
     if (gridRef.current) {
@@ -678,25 +483,14 @@ const ScenarioDesigner: React.FC = () => {
   }, []);
 
   // Background handlers
+  // Always upload immediately - no blob URLs, no pending files
   const handleBackgroundUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       if (!event.target.files || !event.target.files[0]) return;
 
       const file = event.target.files[0];
       const fileName = file.name;
-
-      if (!scenarioId) {
-        // Store the file for upload when saving the scenario
-        setPendingBackgroundFile(file);
-        const blobUrl = URL.createObjectURL(file);
-        // Just update state - the effect watching backgroundState.imageUrl will load it
-        setBackgroundState((prev) => ({
-          ...prev,
-          imageUrl: blobUrl,
-          fileName,
-        }));
-        return;
-      }
+      console.log('[handleBackgroundUpload] Called with file:', fileName, 'scenarioId:', scenarioId);
 
       setBackgroundState((prev) => ({ ...prev, isUploading: true }));
 
@@ -704,13 +498,21 @@ const ScenarioDesigner: React.FC = () => {
         const formData = new FormData();
         formData.append('image', file);
 
-        const response = await fetch(`${getApiUrl()}/scenarios/${scenarioId}/background`, {
+        // Use standalone endpoint if no scenarioId, otherwise use scenario-specific endpoint
+        const uploadUrl = scenarioId
+          ? `${getApiUrl()}/scenarios/${scenarioId}/background`
+          : `${getApiUrl()}/scenarios/backgrounds`;
+
+        console.log('[handleBackgroundUpload] Uploading to:', uploadUrl);
+
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData,
         });
 
         if (response.ok) {
           const data = await response.json();
+          console.log('[handleBackgroundUpload] Upload SUCCESS, url:', data.url);
           // Just update state - the effect watching backgroundState.imageUrl will load it
           setBackgroundState((prev) => ({
             ...prev,
@@ -722,89 +524,49 @@ const ScenarioDesigner: React.FC = () => {
           const errorData = await response.json().catch(() => ({}));
           // Server returns { error: { message: ... } } structure
           const errorMessage = errorData.error?.message || errorData.message || 'Unknown error';
+          console.error('[handleBackgroundUpload] Upload FAILED:', errorMessage);
           alert(`Failed to upload background: ${errorMessage}`);
           setBackgroundState((prev) => ({ ...prev, isUploading: false }));
         }
       } catch (error) {
         console.error('Error uploading background:', error);
 
-        // If offline, queue the upload for later
+        // If offline, show local preview and warn user
         if (!navigator.onLine) {
-          try {
-            await offlineQueueService.addToQueue({
-              scenarioId: scenarioId!,
-              file,
-              transforms: {
-                opacity: backgroundState.opacity,
-                offsetX: backgroundState.offsetX,
-                offsetY: backgroundState.offsetY,
-                scale: backgroundState.scale,
-              },
-            });
-            // Show local preview while queued
-            const blobUrl = URL.createObjectURL(file);
-            setBackgroundState((prev) => ({
-              ...prev,
-              imageUrl: blobUrl,
-              fileName,
-              isUploading: false,
-            }));
-            alert('You are offline. The image will be uploaded when you reconnect.');
-            return;
-          } catch (queueError) {
-            console.error('Failed to queue upload:', queueError);
-          }
+          const blobUrl = URL.createObjectURL(file);
+          setBackgroundState((prev) => ({
+            ...prev,
+            imageUrl: blobUrl,
+            fileName,
+            isUploading: false,
+          }));
+          alert('You are offline. Please upload the image again when you reconnect.');
+          return;
         }
 
         alert('An error occurred while uploading the background image.');
         setBackgroundState((prev) => ({ ...prev, isUploading: false }));
       }
     },
-    [scenarioId, backgroundState]
+    [scenarioId]
   );
 
   const handleBackgroundOpacityChange = useCallback(
     (value: number) => {
       const opacity = value / 100;
-      setBackgroundState((prev) => {
-        const newState = { ...prev, opacity };
+      setBackgroundState((prev) => ({ ...prev, opacity }));
 
-        // Apply to grid
-        if (gridRef.current) {
-          gridRef.current.setBackgroundTransform(
-            opacity,
-            prev.offsetX,
-            prev.offsetY,
-            prev.scale
-          );
-        }
+      // Apply to grid
+      if (gridRef.current) {
+        gridRef.current.setBackgroundOpacity(opacity);
+      }
 
-        // Auto-save if editing an existing scenario
-        if (scenarioId) {
-          saveBackgroundTransforms(scenarioId, newState);
-        }
-
-        return newState;
-      });
+      // Auto-save if editing an existing scenario
+      if (scenarioId) {
+        saveBackgroundOpacity(scenarioId, opacity);
+      }
     },
-    [scenarioId, saveBackgroundTransforms]
-  );
-
-  // Callback when background is dragged or zoomed via gestures
-  const handleBackgroundTransformChange = useCallback(
-    (offsetX: number, offsetY: number, scale: number) => {
-      setBackgroundState((prev) => {
-        const newState = { ...prev, offsetX, offsetY, scale };
-
-        // Auto-save transforms if editing an existing scenario
-        if (scenarioId) {
-          saveBackgroundTransforms(scenarioId, newState);
-        }
-
-        return newState;
-      });
-    },
-    [scenarioId, saveBackgroundTransforms]
+    [scenarioId, saveBackgroundOpacity]
   );
 
   const handleRemoveBackground = useCallback(async () => {
@@ -821,19 +583,12 @@ const ScenarioDesigner: React.FC = () => {
     setBackgroundState({
       imageUrl: null,
       opacity: 1,
-      offsetX: 0,
-      offsetY: 0,
-      scale: 1,
       isUploading: false,
       fileName: null,
-      anchors: null,
     });
-    setAlignmentMode('off');
-    setPendingAnchor(null);
 
     if (gridRef.current) {
       gridRef.current.removeBackgroundImage();
-      gridRef.current.setAlignmentClickHandler(null);
     }
   }, [scenarioId]);
 
@@ -841,25 +596,32 @@ const ScenarioDesigner: React.FC = () => {
   const sidebarWidthRef = useRef(sidebarWidth);
   sidebarWidthRef.current = sidebarWidth;
 
-  // Initialize HexGrid (only once)
+  // Store callbacks in refs to avoid re-initializing HexGrid when they change
+  const handleHexClickRef = useRef(handleHexClick);
+  handleHexClickRef.current = handleHexClick;
+
+  // Initialize HexGrid (only once on mount)
   useEffect(() => {
     if (pixiContainerRef.current) {
       const grid = new HexGrid(pixiContainerRef.current, {
         width: window.innerWidth - sidebarWidthRef.current,
         height: window.innerHeight,
-        onHexClick: handleHexClick,
-        onBackgroundTransformChange: handleBackgroundTransformChange,
+        onHexClick: (hex) => handleHexClickRef.current(hex),
       });
       grid.init().then(() => {
         grid.drawPlaceholderGrid(50, 50);
         gridRef.current = grid;
+        setGridReady(true);
+        console.log('[ScenarioDesigner] HexGrid initialized and ready');
       });
     }
 
     return () => {
       gridRef.current?.destroy();
+      gridRef.current = null;
+      setGridReady(false);
     };
-  }, [handleHexClick, handleBackgroundTransformChange]);
+  }, []); // No dependencies - initialize only once on mount
 
   // Handle window resize
   useEffect(() => {
@@ -882,10 +644,29 @@ const ScenarioDesigner: React.FC = () => {
 
   const prevActiveHexes = usePrevious(scenarioState.activeHexes);
 
-  // Update hex grid when tiles change
+  // Update hex grid when tiles change or grid becomes ready
   useEffect(() => {
     const grid = gridRef.current;
-    if (grid && prevActiveHexes) {
+    if (!grid || !gridReady) return;
+
+    // If this is the first time the grid is ready with existing data, do a full init
+    // This handles page reload where localStorage has hex data but grid wasn't ready yet
+    if (!initialBoardRenderedRef.current && scenarioState.activeHexes.size > 0) {
+      console.log('[ScenarioDesigner] Initial board render with', scenarioState.activeHexes.size, 'hexes');
+      grid.initializeBoard({
+        tiles: Array.from(scenarioState.activeHexes.values()),
+        characters: [],
+        monsters: [],
+      });
+      initialBoardRenderedRef.current = true;
+      return;
+    }
+
+    // Mark board as rendered even if there are no hexes
+    initialBoardRenderedRef.current = true;
+
+    // Incremental updates for subsequent changes
+    if (prevActiveHexes) {
       const currentKeys = new Set(scenarioState.activeHexes.keys());
       const prevKeys = new Set(prevActiveHexes.keys());
 
@@ -904,14 +685,8 @@ const ScenarioDesigner: React.FC = () => {
           grid.removeTile({ q, r });
         }
       }
-    } else if (grid) {
-      grid.initializeBoard({
-        tiles: Array.from(scenarioState.activeHexes.values()),
-        characters: [],
-        monsters: [],
-      });
     }
-  }, [scenarioState.activeHexes, prevActiveHexes]);
+  }, [scenarioState.activeHexes, prevActiveHexes, gridReady]);
 
   // Update monsters on the grid when monsterGroups change
   useEffect(() => {
@@ -947,9 +722,21 @@ const ScenarioDesigner: React.FC = () => {
   // Fetch monster types
   useEffect(() => {
     fetch(`${getApiUrl()}/monsters`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        setMonsterTypes(data.monsterTypes);
+        if (data.monsterTypes && Array.isArray(data.monsterTypes)) {
+          setMonsterTypes(data.monsterTypes);
+        } else {
+          console.error('Invalid monster types data:', data);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch monster types:', error);
       });
   }, []);
 
@@ -981,32 +768,32 @@ const ScenarioDesigner: React.FC = () => {
         monsterGroups: scenario.monsterGroups || [],
       });
 
-      // Update background state
+      // Update background state (simplified - auto-fits to world)
       setBackgroundState({
         imageUrl: scenario.backgroundImageUrl || null,
         opacity: scenario.backgroundOpacity ?? 1,
-        offsetX: scenario.backgroundOffsetX ?? 0,
-        offsetY: scenario.backgroundOffsetY ?? 0,
-        scale: scenario.backgroundScale ?? 1,
         isUploading: false,
         fileName: null,
-        anchors: scenario.backgroundAnchors || null,
       });
 
       setScenarioId(loadScenarioId);
       setSelectedHex(null);
-      setPendingBackgroundFile(null);
-      setAlignmentMode('off');
-      setPendingAnchor(null);
 
-      // Update the hex grid (background will be loaded via useEffect watching backgroundState)
+      // Reset background loaded flag so the effect will reload it even if URL is same
+      initialBackgroundLoadedRef.current = false;
+
+      // Update the hex grid
       if (gridRef.current) {
+        // Remove existing background before loading new scenario
+        gridRef.current.removeBackgroundImage();
         gridRef.current.clearBoard();
         gridRef.current.initializeBoard({
           tiles: Array.from(activeHexes.values()),
           characters: [],
           monsters: [],
         });
+        // Mark board as rendered so the effect won't re-initialize
+        initialBoardRenderedRef.current = true;
       }
     } catch (error) {
       console.error('Error loading scenario:', error);
@@ -1042,50 +829,49 @@ const ScenarioDesigner: React.FC = () => {
     const bgToSave = {
       imageUrl: backgroundState.imageUrl,
       opacity: backgroundState.opacity,
-      offsetX: backgroundState.offsetX,
-      offsetY: backgroundState.offsetY,
-      scale: backgroundState.scale,
       fileName: backgroundState.fileName,
     };
     localStorage.setItem('scenarioDesignerBackground', JSON.stringify(bgToSave));
   }, [backgroundState]);
 
-  // Load background when URL changes
+  // Load background when URL changes or grid becomes ready
   const prevBackgroundUrl = usePrevious(backgroundState.imageUrl);
+
   useEffect(() => {
     const loadBackground = async () => {
-      if (!gridRef.current) return;
+      // Wait for grid to be ready
+      if (!gridReady || !gridRef.current) {
+        console.log('[ScenarioDesigner] Grid not ready, skipping background load');
+        return;
+      }
 
-      // If URL changed, load the new background
-      if (backgroundState.imageUrl && backgroundState.imageUrl !== prevBackgroundUrl) {
-        await gridRef.current.setBackgroundImage(
-          backgroundState.imageUrl,
-          backgroundState.opacity,
-          backgroundState.offsetX,
-          backgroundState.offsetY,
-          backgroundState.scale
-        );
-        // Re-apply the current interactive state after loading
-        gridRef.current.setBackgroundInteractive(backgroundEditMode);
+      // Load background if:
+      // 1. URL changed (normal case)
+      // 2. Grid just became ready and we have a URL but haven't loaded yet (initial load)
+      const urlChanged = backgroundState.imageUrl !== prevBackgroundUrl;
+      const needsInitialLoad = backgroundState.imageUrl && !initialBackgroundLoadedRef.current;
+
+      if (backgroundState.imageUrl && (urlChanged || needsInitialLoad)) {
+        console.log('[ScenarioDesigner] Loading background image (auto-fits to 20x20 world):', backgroundState.imageUrl);
+        try {
+          // Background auto-fits to 20x20 world bounds
+          await gridRef.current.setBackgroundImage(
+            backgroundState.imageUrl,
+            backgroundState.opacity
+          );
+          initialBackgroundLoadedRef.current = true;
+          console.log('[ScenarioDesigner] Background image loaded successfully');
+        } catch (error) {
+          console.error('[ScenarioDesigner] Failed to load background image:', error);
+        }
       } else if (!backgroundState.imageUrl && prevBackgroundUrl) {
         // If URL was cleared, remove background
         gridRef.current.removeBackgroundImage();
+        initialBackgroundLoadedRef.current = false;
       }
     };
     loadBackground();
-  }, [backgroundState.imageUrl, prevBackgroundUrl, backgroundEditMode]);
-
-  // Update opacity via transform when it changes (without reloading image)
-  useEffect(() => {
-    if (gridRef.current && backgroundState.imageUrl && !backgroundState.imageUrl.startsWith('blob:')) {
-      gridRef.current.setBackgroundTransform(
-        backgroundState.opacity,
-        backgroundState.offsetX,
-        backgroundState.offsetY,
-        backgroundState.scale
-      );
-    }
-  }, [backgroundState.opacity]);
+  }, [backgroundState.imageUrl, prevBackgroundUrl, gridReady, backgroundState.opacity]);
 
   return (
     <div className={styles.container}>
@@ -1096,18 +882,12 @@ const ScenarioDesigner: React.FC = () => {
         selectedHex={selectedHex}
         selectedPlayerCount={selectedPlayerCount}
         monsterTypes={monsterTypes}
-        backgroundEditMode={backgroundEditMode}
         savedScenarios={savedScenarios}
         currentScenarioId={scenarioId}
-        alignmentMode={alignmentMode}
         onScenarioChange={handleScenarioChange}
         onBackgroundUpload={handleBackgroundUpload}
         onBackgroundOpacityChange={handleBackgroundOpacityChange}
-        onBackgroundEditModeChange={handleBackgroundEditModeChange}
         onRemoveBackground={handleRemoveBackground}
-        onStartAlignment={handleStartAlignment}
-        onCancelAlignment={handleCancelAlignment}
-        onClearAnchors={handleClearAnchors}
         onDeleteHex={handleDeleteHex}
         onTerrainChange={handleTerrainChange}
         onAddFeature={handleAddFeature}

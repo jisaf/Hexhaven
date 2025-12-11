@@ -76,8 +76,9 @@ export class AttackAnimation {
           const radius = 40;
           const thickness = 8 * (1 - progress);
 
-          slash.lineStyle(thickness, color, 1 - progress);
+          // PixiJS v8 API: draw arc then stroke
           slash.arc(0, 0, radius, -Math.PI / 4, -Math.PI / 4 + angle);
+          slash.stroke({ width: thickness, color, alpha: 1 - progress });
 
           // Rotation
           slash.rotation = progress * Math.PI / 4;
@@ -101,14 +102,11 @@ export class AttackAnimation {
       const projectile = new PIXI.Graphics();
       const color = this.options.color || 0xf39c12;
 
-      // Draw projectile
-      projectile.beginFill(color);
-      projectile.drawCircle(0, 0, 8);
-      projectile.endFill();
-
-      // Add glow
-      projectile.lineStyle(3, color, 0.5);
-      projectile.drawCircle(0, 0, 12);
+      // PixiJS v8 API: draw then fill/stroke
+      projectile.circle(0, 0, 8);
+      projectile.fill({ color });
+      projectile.circle(0, 0, 12);
+      projectile.stroke({ width: 3, color, alpha: 0.5 });
 
       projectile.x = this.options.fromPosition.x;
       projectile.y = this.options.fromPosition.y;
@@ -142,9 +140,9 @@ export class AttackAnimation {
           // Add trail particle
           if (Math.random() > 0.5) {
             const particle = new PIXI.Graphics();
-            particle.beginFill(color, 0.5);
-            particle.drawCircle(0, 0, 4);
-            particle.endFill();
+            // PixiJS v8 API: draw then fill
+            particle.circle(0, 0, 4);
+            particle.fill({ color, alpha: 0.5 });
             particle.x = projectile.x;
             particle.y = projectile.y;
             this.container.addChild(particle);
@@ -200,9 +198,10 @@ export class AttackAnimation {
 
       for (let i = 0; i < 20; i++) {
         const particle = new PIXI.Graphics();
-        particle.beginFill(color);
-        particle.drawCircle(0, 0, Math.random() * 6 + 2);
-        particle.endFill();
+        const particleRadius = Math.random() * 6 + 2;
+        // PixiJS v8 API: draw then fill
+        particle.circle(0, 0, particleRadius);
+        particle.fill({ color });
 
         const angle = (Math.PI * 2 * i) / 20;
         const speed = Math.random() * 3 + 2;
@@ -323,12 +322,13 @@ export class AttackAnimation {
           const radius = 30 * progress;
           const alpha = 1 - progress;
 
-          impact.lineStyle(5 * (1 - progress), color, alpha);
-          impact.drawCircle(0, 0, radius);
+          // PixiJS v8 API: draw then stroke
+          impact.circle(0, 0, radius);
+          impact.stroke({ width: 5 * (1 - progress), color, alpha });
 
           // Inner circle
-          impact.lineStyle(3 * (1 - progress), 0xffffff, alpha * 0.5);
-          impact.drawCircle(0, 0, radius * 0.7);
+          impact.circle(0, 0, radius * 0.7);
+          impact.stroke({ width: 3 * (1 - progress), color: 0xffffff, alpha: alpha * 0.5 });
         } else {
           container.removeChild(impact);
           impact.destroy();

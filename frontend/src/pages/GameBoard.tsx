@@ -134,8 +134,7 @@ export function GameBoard() {
     removeMonster,
     spawnLootToken,
     collectLootToken,
-    setBackgroundImage, // Issue #191
-    centerBackgroundOnTiles, // Issue #191
+    setBackgroundImage, // Issue #191 - auto-fits to 20x20 world
   } = useHexGrid(containerRef, {
     onHexClick: (hex) => gameStateManager.selectHex(hex),
     onCharacterSelect: (id) => gameStateManager.selectCharacter(id),
@@ -302,32 +301,28 @@ export function GameBoard() {
     boardInitializedRef.current = true;
 
     // Load background image immediately after board initialization
-    const { backgroundImageUrl, backgroundOpacity = 1, backgroundScale = 1 } = gameState.gameData;
+    const { backgroundImageUrl, backgroundOpacity = 1, backgroundScale = 1, scenarioId, scenarioName } = gameState.gameData;
 
     console.log('[GameBoard] Background check:', {
-      url: backgroundImageUrl,
+      scenarioId,
+      scenarioName,
+      url: backgroundImageUrl || 'NOT SET',
       opacity: backgroundOpacity,
       scale: backgroundScale,
     });
 
     if (backgroundImageUrl) {
-      console.log('[GameBoard] Loading background image');
+      console.log('[GameBoard] Loading background image (auto-fits to 20x20 world)');
 
-      setBackgroundImage(
-        backgroundImageUrl,
-        backgroundOpacity,
-        0, // Initial offset - will be repositioned
-        0, // Initial offset - will be repositioned
-        backgroundScale
-      ).then(() => {
-        // After image loads, center it on the tile bounds
-        centerBackgroundOnTiles();
-        console.log('[GameBoard] Background loaded and centered');
-      }).catch((error) => {
-        console.error('[GameBoard] Failed to load background image:', error);
-      });
+      setBackgroundImage(backgroundImageUrl, backgroundOpacity)
+        .then(() => {
+          console.log('[GameBoard] Background loaded');
+        })
+        .catch((error) => {
+          console.error('[GameBoard] Failed to load background image:', error);
+        });
     }
-  }, [hexGridReady, gameState.gameData, initializeBoard, setBackgroundImage, centerBackgroundOnTiles]);
+  }, [hexGridReady, gameState.gameData, initializeBoard, setBackgroundImage]);
 
   const handleBackToLobby = () => {
     // User clicked leave game button - exit and navigate

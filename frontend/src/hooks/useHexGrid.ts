@@ -300,23 +300,13 @@ export function useHexGrid(
     return true; // Default to blocked if grid is not available
   }, []);
 
-  // Set background image with transforms (Issue #191)
+  // Set background image (Issue #191) - auto-fits to 20x20 world
   const setBackgroundImage = useCallback(async (
     imageUrl: string,
-    opacity: number = 1,
-    offsetX: number = 0,
-    offsetY: number = 0,
-    scale: number = 1
+    opacity: number = 1
   ) => {
     if (hexGridRef.current) {
-      await hexGridRef.current.setBackgroundImage(imageUrl, opacity, offsetX, offsetY, scale);
-    }
-  }, []);
-
-  // Center background image on tiles (Issue #191)
-  const centerBackgroundOnTiles = useCallback(() => {
-    if (hexGridRef.current) {
-      hexGridRef.current.centerBackgroundOnTiles();
+      await hexGridRef.current.setBackgroundImage(imageUrl, opacity);
     }
   }, []);
 
@@ -340,7 +330,6 @@ export function useHexGrid(
     getCharacter,
     isHexBlocked,
     setSelectedHex,
-    setBackgroundImage, // Issue #191
-    centerBackgroundOnTiles, // Issue #191
+    setBackgroundImage, // Issue #191 - auto-fits to 20x20 world
   };
 }

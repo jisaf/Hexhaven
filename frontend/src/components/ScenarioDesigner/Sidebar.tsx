@@ -19,22 +19,15 @@ import {
   HexFeatureType,
   TriggerType,
   type MonsterType,
-  type BackgroundAnchors,
 } from '../../../../shared/types/entities';
 
+// Background state (simplified - auto-fits to 20x20 world)
 interface BackgroundState {
   imageUrl: string | null;
   opacity: number;
-  offsetX: number;
-  offsetY: number;
-  scale: number;
   isUploading: boolean;
   fileName: string | null;
-  anchors: BackgroundAnchors | null;
 }
-
-// Alignment mode for two-anchor system (Issue #191)
-type AlignmentMode = 'off' | 'anchor1-image' | 'anchor1-hex' | 'anchor2-image' | 'anchor2-hex' | 'complete';
 
 // Save status for visual feedback
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -66,18 +59,12 @@ interface SidebarProps {
   selectedHex: AxialCoordinates | null;
   selectedPlayerCount: number;
   monsterTypes: MonsterType[];
-  backgroundEditMode: boolean;
   savedScenarios: SavedScenario[];
   currentScenarioId: string | null;
-  alignmentMode?: AlignmentMode;
   onScenarioChange: (updates: Partial<ScenarioState>) => void;
   onBackgroundUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBackgroundOpacityChange: (value: number) => void;
-  onBackgroundEditModeChange: (editMode: boolean) => void;
   onRemoveBackground: () => void;
-  onStartAlignment?: () => void;
-  onCancelAlignment?: () => void;
-  onClearAnchors?: () => void;
   onDeleteHex: () => void;
   onTerrainChange: (terrain: TerrainType) => void;
   onAddFeature: (type: HexFeatureType) => void;
@@ -104,18 +91,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedHex,
   selectedPlayerCount,
   monsterTypes,
-  backgroundEditMode,
   savedScenarios,
   currentScenarioId,
-  alignmentMode = 'off',
   onScenarioChange,
   onBackgroundUpload,
   onBackgroundOpacityChange,
-  onBackgroundEditModeChange,
   onRemoveBackground,
-  onStartAlignment,
-  onCancelAlignment,
-  onClearAnchors,
   onDeleteHex,
   onTerrainChange,
   onAddFeature,
@@ -254,6 +235,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Background Image Section */}
             <section className={styles.section}>
               <h3 className={styles.sectionTitle}>Background Image</h3>
+              <p className={styles.hint} style={{ marginBottom: '8px' }}>
+                Image auto-fits to 12×14 hex world (~1024×1024px). Use 1:1 ratio for best alignment.
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -293,22 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     />
                     <span className={styles.sliderValue}>{Math.round(backgroundState.opacity * 100)}%</span>
                   </div>
-                  <div className={styles.checkboxGroup}>
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={backgroundEditMode}
-                        onChange={(e) => onBackgroundEditModeChange(e.target.checked)}
-                      />
-                      Adjust Background
-                    </label>
-                  </div>
-                  <p className={styles.hint}>
-                    {backgroundEditMode
-                      ? 'Drag to move, scroll/pinch to zoom'
-                      : 'Click grid to add/edit hexes'}
-                  </p>
-                  {/* Save status indicator for auto-saved transforms */}
+                  {/* Save status indicator for auto-saved opacity */}
                   {transformSaveStatus !== 'idle' && (
                     <div
                       className={`${styles.saveStatus} ${styles[transformSaveStatus]}`}
@@ -318,72 +287,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {transformSaveStatus === 'error' && 'Save failed'}
                     </div>
                   )}
-
-                  {/* Two-anchor alignment system (Issue #191) */}
-                  <div className={styles.field} style={{ marginTop: '12px' }}>
-                    <label className={styles.label}>Alignment</label>
-                    {alignmentMode === 'off' && !backgroundState.anchors && (
-                      <button
-                        className={styles.actionButton}
-                        onClick={onStartAlignment}
-                        disabled={!onStartAlignment}
-                        style={{ width: '100%' }}
-                      >
-                        Start Alignment
-                      </button>
-                    )}
-                    {alignmentMode === 'off' && backgroundState.anchors && (
-                      <div className={styles.fieldRow}>
-                        <span className={styles.hint} style={{ flex: 1 }}>
-                          Aligned ({backgroundState.anchors.anchor2 ? '2' : '1'} anchor{backgroundState.anchors.anchor2 ? 's' : ''})
-                        </span>
-                        <button
-                          className={styles.smallButton}
-                          onClick={onClearAnchors}
-                          title="Clear alignment"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
-                    {alignmentMode !== 'off' && alignmentMode !== 'complete' && (
-                      <div className={styles.alignmentGuide}>
-                        <div className={styles.alignmentStep}>
-                          {alignmentMode === 'anchor1-image' && (
-                            <>
-                              <span className={styles.stepNumber}>1/4</span>
-                              <span>Click a point on the image</span>
-                            </>
-                          )}
-                          {alignmentMode === 'anchor1-hex' && (
-                            <>
-                              <span className={styles.stepNumber}>2/4</span>
-                              <span>Click the hex it should align to</span>
-                            </>
-                          )}
-                          {alignmentMode === 'anchor2-image' && (
-                            <>
-                              <span className={styles.stepNumber}>3/4</span>
-                              <span>Click another point on the image</span>
-                            </>
-                          )}
-                          {alignmentMode === 'anchor2-hex' && (
-                            <>
-                              <span className={styles.stepNumber}>4/4</span>
-                              <span>Click the hex it should align to</span>
-                            </>
-                          )}
-                        </div>
-                        <button
-                          className={styles.smallButton}
-                          onClick={onCancelAlignment}
-                          style={{ marginTop: '8px' }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </section>

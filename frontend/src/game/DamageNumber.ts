@@ -97,15 +97,15 @@ class DamageNumberSprite extends PIXI.Container {
     const width = this.text.width + padding * 2;
     const height = this.text.height + padding * 2;
 
-    this.background.beginFill(0x000000, 0.7);
-    this.background.drawRoundedRect(
+    // PixiJS v8 API: draw then fill
+    this.background.roundRect(
       -width / 2,
       -height / 2,
       width,
       height,
       6,
     );
-    this.background.endFill();
+    this.background.fill({ color: 0x000000, alpha: 0.7 });
   }
 
   /**

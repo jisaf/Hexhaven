@@ -18,7 +18,10 @@ import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
 import { HighlightManager } from './HighlightManager';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
-import { type Axial, axialKey, screenToAxial, axialToScreen } from './hex-utils';
+import { type Axial, axialKey, screenToAxial, axialToScreen, HEX_SIZE } from './hex-utils';
+
+// Fixed world size in pixels (square 1024x1024)
+export const WORLD_PIXEL_SIZE = 1024;
 import type { Monster, HexTile as SharedHexTile, LootSpawnedPayload } from '../../../shared/types';
 
 export interface HexGridOptions {
@@ -28,7 +31,6 @@ export interface HexGridOptions {
   onCharacterSelect?: (characterId: string) => void;
   onMonsterSelect?: (monsterId: string) => void;
   onLootTokenClick?: (tokenId: string) => void;
-  onBackgroundTransformChange?: (offsetX: number, offsetY: number, scale: number) => void;
 }
 
 export interface GameBoardData {
@@ -49,6 +51,7 @@ export class HexGrid {
 
   // Layers
   private placeholderLayer!: PIXI.Container;
+  private borderLayer!: PIXI.Container;
   private tilesLayer!: PIXI.Container;
   private highlightsLayer!: PIXI.Container;
   private entitiesLayer!: PIXI.Container;
@@ -73,17 +76,6 @@ export class HexGrid {
   // Background image (Issue #191)
   private backgroundSprite: PIXI.Sprite | null = null;
   private backgroundLayer!: PIXI.Container;
-  private isBackgroundDragging: boolean = false;
-  private backgroundDragStart: { x: number; y: number } | null = null;
-  private backgroundInitialPos: { x: number; y: number } | null = null;
-  // Pinch-to-zoom state for mobile
-  private backgroundPinchData: {
-    initialDistance: number;
-    initialScale: number;
-    centerX: number;
-    centerY: number;
-  } | null = null;
-  private activePointers: Map<number, { x: number; y: number }> = new Map();
 
   constructor(container: HTMLElement, options: HexGridOptions) {
     this.container = container;
@@ -108,9 +100,18 @@ export class HexGrid {
     this.container.appendChild(this.app.canvas);
 
     // Create viewport with pan/zoom/pinch support (US3 - T133-T135)
-    // World bounds: Use large enough space to accommodate any typical game board
-    const worldWidth = 4000;
-    const worldHeight = 4000;
+    // Use fixed 1024x1024 pixel world bounds with extra padding for panning
+    const worldPadding = HEX_SIZE * 2; // Extra padding around the world
+    const viewportBounds = {
+      minX: -HEX_SIZE - worldPadding,
+      minY: -HEX_SIZE - worldPadding,
+      maxX: -HEX_SIZE + WORLD_PIXEL_SIZE + worldPadding,
+      maxY: -HEX_SIZE + WORLD_PIXEL_SIZE + worldPadding
+    };
+    const worldWidth = viewportBounds.maxX - viewportBounds.minX;
+    const worldHeight = viewportBounds.maxY - viewportBounds.minY;
+    const worldCenterX = (viewportBounds.minX + viewportBounds.maxX) / 2;
+    const worldCenterY = (viewportBounds.minY + viewportBounds.maxY) / 2;
 
     this.viewport = new Viewport({
       screenWidth: this.options.width,
@@ -149,18 +150,24 @@ export class HexGrid {
         reverse: false  // Standard zoom direction (wheel up = zoom in)
       });
 
-    // Set zoom constraints (US3 - T134): 0.5x to 3x
+    // Set zoom constraints (US3 - T134): 0.1x to 3x (allow zooming out far to find the map)
     this.viewport
       .clampZoom({
-        minScale: 0.5,
+        minScale: 0.1,
         maxScale: 3.0
       });
 
-    // Don't set clamp here - we'll set it dynamically after board initialization
-    // to match the actual map bounds
+    // Clamp viewport to the 1024x1024 world bounds - prevents losing the map when panning
+    this.viewport.clamp({
+      left: viewportBounds.minX,
+      right: viewportBounds.maxX,
+      top: viewportBounds.minY,
+      bottom: viewportBounds.maxY,
+      underflow: 'center'  // Center the world when zoomed out beyond bounds
+    });
 
-    // Center the viewport on the world origin
-    this.viewport.moveCenter(0, 0);
+    // Center the viewport on the 1024x1024 world
+    this.viewport.moveCenter(worldCenterX, worldCenterY);
 
     // Preload SVG avatar assets
     const avatarAssets = [
@@ -178,6 +185,7 @@ export class HexGrid {
 
     // Create layers (order matters: background first, entities last)
     this.backgroundLayer = new PIXI.Container(); // Issue #191 - Background image layer
+    this.borderLayer = new PIXI.Container(); // Gold border around world
     this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
@@ -185,11 +193,15 @@ export class HexGrid {
     this.entitiesLayer = new PIXI.Container();
 
     this.viewport.addChild(this.backgroundLayer); // Background behind everything
+    this.viewport.addChild(this.borderLayer); // Border above background
     this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
     this.viewport.addChild(this.lootLayer);
     this.viewport.addChild(this.entitiesLayer);
+
+    // Draw the fixed world boundary with gold border
+    this.drawWorldBorder();
 
     // Initialize collections
     this.tiles = new Map();
@@ -199,8 +211,15 @@ export class HexGrid {
     this.lootTokenPool = new LootTokenPool(this.lootLayer);
 
     // Setup background click handler
+    // Hit area covers the full 20x20 world bounds
+    const worldBounds = this.getWorldBounds();
     this.viewport.eventMode = 'static';
-    this.viewport.hitArea = new PIXI.Rectangle(0, 0, worldWidth, worldHeight);
+    this.viewport.hitArea = new PIXI.Rectangle(
+      worldBounds.minX,
+      worldBounds.minY,
+      worldBounds.width,
+      worldBounds.height
+    );
     this.viewport.on('clicked', this.handleViewportClicked.bind(this));
     this.viewport.on('drag-start', () => this.isDragging = true);
     this.viewport.on('drag-end', () => this.isDragging = false);
@@ -434,11 +453,15 @@ export class HexGrid {
   /**
    * Handle viewport click for creating new hexes or deselecting.
    * The 'clicked' event only fires if the viewport is not dragged.
+   * Only allows hex placement within the fixed world bounds.
    */
   private handleViewportClicked(event: ClickedEvent): void {
     if (this.options.onHexClick) {
       const hex = screenToAxial(event.world);
-      this.options.onHexClick(hex);
+      // Only allow hex placement within world bounds
+      if (this.isWithinWorldBounds(hex)) {
+        this.options.onHexClick(hex);
+      }
     }
 
     this.deselectAll();
@@ -801,21 +824,103 @@ export class HexGrid {
   }
 
   /**
-   * Destroy and cleanup
+   * Draw placeholder grid within world bounds
+   * Parameters are ignored - always draws hexes within the 1024x1024 pixel rectangle
    */
-  public drawPlaceholderGrid(width: number, height: number): void {
+  public drawPlaceholderGrid(_width?: number, _height?: number): void {
     this.placeholderLayer.removeChildren();
     const graphics = new PIXI.Graphics();
-    graphics.lineStyle(1, 0x555555, 0.5);
+    const bounds = this.getWorldBounds();
 
-    for (let r = 0; r < height; r++) {
-      for (let q = 0; q < width; q++) {
+    // Calculate generous ranges for hex iteration
+    // Due to the offset nature of axial coordinates, we need to iterate over
+    // more coordinates than strictly necessary and filter by screen position
+    const maxR = Math.ceil(WORLD_PIXEL_SIZE / (1.5 * HEX_SIZE)) + 2; // ~16 rows
+    const maxQ = Math.ceil(WORLD_PIXEL_SIZE / (Math.sqrt(3) * HEX_SIZE)) + maxR; // accounts for offset
+
+    // Draw placeholder hexes whose centers fall within the rectangular bounds
+    for (let r = -2; r <= maxR; r++) {
+      for (let q = -maxR; q <= maxQ; q++) {
         const hex = { q, r };
         const pos = axialToScreen(hex);
-        this.drawHexagon(graphics, pos.x, pos.y, 48);
+
+        // Only draw hexes whose center is within the rectangular pixel bounds
+        if (pos.x >= bounds.minX - HEX_SIZE && pos.x <= bounds.maxX + HEX_SIZE &&
+            pos.y >= bounds.minY - HEX_SIZE && pos.y <= bounds.maxY + HEX_SIZE) {
+          this.drawHexagon(graphics, pos.x, pos.y, 48);
+        }
       }
     }
+    graphics.stroke({ width: 1, color: 0x555555, alpha: 0.5 });
     this.placeholderLayer.addChild(graphics);
+  }
+
+  /**
+   * Draw a gold border around the fixed 1024x1024 pixel world boundary
+   */
+  private drawWorldBorder(): void {
+    this.borderLayer.removeChildren();
+
+    // Fixed rectangular world bounds (1024x1024 pixels)
+    const bounds = this.getWorldBounds();
+
+    // Draw the gold border using PixiJS v8 API
+    const graphics = new PIXI.Graphics();
+
+    // Draw outer gold border (thick)
+    graphics.rect(bounds.minX, bounds.minY, bounds.width, bounds.height);
+    graphics.stroke({ width: 4, color: 0xFFD700, alpha: 1 });
+
+    // Draw inner decorative border (thinner, slightly darker gold)
+    graphics.rect(bounds.minX + 6, bounds.minY + 6, bounds.width - 12, bounds.height - 12);
+    graphics.stroke({ width: 2, color: 0xDAA520, alpha: 0.8 });
+
+    // Add corner decorations (small filled circles at corners)
+    const cornerRadius = 8;
+    graphics.circle(bounds.minX, bounds.minY, cornerRadius);
+    graphics.circle(bounds.maxX, bounds.minY, cornerRadius);
+    graphics.circle(bounds.minX, bounds.maxY, cornerRadius);
+    graphics.circle(bounds.maxX, bounds.maxY, cornerRadius);
+    graphics.fill({ color: 0xFFD700, alpha: 1 });
+
+    this.borderLayer.addChild(graphics);
+
+    console.log('[HexGrid] World border drawn:', {
+      bounds,
+      pixelSize: WORLD_PIXEL_SIZE
+    });
+  }
+
+  /**
+   * Get the world bounds (fixed 1024x1024 pixel square)
+   */
+  public getWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number } {
+    // World starts at origin (0,0) and extends WORLD_PIXEL_SIZE in both directions
+    const minX = -HEX_SIZE; // Small padding for hex at (0,0)
+    const minY = -HEX_SIZE;
+    const maxX = minX + WORLD_PIXEL_SIZE;
+    const maxY = minY + WORLD_PIXEL_SIZE;
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: WORLD_PIXEL_SIZE,
+      height: WORLD_PIXEL_SIZE
+    };
+  }
+
+  /**
+   * Check if a hex coordinate is within the fixed world bounds (screen-space rectangle)
+   */
+  public isWithinWorldBounds(hex: Axial): boolean {
+    const screenPos = axialToScreen(hex);
+    const bounds = this.getWorldBounds();
+
+    // Check if hex center is within the rectangular bounds
+    return screenPos.x >= bounds.minX && screenPos.x <= bounds.maxX &&
+           screenPos.y >= bounds.minY && screenPos.y <= bounds.maxY;
   }
 
   private drawHexagon(graphic: PIXI.Graphics, x: number, y: number, size: number): void {
@@ -841,38 +946,40 @@ export class HexGrid {
 
   /**
    * Set the background image for the map (Issue #191)
+   * Automatically scales and positions the image to fit edge-to-edge within the 20x20 world bounds.
+   * A 1:1 ratio image will align properly with the hex grid.
+   *
    * @param imageUrl URL of the background image
    * @param opacity Opacity value between 0 and 1 (default: 1)
-   * @param offsetX X offset in pixels (default: 0)
-   * @param offsetY Y offset in pixels (default: 0)
-   * @param scale Scale multiplier (default: 1)
    */
   public async setBackgroundImage(
     imageUrl: string,
-    opacity: number = 1,
-    offsetX: number = 0,
-    offsetY: number = 0,
-    scale: number = 1
+    opacity: number = 1
   ): Promise<void> {
     // Remove existing background if present
     this.removeBackgroundImage();
 
     try {
       // Use Image element for all URLs - more reliable than Assets.load()
-      // Assets.load() can return null for certain image types/sizes
       const texture = await new Promise<PIXI.Texture>((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        // Only set crossOrigin for external URLs - same-origin URLs don't need it
+        // and setting it can cause CORS issues if server doesn't send CORS headers
+        const isExternalUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+        if (isExternalUrl) {
+          img.crossOrigin = 'anonymous';
+        }
         img.onload = () => {
           try {
             const tex = PIXI.Texture.from(img);
-            // Note: texture.valid might be false initially but becomes valid after first render
             resolve(tex);
           } catch (err) {
             reject(new Error(`Failed to create texture: ${err}`));
           }
         };
-        img.onerror = () => {
+        img.onerror = (event) => {
+          // Log the actual error event for debugging
+          console.error('[HexGrid] Image load error event:', event);
           reject(new Error(`Failed to load image: ${imageUrl}`));
         };
         img.src = imageUrl;
@@ -881,25 +988,38 @@ export class HexGrid {
       // Create sprite from texture
       this.backgroundSprite = new PIXI.Sprite(texture);
 
+      // Get the world bounds for the 20x20 grid
+      const worldBounds = this.getWorldBounds();
+
+      // Calculate scale to fit the image edge-to-edge in the world bounds
+      const scaleX = worldBounds.width / texture.width;
+      const scaleY = worldBounds.height / texture.height;
+      // Use uniform scaling to maintain aspect ratio - use the larger scale to cover the area
+      const scale = Math.max(scaleX, scaleY);
+
+      // Position at top-left of world bounds, centered if aspect ratios differ
+      const scaledWidth = texture.width * scale;
+      const scaledHeight = texture.height * scale;
+      const offsetX = worldBounds.minX + (worldBounds.width - scaledWidth) / 2;
+      const offsetY = worldBounds.minY + (worldBounds.height - scaledHeight) / 2;
+
       // Apply transforms
       this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
       this.backgroundSprite.position.set(offsetX, offsetY);
       this.backgroundSprite.scale.set(scale, scale);
 
-      console.log('[HexGrid] Background loaded:', {
-        imageUrl,
-        textureSize: { width: texture.width, height: texture.height },
-        position: { x: offsetX, y: offsetY },
-        scale,
-        opacity,
-        spriteWorldBounds: this.backgroundSprite.getBounds(),
-      });
-
-      // Setup background interaction handlers (starts non-interactive by default)
-      this.setupBackgroundInteraction();
-      // Start with interaction disabled so users can add hexes
+      // Background is non-interactive (clicks pass through to hex tiles)
       this.backgroundSprite.eventMode = 'none';
       this.backgroundSprite.cursor = 'default';
+
+      console.log('[HexGrid] Background loaded and auto-fitted:', {
+        imageUrl,
+        textureSize: { width: texture.width, height: texture.height },
+        worldBounds,
+        calculatedScale: scale,
+        position: { x: offsetX, y: offsetY },
+        opacity,
+      });
 
       // Add to background layer (behind hex tiles)
       this.backgroundLayer.addChild(this.backgroundSprite);
@@ -907,332 +1027,18 @@ export class HexGrid {
       // Update tile opacity to make them semi-transparent over background
       this.updateTileOpacity();
     } catch (error) {
-      console.error('Failed to load background image:', error);
+      console.error('[HexGrid] Failed to load background image:', error);
+      throw error; // Re-throw so callers know it failed
     }
   }
 
   /**
-   * Setup drag and zoom interaction for the background image
-   * Supports both mouse (drag + wheel zoom) and touch (drag + pinch zoom)
-   */
-  private setupBackgroundInteraction(): void {
-    if (!this.backgroundSprite) return;
-
-    const sprite = this.backgroundSprite;
-    sprite.eventMode = 'static';
-    sprite.cursor = 'move';
-
-    // Helper to calculate distance between two touch points
-    const getDistance = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
-      return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    };
-
-    // Helper to get center point between two touches
-    const getCenter = (p1: { x: number; y: number }, p2: { x: number; y: number }) => {
-      return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-    };
-
-    // Pointer down - track all active pointers
-    sprite.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
-      // Only handle left mouse button or touch
-      if (event.button !== 0) return;
-
-      // If alignment mode is active, handle the click and don't start drag
-      if (this.alignmentClickHandler) {
-        this.handleAlignmentClick(event);
-        event.stopPropagation();
-        return;
-      }
-
-      this.activePointers.set(event.pointerId, { x: event.globalX, y: event.globalY });
-      event.stopPropagation();
-
-      // Pause viewport dragging while interacting with background
-      this.viewport.pause = true;
-
-      if (this.activePointers.size === 1) {
-        // Single pointer - start drag
-        this.isBackgroundDragging = true;
-        this.backgroundDragStart = { x: event.globalX, y: event.globalY };
-        this.backgroundInitialPos = { x: sprite.position.x, y: sprite.position.y };
-      } else if (this.activePointers.size === 2) {
-        // Two pointers - start pinch
-        this.isBackgroundDragging = false;
-        const pointers = Array.from(this.activePointers.values());
-        const distance = getDistance(pointers[0], pointers[1]);
-        const center = getCenter(pointers[0], pointers[1]);
-
-        this.backgroundPinchData = {
-          initialDistance: distance,
-          initialScale: sprite.scale.x,
-          centerX: center.x,
-          centerY: center.y,
-        };
-      }
-    });
-
-    // Pointer move - handle drag or pinch
-    sprite.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
-      if (!this.activePointers.has(event.pointerId)) return;
-
-      // Update pointer position
-      this.activePointers.set(event.pointerId, { x: event.globalX, y: event.globalY });
-
-      if (this.activePointers.size === 2 && this.backgroundPinchData) {
-        // Pinch zoom
-        const pointers = Array.from(this.activePointers.values());
-        const currentDistance = getDistance(pointers[0], pointers[1]);
-        const center = getCenter(pointers[0], pointers[1]);
-
-        // Calculate scale factor
-        const scaleFactor = currentDistance / this.backgroundPinchData.initialDistance;
-        const newScale = Math.max(0.1, Math.min(5, this.backgroundPinchData.initialScale * scaleFactor));
-
-        // Get pinch center in world coordinates
-        const worldCenter = this.viewport.toWorld(center.x, center.y);
-        const initialWorldCenter = this.viewport.toWorld(
-          this.backgroundPinchData.centerX,
-          this.backgroundPinchData.centerY
-        );
-
-        // Calculate the point on the sprite being zoomed
-        const currentScale = sprite.scale.x;
-        const spriteLocalX = (initialWorldCenter.x - sprite.position.x) / currentScale;
-        const spriteLocalY = (initialWorldCenter.y - sprite.position.y) / currentScale;
-
-        // Update scale
-        sprite.scale.set(newScale, newScale);
-
-        // Adjust position to zoom towards pinch center
-        sprite.position.set(
-          worldCenter.x - spriteLocalX * newScale,
-          worldCenter.y - spriteLocalY * newScale
-        );
-
-        this.notifyBackgroundTransformChange();
-      } else if (this.isBackgroundDragging && this.backgroundDragStart && this.backgroundInitialPos) {
-        // Single pointer drag
-        const scale = this.viewport.scale.x;
-        const deltaX = (event.globalX - this.backgroundDragStart.x) / scale;
-        const deltaY = (event.globalY - this.backgroundDragStart.y) / scale;
-
-        sprite.position.set(
-          this.backgroundInitialPos.x + deltaX,
-          this.backgroundInitialPos.y + deltaY
-        );
-
-        this.notifyBackgroundTransformChange();
-      }
-    });
-
-    // Pointer up/cancel - clean up
-    const endInteraction = (event: PIXI.FederatedPointerEvent) => {
-      this.activePointers.delete(event.pointerId);
-
-      if (this.activePointers.size === 0) {
-        // All pointers released
-        this.isBackgroundDragging = false;
-        this.backgroundDragStart = null;
-        this.backgroundInitialPos = null;
-        this.backgroundPinchData = null;
-        this.viewport.pause = false;
-      } else if (this.activePointers.size === 1) {
-        // Transition from pinch to drag
-        this.backgroundPinchData = null;
-        const [pointer] = Array.from(this.activePointers.values());
-        this.isBackgroundDragging = true;
-        this.backgroundDragStart = { x: pointer.x, y: pointer.y };
-        this.backgroundInitialPos = { x: sprite.position.x, y: sprite.position.y };
-      }
-    };
-
-    sprite.on('pointerup', endInteraction);
-    sprite.on('pointerupoutside', endInteraction);
-    sprite.on('pointercancel', endInteraction);
-
-    // Wheel zoom on background (desktop)
-    sprite.on('wheel', (event: PIXI.FederatedWheelEvent) => {
-      event.stopPropagation();
-
-      const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1; // Zoom out/in
-      const currentScale = sprite.scale.x;
-      const newScale = Math.max(0.1, Math.min(5, currentScale * zoomFactor));
-
-      // Get mouse position in world coordinates
-      const worldPos = this.viewport.toWorld(event.globalX, event.globalY);
-
-      // Calculate the point on the sprite being zoomed
-      const spriteLocalX = (worldPos.x - sprite.position.x) / currentScale;
-      const spriteLocalY = (worldPos.y - sprite.position.y) / currentScale;
-
-      // Update scale
-      sprite.scale.set(newScale, newScale);
-
-      // Adjust position to zoom towards mouse cursor
-      sprite.position.set(
-        worldPos.x - spriteLocalX * newScale,
-        worldPos.y - spriteLocalY * newScale
-      );
-
-      this.notifyBackgroundTransformChange();
-    });
-  }
-
-  /**
-   * Notify parent about background transform changes
-   */
-  private notifyBackgroundTransformChange(): void {
-    if (!this.backgroundSprite || !this.options.onBackgroundTransformChange) return;
-
-    this.options.onBackgroundTransformChange(
-      this.backgroundSprite.position.x,
-      this.backgroundSprite.position.y,
-      this.backgroundSprite.scale.x
-    );
-  }
-
-  // Alignment mode handler for two-anchor system (Issue #191)
-  private alignmentClickHandler: ((imageX: number, imageY: number) => void) | null = null;
-
-  /**
-   * Enable or disable background image interaction (drag/zoom)
-   * When disabled, clicks pass through to hex tiles
-   */
-  public setBackgroundInteractive(interactive: boolean): void {
-    if (!this.backgroundSprite) return;
-
-    if (interactive) {
-      this.backgroundSprite.eventMode = 'static';
-      this.backgroundSprite.cursor = 'move';
-    } else {
-      this.backgroundSprite.eventMode = 'none';
-      this.backgroundSprite.cursor = 'default';
-      // Clear any active interaction state
-      this.activePointers.clear();
-      this.isBackgroundDragging = false;
-      this.backgroundDragStart = null;
-      this.backgroundInitialPos = null;
-      this.backgroundPinchData = null;
-    }
-  }
-
-  /**
-   * Set alignment mode click handler (Issue #191)
-   * When set, clicking on the background captures image-relative coordinates (0-1)
-   * @param handler Callback with image-relative x,y (0-1 range)
-   */
-  public setAlignmentClickHandler(handler: ((imageX: number, imageY: number) => void) | null): void {
-    this.alignmentClickHandler = handler;
-
-    if (!this.backgroundSprite) return;
-
-    if (handler) {
-      // Enable static mode and change cursor to crosshair for alignment
-      this.backgroundSprite.eventMode = 'static';
-      this.backgroundSprite.cursor = 'crosshair';
-    } else {
-      // Restore non-interactive mode
-      this.backgroundSprite.eventMode = 'none';
-      this.backgroundSprite.cursor = 'default';
-    }
-  }
-
-  /**
-   * Handle alignment mode click on background (Issue #191)
-   * Calculates image-relative coordinates from click position
-   */
-  private handleAlignmentClick(event: PIXI.FederatedPointerEvent): void {
-    if (!this.alignmentClickHandler || !this.backgroundSprite) return;
-
-    // Get the click position relative to the background sprite
-    const localPos = this.backgroundSprite.toLocal(event.global);
-
-    // Get the original texture dimensions (before scaling)
-    const textureWidth = this.backgroundSprite.texture.width;
-    const textureHeight = this.backgroundSprite.texture.height;
-
-    // Convert to 0-1 range
-    const imageX = localPos.x / textureWidth;
-    const imageY = localPos.y / textureHeight;
-
-    // Validate the click is within the image bounds
-    if (imageX >= 0 && imageX <= 1 && imageY >= 0 && imageY <= 1) {
-      this.alignmentClickHandler(imageX, imageY);
-    }
-  }
-
-  /**
-   * Calculate and apply alignment from two anchors (Issue #191)
-   *
-   * Given two anchor points that map image positions to hex coordinates,
-   * calculate the scale and offset needed to align the background image.
-   *
-   * @param anchor1 First anchor mapping image position to hex coordinate
-   * @param anchor2 Second anchor mapping image position to hex coordinate
-   * @returns The calculated transforms or null if calculation fails
-   */
-  public applyAlignmentFromAnchors(
-    anchor1: { imageX: number; imageY: number; hexQ: number; hexR: number },
-    anchor2: { imageX: number; imageY: number; hexQ: number; hexR: number }
-  ): { offsetX: number; offsetY: number; scale: number } | null {
-    if (!this.backgroundSprite) return null;
-
-    const textureWidth = this.backgroundSprite.texture.width;
-    const textureHeight = this.backgroundSprite.texture.height;
-
-    // Convert hex coordinates to screen positions
-    const hex1Screen = axialToScreen({ q: anchor1.hexQ, r: anchor1.hexR });
-    const hex2Screen = axialToScreen({ q: anchor2.hexQ, r: anchor2.hexR });
-
-    // Calculate image positions in pixels (relative to top-left of original image)
-    const img1X = anchor1.imageX * textureWidth;
-    const img1Y = anchor1.imageY * textureHeight;
-    const img2X = anchor2.imageX * textureWidth;
-    const img2Y = anchor2.imageY * textureHeight;
-
-    // Calculate distances between anchor points
-    const imgDistance = Math.sqrt(Math.pow(img2X - img1X, 2) + Math.pow(img2Y - img1Y, 2));
-    const hexDistance = Math.sqrt(Math.pow(hex2Screen.x - hex1Screen.x, 2) + Math.pow(hex2Screen.y - hex1Screen.y, 2));
-
-    // Avoid division by zero
-    if (imgDistance < 1) return null;
-
-    // Calculate scale factor
-    const scale = hexDistance / imgDistance;
-
-    // Calculate offset: position image so that anchor1's image point aligns with anchor1's hex screen position
-    // After scaling, the image point at (img1X, img1Y) should be at hex1Screen
-    const offsetX = hex1Screen.x - (img1X * scale);
-    const offsetY = hex1Screen.y - (img1Y * scale);
-
-    // Apply the transforms
-    this.backgroundSprite.scale.set(scale, scale);
-    this.backgroundSprite.position.set(offsetX, offsetY);
-
-    // Notify about the transform change
-    this.notifyBackgroundTransformChange();
-
-    return { offsetX, offsetY, scale };
-  }
-
-  /**
-   * Update the background image transforms without reloading (Issue #191)
+   * Update background opacity without changing position/scale (Issue #191)
    * @param opacity Opacity value between 0 and 1
-   * @param offsetX X offset in pixels
-   * @param offsetY Y offset in pixels
-   * @param scale Scale multiplier
    */
-  public setBackgroundTransform(
-    opacity: number,
-    offsetX: number,
-    offsetY: number,
-    scale: number
-  ): void {
+  public setBackgroundOpacity(opacity: number): void {
     if (!this.backgroundSprite) return;
-
     this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
-    this.backgroundSprite.position.set(offsetX, offsetY);
-    this.backgroundSprite.scale.set(scale, scale);
   }
 
   /**
@@ -1268,58 +1074,12 @@ export class HexGrid {
   }
 
   /**
-   * Get the current background transforms (Issue #191)
+   * Get the current background opacity (Issue #191)
    * Returns null if no background image is set
    */
-  public getBackgroundTransform(): { opacity: number; offsetX: number; offsetY: number; scale: number } | null {
+  public getBackgroundOpacity(): number | null {
     if (!this.backgroundSprite) return null;
-
-    return {
-      opacity: this.backgroundSprite.alpha,
-      offsetX: this.backgroundSprite.position.x,
-      offsetY: this.backgroundSprite.position.y,
-      scale: this.backgroundSprite.scale.x,
-    };
-  }
-
-  /**
-   * Center the background image on the tile bounds (Issue #191)
-   * This positions the background so its center aligns with the center of all tiles
-   */
-  public centerBackgroundOnTiles(): void {
-    if (!this.backgroundSprite || !this.tilesLayer || this.tiles.size === 0) return;
-
-    // Force render to ensure bounds are accurate
-    this.app.renderer.render(this.app.stage);
-
-    // Get the bounds of all tiles
-    const tileBounds = this.tilesLayer.getBounds();
-    const tileCenterX = tileBounds.x + tileBounds.width / 2;
-    const tileCenterY = tileBounds.y + tileBounds.height / 2;
-
-    // Get the background sprite dimensions (accounting for scale)
-    const bgWidth = this.backgroundSprite.width;
-    const bgHeight = this.backgroundSprite.height;
-
-    // Position background so its center aligns with the tile center
-    const bgX = tileCenterX - bgWidth / 2;
-    const bgY = tileCenterY - bgHeight / 2;
-
-    this.backgroundSprite.position.set(bgX, bgY);
-
-    // Force another render after positioning to ensure both layers are visible
-    // This fixes the issue where background and tiles appear mutually exclusive
-    this.app.renderer.render(this.app.stage);
-
-    console.log('[HexGrid] Centered background on tiles:', {
-      tileBounds: { x: tileBounds.x, y: tileBounds.y, width: tileBounds.width, height: tileBounds.height },
-      tileCenter: { x: tileCenterX, y: tileCenterY },
-      backgroundSize: { width: bgWidth, height: bgHeight },
-      backgroundPosition: { x: bgX, y: bgY },
-      backgroundLayerVisible: this.backgroundLayer.visible,
-      tilesLayerVisible: this.tilesLayer.visible,
-      backgroundSpriteAlpha: this.backgroundSprite.alpha,
-    });
+    return this.backgroundSprite.alpha;
   }
 
   public async exportToPng(): Promise<void> {
@@ -1327,8 +1087,21 @@ export class HexGrid {
     this.tiles.forEach(tile => tile.setExportMode(true));
     this.app.render();
 
-    // Extract only the tiles layer, which has a transparent background
-    const dataUrl = await this.app.renderer.extract.base64(this.tilesLayer);
+    // Get world bounds (1024x1024 pixels)
+    const bounds = this.getWorldBounds();
+
+    // Create a frame rectangle matching the exact world bounds
+    // This ensures the exported image is exactly 1024x1024 pixels
+    const frame = new PIXI.Rectangle(bounds.minX, bounds.minY, bounds.width, bounds.height);
+
+    // Extract only the tiles layer within the world bounds
+    // Resolution 1 ensures we get exactly WORLD_PIXEL_SIZE x WORLD_PIXEL_SIZE pixels
+    const dataUrl = await this.app.renderer.extract.base64({
+      target: this.tilesLayer,
+      frame,
+      resolution: 1
+    });
+
     const link = document.createElement('a');
     link.download = 'scenario-map.png';
     link.href = dataUrl;

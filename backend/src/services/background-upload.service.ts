@@ -17,8 +17,10 @@ import { existsSync, unlinkSync, mkdirSync } from 'fs';
 import { config } from '../config/env.config';
 import { PrismaService } from './prisma.service';
 
+import { randomUUID } from 'crypto';
+
 /**
- * Static multer configuration for use in decorators
+ * Static multer configuration for use in decorators (scenario-specific uploads)
  * This needs to be evaluated at module load time, before DI is available
  */
 export const backgroundUploadConfig: MulterOptions = {
@@ -33,6 +35,45 @@ export const backgroundUploadConfig: MulterOptions = {
       const timestamp = Date.now();
       const ext = extname(file.originalname).toLowerCase();
       callback(null, `scenario-${scenarioId}-${timestamp}${ext}`);
+    },
+  }),
+  fileFilter: (
+    req: unknown,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
+    if (config.uploads.allowedMimeTypes.includes(file.mimetype)) {
+      callback(null, true);
+    } else {
+      callback(
+        new BadRequestException(
+          `Only image files (${config.uploads.allowedMimeTypes.join(', ')}) are allowed`,
+        ),
+        false,
+      );
+    }
+  },
+  limits: {
+    fileSize: config.uploads.maxFileSizeMb * 1024 * 1024,
+  },
+};
+
+/**
+ * Static multer configuration for standalone uploads (no scenarioId required)
+ * Uses UUID for unique filenames
+ */
+export const standaloneBackgroundUploadConfig: MulterOptions = {
+  storage: diskStorage({
+    destination: config.uploads.backgroundsDir,
+    filename: (
+      req: Request,
+      file: Express.Multer.File,
+      callback: (error: Error | null, filename: string) => void,
+    ) => {
+      const uuid = randomUUID();
+      const timestamp = Date.now();
+      const ext = extname(file.originalname).toLowerCase();
+      callback(null, `background-${uuid}-${timestamp}${ext}`);
     },
   }),
   fileFilter: (
@@ -185,6 +226,21 @@ export class BackgroundUploadService {
         backgroundImageUrl: url,
       },
     });
+
+    return {
+      success: true,
+      url,
+      filename: file.filename,
+    };
+  }
+
+  /**
+   * Upload a standalone background image (not tied to a scenario yet)
+   * Used when creating new scenarios before they have an ID
+   */
+  uploadStandaloneBackground(file: Express.Multer.File): UploadResult {
+    // File is already saved by multer, just return the URL
+    const url = `/backgrounds/${file.filename}`;
 
     return {
       success: true,

@@ -89,10 +89,9 @@ export class MonsterSprite extends PIXI.Container {
     const x = -width / 2;
     const y = 0;
 
-    // Background
-    bar.beginFill(0x000000, 0.5);
-    bar.drawRect(x, y, width, height);
-    bar.endFill();
+    // Background - PixiJS v8 API
+    bar.rect(x, y, width, height);
+    bar.fill({ color: 0x000000, alpha: 0.5 });
 
     // Health fill
     const healthPercent = this.monster.health / this.monster.maxHealth;
@@ -103,13 +102,12 @@ export class MonsterSprite extends PIXI.Container {
       color = 0xf39c12; // Orange
     }
 
-    bar.beginFill(color);
-    bar.drawRect(x, y, width * healthPercent, height);
-    bar.endFill();
+    bar.rect(x, y, width * healthPercent, height);
+    bar.fill({ color });
 
-    // Border
-    bar.lineStyle(1, 0xffffff, 0.5);
-    bar.drawRect(x, y, width, height);
+    // Border - PixiJS v8 API
+    bar.rect(x, y, width, height);
+    bar.stroke({ width: 1, color: 0xffffff, alpha: 0.5 });
   }
 
   private createHealthText(): PIXI.Text {
@@ -145,10 +143,9 @@ export class MonsterSprite extends PIXI.Container {
   private createEliteBadge(): PIXI.Graphics {
     const badge = new PIXI.Graphics();
 
-    // Gold star background
-    badge.beginFill(0xf39c12);
-    badge.drawCircle(25, -25, 12);
-    badge.endFill();
+    // Gold star background - PixiJS v8 API
+    badge.circle(25, -25, 12);
+    badge.fill({ color: 0xf39c12 });
 
     // Elite "E" text
     const text = new PIXI.Text('E', {
@@ -201,12 +198,11 @@ export class MonsterSprite extends PIXI.Container {
       'invisible': 0xecf0f1,
     };
 
-    icon.beginFill(colors[condition] || 0xffffff);
-    icon.drawCircle(0, 0, size / 2);
-    icon.endFill();
-
-    icon.lineStyle(2, 0x000000);
-    icon.drawCircle(0, 0, size / 2);
+    // PixiJS v8 API: draw then fill/stroke
+    icon.circle(0, 0, size / 2);
+    icon.fill({ color: colors[condition] || 0xffffff });
+    icon.circle(0, 0, size / 2);
+    icon.stroke({ width: 2, color: 0x000000 });
 
     return icon;
   }
@@ -227,8 +223,9 @@ export class MonsterSprite extends PIXI.Container {
     }
 
     ring.visible = true;
-    ring.lineStyle(4, 0xffff00, 1);
-    ring.drawCircle(0, 0, 42);
+    // PixiJS v8 API: draw then stroke
+    ring.circle(0, 0, 42);
+    ring.stroke({ width: 4, color: 0xffff00, alpha: 1 });
   }
 
   /**
@@ -294,11 +291,10 @@ export class MonsterSprite extends PIXI.Container {
       const originalAlpha = this.alpha;
       const originalScale = this.scale.x;
 
-      // Flash red
+      // Flash red - PixiJS v8 API
       const flash = new PIXI.Graphics();
-      flash.beginFill(0xff0000, 0.5);
-      flash.drawCircle(0, 0, 40);
-      flash.endFill();
+      flash.circle(0, 0, 40);
+      flash.fill({ color: 0xff0000, alpha: 0.5 });
       this.addChild(flash);
 
       // Shake and flash animation

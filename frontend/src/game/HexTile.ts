@@ -74,9 +74,9 @@ export class HexTile extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const color = this.getTerrainColor(this.terrain);
 
-    graphic.beginFill(color, this.currentAlpha);
+    // PixiJS v8 API: draw path first, then fill
     this.drawHexagon(graphic, 0, 0, HEX_SIZE - 2);
-    graphic.endFill();
+    graphic.fill({ color, alpha: this.currentAlpha });
 
     return graphic;
   }
@@ -87,8 +87,9 @@ export class HexTile extends PIXI.Container {
   private createBorder(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
 
-    graphic.lineStyle(2, 0x444444, 1);
+    // PixiJS v8 API: draw path first, then stroke
     this.drawHexagon(graphic, 0, 0, HEX_SIZE);
+    graphic.stroke({ width: 2, color: 0x444444, alpha: 1 });
 
     return graphic;
   }
@@ -99,12 +100,11 @@ export class HexTile extends PIXI.Container {
   private createLootIcon(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
 
-    graphic.beginFill(0xFFD700, 1);
-    graphic.drawCircle(0, 0, 8);
-    graphic.endFill();
-
-    graphic.lineStyle(1, 0xDAA520, 1);
-    graphic.drawCircle(0, 0, 8);
+    // PixiJS v8 API: draw then fill/stroke
+    graphic.circle(0, 0, 8);
+    graphic.fill({ color: 0xFFD700, alpha: 1 });
+    graphic.circle(0, 0, 8);
+    graphic.stroke({ width: 1, color: 0xDAA520, alpha: 1 });
 
     return graphic;
   }
@@ -115,13 +115,11 @@ export class HexTile extends PIXI.Container {
   private createTreasureIcon(): PIXI.Graphics {
     const graphic = new PIXI.Graphics();
 
-    graphic.beginFill(0x8B4513, 1);
-    graphic.drawRect(-10, -8, 20, 16);
-    graphic.endFill();
-
-    graphic.beginFill(0xFFD700, 1);
-    graphic.drawRect(-2, 0, 4, 4);
-    graphic.endFill();
+    // PixiJS v8 API: draw then fill
+    graphic.rect(-10, -8, 20, 16);
+    graphic.fill({ color: 0x8B4513, alpha: 1 });
+    graphic.rect(-2, 0, 4, 4);
+    graphic.fill({ color: 0xFFD700, alpha: 1 });
 
     return graphic;
   }
@@ -130,22 +128,23 @@ export class HexTile extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     switch (feature.type) {
       case HexFeatureType.TRAP:
-        graphic.lineStyle(2, 0xff0000, 1);
-        graphic.drawCircle(0, 0, 15);
+        // PixiJS v8 API: draw then stroke
+        graphic.circle(0, 0, 15);
         graphic.moveTo(-10, -10);
         graphic.lineTo(10, 10);
         graphic.moveTo(10, -10);
         graphic.lineTo(-10, 10);
+        graphic.stroke({ width: 2, color: 0xff0000, alpha: 1 });
         break;
       case HexFeatureType.DOOR:
-        graphic.beginFill(feature.isOpen ? 0x00ff00 : 0x8B4513, 1);
-        graphic.drawRect(-15, -5, 30, 10);
-        graphic.endFill();
+        // PixiJS v8 API: draw then fill
+        graphic.rect(-15, -5, 30, 10);
+        graphic.fill({ color: feature.isOpen ? 0x00ff00 : 0x8B4513, alpha: 1 });
         break;
       case HexFeatureType.WALL:
-        graphic.beginFill(0x808080, 1);
-        graphic.drawRect(-20, -2, 40, 4);
-        graphic.endFill();
+        // PixiJS v8 API: draw then fill
+        graphic.rect(-20, -2, 40, 4);
+        graphic.fill({ color: 0x808080, alpha: 1 });
         break;
       // Add cases for other feature types here
     }
@@ -212,8 +211,9 @@ export class HexTile extends PIXI.Container {
     this.border.destroy();
 
     this.border = new PIXI.Graphics();
-    this.border.lineStyle(borderWidth, borderColor, 1);
+    // PixiJS v8 API: draw then stroke
     this.drawHexagon(this.border, 0, 0, HEX_SIZE);
+    this.border.stroke({ width: borderWidth, color: borderColor, alpha: 1 });
 
     this.addChildAt(this.border, 1); // Add above background
   }
@@ -322,9 +322,9 @@ export class HexTile extends PIXI.Container {
     const alpha = enabled ? 1 : this.currentAlpha;
     this.background.destroy();
     this.background = new PIXI.Graphics();
-    this.background.beginFill(color, alpha);
+    // PixiJS v8 API: draw then fill
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
-    this.background.endFill();
+    this.background.fill({ color, alpha });
     this.addChildAt(this.background, 0);
 
     // Toggle visibility of all children except the background itself.
@@ -344,10 +344,10 @@ export class HexTile extends PIXI.Container {
     const newColor = color === null ? this.originalBackgroundColor : color;
 
     // Redraw the background with the new color (keep current transparency)
+    // PixiJS v8 API: clear, draw, then fill
     this.background.clear();
-    this.background.beginFill(newColor, this.currentAlpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
-    this.background.endFill();
+    this.background.fill({ color: newColor, alpha: this.currentAlpha });
   }
 
   /**
@@ -359,11 +359,11 @@ export class HexTile extends PIXI.Container {
     this.currentAlpha = hasBackground ? HexTile.BACKGROUND_ALPHA : HexTile.DEFAULT_ALPHA;
 
     // Redraw background with new alpha
+    // PixiJS v8 API: clear, draw, then fill
     const color = this.getTerrainColor(this.terrain);
     this.background.clear();
-    this.background.beginFill(color, this.currentAlpha);
     this.drawHexagon(this.background, 0, 0, HEX_SIZE - 2);
-    this.background.endFill();
+    this.background.fill({ color, alpha: this.currentAlpha });
   }
 
   /**
