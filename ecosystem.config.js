@@ -14,7 +14,7 @@ module.exports = {
   apps: [
     {
       name: 'hexhaven-backend',
-      script: 'backend/dist/src/main.js',
+      script: './backend/dist/backend/src/main.js',
       cwd: '/opt/hexhaven',
       instances: 1,
       exec_mode: 'fork',
