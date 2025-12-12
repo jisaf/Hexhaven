@@ -1,0 +1,362 @@
+/**
+ * ItemCreatorTool Styles (Issue #205)
+ *
+ * Form styling for item creation with fantasy theme.
+ */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0d1a2e 0%, #1a2f4f 100%);
+  padding: 20px;
+  color: #f0e6d2;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(201, 164, 68, 0.3);
+}
+
+.header h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-family: 'MedievalSharp', serif;
+  font-size: 24px;
+  color: #c9a444;
+}
+
+.backButton {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid rgba(201, 164, 68, 0.5);
+  border-radius: 6px;
+  color: #c9a444;
+  font-family: 'MedievalSharp', serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background: rgba(201, 164, 68, 0.1);
+  border-color: #c9a444;
+}
+
+.loading,
+.accessDenied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 16px;
+  text-align: center;
+}
+
+.accessDenied h2 {
+  color: #e74c3c;
+  font-family: 'MedievalSharp', serif;
+}
+
+.accessDenied button {
+  padding: 12px 24px;
+  background: #c9a444;
+  border: none;
+  border-radius: 6px;
+  color: #0d1a2e;
+  font-family: 'MedievalSharp', serif;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.form {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Preview Section */
+.preview {
+  background: rgba(26, 47, 79, 0.6);
+  border: 1px solid rgba(201, 164, 68, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.preview h3 {
+  margin: 0 0 12px 0;
+  font-family: 'MedievalSharp', serif;
+  color: #c9a444;
+  font-size: 14px;
+}
+
+.previewCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(13, 26, 46, 0.8);
+  border: 2px solid rgba(201, 164, 68, 0.4);
+  border-radius: 8px;
+}
+
+.previewName {
+  font-family: 'MedievalSharp', serif;
+  font-size: 18px;
+  color: #f0e6d2;
+}
+
+.previewRarity {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: rgba(201, 164, 68, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+/* Form Sections */
+.section {
+  background: rgba(26, 47, 79, 0.4);
+  border: 1px solid rgba(201, 164, 68, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.section h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.2);
+  font-family: 'MedievalSharp', serif;
+  color: #c9a444;
+  font-size: 16px;
+}
+
+/* Form Fields */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field label {
+  font-size: 13px;
+  color: #9ab0c9;
+  font-weight: 500;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  padding: 10px 12px;
+  background: rgba(13, 26, 46, 0.8);
+  border: 1px solid rgba(154, 176, 201, 0.3);
+  border-radius: 6px;
+  color: #f0e6d2;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #c9a444;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.smallInput {
+  width: 80px;
+}
+
+.wideInput {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Icon Grid */
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.iconOption {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 26, 46, 0.6);
+  border: 1px solid rgba(154, 176, 201, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iconOption:hover {
+  background: rgba(201, 164, 68, 0.1);
+  border-color: rgba(201, 164, 68, 0.5);
+}
+
+.iconOption.selected {
+  background: rgba(201, 164, 68, 0.2);
+  border-color: #c9a444;
+}
+
+/* Effect/Trigger Rows */
+.effectRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(13, 26, 46, 0.5);
+  border: 1px solid rgba(154, 176, 201, 0.2);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.effectRow select,
+.effectRow input {
+  flex-shrink: 0;
+}
+
+.addButton {
+  padding: 6px 12px;
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid rgba(46, 204, 113, 0.5);
+  border-radius: 4px;
+  color: #2ecc71;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background: rgba(46, 204, 113, 0.3);
+}
+
+.removeButton {
+  padding: 6px 12px;
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  border-radius: 4px;
+  color: #e74c3c;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.removeButton:hover {
+  background: rgba(231, 76, 60, 0.3);
+}
+
+.hint {
+  color: #9ab0c9;
+  font-size: 12px;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Messages */
+.error {
+  padding: 12px 16px;
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  border-radius: 6px;
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+.success {
+  padding: 12px 16px;
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid rgba(46, 204, 113, 0.5);
+  border-radius: 6px;
+  color: #2ecc71;
+  font-size: 14px;
+}
+
+/* Submit Button */
+.submitButton {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #c9a444 0%, #a88b3a 100%);
+  border: none;
+  border-radius: 8px;
+  color: #0d1a2e;
+  font-family: 'MedievalSharp', serif;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(201, 164, 68, 0.4);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container {
+    padding: 12px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .effectRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .effectRow select,
+  .effectRow input {
+    width: 100%;
+  }
+
+  .removeButton {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

@@ -44,10 +44,10 @@ export class UserCharacterService {
         gold: 0,
         health: characterClass.startingHealth,
         perks: [],
-        inventory: [],
       },
       include: {
         class: true,
+        ownedItems: true,
       },
     });
 
@@ -59,6 +59,7 @@ export class UserCharacterService {
       where: { userId },
       include: {
         class: true,
+        ownedItems: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -166,6 +167,7 @@ export class UserCharacterService {
       },
       include: {
         class: true,
+        ownedItems: true,
       },
     });
 
@@ -179,7 +181,7 @@ export class UserCharacterService {
   ): Promise<CharacterResponse> {
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
-      include: { class: true },
+      include: { class: true, ownedItems: true },
     });
 
     if (!character) {
@@ -216,6 +218,7 @@ export class UserCharacterService {
       },
       include: {
         class: true,
+        ownedItems: true,
       },
     });
 
@@ -244,6 +247,9 @@ export class UserCharacterService {
     });
   }
 
+  /**
+   * Add item to character's inventory (legacy method - use InventoryService for new code)
+   */
   async equipItem(
     characterId: string,
     userId: string,
@@ -251,7 +257,7 @@ export class UserCharacterService {
   ): Promise<CharacterResponse> {
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
-      include: { class: true },
+      include: { class: true, ownedItems: true },
     });
 
     if (!character) {
@@ -270,24 +276,26 @@ export class UserCharacterService {
       throw new NotFoundError('Item not found');
     }
 
-    const inventory = character.inventory as string[];
-    if (inventory.includes(itemId)) {
+    // Check if already owned
+    if (character.ownedItems.some((inv) => inv.itemId === itemId)) {
       throw new ConflictError('Item already in inventory');
     }
 
-    const updated = await this.prisma.character.update({
-      where: { id: characterId },
-      data: {
-        inventory: [...inventory, itemId],
-      },
-      include: {
-        class: true,
-      },
+    await this.prisma.characterInventory.create({
+      data: { characterId, itemId },
     });
 
-    return this.mapToCharacterResponse(updated);
+    const updated = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      include: { class: true, ownedItems: true },
+    });
+
+    return this.mapToCharacterResponse(updated!);
   }
 
+  /**
+   * Remove item from character's inventory (legacy method - use InventoryService for new code)
+   */
   async unequipItem(
     characterId: string,
     userId: string,
@@ -295,7 +303,7 @@ export class UserCharacterService {
   ): Promise<CharacterResponse> {
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
-      include: { class: true },
+      include: { class: true, ownedItems: true },
     });
 
     if (!character) {
@@ -306,22 +314,23 @@ export class UserCharacterService {
       throw new NotFoundError('Character not found');
     }
 
-    const inventory = character.inventory as string[];
-    if (!inventory.includes(itemId)) {
+    const inventoryItem = character.ownedItems.find(
+      (inv) => inv.itemId === itemId,
+    );
+    if (!inventoryItem) {
       throw new NotFoundError('Item not in inventory');
     }
 
-    const updated = await this.prisma.character.update({
-      where: { id: characterId },
-      data: {
-        inventory: inventory.filter((id) => id !== itemId),
-      },
-      include: {
-        class: true,
-      },
+    await this.prisma.characterInventory.delete({
+      where: { id: inventoryItem.id },
     });
 
-    return this.mapToCharacterResponse(updated);
+    const updated = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      include: { class: true, ownedItems: true },
+    });
+
+    return this.mapToCharacterResponse(updated!);
   }
 
   async addEnhancement(
@@ -410,6 +419,11 @@ export class UserCharacterService {
   }
 
   private mapToCharacterResponse(character: any): CharacterResponse {
+    // Extract item IDs from ownedItems relation (if included)
+    const inventory = character.ownedItems
+      ? character.ownedItems.map((inv: any) => inv.itemId)
+      : [];
+
     return {
       id: character.id,
       name: character.name,
@@ -421,7 +435,7 @@ export class UserCharacterService {
       gold: character.gold,
       health: character.health,
       perks: character.perks as string[],
-      inventory: character.inventory as string[],
+      inventory,
       currentGameId: character.currentGameId,
       campaignId: character.campaignId,
       createdAt: character.createdAt,

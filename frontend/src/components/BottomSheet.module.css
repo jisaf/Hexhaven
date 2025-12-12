@@ -1,0 +1,232 @@
+/**
+ * BottomSheet Styles (Issue #205)
+ *
+ * Mobile-first bottom sheet with:
+ * - Slide up animation from bottom
+ * - Touch-friendly drag handle (44px minimum touch target)
+ * - Tab navigation
+ * - Fantasy/medieval theme matching game UI
+ */
+
+.bottomSheet {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(13, 26, 46, 0.98);
+  border-top: 2px solid #c9a444;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  animation: slideUp 300ms ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.bottomSheet.dragging {
+  /* Disable smooth animation during drag */
+  animation: none;
+  user-select: none;
+}
+
+/* Drag Handle - 44px minimum touch target */
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  min-height: 44px;
+  cursor: grab;
+  position: relative;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragBar {
+  width: 40px;
+  height: 4px;
+  background-color: #c9a444;
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.dragHandle:hover .dragBar,
+.dragHandle:active .dragBar {
+  opacity: 1;
+}
+
+.title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #c9a444;
+  font-family: 'MedievalSharp', serif;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.closeButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid rgba(201, 164, 68, 0.5);
+  border-radius: 50%;
+  color: #f0e6d2;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(201, 164, 68, 0.2);
+  border-color: #c9a444;
+  color: #c9a444;
+}
+
+/* Tab Bar */
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
+  padding: 0 8px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  min-height: 44px; /* Touch-friendly */
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #9ab0c9;
+  font-family: 'MedievalSharp', serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab:hover {
+  color: #f0e6d2;
+  background: rgba(201, 164, 68, 0.1);
+}
+
+.tab.activeTab {
+  color: #c9a444;
+  border-bottom-color: #c9a444;
+}
+
+.tabIcon {
+  font-size: 16px;
+}
+
+.tabLabel {
+  white-space: nowrap;
+}
+
+.tabBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #e74c3c;
+  border-radius: 9px;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Content Area */
+.content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.content > * {
+  height: 100%;
+}
+
+/* Landscape adjustments */
+@media (orientation: landscape) {
+  .bottomSheet {
+    animation: slideLeft 300ms ease-out forwards;
+  }
+
+  @keyframes slideLeft {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .tabBar {
+    justify-content: center;
+  }
+
+  .tab {
+    flex: 0 1 auto;
+    min-width: 100px;
+  }
+}
+
+/* Portrait adjustments */
+@media (orientation: portrait) {
+  .tab {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .tabIcon {
+    font-size: 14px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .bottomSheet {
+    animation: none;
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

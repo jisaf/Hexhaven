@@ -29,15 +29,17 @@ import { ScenarioCompleteModal } from '../components/ScenarioCompleteModal';
 import { RestModal } from '../components/RestModal';
 import { ExhaustionModal } from '../components/ExhaustionModal';
 import { GamePanel } from '../components/game/GamePanel';
-import { InfoPanel } from '../components/game/InfoPanel';
+import { InfoPanel, type SheetTab } from '../components/game/InfoPanel';
 import { TurnStatus } from '../components/game/TurnStatus';
 import { GameLog } from '../components/game/GameLog';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
+import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
+import { useInventory } from '../hooks/useInventory';
 import { useFullscreen, exitFullscreen } from '../hooks/useFullscreen';
 import styles from './GameBoard.module.css';
 
@@ -56,6 +58,25 @@ export function GameBoard() {
   const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
   const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
   const [showPileView, setShowPileView] = useState(false);
+
+  // Inventory / BottomSheet state (Issue #205)
+  const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
+  const [showInventory, setShowInventory] = useState(false);
+
+  // Use inventory hook to manage inventory state
+  const {
+    ownedItems,
+    equippedItems,
+    itemStates,
+    loading: inventoryLoading,
+    error: inventoryError,
+    useItem,
+    equipItem,
+    unequipItem,
+  } = useInventory({
+    characterId: gameState.myUserCharacterId, // Use database ID for inventory API
+    enabled: !!gameState.myUserCharacterId,
+  });
 
   // Handle navigation back (exit fullscreen and go to lobby)
   // Memoized to prevent useFullscreen effect from re-running on every render
@@ -434,9 +455,23 @@ export function GameBoard() {
       {/* Game Panel - Left/Top: Hex Map */}
       <GamePanel ref={containerRef} />
 
-      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection */}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
       <InfoPanel
-        showCardSelection={gameState.showCardSelection || showPileView}
+        showCardSelection={gameState.showCardSelection || showPileView || showInventory}
+        activeTab={activeSheetTab}
+        onTabChange={(tab) => setActiveSheetTab(tab)}
+        onSheetClose={() => {
+          if (showInventory) {
+            setShowInventory(false);
+          }
+          if (showPileView) {
+            setShowPileView(false);
+            setSelectedPile(null);
+            setPileViewCards([]);
+          }
+          // Card selection is controlled by game state, not closed manually
+        }}
+        inventoryCount={ownedItems.length}
         turnStatus={
           <TurnStatus
             turnOrder={turnOrderWithHealth}
@@ -471,6 +506,12 @@ export function GameBoard() {
             canRest={discardCount >= 2}
             onPileClick={handlePileClick}
             selectedPile={selectedPile}
+            inventoryCount={ownedItems.length}
+            onInventoryClick={() => {
+              setShowInventory(true);
+              setActiveSheetTab('inventory');
+            }}
+            inventorySelected={showInventory && activeSheetTab === 'inventory'}
           />
         }
         cardSelection={
@@ -513,6 +554,20 @@ export function GameBoard() {
               discardPileCount={discardCount}
             />
           ) : undefined
+        }
+        inventoryContent={
+          <InventoryTabContent
+            ownedItems={ownedItems}
+            equippedItems={equippedItems}
+            itemStates={itemStates}
+            characterLevel={typeof myCharacter?.level === 'number' ? myCharacter.level : 1}
+            onUseItem={useItem}
+            onEquipItem={equipItem}
+            onUnequipItem={unequipItem}
+            disabled={!gameState.isMyTurn}
+            loading={inventoryLoading}
+            error={inventoryError || undefined}
+          />
         }
       />
 

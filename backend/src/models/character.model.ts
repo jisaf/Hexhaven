@@ -449,6 +449,47 @@ export class Character {
   }
 
   /**
+   * Create a character with a specific ID (Issue #205)
+   * Used when loading persistent characters from database.
+   *
+   * @param id - The persistent character ID from database
+   * @param playerId - The player's session UUID
+   * @param characterClass - The character class
+   * @param startingPosition - Starting position for the game
+   * @param currentHealth - Current health (optional, defaults to max)
+   */
+  static createWithId(
+    id: string,
+    playerId: string,
+    characterClass: CharacterClass,
+    startingPosition: AxialCoordinates,
+    currentHealth?: number,
+  ): Character {
+    const now = new Date();
+    const stats = Character.getStatsForClass(characterClass);
+
+    // Get starter deck and extract card IDs
+    const starterDeck = AbilityCard.getStarterDeck(characterClass);
+    const cardIds = starterDeck.map((card) => card.id);
+
+    return new Character({
+      id, // Use provided ID (persistent character ID)
+      playerId,
+      characterClass,
+      position: startingPosition,
+      stats,
+      currentHealth: currentHealth ?? stats.maxHealth,
+      conditions: [],
+      exhausted: false,
+      hand: cardIds,
+      discardPile: [],
+      lostPile: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  /**
    * Get base stats for each character class
    */
   static getStatsForClass(characterClass: CharacterClass): CharacterStats {

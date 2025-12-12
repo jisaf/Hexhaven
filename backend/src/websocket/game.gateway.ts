@@ -62,7 +62,16 @@ import type {
   DebugLogPayload,
   ObjectiveProgressUpdatePayload,
   CharacterExhaustedPayload,
+  UseItemPayload,
+  EquipItemPayload,
+  UnequipItemPayload,
+  ItemUsedPayload,
+  ItemEquippedPayload,
+  ItemUnequippedPayload,
+  ItemsRefreshedPayload,
+  CharacterInventoryPayload,
 } from '../../../shared/types/events';
+import { InventoryService } from '../services/inventory.service';
 import {
   ConnectionStatus,
   RoomStatus,
@@ -102,6 +111,7 @@ export class GameGateway
   private readonly objectiveContextBuilderService =
     new ObjectiveContextBuilderService();
   private readonly gameResultService: GameResultService;
+  private readonly inventoryService = new InventoryService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 
@@ -240,9 +250,14 @@ export class GameGateway
       const discardPile: string[] = [];
       const lostPile: string[] = [];
 
+      // Get database character ID from player (Issue #205)
+      const player = room.players.find((p: any) => p.uuid === charData.playerId);
+      const userCharacterId = player?.characterId || undefined;
+
       return {
         id: charData.id,
         playerId: charData.playerId,
+        userCharacterId, // Database character ID for inventory API
         classType: charData.characterClass,
         health: charData.currentHealth,
         maxHealth: charData.stats.maxHealth,
@@ -831,6 +846,37 @@ export class GameGateway
       this.logger.log(
         `Player ${player.nickname} successfully selected ${characterClass}${characterId ? ` (ID: ${characterId})` : ''}`,
       );
+
+      // Send inventory data for persistent characters (Issue #205 - Phase 4.5)
+      if (characterId) {
+        try {
+          // Fetch equipped items with details
+          const equippedItems = await this.inventoryService.getEquippedItemsWithDetails(characterId);
+          const bonuses = await this.inventoryService.getEquippedBonuses(characterId);
+
+          const inventoryPayload: CharacterInventoryPayload = {
+            characterId,
+            equippedItems: equippedItems.map(eq => ({
+              slot: eq.slot,
+              itemId: eq.item.id,
+              itemName: eq.item.name,
+            })),
+            bonuses,
+          };
+
+          // Send to the specific client who selected the character
+          client.emit('character_inventory', inventoryPayload);
+
+          this.logger.log(
+            `Sent inventory data to player ${player.nickname}: ${equippedItems.length} items equipped, bonuses: +${bonuses.attackBonus} attack, +${bonuses.defenseBonus} defense`,
+          );
+        } catch (inventoryError) {
+          this.logger.warn(
+            `Failed to send inventory for character ${characterId}: ${inventoryError instanceof Error ? inventoryError.message : String(inventoryError)}`,
+          );
+          // Don't fail character selection if inventory fetch fails
+        }
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1638,7 +1684,26 @@ export class GameGateway
       }
 
       // Get attack value from attacker's selected card (Gloomhaven: attack comes from cards)
-      const baseAttack = attacker.effectiveAttackThisTurn;
+      let baseAttack = attacker.effectiveAttackThisTurn;
+
+      // Apply persistent item bonuses to attack (Issue #205 - Phase 4.1)
+      // Only applies if this is a persistent character with equipped items
+      if (characterService.isPersistentCharacter(attacker.id)) {
+        try {
+          const itemBonuses = await this.inventoryService.getEquippedBonuses(attacker.id);
+          if (itemBonuses.attackBonus !== 0) {
+            baseAttack += itemBonuses.attackBonus;
+            this.logger.log(
+              `Applied item attack bonus: +${itemBonuses.attackBonus} (total base attack: ${baseAttack})`,
+            );
+          }
+        } catch (error) {
+          // Don't fail the attack if item bonus lookup fails
+          this.logger.warn(
+            `Failed to get item bonuses for character ${attacker.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
 
       // Draw attack modifier card
       let modifierDeck = this.modifierDecks.get(room.roomCode);
@@ -1662,7 +1727,7 @@ export class GameGateway
       }
 
       // Calculate damage
-      const damage = this.damageService.calculateDamage(
+      let damage = this.damageService.calculateDamage(
         baseAttack,
         modifierCard,
       );
@@ -1670,6 +1735,24 @@ export class GameGateway
       // Apply damage to target
       let targetHealth: number;
       let targetDead = false;
+
+      // Apply defense bonus for character targets (Issue #205 - Phase 4.1)
+      if (!isMonsterTarget && characterService.isPersistentCharacter(target.id)) {
+        try {
+          const defenseBonus = await this.inventoryService.getEquippedBonuses(target.id);
+          if (defenseBonus.defenseBonus > 0) {
+            const reducedDamage = Math.max(0, damage - defenseBonus.defenseBonus);
+            this.logger.log(
+              `Applied defense bonus: ${defenseBonus.defenseBonus} (damage ${damage} -> ${reducedDamage})`,
+            );
+            damage = reducedDamage;
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to get defense bonus for ${target.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
 
       if (isMonsterTarget) {
         target.health = Math.max(0, target.health - damage);
@@ -2095,6 +2178,9 @@ export class GameGateway
           cardsInHand: result.hand.length,
           healthHealed: healthHealed,
         });
+
+        // Refresh spent items after long rest (Issue #205)
+        await this.refreshItemsAfterRest(character.id, room.roomCode);
 
         this.logger.log(
           `Long rest complete for ${character.id}: healed ${healthHealed} HP, cards moved`,
@@ -2739,10 +2825,31 @@ export class GameGateway
 
         // Calculate damage
         const baseDamage = monster.attack;
-        const finalDamage = this.damageService.calculateDamage(
+        let finalDamage = this.damageService.calculateDamage(
           baseDamage,
           modifierCard,
         );
+
+        // Apply defense bonus from equipped items (Issue #205 - Phase 4.1)
+        if (characterService.isPersistentCharacter(focusTarget.id)) {
+          try {
+            const itemBonuses = await this.inventoryService.getEquippedBonuses(focusTarget.id);
+            if (itemBonuses.defenseBonus > 0) {
+              const reducedDamage = Math.max(0, finalDamage - itemBonuses.defenseBonus);
+              this.emitDebugLog(
+                roomCode,
+                'info',
+                `Item defense bonus: ${itemBonuses.defenseBonus} (damage ${finalDamage} -> ${reducedDamage})`,
+                'MonsterAI',
+              );
+              finalDamage = reducedDamage;
+            }
+          } catch (error) {
+            this.logger.warn(
+              `Failed to get defense bonus for ${focusTarget.id}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
 
         this.emitDebugLog(
           roomCode,
@@ -3611,6 +3718,33 @@ export class GameGateway
         });
 
         this.logger.log(`Game result saved to database for room ${roomCode}`);
+
+        // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
+        // This resets consumed items and refreshes spent items for the next scenario
+        for (const player of room.players) {
+          const character = characterService.getCharacterByPlayerId(player.uuid);
+          if (character && characterService.isPersistentCharacter(character.id)) {
+            try {
+              const refreshResult = await this.inventoryService.refreshAllItems(character.id);
+              if (refreshResult.refreshedItems.length > 0) {
+                const payload: ItemsRefreshedPayload = {
+                  characterId: character.id,
+                  refreshedItems: refreshResult.refreshedItems,
+                  trigger: 'scenario_end',
+                };
+                this.server.to(roomCode).emit('items_refreshed', payload);
+                this.logger.log(
+                  `Refreshed ${refreshResult.refreshedItems.length} items for character ${character.id} after scenario`,
+                );
+              }
+            } catch (refreshError) {
+              this.logger.warn(
+                `Failed to refresh items for character ${character.id}: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+              );
+              // Continue with other characters
+            }
+          }
+        }
       } catch (dbError) {
         this.logger.error(
           `Failed to save game result to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
@@ -3621,6 +3755,284 @@ export class GameGateway
       this.logger.error(
         `Check scenario completion error: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+  }
+
+  // ========== ITEM & INVENTORY EVENTS (Issue #205) ==========
+
+  /**
+   * Handle use_item event (Issue #205)
+   * Player uses an equipped item during their turn
+   */
+  @SubscribeMessage('use_item')
+  async handleUseItem(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: UseItemPayload,
+  ) {
+    try {
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        client.emit('error', {
+          code: 'NOT_IN_ROOM',
+          message: 'You are not in a room',
+        } as ErrorPayload);
+        return;
+      }
+
+      const { room, roomCode } = roomData;
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        client.emit('error', {
+          code: 'PLAYER_NOT_FOUND',
+          message: 'Player not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Find player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+
+      if (!character) {
+        client.emit('error', {
+          code: 'NO_CHARACTER',
+          message: 'You do not have a character',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Use the item through inventory service
+      const result = await this.inventoryService.useItem(
+        character.id,
+        payload.itemId,
+      );
+
+      // Emit item_used event to all players in room
+      const itemUsedPayload: ItemUsedPayload = {
+        characterId: character.id,
+        characterName: character.characterClass as string,
+        itemId: payload.itemId,
+        itemName: result.item.name,
+        effects: result.effects,
+        newState: result.newState.state,
+        usesRemaining: result.newState.usesRemaining,
+      };
+
+      this.server.to(roomCode).emit('item_used', itemUsedPayload);
+
+      this.logger.log(
+        `Item ${result.item.name} used by character ${character.id} in room ${roomCode}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Use item error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      client.emit('error', {
+        code: 'USE_ITEM_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to use item',
+      } as ErrorPayload);
+    }
+  }
+
+  /**
+   * Handle equip_item event (Issue #205)
+   * Player equips an item from their inventory
+   * Note: Only works outside of active games (lobby/character management)
+   */
+  @SubscribeMessage('equip_item')
+  async handleEquipItem(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: EquipItemPayload,
+  ) {
+    try {
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        client.emit('error', {
+          code: 'NOT_IN_ROOM',
+          message: 'You are not in a room',
+        } as ErrorPayload);
+        return;
+      }
+
+      const { roomCode } = roomData;
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        client.emit('error', {
+          code: 'PLAYER_NOT_FOUND',
+          message: 'Player not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Find player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+
+      if (!character) {
+        client.emit('error', {
+          code: 'NO_CHARACTER',
+          message: 'You do not have a character',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Equip the item through inventory service
+      const result = await this.inventoryService.equipItem(
+        character.id,
+        playerUUID, // userId = playerUUID
+        payload.itemId,
+      );
+
+      // Get item details for the event
+      const item = await this.prisma.item.findUnique({
+        where: { id: payload.itemId },
+      });
+
+      if (item) {
+        // Emit item_equipped event to all players in room
+        const itemEquippedPayload: ItemEquippedPayload = {
+          characterId: character.id,
+          itemId: payload.itemId,
+          itemName: item.name,
+          slot: item.slot as import('../../../shared/types/entities').ItemSlot,
+        };
+
+        this.server.to(roomCode).emit('item_equipped', itemEquippedPayload);
+
+        // Also emit equipment_changed for full state update
+        this.server.to(roomCode).emit('equipment_changed', {
+          characterId: character.id,
+          equipped: result.equippedItems,
+        });
+
+        this.logger.log(
+          `Item ${item.name} equipped by character ${character.id} in room ${roomCode}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Equip item error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      client.emit('error', {
+        code: 'EQUIP_ITEM_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to equip item',
+      } as ErrorPayload);
+    }
+  }
+
+  /**
+   * Handle unequip_item event (Issue #205)
+   * Player unequips an item from their equipment
+   * Note: Only works outside of active games (lobby/character management)
+   */
+  @SubscribeMessage('unequip_item')
+  async handleUnequipItem(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: UnequipItemPayload,
+  ) {
+    try {
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        client.emit('error', {
+          code: 'NOT_IN_ROOM',
+          message: 'You are not in a room',
+        } as ErrorPayload);
+        return;
+      }
+
+      const { roomCode } = roomData;
+      const playerUUID = this.socketToPlayer.get(client.id);
+      if (!playerUUID) {
+        client.emit('error', {
+          code: 'PLAYER_NOT_FOUND',
+          message: 'Player not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Find player's character
+      const character = characterService.getCharacterByPlayerId(playerUUID);
+
+      if (!character) {
+        client.emit('error', {
+          code: 'NO_CHARACTER',
+          message: 'You do not have a character',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Unequip the item through inventory service
+      const result = await this.inventoryService.unequipItemById(
+        character.id,
+        playerUUID, // userId = playerUUID
+        payload.itemId,
+      );
+
+      // Get item details for the event
+      const item = await this.prisma.item.findUnique({
+        where: { id: payload.itemId },
+      });
+
+      if (item) {
+        // Emit item_unequipped event to all players in room
+        const itemUnequippedPayload: ItemUnequippedPayload = {
+          characterId: character.id,
+          itemId: payload.itemId,
+          itemName: item.name,
+          slot: result.slot as import('../../../shared/types/entities').ItemSlot,
+        };
+
+        this.server.to(roomCode).emit('item_unequipped', itemUnequippedPayload);
+
+        // Also emit equipment_changed for full state update
+        this.server.to(roomCode).emit('equipment_changed', {
+          characterId: character.id,
+          equipped: result.equippedItems,
+        });
+
+        this.logger.log(
+          `Item ${item.name} unequipped by character ${character.id} in room ${roomCode}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Unequip item error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      client.emit('error', {
+        code: 'UNEQUIP_ITEM_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to unequip item',
+      } as ErrorPayload);
+    }
+  }
+
+  /**
+   * Refresh spent items for a character (called after long rest)
+   * Internal method - called from rest-complete handling
+   */
+  private async refreshItemsAfterRest(
+    characterId: string,
+    roomCode: string,
+  ): Promise<void> {
+    try {
+      const result =
+        await this.inventoryService.refreshSpentItems(characterId);
+
+      if (result.refreshedItems.length > 0) {
+        const payload: ItemsRefreshedPayload = {
+          characterId,
+          refreshedItems: result.refreshedItems,
+          trigger: 'long_rest',
+        };
+
+        this.server.to(roomCode).emit('items_refreshed', payload);
+
+        this.logger.log(
+          `Refreshed ${result.refreshedItems.length} items for character ${characterId} after long rest`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to refresh items after rest: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      // Don't throw - item refresh failure shouldn't break rest mechanics
     }
   }
 }

@@ -4,9 +4,11 @@
  * Full-width bar (44px height) showing card counts in each pile.
  * Clickable to view cards in each pile.
  * Indicates when rest is available.
+ * Also includes an inventory button (Issue #205).
  */
 
 import React from 'react';
+import 'rpg-awesome/css/rpg-awesome.min.css';
 import styles from './CardPileIndicator.module.css';
 
 export type PileType = 'hand' | 'discard' | 'lost';
@@ -18,6 +20,12 @@ interface CardPileIndicatorProps {
   canRest: boolean;
   onPileClick: (pile: PileType) => void;
   selectedPile?: PileType | null;
+  /** Number of items in inventory (for badge) */
+  inventoryCount?: number;
+  /** Click handler for inventory button */
+  onInventoryClick?: () => void;
+  /** Whether inventory is currently selected */
+  inventorySelected?: boolean;
 }
 
 export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
@@ -27,6 +35,9 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   canRest,
   onPileClick,
   selectedPile,
+  inventoryCount = 0,
+  onInventoryClick,
+  inventorySelected = false,
 }) => {
   return (
     <div className={styles.indicator} data-testid="card-pile-indicator">
@@ -60,6 +71,21 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         <span className={styles.label}>Lost</span>
         <span className={styles.count}>{lostCount}</span>
       </button>
+
+      {/* Inventory Button (Issue #205) */}
+      {onInventoryClick && (
+        <button
+          className={`${styles.pile} ${styles.inventoryPile} ${inventorySelected ? styles.selected : ''}`}
+          title="Click to open inventory"
+          data-testid="inventory-button"
+          onClick={onInventoryClick}
+        >
+          <i className="ra ra-knapsack" style={{ fontSize: '16px' }} />
+          {inventoryCount > 0 && (
+            <span className={styles.inventoryBadge}>{inventoryCount}</span>
+          )}
+        </button>
+      )}
     </div>
   );
 };

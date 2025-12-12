@@ -13,7 +13,11 @@ import { GameManagementController } from './api/game-management.controller';
 import { CardLayoutTemplatesController } from './api/card-layout-templates.controller';
 import { AbilityCardsController } from './api/ability-cards.controller';
 import { GameHistoryController } from './api/game-history.controller';
+import { ItemsController } from './api/items.controller';
+import { InventoryController } from './api/inventory.controller';
 import { ScenarioService } from './services/scenario.service';
+import { InventoryService } from './services/inventory.service';
+import { ItemService } from './services/item.service';
 import { MonsterService } from './services/monster.service';
 import { PrismaService } from './services/prisma.service';
 import { CardLayoutTemplateService } from './services/card-layout-template.service';
@@ -39,6 +43,8 @@ import { BackgroundUploadService } from './services/background-upload.service';
     CardLayoutTemplatesController, // Card layout template management
     AbilityCardsController, // Ability cards API endpoint
     GameHistoryController, // Phase 9: Match history and game statistics (186)
+    ItemsController, // Issue #205: Items and inventory system
+    InventoryController, // Issue #205 Sprint 2: Character inventory management
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -54,6 +60,8 @@ import { BackgroundUploadService } from './services/background-upload.service';
     RestService, // Rest mechanics (short rest, long rest)
     ExhaustionService, // Exhaustion detection and execution
     BackgroundUploadService, // Issue #191: Background image upload handling
+    InventoryService, // Issue #205 Sprint 2: Character inventory management
+    ItemService, // Issue #205: Item CRUD operations
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

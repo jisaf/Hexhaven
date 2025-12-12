@@ -85,6 +85,7 @@ interface GameState {
 
   // Player state
   myCharacterId: string | null;
+  myUserCharacterId: string | null; // Database character ID for inventory API (Issue #205)
   abilityDeck: AbilityCard[]; // Master copy of ALL cards (never modified)
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
@@ -208,6 +209,7 @@ class GameStateManager {
     currentTurnEntityId: null,
     isMyTurn: false,
     myCharacterId: null,
+    myUserCharacterId: null,
     abilityDeck: [],
     playerHand: [],
     selectedTopAction: null,
@@ -282,6 +284,7 @@ class GameStateManager {
     const myCharacter = data.characters.find(char => char.playerId === playerUUID);
     if (myCharacter) {
       this.state.myCharacterId = myCharacter.id;
+      this.state.myUserCharacterId = myCharacter.userCharacterId || null; // Database ID for inventory API
       const characterWithDeck = myCharacter as typeof myCharacter & {
         abilityDeck?: AbilityCard[];
         selectedCards?: { topCardId: string; bottomCardId: string; initiative: number };
@@ -1123,6 +1126,7 @@ class GameStateManager {
         currentTurnEntityId: null,
         isMyTurn: false,
         myCharacterId: null,
+        myUserCharacterId: null,
         playerHand: [],
         selectedTopAction: null,
         selectedBottomAction: null,
