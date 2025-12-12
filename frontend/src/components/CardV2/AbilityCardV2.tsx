@@ -37,31 +37,19 @@ const renderActionDetails = (action: Action) => {
   );
 };
 
+const Divider = () => <div className="row-span-1 border-b-2 border-slate-600" />;
+
 export const AbilityCardV2: React.FC<AbilityCardV2Props> = ({ card, isSelected, isTop, disabled }) => {
   const { name, initiative, level, topAction, bottomAction } = card;
   const isLost = (card as EnhancedAbilityCard).isLost;
 
-  const topClasses = isTop === true ? 'ring-2 ring-green-500' : '';
-  const bottomClasses = isTop === false ? 'ring-2 ring-green-500' : '';
+  const topClasses = isTop === true ? 'ring-2 ring-yellow-400' : '';
+  const bottomClasses = isTop === false ? 'ring-2 ring-yellow-400' : '';
 
   return (
     <Card
-      topContent={
-        <div className={`h-full ${topClasses}`}>
-          <RowModule className="text-lg font-bold text-slate-100">{name}</RowModule>
-          <TextBoxModule rows={3}>
-            {renderActionDetails(topAction)}
-          </TextBoxModule>
-        </div>
-      }
-      bottomContent={
-        <div className={`h-full ${bottomClasses}`}>
-          <TextBoxModule rows={3}>
-            {renderActionDetails(bottomAction)}
-          </TextBoxModule>
-          <RowModule className="text-sm text-slate-400">Level {level}</RowModule>
-        </div>
-      }
+      isSelected={isSelected}
+      disabled={disabled}
       sidebarContent={
         <div className="flex flex-col items-center justify-between h-full py-4 text-amber-400">
           <div className="text-3xl font-bold">{initiative}</div>
@@ -70,8 +58,24 @@ export const AbilityCardV2: React.FC<AbilityCardV2Props> = ({ card, isSelected, 
           )}
         </div>
       }
-      isSelected={isSelected}
-      disabled={disabled}
-    />
+    >
+      {/* Top Half */}
+      <div className={`row-span-4 grid grid-rows-4 ${topClasses}`}>
+        <RowModule className="text-lg font-bold text-slate-100">{name}</RowModule>
+        <TextBoxModule rows={3}>
+          {renderActionDetails(topAction)}
+        </TextBoxModule>
+      </div>
+
+      <Divider />
+
+      {/* Bottom Half */}
+      <div className={`row-span-4 grid grid-rows-4 ${bottomClasses}`}>
+        <TextBoxModule rows={3}>
+          {renderActionDetails(bottomAction)}
+        </TextBoxModule>
+        <RowModule className="text-sm text-slate-400">Level {level}</RowModule>
+      </div>
+    </Card>
   );
 };

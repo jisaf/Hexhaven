@@ -1,14 +1,13 @@
 import React from 'react';
 
 interface CardProps {
-  topContent: React.ReactNode;
-  bottomContent: React.ReactNode;
+  children: React.ReactNode;
   sidebarContent: React.ReactNode;
   isSelected?: boolean;
   disabled?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ topContent, bottomContent, sidebarContent, isSelected, disabled }) => {
+export const Card: React.FC<CardProps> = ({ children, sidebarContent, isSelected, disabled }) => {
   const borderClass = isSelected ? 'border-green-500' : 'border-slate-600';
   const disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : '';
 
@@ -19,15 +18,8 @@ export const Card: React.FC<CardProps> = ({ topContent, bottomContent, sidebarCo
     >
       <div className="flex h-full">
         {/* Main Content Area */}
-        <div className="w-[90%] h-full flex flex-col">
-          {/* Top Half */}
-          <div className="h-1/2 border-b-2 border-slate-600">
-            {topContent}
-          </div>
-          {/* Bottom Half */}
-          <div className="h-1/2">
-            {bottomContent}
-          </div>
+        <div className="w-[90%] h-full grid grid-rows-9">
+          {children}
         </div>
         {/* Sidebar */}
         <div className="w-[10%] h-full border-l-2 border-slate-600">

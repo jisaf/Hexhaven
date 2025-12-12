@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard } from './AbilityCard';
-import './CardSelectionPanel.css';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 interface CardSelectionPanelProps {
   cards: AbilityCardType[];
@@ -17,8 +17,6 @@ interface CardSelectionPanelProps {
   canLongRest?: boolean;
   discardPileCount?: number;
 }
-
-import { useMediaQuery } from '../hooks/useMediaQuery';
 
 export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   cards,
@@ -38,13 +36,13 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
   const mustRest = cards.length < 2 && canLongRest;
-  const panelClassName = `card-selection-panel ${isPortrait ? 'portrait' : ''}`;
+  const panelClassName = `fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t-2 border-slate-700 ${isPortrait ? 'h-[25vh]' : 'h-[50vh]'}`;
 
   return (
     <div className={panelClassName}>
-      <div className="selection-instructions">
-        <h3>Select Your Actions</h3>
-        <p>
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-bold">Select Your Actions</h3>
+        <p className="text-sm text-slate-400">
           {waiting
             ? 'Waiting for other players...'
             : mustRest
@@ -57,17 +55,15 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         </p>
       </div>
 
-      <div className="cards-container">
+      <div className="flex justify-center items-center gap-4">
         {cards.map((card) => {
           const isSelected = card.id === selectedTopAction?.id || card.id === selectedBottomAction?.id;
           const isFocused = card.id === focusedId;
 
-          const wrapperClassName = `card-wrapper ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
-
           return (
             <div
               key={card.id}
-              className={wrapperClassName}
+              className={`w-48 transform transition-transform ${isFocused ? 'scale-105' : ''}`}
               onClick={() => !waiting && onCardSelect(card)}
               onMouseEnter={() => !waiting && setFocusedId(card.id)}
               onMouseLeave={() => !waiting && setFocusedId(null)}
@@ -89,10 +85,10 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         })}
       </div>
 
-      <div className="action-buttons">
+      <div className="flex justify-center gap-4 mt-4">
         {!mustRest && canLongRest && (
           <button
-            className="btn-long-rest"
+            className="px-4 py-2 bg-blue-800 rounded hover:bg-blue-700 disabled:opacity-50"
             onClick={onLongRest}
             disabled={disabled || waiting}
             title={`Long Rest: Heal 2 HP, refresh items (${discardPileCount} cards in discard)`}
@@ -103,14 +99,14 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         {!mustRest && (
           <>
             <button
-              className="btn-clear"
+              className="px-4 py-2 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50"
               onClick={onClearSelection}
               disabled={!selectedTopAction && !selectedBottomAction || disabled || waiting}
             >
               Clear
             </button>
             <button
-              className="btn-confirm"
+              className="px-4 py-2 bg-green-700 rounded hover:bg-green-600 disabled:opacity-50"
               onClick={onConfirmSelection}
               disabled={!canConfirm || disabled || waiting}
             >
@@ -120,7 +116,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         )}
         {mustRest && canLongRest && (
           <button
-            className="btn-long-rest must-rest"
+            className="px-4 py-2 bg-blue-800 rounded hover:bg-blue-700 disabled:opacity-50"
             onClick={onLongRest}
             disabled={disabled || waiting}
             title="You must rest - not enough cards to play"
