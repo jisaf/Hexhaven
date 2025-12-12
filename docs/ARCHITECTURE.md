@@ -223,7 +223,8 @@ frontend/src/
 │   ├── useGameState.ts       # Game state subscription hook
 │   ├── useRoomSession.ts     # Room session subscription hook
 │   ├── useHexGrid.ts         # HexGrid rendering management
-│   └── useOrientation.ts     # Orientation handling
+│   ├── useOrientation.ts     # Orientation handling
+│   └── useBackgroundImage.ts # Issue #191: Background image state management
 └── i18n/                # Internationalization
     ├── index.ts
     └── locales/         # Translation files (en, es, fr, de, zh)
@@ -247,7 +248,8 @@ backend/src/
 │   ├── pathfinding.service.ts
 │   ├── account.service.ts
 │   ├── progression.service.ts
-│   └── scenario.service.ts
+│   ├── scenario.service.ts
+│   └── background-upload.service.ts  # Issue #191: Background image uploads
 ├── models/              # Domain models
 │   ├── player.model.ts
 │   ├── game-room.model.ts
@@ -431,6 +433,43 @@ gameSessionCoordinator.switchGame();
 - ✅ Single entry point for lifecycle operations
 - ✅ Easy to extend with new coordinated operations
 
+### Background Image System (Issue #191)
+
+The Scenario Designer supports background image uploads for visual reference when designing hex maps.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Scenario Designer  │────>│  Backend API        │────>│  File Storage    │
+│  (React + PixiJS)   │     │  (NestJS + Multer)  │     │  (nginx static)  │
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │
+         │                           │
+         ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐
+│  HexGrid.ts         │     │  PostgreSQL         │
+│  (PixiJS Sprite)    │     │  (URL + opacity)    │
+└─────────────────────┘     └─────────────────────┘
+```
+
+**Key Components**:
+- **BackgroundUploadService** (`backend/src/services/background-upload.service.ts`): Handles file uploads via Multer, stores to `frontend/public/backgrounds/`
+- **HexGrid.setBackgroundImage()** (`frontend/src/game/HexGrid.ts`): Loads image as PixiJS sprite, auto-fits to 1024×1024 world bounds
+- **useBackgroundImage hook** (`frontend/src/hooks/useBackgroundImage.ts`): Manages upload state, opacity, and cleanup
+
+**File Storage**:
+- Images stored in `frontend/public/backgrounds/` directory
+- Served via nginx with `/backgrounds/` location rule
+- SELinux context: `httpd_sys_content_t` (required for nginx access)
+- Max file size: 5MB (configurable via `MAX_UPLOAD_SIZE_MB`)
+- Supported formats: JPEG, PNG, GIF, WebP
+
+**World Bounds**:
+- Fixed 1024×1024 pixel world size (`WORLD_PIXEL_SIZE` constant)
+- Background auto-scaled to fit world bounds edge-to-edge
+- Gold border drawn around world perimeter for visual reference
+- Viewport clamped to world bounds to prevent losing the map
+
 ---
 
 ## Database Schema
@@ -473,7 +512,10 @@ CREATE TABLE scenarios (
   difficulty INTEGER,
   map_layout JSONB,
   monster_groups JSONB,
-  objective_primary VARCHAR(500)
+  objective_primary VARCHAR(500),
+  -- Background image fields (Issue #191)
+  background_image_url VARCHAR(500),  -- URL path to uploaded image
+  background_opacity FLOAT DEFAULT 1.0  -- Opacity (0.0 - 1.0)
 );
 
 -- Accounts (User Story 7)

@@ -18,7 +18,10 @@ import { CharacterSprite, type CharacterData } from './CharacterSprite';
 import { MonsterSprite } from './MonsterSprite';
 import { HighlightManager } from './HighlightManager';
 import { LootTokenPool, type LootTokenData } from './LootTokenSprite';
-import { type Axial, axialKey, screenToAxial, axialToScreen } from './hex-utils';
+import { type Axial, axialKey, screenToAxial, axialToScreen, HEX_SIZE } from './hex-utils';
+
+// Fixed world size in pixels (square 1024x1024)
+export const WORLD_PIXEL_SIZE = 1024;
 import type { Monster, HexTile as SharedHexTile, LootSpawnedPayload } from '../../../shared/types';
 
 export interface HexGridOptions {
@@ -48,6 +51,7 @@ export class HexGrid {
 
   // Layers
   private placeholderLayer!: PIXI.Container;
+  private borderLayer!: PIXI.Container;
   private tilesLayer!: PIXI.Container;
   private highlightsLayer!: PIXI.Container;
   private entitiesLayer!: PIXI.Container;
@@ -68,6 +72,10 @@ export class HexGrid {
 
   // Viewport for pan/zoom (US3 - T133)
   private viewport!: Viewport;
+
+  // Background image (Issue #191)
+  private backgroundSprite: PIXI.Sprite | null = null;
+  private backgroundLayer!: PIXI.Container;
 
   constructor(container: HTMLElement, options: HexGridOptions) {
     this.container = container;
@@ -92,9 +100,18 @@ export class HexGrid {
     this.container.appendChild(this.app.canvas);
 
     // Create viewport with pan/zoom/pinch support (US3 - T133-T135)
-    // World bounds: Use large enough space to accommodate any typical game board
-    const worldWidth = 4000;
-    const worldHeight = 4000;
+    // Use fixed 1024x1024 pixel world bounds with extra padding for panning
+    const worldPadding = HEX_SIZE * 2; // Extra padding around the world
+    const viewportBounds = {
+      minX: -HEX_SIZE - worldPadding,
+      minY: -HEX_SIZE - worldPadding,
+      maxX: -HEX_SIZE + WORLD_PIXEL_SIZE + worldPadding,
+      maxY: -HEX_SIZE + WORLD_PIXEL_SIZE + worldPadding
+    };
+    const worldWidth = viewportBounds.maxX - viewportBounds.minX;
+    const worldHeight = viewportBounds.maxY - viewportBounds.minY;
+    const worldCenterX = (viewportBounds.minX + viewportBounds.maxX) / 2;
+    const worldCenterY = (viewportBounds.minY + viewportBounds.maxY) / 2;
 
     this.viewport = new Viewport({
       screenWidth: this.options.width,
@@ -133,18 +150,24 @@ export class HexGrid {
         reverse: false  // Standard zoom direction (wheel up = zoom in)
       });
 
-    // Set zoom constraints (US3 - T134): 0.5x to 3x
+    // Set zoom constraints (US3 - T134): 0.1x to 3x (allow zooming out far to find the map)
     this.viewport
       .clampZoom({
-        minScale: 0.5,
+        minScale: 0.1,
         maxScale: 3.0
       });
 
-    // Don't set clamp here - we'll set it dynamically after board initialization
-    // to match the actual map bounds
+    // Clamp viewport to the 1024x1024 world bounds - prevents losing the map when panning
+    this.viewport.clamp({
+      left: viewportBounds.minX,
+      right: viewportBounds.maxX,
+      top: viewportBounds.minY,
+      bottom: viewportBounds.maxY,
+      underflow: 'center'  // Center the world when zoomed out beyond bounds
+    });
 
-    // Center the viewport on the world origin
-    this.viewport.moveCenter(0, 0);
+    // Center the viewport on the 1024x1024 world
+    this.viewport.moveCenter(worldCenterX, worldCenterY);
 
     // Preload SVG avatar assets
     const avatarAssets = [
@@ -160,18 +183,25 @@ export class HexGrid {
 
     await Promise.all(avatarAssets.map(path => PIXI.Assets.load(path)));
 
-    // Create layers
+    // Create layers (order matters: background first, entities last)
+    this.backgroundLayer = new PIXI.Container(); // Issue #191 - Background image layer
+    this.borderLayer = new PIXI.Container(); // Gold border around world
     this.placeholderLayer = new PIXI.Container();
     this.tilesLayer = new PIXI.Container();
     this.highlightsLayer = new PIXI.Container();
     this.lootLayer = new PIXI.Container();
     this.entitiesLayer = new PIXI.Container();
 
+    this.viewport.addChild(this.backgroundLayer); // Background behind everything
+    this.viewport.addChild(this.borderLayer); // Border above background
     this.viewport.addChild(this.placeholderLayer);
     this.viewport.addChild(this.tilesLayer);
     this.viewport.addChild(this.highlightsLayer);
     this.viewport.addChild(this.lootLayer);
     this.viewport.addChild(this.entitiesLayer);
+
+    // Draw the fixed world boundary with gold border
+    this.drawWorldBorder();
 
     // Initialize collections
     this.tiles = new Map();
@@ -181,8 +211,15 @@ export class HexGrid {
     this.lootTokenPool = new LootTokenPool(this.lootLayer);
 
     // Setup background click handler
+    // Hit area covers the full 20x20 world bounds
+    const worldBounds = this.getWorldBounds();
     this.viewport.eventMode = 'static';
-    this.viewport.hitArea = new PIXI.Rectangle(0, 0, worldWidth, worldHeight);
+    this.viewport.hitArea = new PIXI.Rectangle(
+      worldBounds.minX,
+      worldBounds.minY,
+      worldBounds.width,
+      worldBounds.height
+    );
     this.viewport.on('clicked', this.handleViewportClicked.bind(this));
     this.viewport.on('drag-start', () => this.isDragging = true);
     this.viewport.on('drag-end', () => this.isDragging = false);
@@ -320,6 +357,17 @@ export class HexGrid {
   }
 
   /**
+   * Clear all monsters from the board
+   */
+  public clearMonsters(): void {
+    for (const monster of this.monsters.values()) {
+      this.entitiesLayer?.removeChild(monster);
+      monster.destroy();
+    }
+    this.monsters.clear();
+  }
+
+  /**
    * Update monster data (User Story 2 - T114)
    */
   public updateMonster(monsterId: string, monster: Monster): void {
@@ -405,11 +453,15 @@ export class HexGrid {
   /**
    * Handle viewport click for creating new hexes or deselecting.
    * The 'clicked' event only fires if the viewport is not dragged.
+   * Only allows hex placement within the fixed world bounds.
    */
   private handleViewportClicked(event: ClickedEvent): void {
     if (this.options.onHexClick) {
       const hex = screenToAxial(event.world);
-      this.options.onHexClick(hex);
+      // Only allow hex placement within world bounds
+      if (this.isWithinWorldBounds(hex)) {
+        this.options.onHexClick(hex);
+      }
     }
 
     this.deselectAll();
@@ -772,21 +824,103 @@ export class HexGrid {
   }
 
   /**
-   * Destroy and cleanup
+   * Draw placeholder grid within world bounds
+   * Always draws hexes within the 1024x1024 pixel rectangle
    */
-  public drawPlaceholderGrid(width: number, height: number): void {
+  public drawPlaceholderGrid(): void {
     this.placeholderLayer.removeChildren();
     const graphics = new PIXI.Graphics();
-    graphics.lineStyle(1, 0x555555, 0.5);
+    const bounds = this.getWorldBounds();
 
-    for (let r = 0; r < height; r++) {
-      for (let q = 0; q < width; q++) {
+    // Calculate generous ranges for hex iteration
+    // Due to the offset nature of axial coordinates, we need to iterate over
+    // more coordinates than strictly necessary and filter by screen position
+    const maxR = Math.ceil(WORLD_PIXEL_SIZE / (1.5 * HEX_SIZE)) + 2; // ~16 rows
+    const maxQ = Math.ceil(WORLD_PIXEL_SIZE / (Math.sqrt(3) * HEX_SIZE)) + maxR; // accounts for offset
+
+    // Draw placeholder hexes whose centers fall within the rectangular bounds
+    for (let r = -2; r <= maxR; r++) {
+      for (let q = -maxR; q <= maxQ; q++) {
         const hex = { q, r };
         const pos = axialToScreen(hex);
-        this.drawHexagon(graphics, pos.x, pos.y, 48);
+
+        // Only draw hexes whose center is within the rectangular pixel bounds
+        if (pos.x >= bounds.minX - HEX_SIZE && pos.x <= bounds.maxX + HEX_SIZE &&
+            pos.y >= bounds.minY - HEX_SIZE && pos.y <= bounds.maxY + HEX_SIZE) {
+          this.drawHexagon(graphics, pos.x, pos.y, 48);
+        }
       }
     }
+    graphics.stroke({ width: 1, color: 0x555555, alpha: 0.5 });
     this.placeholderLayer.addChild(graphics);
+  }
+
+  /**
+   * Draw a gold border around the fixed 1024x1024 pixel world boundary
+   */
+  private drawWorldBorder(): void {
+    this.borderLayer.removeChildren();
+
+    // Fixed rectangular world bounds (1024x1024 pixels)
+    const bounds = this.getWorldBounds();
+
+    // Draw the gold border using PixiJS v8 API
+    const graphics = new PIXI.Graphics();
+
+    // Draw outer gold border (thick)
+    graphics.rect(bounds.minX, bounds.minY, bounds.width, bounds.height);
+    graphics.stroke({ width: 4, color: 0xFFD700, alpha: 1 });
+
+    // Draw inner decorative border (thinner, slightly darker gold)
+    graphics.rect(bounds.minX + 6, bounds.minY + 6, bounds.width - 12, bounds.height - 12);
+    graphics.stroke({ width: 2, color: 0xDAA520, alpha: 0.8 });
+
+    // Add corner decorations (small filled circles at corners)
+    const cornerRadius = 8;
+    graphics.circle(bounds.minX, bounds.minY, cornerRadius);
+    graphics.circle(bounds.maxX, bounds.minY, cornerRadius);
+    graphics.circle(bounds.minX, bounds.maxY, cornerRadius);
+    graphics.circle(bounds.maxX, bounds.maxY, cornerRadius);
+    graphics.fill({ color: 0xFFD700, alpha: 1 });
+
+    this.borderLayer.addChild(graphics);
+
+    console.log('[HexGrid] World border drawn:', {
+      bounds,
+      pixelSize: WORLD_PIXEL_SIZE
+    });
+  }
+
+  /**
+   * Get the world bounds (fixed 1024x1024 pixel square)
+   */
+  public getWorldBounds(): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number } {
+    // World starts at origin (0,0) and extends WORLD_PIXEL_SIZE in both directions
+    const minX = -HEX_SIZE; // Small padding for hex at (0,0)
+    const minY = -HEX_SIZE;
+    const maxX = minX + WORLD_PIXEL_SIZE;
+    const maxY = minY + WORLD_PIXEL_SIZE;
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: WORLD_PIXEL_SIZE,
+      height: WORLD_PIXEL_SIZE
+    };
+  }
+
+  /**
+   * Check if a hex coordinate is within the fixed world bounds (screen-space rectangle)
+   */
+  public isWithinWorldBounds(hex: Axial): boolean {
+    const screenPos = axialToScreen(hex);
+    const bounds = this.getWorldBounds();
+
+    // Check if hex center is within the rectangular bounds
+    return screenPos.x >= bounds.minX && screenPos.x <= bounds.maxX &&
+           screenPos.y >= bounds.minY && screenPos.y <= bounds.maxY;
   }
 
   private drawHexagon(graphic: PIXI.Graphics, x: number, y: number, size: number): void {
@@ -810,11 +944,142 @@ export class HexGrid {
     graphic.closePath();
   }
 
-  public setBackgroundImage(imageUrl: string): void {
-    const sprite = PIXI.Sprite.from(imageUrl);
-    sprite.width = this.app.screen.width;
-    sprite.height = this.app.screen.height;
-    this.app.stage.addChildAt(sprite, 0);
+  /**
+   * Set the background image for the map (Issue #191)
+   * Automatically scales and positions the image to fit edge-to-edge within the 20x20 world bounds.
+   * A 1:1 ratio image will align properly with the hex grid.
+   *
+   * @param imageUrl URL of the background image
+   * @param opacity Opacity value between 0 and 1 (default: 1)
+   */
+  public async setBackgroundImage(
+    imageUrl: string,
+    opacity: number = 1
+  ): Promise<void> {
+    // Remove existing background if present
+    this.removeBackgroundImage();
+
+    try {
+      // Use Image element for all URLs - more reliable than Assets.load()
+      const texture = await new Promise<PIXI.Texture>((resolve, reject) => {
+        const img = new Image();
+        // Only set crossOrigin for external URLs - same-origin URLs don't need it
+        // and setting it can cause CORS issues if server doesn't send CORS headers
+        const isExternalUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+        if (isExternalUrl) {
+          img.crossOrigin = 'anonymous';
+        }
+        img.onload = () => {
+          try {
+            const tex = PIXI.Texture.from(img);
+            resolve(tex);
+          } catch (err) {
+            reject(new Error(`Failed to create texture: ${err}`));
+          }
+        };
+        img.onerror = (event) => {
+          // Log the actual error event for debugging
+          console.error('[HexGrid] Image load error event:', event);
+          reject(new Error(`Failed to load image: ${imageUrl}`));
+        };
+        img.src = imageUrl;
+      });
+
+      // Create sprite from texture
+      this.backgroundSprite = new PIXI.Sprite(texture);
+
+      // Get the world bounds for the 20x20 grid
+      const worldBounds = this.getWorldBounds();
+
+      // Calculate scale to fit the image edge-to-edge in the world bounds
+      const scaleX = worldBounds.width / texture.width;
+      const scaleY = worldBounds.height / texture.height;
+      // Use uniform scaling to maintain aspect ratio - use the larger scale to cover the area
+      const scale = Math.max(scaleX, scaleY);
+
+      // Position at top-left of world bounds, centered if aspect ratios differ
+      const scaledWidth = texture.width * scale;
+      const scaledHeight = texture.height * scale;
+      const offsetX = worldBounds.minX + (worldBounds.width - scaledWidth) / 2;
+      const offsetY = worldBounds.minY + (worldBounds.height - scaledHeight) / 2;
+
+      // Apply transforms
+      this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
+      this.backgroundSprite.position.set(offsetX, offsetY);
+      this.backgroundSprite.scale.set(scale, scale);
+
+      // Background is non-interactive (clicks pass through to hex tiles)
+      this.backgroundSprite.eventMode = 'none';
+      this.backgroundSprite.cursor = 'default';
+
+      console.log('[HexGrid] Background loaded and auto-fitted:', {
+        imageUrl,
+        textureSize: { width: texture.width, height: texture.height },
+        worldBounds,
+        calculatedScale: scale,
+        position: { x: offsetX, y: offsetY },
+        opacity,
+      });
+
+      // Add to background layer (behind hex tiles)
+      this.backgroundLayer.addChild(this.backgroundSprite);
+
+      // Update tile opacity to make them semi-transparent over background
+      this.updateTileOpacity();
+    } catch (error) {
+      console.error('[HexGrid] Failed to load background image:', error);
+      throw error; // Re-throw so callers know it failed
+    }
+  }
+
+  /**
+   * Update background opacity without changing position/scale (Issue #191)
+   * @param opacity Opacity value between 0 and 1
+   */
+  public setBackgroundOpacity(opacity: number): void {
+    if (!this.backgroundSprite) return;
+    this.backgroundSprite.alpha = Math.max(0, Math.min(1, opacity));
+  }
+
+  /**
+   * Remove the background image (Issue #191)
+   */
+  public removeBackgroundImage(): void {
+    if (this.backgroundSprite) {
+      this.backgroundLayer.removeChild(this.backgroundSprite);
+      this.backgroundSprite.destroy();
+      this.backgroundSprite = null;
+
+      // Restore full opacity to tiles when background is removed
+      this.updateTileOpacity();
+    }
+  }
+
+  /**
+   * Update all tile opacities based on background presence (Issue #191)
+   * Tiles become semi-transparent when a background is present
+   */
+  private updateTileOpacity(): void {
+    const hasBackground = this.hasBackgroundImage();
+    this.tiles.forEach((tile) => {
+      tile.setBackgroundMode(hasBackground);
+    });
+  }
+
+  /**
+   * Check if a background image is currently set (Issue #191)
+   */
+  public hasBackgroundImage(): boolean {
+    return this.backgroundSprite !== null;
+  }
+
+  /**
+   * Get the current background opacity (Issue #191)
+   * Returns null if no background image is set
+   */
+  public getBackgroundOpacity(): number | null {
+    if (!this.backgroundSprite) return null;
+    return this.backgroundSprite.alpha;
   }
 
   public async exportToPng(): Promise<void> {
@@ -822,8 +1087,21 @@ export class HexGrid {
     this.tiles.forEach(tile => tile.setExportMode(true));
     this.app.render();
 
-    // Extract only the tiles layer, which has a transparent background
-    const dataUrl = await this.app.renderer.extract.base64(this.tilesLayer);
+    // Get world bounds (1024x1024 pixels)
+    const bounds = this.getWorldBounds();
+
+    // Create a frame rectangle matching the exact world bounds
+    // This ensures the exported image is exactly 1024x1024 pixels
+    const frame = new PIXI.Rectangle(bounds.minX, bounds.minY, bounds.width, bounds.height);
+
+    // Extract only the tiles layer within the world bounds
+    // Resolution 1 ensures we get exactly WORLD_PIXEL_SIZE x WORLD_PIXEL_SIZE pixels
+    const dataUrl = await this.app.renderer.extract.base64({
+      target: this.tilesLayer,
+      frame,
+      resolution: 1
+    });
+
     const link = document.createElement('a');
     link.download = 'scenario-map.png';
     link.href = dataUrl;
@@ -845,6 +1123,13 @@ export class HexGrid {
       this.clearBoard();
     } catch (error) {
       console.error('Error clearing board:', error);
+    }
+
+    // Clean up background image (Issue #191)
+    try {
+      this.removeBackgroundImage();
+    } catch (error) {
+      console.error('Error removing background image:', error);
     }
 
     try {

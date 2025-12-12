@@ -112,16 +112,26 @@ export class ScenarioService {
         const dbMapLayout = dbScenario.mapLayout as any[];
         const dbPlayerStarts = dbScenario.playerStartPositions as any;
 
-        // Transform monsterGroups format
-        const monsterGroups = dbMonsterGroups.map((group: any) => ({
-          type: group.type,
-          isElite: group.level === 'elite',
-          count: group.positions?.length || 0,
-          spawnPoints: (group.positions || []).map((pos: any) => ({
+        // Transform monsterGroups format (supports both old {level, positions} and new {isElite, spawnPoints})
+        const monsterGroups = dbMonsterGroups.map((group: any) => {
+          // Support both formats: isElite (new) and level (old)
+          const isElite =
+            group.isElite !== undefined
+              ? group.isElite
+              : group.level === 'elite';
+          // Support both formats: spawnPoints (new) and positions (old)
+          const rawPositions = group.spawnPoints || group.positions || [];
+          const spawnPoints = rawPositions.map((pos: any) => ({
             q: pos.q !== undefined ? pos.q : pos.x,
             r: pos.r !== undefined ? pos.r : pos.y,
-          })),
-        }));
+          }));
+          return {
+            type: group.type,
+            isElite,
+            count: group.count !== undefined ? group.count : spawnPoints.length,
+            spawnPoints,
+          };
+        });
 
         // Transform mapLayout format (x,y -> coordinates: {q, r})
         const mapLayout = dbMapLayout.map((tile: any) => ({
@@ -176,6 +186,12 @@ export class ScenarioService {
           objectiveSecondary: objectives?.secondary,
           treasures: dbScenario.treasures as any,
           playerStartPositions,
+          // Background image configuration (Issue #191)
+          backgroundImageUrl: dbScenario.backgroundImageUrl ?? undefined,
+          backgroundOpacity: dbScenario.backgroundOpacity ?? undefined,
+          backgroundOffsetX: dbScenario.backgroundOffsetX ?? undefined,
+          backgroundOffsetY: dbScenario.backgroundOffsetY ?? undefined,
+          backgroundScale: dbScenario.backgroundScale ?? undefined,
         };
       }
     } catch (error) {

@@ -125,13 +125,13 @@ export class CharacterSprite extends PIXI.Container {
     const size = HEX_SIZE * 0.6;
     const thickness = 4;
 
-    graphic.lineStyle(thickness, 0xFF0000, 0.8);
-
+    // PixiJS v8 API: draw then stroke
     // Draw X
     graphic.moveTo(-size / 2, -size / 2);
     graphic.lineTo(size / 2, size / 2);
     graphic.moveTo(size / 2, -size / 2);
     graphic.lineTo(-size / 2, size / 2);
+    graphic.stroke({ width: thickness, color: 0xFF0000, alpha: 0.8 });
 
     return graphic;
   }
@@ -164,23 +164,21 @@ export class CharacterSprite extends PIXI.Container {
     const barHeight = 6;
     const y = HEX_SIZE * 0.5;
 
-    // Background (gray)
-    graphic.beginFill(0x333333, 0.8);
-    graphic.drawRect(-barWidth / 2, y, barWidth, barHeight);
-    graphic.endFill();
+    // Background (gray) - PixiJS v8 API
+    graphic.rect(-barWidth / 2, y, barWidth, barHeight);
+    graphic.fill({ color: 0x333333, alpha: 0.8 });
 
     // Health (green to red gradient based on percentage)
     const healthPercent = this.data.health / this.data.maxHealth;
     const healthWidth = barWidth * healthPercent;
     const healthColor = this.getHealthColor(healthPercent);
 
-    graphic.beginFill(healthColor, 1);
-    graphic.drawRect(-barWidth / 2, y, healthWidth, barHeight);
-    graphic.endFill();
+    graphic.rect(-barWidth / 2, y, healthWidth, barHeight);
+    graphic.fill({ color: healthColor, alpha: 1 });
 
-    // Border
-    graphic.lineStyle(1, 0xFFFFFF, 0.8);
-    graphic.drawRect(-barWidth / 2, y, barWidth, barHeight);
+    // Border - PixiJS v8 API
+    graphic.rect(-barWidth / 2, y, barWidth, barHeight);
+    graphic.stroke({ width: 1, color: 0xFFFFFF, alpha: 0.8 });
 
     return graphic;
   }
@@ -192,8 +190,9 @@ export class CharacterSprite extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const radius = HEX_SIZE * 0.5;
 
-    graphic.lineStyle(4, 0xFFFF00, 1);
-    graphic.drawCircle(0, 0, radius);
+    // PixiJS v8 API: draw then stroke
+    graphic.circle(0, 0, radius);
+    graphic.stroke({ width: 4, color: 0xFFFF00, alpha: 1 });
 
     return graphic;
   }
@@ -223,10 +222,11 @@ export class CharacterSprite extends PIXI.Container {
     const graphic = new PIXI.Graphics();
     const color = this.getConditionColor(condition);
 
-    graphic.beginFill(color, 0.9);
-    graphic.lineStyle(1, 0x000000, 1);
-    graphic.drawCircle(0, 0, size / 2);
-    graphic.endFill();
+    // PixiJS v8 API: draw then fill/stroke
+    graphic.circle(0, 0, size / 2);
+    graphic.fill({ color, alpha: 0.9 });
+    graphic.circle(0, 0, size / 2);
+    graphic.stroke({ width: 1, color: 0x000000, alpha: 1 });
 
     // Add condition letter
     const text = new PIXI.Text(condition.charAt(0).toUpperCase(), {

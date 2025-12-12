@@ -4,6 +4,8 @@
  * Centralizes environment variable access with type safety and validation.
  */
 
+import { resolve } from 'path';
+
 /**
  * Environment types
  */
@@ -37,6 +39,11 @@ export interface Config {
   };
   logging: {
     level: string;
+  };
+  uploads: {
+    backgroundsDir: string;
+    maxFileSizeMb: number;
+    allowedMimeTypes: string[];
   };
 }
 
@@ -77,6 +84,18 @@ function loadConfig(): Config {
       level:
         process.env.LOG_LEVEL ||
         (env === Environment.Production ? 'info' : 'debug'),
+    },
+    uploads: {
+      // Default: resolve from backend to frontend/public/backgrounds
+      // In production, set BACKGROUNDS_DIR to absolute path
+      backgroundsDir:
+        process.env.BACKGROUNDS_DIR ||
+        resolve(process.cwd(), '..', 'frontend', 'public', 'backgrounds'),
+      maxFileSizeMb: parseInt(process.env.MAX_UPLOAD_SIZE_MB || '5', 10),
+      allowedMimeTypes: (
+        process.env.ALLOWED_UPLOAD_MIMES ||
+        'image/jpeg,image/png,image/gif,image/webp'
+      ).split(','),
     },
   };
 

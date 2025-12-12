@@ -300,6 +300,16 @@ export function useHexGrid(
     return true; // Default to blocked if grid is not available
   }, []);
 
+  // Set background image (Issue #191) - auto-fits to 20x20 world
+  const setBackgroundImage = useCallback(async (
+    imageUrl: string,
+    opacity: number = 1
+  ) => {
+    if (hexGridRef.current) {
+      await hexGridRef.current.setBackgroundImage(imageUrl, opacity);
+    }
+  }, []);
+
   return {
     hexGridRef,
     hexGridReady,
@@ -320,5 +330,6 @@ export function useHexGrid(
     getCharacter,
     isHexBlocked,
     setSelectedHex,
+    setBackgroundImage, // Issue #191 - auto-fits to 20x20 world
   };
 }

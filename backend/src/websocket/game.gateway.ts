@@ -112,6 +112,7 @@ export class GameGateway
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
   private readonly roomMaps = new Map<string, Map<string, any>>(); // roomCode -> hex map
+  private readonly roomScenarios = new Map<string, any>(); // roomCode -> scenario data (Issue #191)
   private readonly roomLootTokens = new Map<string, any[]>(); // roomCode -> loot tokens
   private readonly roomMonsterInitiatives = new Map<
     string,
@@ -275,9 +276,12 @@ export class GameGateway
     // Get objectives for this room
     const objectives = this.roomObjectives.get(roomCode);
 
+    // Get scenario data for background fields (Issue #191)
+    const scenario = this.roomScenarios.get(roomCode);
+
     const gameStartedPayload: GameStartedPayload = {
       scenarioId: room.scenarioId || 'scenario-1',
-      scenarioName: 'Black Barrow', // TODO: Get from scenario
+      scenarioName: scenario?.name || 'Black Barrow',
       mapLayout,
       monsters: monsters.map((m: any) => ({
         id: m.id,
@@ -310,7 +314,22 @@ export class GameGateway
             ),
           }
         : undefined,
+      // Background image configuration (Issue #191)
+      backgroundImageUrl: scenario?.backgroundImageUrl,
+      backgroundOpacity: scenario?.backgroundOpacity,
+      backgroundOffsetX: scenario?.backgroundOffsetX,
+      backgroundOffsetY: scenario?.backgroundOffsetY,
+      backgroundScale: scenario?.backgroundScale,
     };
+
+    // Debug logging for background issue
+    if (scenario?.backgroundImageUrl) {
+      this.logger.log(
+        `🖼️ Background configured: ${scenario.backgroundImageUrl}`,
+      );
+    } else {
+      this.logger.log(`🖼️ No background image for scenario`);
+    }
 
     return gameStartedPayload;
   }
@@ -666,6 +685,7 @@ export class GameGateway
       if (!updatedRoom || playersRemaining === 0) {
         // Room is empty, clean up all game state
         this.roomMaps.delete(roomCode);
+        this.roomScenarios.delete(roomCode); // Issue #191
         this.roomMonsters.delete(roomCode);
         this.roomTurnOrder.delete(roomCode);
         this.currentTurnIndex.delete(roomCode);
@@ -948,6 +968,9 @@ export class GameGateway
       });
       this.roomMaps.set(room.roomCode, hexMap);
 
+      // Store scenario data for background fields (Issue #191)
+      this.roomScenarios.set(room.roomCode, scenario);
+
       // Initialize empty loot tokens array for this room
       this.roomLootTokens.set(room.roomCode, []);
 
@@ -1055,7 +1078,18 @@ export class GameGateway
               ),
             }
           : undefined,
+        // Background image configuration (Issue #191)
+        backgroundImageUrl: scenario.backgroundImageUrl,
+        backgroundOpacity: scenario.backgroundOpacity,
+        backgroundOffsetX: scenario.backgroundOffsetX,
+        backgroundOffsetY: scenario.backgroundOffsetY,
+        backgroundScale: scenario.backgroundScale,
       };
+
+      // Debug: Log background URL being sent
+      this.logger.log(
+        `🖼️ Background for game_started: scenarioId=${scenario.id}, backgroundImageUrl=${scenario.backgroundImageUrl || 'NONE'}, opacity=${scenario.backgroundOpacity}, scale=${scenario.backgroundScale}`,
+      );
 
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
