@@ -28,6 +28,7 @@ const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.R
 const Characters = lazy(() => import('./pages/Characters').then(m => ({ default: m.Characters })));
 const CreateCharacter = lazy(() => import('./pages/CreateCharacter').then(m => ({ default: m.CreateCharacter })));
 const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ default: m.MatchHistory })));
+const CardVerification = lazy(() => import('./pages/CardVerification'));
 
 /**
  * Loading Component
@@ -159,6 +160,7 @@ function Layout() {
         <Route path="/demo" element={<HexMapDemo />} />
         <Route path="/design" element={<ScenarioDesigner />} />
         <Route path="/test-videos" element={<TestVideos />} />
+        <Route path="/card-verification" element={<CardVerification />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
