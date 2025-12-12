@@ -144,6 +144,7 @@ export interface GameStartedPayload {
   characters: {
     id: string;
     playerId: string;
+    userCharacterId?: string; // Database character ID for inventory API (Issue #205)
     classType: string;
     health: number;
     maxHealth: number;
