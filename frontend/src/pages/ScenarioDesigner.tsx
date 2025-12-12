@@ -609,7 +609,7 @@ const ScenarioDesigner: React.FC = () => {
         onHexClick: (hex) => handleHexClickRef.current(hex),
       });
       grid.init().then(() => {
-        grid.drawPlaceholderGrid(50, 50);
+        grid.drawPlaceholderGrid();
         gridRef.current = grid;
         setGridReady(true);
         console.log('[ScenarioDesigner] HexGrid initialized and ready');

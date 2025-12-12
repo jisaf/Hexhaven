@@ -825,9 +825,9 @@ export class HexGrid {
 
   /**
    * Draw placeholder grid within world bounds
-   * Parameters are ignored - always draws hexes within the 1024x1024 pixel rectangle
+   * Always draws hexes within the 1024x1024 pixel rectangle
    */
-  public drawPlaceholderGrid(_width?: number, _height?: number): void {
+  public drawPlaceholderGrid(): void {
     this.placeholderLayer.removeChildren();
     const graphics = new PIXI.Graphics();
     const bounds = this.getWorldBounds();
