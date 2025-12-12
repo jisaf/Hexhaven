@@ -362,7 +362,9 @@ export class CharacterService {
     await this.prisma.character.update({
       where: { id: characterId },
       data: {
-        ...(updates.experience !== undefined && { experience: updates.experience }),
+        ...(updates.experience !== undefined && {
+          experience: updates.experience,
+        }),
         ...(updates.gold !== undefined && { gold: updates.gold }),
         ...(updates.health !== undefined && { health: updates.health }),
       },

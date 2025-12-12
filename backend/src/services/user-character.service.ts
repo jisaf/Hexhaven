@@ -420,8 +420,10 @@ export class UserCharacterService {
 
   private mapToCharacterResponse(character: any): CharacterResponse {
     // Extract item IDs from ownedItems relation (if included)
-    const inventory = character.ownedItems
-      ? character.ownedItems.map((inv: any) => inv.itemId)
+    const inventory: string[] = character.ownedItems
+      ? (character.ownedItems as Array<{ itemId: string }>).map(
+          (inv) => inv.itemId,
+        )
       : [];
 
     return {

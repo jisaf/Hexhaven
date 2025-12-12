@@ -52,12 +52,19 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const startYRef = useRef(0);
   const currentYRef = useRef(0);
 
-  // Reset drag state when sheet opens/closes
+  // Reset drag state when sheet closes - use ref to track previous state
+  const prevIsOpenRef = useRef(isOpen);
   useEffect(() => {
-    if (!isOpen) {
-      setDragOffset(0);
-      setIsDragging(false);
+    // Only reset when transitioning from open to closed
+    if (prevIsOpenRef.current && !isOpen) {
+      // Use setTimeout to avoid synchronous setState in effect
+      const timer = setTimeout(() => {
+        setDragOffset(0);
+        setIsDragging(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen]);
 
   // Touch/mouse event handlers for drag-to-close

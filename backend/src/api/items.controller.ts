@@ -28,7 +28,6 @@ import {
 import { Request } from 'express';
 import { ItemService } from '../services/item.service';
 import { CreatorGuard, AdminGuard } from '../guards/creator.guard';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   CreateItemDto,
   UpdateItemDto,
@@ -86,7 +85,10 @@ export class ItemsController {
     }
 
     // Parse usageType filter
-    if (usageType && Object.values(ItemUsageType).includes(usageType as ItemUsageType)) {
+    if (
+      usageType &&
+      Object.values(ItemUsageType).includes(usageType as ItemUsageType)
+    ) {
       filters.usageType = usageType as ItemUsageType;
     }
 
@@ -202,10 +204,7 @@ export class ItemsController {
   @Delete(':id')
   @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteItem(
-    @Req() req: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  async deleteItem(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     try {
       await this.itemService.deleteItem(req.user.userId, id);
     } catch (error: any) {

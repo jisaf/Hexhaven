@@ -25,7 +25,11 @@ import {
   ItemTrigger,
   UserRole,
 } from '../../../shared/types/entities';
-import { NotFoundError, ForbiddenError, ValidationError } from '../types/errors';
+import {
+  NotFoundError,
+  ForbiddenError,
+  ValidationError,
+} from '../types/errors';
 
 @Injectable()
 export class ItemService {
@@ -95,12 +99,20 @@ export class ItemService {
       // Validate value for numeric effects
       if (
         effect.type &&
-        ['attack_modifier', 'defense', 'heal', 'shield', 'retaliate', 'pierce', 'movement'].includes(
-          effect.type,
-        )
+        [
+          'attack_modifier',
+          'defense',
+          'heal',
+          'shield',
+          'retaliate',
+          'pierce',
+          'movement',
+        ].includes(effect.type)
       ) {
         if (effect.value === undefined || effect.value === null) {
-          errors.push(`Effect ${index}: value is required for ${effect.type} effects`);
+          errors.push(
+            `Effect ${index}: value is required for ${effect.type} effects`,
+          );
         } else if (typeof effect.value !== 'number') {
           errors.push(`Effect ${index}: value must be a number`);
         }
@@ -293,7 +305,11 @@ export class ItemService {
   /**
    * Update an existing item
    */
-  async updateItem(userId: string, id: string, data: UpdateItemDto): Promise<Item> {
+  async updateItem(
+    userId: string,
+    id: string,
+    data: UpdateItemDto,
+  ): Promise<Item> {
     // Check authorization
     const canCreate = await this.canUserCreateItems(userId);
     if (!canCreate) {
@@ -350,7 +366,9 @@ export class ItemService {
           modifierDeckImpact: data.modifierDeckImpact as any,
         }),
         ...(data.cost !== undefined && { cost: data.cost }),
-        ...(data.description !== undefined && { description: data.description }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
       },
     });
@@ -393,7 +411,9 @@ export class ItemService {
       rarity: item.rarity as SharedItem['rarity'],
       effects: (item.effects as unknown as ItemEffect[]) || [],
       triggers: (item.triggers as unknown as ItemTrigger[] | null) ?? undefined,
-      modifierDeckImpact: (item.modifierDeckImpact as unknown as { adds: string[] } | null) ?? undefined,
+      modifierDeckImpact:
+        (item.modifierDeckImpact as unknown as { adds: string[] } | null) ??
+        undefined,
       cost: item.cost,
       description: item.description ?? undefined,
       imageUrl: item.imageUrl ?? undefined,

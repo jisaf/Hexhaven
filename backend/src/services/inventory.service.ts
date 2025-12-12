@@ -12,7 +12,6 @@ import {
   PrismaClient,
   Item,
   CharacterEquipment,
-  CharacterItemState,
   ItemSlot,
   ItemState,
 } from '@prisma/client';
@@ -383,7 +382,10 @@ export class InventoryService {
     const slotIndex = index ?? 0;
     const equipment = character.equippedItems.find((eq) => {
       if (slot === 'ONE_HAND' || slot === 'TWO_HAND') {
-        return (eq.slot === 'ONE_HAND' || eq.slot === 'TWO_HAND') && eq.slotIndex === slotIndex;
+        return (
+          (eq.slot === 'ONE_HAND' || eq.slot === 'TWO_HAND') &&
+          eq.slotIndex === slotIndex
+        );
       }
       if (slot === 'SMALL') {
         return eq.slot === 'SMALL' && eq.slotIndex === slotIndex;
@@ -441,7 +443,9 @@ export class InventoryService {
     }
 
     // Find the equipment record by itemId
-    const equipment = character.equippedItems.find((eq) => eq.itemId === itemId);
+    const equipment = character.equippedItems.find(
+      (eq) => eq.itemId === itemId,
+    );
 
     if (!equipment) {
       throw new ValidationError('Item is not equipped');
@@ -510,7 +514,9 @@ export class InventoryService {
       throw new ValidationError('Item has already been consumed this scenario');
     }
     if (itemState.state === 'SPENT') {
-      throw new ValidationError('Item has been spent and needs to be refreshed');
+      throw new ValidationError(
+        'Item has been spent and needs to be refreshed',
+      );
     }
 
     // Determine new state based on usage type
@@ -577,7 +583,10 @@ export class InventoryService {
           where: { id: state.id },
           data: { state: 'READY', usesRemaining: state.item.maxUses },
         });
-        refreshedItems.push({ itemId: state.itemId, itemName: state.item.name });
+        refreshedItems.push({
+          itemId: state.itemId,
+          itemName: state.item.name,
+        });
       }
     }
 
@@ -709,7 +718,9 @@ export class InventoryService {
 
     // Check if equipped
     if (character.equippedItems.some((eq) => eq.itemId === itemId)) {
-      throw new ValidationError('Cannot remove equipped item. Unequip it first.');
+      throw new ValidationError(
+        'Cannot remove equipped item. Unequip it first.',
+      );
     }
 
     let newGold = character.gold;
@@ -797,7 +808,12 @@ export class InventoryService {
     });
 
     if (equipment.length === 0) {
-      return { attackBonus: 0, defenseBonus: 0, movementBonus: 0, rangeBonus: 0 };
+      return {
+        attackBonus: 0,
+        defenseBonus: 0,
+        movementBonus: 0,
+        rangeBonus: 0,
+      };
     }
 
     // Get item states to check which items are ready

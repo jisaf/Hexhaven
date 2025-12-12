@@ -88,7 +88,7 @@ describe('UserCharacterService', () => {
           level: 1,
           health: 10,
         }),
-        include: { class: true },
+        include: { class: true, ownedItems: true },
       });
     });
 
@@ -168,7 +168,7 @@ describe('UserCharacterService', () => {
       expect(result[1].name).toBe('Character 2');
       expect(mockPrisma.character.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
-        include: { class: true },
+        include: { class: true, ownedItems: true },
         orderBy: { createdAt: 'desc' },
       });
     });
@@ -304,46 +304,52 @@ describe('UserCharacterService', () => {
 
   describe('equipItem()', () => {
     it('should add item to character inventory', async () => {
-      mockPrisma.character.findUnique.mockResolvedValue({
-        id: 'char-123',
-        userId: 'user-123',
-        inventory: [],
-        class: { name: 'Brute' },
-        classId: 'class-1',
-        name: 'Test',
-        level: 1,
-        experience: 0,
-        gold: 0,
-        health: 10,
-        perks: [],
-        currentGameId: null,
-        campaignId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      // First findUnique returns character without the item
+      mockPrisma.character.findUnique
+        .mockResolvedValueOnce({
+          id: 'char-123',
+          userId: 'user-123',
+          ownedItems: [], // Empty inventory (new relation format)
+          class: { name: 'Brute' },
+          classId: 'class-1',
+          name: 'Test',
+          level: 1,
+          experience: 0,
+          gold: 0,
+          health: 10,
+          perks: [],
+          currentGameId: null,
+          campaignId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        // Second findUnique returns character with the item after create
+        .mockResolvedValueOnce({
+          id: 'char-123',
+          userId: 'user-123',
+          ownedItems: [{ itemId: 'item-123' }], // Now has item
+          class: { name: 'Brute' },
+          classId: 'class-1',
+          name: 'Test',
+          level: 1,
+          experience: 0,
+          gold: 0,
+          health: 10,
+          perks: [],
+          currentGameId: null,
+          campaignId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
 
       mockPrisma.item.findUnique.mockResolvedValue({
         id: 'item-123',
         name: 'Leather Armor',
       });
 
-      mockPrisma.character.update.mockResolvedValue({
-        id: 'char-123',
-        inventory: ['item-123'],
-        class: { name: 'Brute' },
-        userId: 'user-123',
-        classId: 'class-1',
-        name: 'Test',
-        level: 1,
-        experience: 0,
-        gold: 0,
-        health: 10,
-        perks: [],
-        currentGameId: null,
-        campaignId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      mockPrisma.characterInventory = {
+        create: jest.fn().mockResolvedValue({ id: 'inv-1', characterId: 'char-123', itemId: 'item-123' }),
+      } as any;
 
       const result = await service.equipItem('char-123', 'user-123', 'item-123');
 
@@ -354,7 +360,7 @@ describe('UserCharacterService', () => {
       mockPrisma.character.findUnique.mockResolvedValue({
         id: 'char-123',
         userId: 'user-123',
-        inventory: ['item-123'], // Already has item
+        ownedItems: [{ itemId: 'item-123' }], // Already has item (new relation format)
         class: {},
       });
 
@@ -371,7 +377,7 @@ describe('UserCharacterService', () => {
       mockPrisma.character.findUnique.mockResolvedValue({
         id: 'char-123',
         userId: 'user-123',
-        inventory: [],
+        ownedItems: [], // Empty inventory (new relation format)
         class: {},
       });
 

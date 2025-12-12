@@ -251,7 +251,9 @@ export class GameGateway
       const lostPile: string[] = [];
 
       // Get database character ID from player (Issue #205)
-      const player = room.players.find((p: any) => p.uuid === charData.playerId);
+      const player = room.players.find(
+        (p: any) => p.uuid === charData.playerId,
+      );
       const userCharacterId = player?.characterId || undefined;
 
       return {
@@ -851,12 +853,16 @@ export class GameGateway
       if (characterId) {
         try {
           // Fetch equipped items with details
-          const equippedItems = await this.inventoryService.getEquippedItemsWithDetails(characterId);
-          const bonuses = await this.inventoryService.getEquippedBonuses(characterId);
+          const equippedItems =
+            await this.inventoryService.getEquippedItemsWithDetails(
+              characterId,
+            );
+          const bonuses =
+            await this.inventoryService.getEquippedBonuses(characterId);
 
           const inventoryPayload: CharacterInventoryPayload = {
             characterId,
-            equippedItems: equippedItems.map(eq => ({
+            equippedItems: equippedItems.map((eq) => ({
               slot: eq.slot,
               itemId: eq.item.id,
               itemName: eq.item.name,
@@ -1690,7 +1696,9 @@ export class GameGateway
       // Only applies if this is a persistent character with equipped items
       if (characterService.isPersistentCharacter(attacker.id)) {
         try {
-          const itemBonuses = await this.inventoryService.getEquippedBonuses(attacker.id);
+          const itemBonuses = await this.inventoryService.getEquippedBonuses(
+            attacker.id,
+          );
           if (itemBonuses.attackBonus !== 0) {
             baseAttack += itemBonuses.attackBonus;
             this.logger.log(
@@ -1727,21 +1735,26 @@ export class GameGateway
       }
 
       // Calculate damage
-      let damage = this.damageService.calculateDamage(
-        baseAttack,
-        modifierCard,
-      );
+      let damage = this.damageService.calculateDamage(baseAttack, modifierCard);
 
       // Apply damage to target
       let targetHealth: number;
       let targetDead = false;
 
       // Apply defense bonus for character targets (Issue #205 - Phase 4.1)
-      if (!isMonsterTarget && characterService.isPersistentCharacter(target.id)) {
+      if (
+        !isMonsterTarget &&
+        characterService.isPersistentCharacter(target.id)
+      ) {
         try {
-          const defenseBonus = await this.inventoryService.getEquippedBonuses(target.id);
+          const defenseBonus = await this.inventoryService.getEquippedBonuses(
+            target.id,
+          );
           if (defenseBonus.defenseBonus > 0) {
-            const reducedDamage = Math.max(0, damage - defenseBonus.defenseBonus);
+            const reducedDamage = Math.max(
+              0,
+              damage - defenseBonus.defenseBonus,
+            );
             this.logger.log(
               `Applied defense bonus: ${defenseBonus.defenseBonus} (damage ${damage} -> ${reducedDamage})`,
             );
@@ -2519,7 +2532,7 @@ export class GameGateway
    * Activate monster AI (US2 - T099)
    * Called when it's a monster's turn
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
+
   private async activateMonster(
     monsterId: string,
     roomCode: string,
@@ -2833,9 +2846,14 @@ export class GameGateway
         // Apply defense bonus from equipped items (Issue #205 - Phase 4.1)
         if (characterService.isPersistentCharacter(focusTarget.id)) {
           try {
-            const itemBonuses = await this.inventoryService.getEquippedBonuses(focusTarget.id);
+            const itemBonuses = await this.inventoryService.getEquippedBonuses(
+              focusTarget.id,
+            );
             if (itemBonuses.defenseBonus > 0) {
-              const reducedDamage = Math.max(0, finalDamage - itemBonuses.defenseBonus);
+              const reducedDamage = Math.max(
+                0,
+                finalDamage - itemBonuses.defenseBonus,
+              );
               this.emitDebugLog(
                 roomCode,
                 'info',
@@ -3722,10 +3740,17 @@ export class GameGateway
         // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
         // This resets consumed items and refreshes spent items for the next scenario
         for (const player of room.players) {
-          const character = characterService.getCharacterByPlayerId(player.uuid);
-          if (character && characterService.isPersistentCharacter(character.id)) {
+          const character = characterService.getCharacterByPlayerId(
+            player.uuid,
+          );
+          if (
+            character &&
+            characterService.isPersistentCharacter(character.id)
+          ) {
             try {
-              const refreshResult = await this.inventoryService.refreshAllItems(character.id);
+              const refreshResult = await this.inventoryService.refreshAllItems(
+                character.id,
+              );
               if (refreshResult.refreshedItems.length > 0) {
                 const payload: ItemsRefreshedPayload = {
                   characterId: character.id,
@@ -3779,7 +3804,7 @@ export class GameGateway
         return;
       }
 
-      const { room, roomCode } = roomData;
+      const { roomCode } = roomData;
       const playerUUID = this.socketToPlayer.get(client.id);
       if (!playerUUID) {
         client.emit('error', {
@@ -3913,7 +3938,8 @@ export class GameGateway
       );
       client.emit('error', {
         code: 'EQUIP_ITEM_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to equip item',
+        message:
+          error instanceof Error ? error.message : 'Failed to equip item',
       } as ErrorPayload);
     }
   }
@@ -3998,7 +4024,8 @@ export class GameGateway
       );
       client.emit('error', {
         code: 'UNEQUIP_ITEM_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to unequip item',
+        message:
+          error instanceof Error ? error.message : 'Failed to unequip item',
       } as ErrorPayload);
     }
   }
@@ -4012,8 +4039,7 @@ export class GameGateway
     roomCode: string,
   ): Promise<void> {
     try {
-      const result =
-        await this.inventoryService.refreshSpentItems(characterId);
+      const result = await this.inventoryService.refreshSpentItems(characterId);
 
       if (result.refreshedItems.length > 0) {
         const payload: ItemsRefreshedPayload = {
