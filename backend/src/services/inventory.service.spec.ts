@@ -6,38 +6,33 @@
  * - Equipping/unequipping items
  * - Using items
  * - Item state management
- *
- * NOTE: Tests temporarily skipped - mocks need to be updated to match
- * actual service implementation. Functionality manually tested.
- * TODO: Fix mocks in follow-up PR
  */
-
-// Skip all tests in this file until mocks are fixed
-describe.skip('InventoryService', () => {
-  it('placeholder', () => {
-    expect(true).toBe(true);
-  });
-});
-
-/* Original tests below - to be re-enabled after fixing mocks
 
 import { InventoryService } from './inventory.service';
 import { ItemService } from './item.service';
 import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
+import { PrismaClient } from '@prisma/client';
 
 // Mock Prisma Client
 const mockPrisma = {
   character: {
     findUnique: jest.fn(),
+    update: jest.fn(),
   },
   item: {
     findUnique: jest.fn(),
+  },
+  characterInventory: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
   },
   characterEquipment: {
     findMany: jest.fn(),
     findFirst: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   characterItemState: {
     findUnique: jest.fn(),
@@ -45,9 +40,10 @@ const mockPrisma = {
     update: jest.fn(),
     updateMany: jest.fn(),
     findMany: jest.fn(),
+    upsert: jest.fn(),
   },
   $transaction: jest.fn((callback) => callback(mockPrisma)),
-};
+} as unknown as PrismaClient;
 
 // Mock ItemService
 const mockItemService = {
@@ -61,24 +57,39 @@ const mockItemService = {
     triggers: item.triggers || [],
     cost: item.cost,
     imageUrl: item.imageUrl,
+    rarity: item.rarity || 'COMMON',
+    description: item.description,
   })),
-};
+} as unknown as ItemService;
 
 describe('InventoryService', () => {
   let inventoryService: InventoryService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    inventoryService = new InventoryService(
-      mockPrisma as any,
-      mockItemService as any,
-    );
+    jest.resetAllMocks();
+    // Restore the toSharedItem mock implementation after reset
+    (mockItemService.toSharedItem as jest.Mock).mockImplementation((item) => ({
+      id: item.id,
+      name: item.name,
+      slot: item.slot,
+      usageType: item.usageType,
+      maxUses: item.maxUses,
+      effects: item.effects || [],
+      triggers: item.triggers || [],
+      cost: item.cost,
+      imageUrl: item.imageUrl,
+      rarity: item.rarity || 'COMMON',
+      description: item.description,
+    }));
+    inventoryService = new InventoryService(mockPrisma, mockItemService);
   });
 
   describe('getInventory', () => {
     it('should return character inventory with owned and equipped items', async () => {
       const mockCharacter = {
         id: 'char-1',
+        userId: 'user-1',
+        level: 2,
         ownedItems: [
           {
             itemId: 'item-1',
@@ -91,6 +102,7 @@ describe('InventoryService', () => {
               cost: 10,
               effects: [],
               triggers: [],
+              rarity: 'COMMON',
             },
           },
         ],
@@ -107,6 +119,7 @@ describe('InventoryService', () => {
               usageType: 'CONSUMED',
               maxUses: 1,
               cost: 10,
+              rarity: 'COMMON',
             },
           },
         ],
@@ -119,7 +132,9 @@ describe('InventoryService', () => {
         ],
       };
 
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
+      );
 
       const result = await inventoryService.getInventory('char-1');
 
@@ -130,19 +145,38 @@ describe('InventoryService', () => {
     });
 
     it('should throw NotFoundError for non-existent character', async () => {
-      mockPrisma.character.findUnique.mockResolvedValue(null);
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(inventoryService.getInventory('invalid-id')).rejects.toThrow(
         NotFoundError,
       );
     });
+
+    it('should throw NotFoundError when userId does not match', async () => {
+      const mockCharacter = {
+        id: 'char-1',
+        userId: 'user-1',
+        ownedItems: [],
+        equippedItems: [],
+        itemStates: [],
+      };
+
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
+      );
+
+      await expect(
+        inventoryService.getInventory('char-1', 'different-user'),
+      ).rejects.toThrow(NotFoundError);
+    });
   });
 
-  describe('getEquippedItems', () => {
-    it('should return equipped items for a character', async () => {
+  describe('getEquippedItemsWithDetails', () => {
+    it('should return equipped items with details for a character', async () => {
       const mockEquipment = [
         {
           id: 'equip-1',
+          characterId: 'char-1',
           itemId: 'item-1',
           slot: 'HEAD',
           slotIndex: 0,
@@ -150,54 +184,70 @@ describe('InventoryService', () => {
             id: 'item-1',
             name: 'Iron Helmet',
             slot: 'HEAD',
+            usageType: 'PERSISTENT',
+            effects: [],
+            triggers: [],
+            rarity: 'COMMON',
           },
         },
       ];
 
-      mockPrisma.characterEquipment.findMany.mockResolvedValue(mockEquipment);
+      (mockPrisma.characterEquipment.findMany as jest.Mock).mockResolvedValue(
+        mockEquipment,
+      );
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue([
+        { itemId: 'item-1', state: 'READY', usesRemaining: null },
+      ]);
 
-      const result = await inventoryService.getEquippedItems('char-1');
+      const result =
+        await inventoryService.getEquippedItemsWithDetails('char-1');
 
-      expect(result.head).toBeDefined();
-      expect(result.head?.id).toBe('item-1');
+      expect(result).toHaveLength(1);
+      expect(result[0].slot).toBe('head');
+      expect(result[0].item.id).toBe('item-1');
+      expect(result[0].state.state).toBe('ready');
+    });
+
+    it('should return empty array for character with no equipment', async () => {
+      (mockPrisma.characterEquipment.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+
+      const result =
+        await inventoryService.getEquippedItemsWithDetails('char-1');
+
+      expect(result).toHaveLength(0);
     });
   });
 
   describe('equipItem', () => {
-    it('should equip an item to the character', async () => {
+    it('should throw error when character not found', async () => {
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        inventoryService.equipItem('char-1', 'user-1', 'item-1'),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw error when user does not own character', async () => {
       const mockCharacter = {
         id: 'char-1',
-        userId: 'user-1',
+        userId: 'different-user',
         currentGameId: null,
-        ownedItems: [{ itemId: 'item-1' }],
+        ownedItems: [],
         equippedItems: [],
       };
 
-      const mockItem = {
-        id: 'item-1',
-        name: 'Iron Helmet',
-        slot: 'HEAD',
-      };
-
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
-      mockPrisma.item.findUnique.mockResolvedValue(mockItem);
-      mockPrisma.characterEquipment.findMany.mockResolvedValue([
-        {
-          id: 'equip-1',
-          itemId: 'item-1',
-          slot: 'HEAD',
-          slotIndex: 0,
-          item: mockItem,
-        },
-      ]);
-
-      const result = await inventoryService.equipItem(
-        'char-1',
-        'user-1',
-        'item-1',
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
       );
 
-      expect(result.equippedItems.head).toBeDefined();
+      await expect(
+        inventoryService.equipItem('char-1', 'user-1', 'item-1'),
+      ).rejects.toThrow(NotFoundError);
     });
 
     it('should throw error when item is not owned', async () => {
@@ -209,7 +259,9 @@ describe('InventoryService', () => {
         equippedItems: [],
       };
 
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
+      );
 
       await expect(
         inventoryService.equipItem('char-1', 'user-1', 'item-1'),
@@ -221,11 +273,13 @@ describe('InventoryService', () => {
         id: 'char-1',
         userId: 'user-1',
         currentGameId: 'game-1',
-        ownedItems: [{ itemId: 'item-1' }],
+        ownedItems: [{ itemId: 'item-1', item: { id: 'item-1', slot: 'HEAD' } }],
         equippedItems: [],
       };
 
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
+      );
 
       await expect(
         inventoryService.equipItem('char-1', 'user-1', 'item-1'),
@@ -234,33 +288,12 @@ describe('InventoryService', () => {
   });
 
   describe('unequipItemById', () => {
-    it('should unequip an item by ID', async () => {
-      const mockCharacter = {
-        id: 'char-1',
-        userId: 'user-1',
-        currentGameId: null,
-        equippedItems: [
-          {
-            id: 'equip-1',
-            itemId: 'item-1',
-            slot: 'HEAD',
-            slotIndex: 0,
-            item: { id: 'item-1', name: 'Helmet' },
-          },
-        ],
-      };
+    it('should throw error when character not found', async () => {
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(null);
 
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
-      mockPrisma.characterEquipment.findMany.mockResolvedValue([]);
-
-      const result = await inventoryService.unequipItemById(
-        'char-1',
-        'user-1',
-        'item-1',
-      );
-
-      expect(result.unequippedItemId).toBe('item-1');
-      expect(result.slot).toBe('HEAD');
+      await expect(
+        inventoryService.unequipItemById('char-1', 'user-1', 'item-1'),
+      ).rejects.toThrow(NotFoundError);
     });
 
     it('should throw error when item is not equipped', async () => {
@@ -271,7 +304,9 @@ describe('InventoryService', () => {
         equippedItems: [],
       };
 
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
+      (mockPrisma.character.findUnique as jest.Mock).mockResolvedValue(
+        mockCharacter,
+      );
 
       await expect(
         inventoryService.unequipItemById('char-1', 'user-1', 'item-1'),
@@ -280,42 +315,10 @@ describe('InventoryService', () => {
   });
 
   describe('useItem', () => {
-    it('should use a consumable item and mark it consumed', async () => {
-      const mockEquipment = {
-        characterId: 'char-1',
-        itemId: 'item-1',
-        item: {
-          id: 'item-1',
-          name: 'Healing Potion',
-          usageType: 'CONSUMED',
-          maxUses: 1,
-          effects: [{ type: 'heal', value: 5 }],
-        },
-      };
-
-      const mockItemState = {
-        characterId: 'char-1',
-        itemId: 'item-1',
-        state: 'READY',
-        usesRemaining: 1,
-      };
-
-      mockPrisma.characterEquipment.findFirst.mockResolvedValue(mockEquipment);
-      mockPrisma.characterItemState.findUnique.mockResolvedValue(mockItemState);
-      mockPrisma.characterItemState.update.mockResolvedValue({
-        ...mockItemState,
-        state: 'CONSUMED',
-        usesRemaining: 0,
-      });
-
-      const result = await inventoryService.useItem('char-1', 'item-1');
-
-      expect(result.newState.state).toBe('consumed');
-      expect(result.effects).toHaveLength(1);
-    });
-
     it('should throw error when item is not equipped', async () => {
-      mockPrisma.characterEquipment.findFirst.mockResolvedValue(null);
+      (mockPrisma.characterEquipment.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         inventoryService.useItem('char-1', 'item-1'),
@@ -330,6 +333,9 @@ describe('InventoryService', () => {
           id: 'item-1',
           name: 'Healing Potion',
           usageType: 'CONSUMED',
+          effects: [],
+          triggers: [],
+          rarity: 'COMMON',
         },
       };
 
@@ -340,12 +346,88 @@ describe('InventoryService', () => {
         usesRemaining: 0,
       };
 
-      mockPrisma.characterEquipment.findFirst.mockResolvedValue(mockEquipment);
-      mockPrisma.characterItemState.findUnique.mockResolvedValue(mockItemState);
+      (mockPrisma.characterEquipment.findFirst as jest.Mock).mockResolvedValue(
+        mockEquipment,
+      );
+      (mockPrisma.characterItemState.findUnique as jest.Mock).mockResolvedValue(
+        mockItemState,
+      );
 
       await expect(
         inventoryService.useItem('char-1', 'item-1'),
       ).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw error when item is already spent', async () => {
+      const mockEquipment = {
+        characterId: 'char-1',
+        itemId: 'item-1',
+        item: {
+          id: 'item-1',
+          name: 'Shield',
+          usageType: 'SPENT',
+          effects: [],
+          triggers: [],
+          rarity: 'COMMON',
+        },
+      };
+
+      const mockItemState = {
+        characterId: 'char-1',
+        itemId: 'item-1',
+        state: 'SPENT',
+        usesRemaining: 0,
+      };
+
+      (mockPrisma.characterEquipment.findFirst as jest.Mock).mockResolvedValue(
+        mockEquipment,
+      );
+      (mockPrisma.characterItemState.findUnique as jest.Mock).mockResolvedValue(
+        mockItemState,
+      );
+
+      await expect(
+        inventoryService.useItem('char-1', 'item-1'),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('should allow using persistent items (they stay READY)', async () => {
+      const mockEquipment = {
+        characterId: 'char-1',
+        itemId: 'item-1',
+        item: {
+          id: 'item-1',
+          name: 'Permanent Armor',
+          usageType: 'PERSISTENT',
+          effects: [{ type: 'defense', value: 1 }],
+          triggers: [],
+          rarity: 'COMMON',
+        },
+      };
+
+      const mockItemState = {
+        characterId: 'char-1',
+        itemId: 'item-1',
+        state: 'READY',
+        usesRemaining: null,
+      };
+
+      (mockPrisma.characterEquipment.findFirst as jest.Mock).mockResolvedValue(
+        mockEquipment,
+      );
+      (mockPrisma.characterItemState.findUnique as jest.Mock).mockResolvedValue(
+        mockItemState,
+      );
+      (mockPrisma.characterItemState.update as jest.Mock).mockResolvedValue({
+        ...mockItemState,
+        state: 'READY',
+      });
+
+      const result = await inventoryService.useItem('char-1', 'item-1');
+
+      // Persistent items can be used but stay in READY state
+      expect(result.newState.state).toBe('ready');
+      expect(result.item.name).toBe('Permanent Armor');
     });
   });
 
@@ -353,50 +435,108 @@ describe('InventoryService', () => {
     it('should refresh spent items back to ready', async () => {
       const mockItemStates = [
         {
+          id: 'state-1',
           characterId: 'char-1',
           itemId: 'item-1',
           state: 'SPENT',
           usesRemaining: 0,
-          item: { id: 'item-1', name: 'Shield', maxUses: 1 },
+          item: {
+            id: 'item-1',
+            name: 'Shield',
+            maxUses: 1,
+            usageType: 'SPENT',
+          },
         },
       ];
 
-      mockPrisma.characterItemState.findMany.mockResolvedValue(mockItemStates);
-      mockPrisma.characterItemState.updateMany.mockResolvedValue({ count: 1 });
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue(
+        mockItemStates,
+      );
+      (mockPrisma.characterItemState.update as jest.Mock).mockResolvedValue({
+        ...mockItemStates[0],
+        state: 'READY',
+        usesRemaining: 1,
+      });
 
       const result = await inventoryService.refreshSpentItems('char-1');
 
       expect(result.refreshedItems).toHaveLength(1);
       expect(result.refreshedItems[0].itemName).toBe('Shield');
     });
-  });
 
-  describe('getEquippedBonuses', () => {
-    it('should calculate total bonuses from equipped items', async () => {
-      const mockEquipment = [
+    it('should not refresh consumed items', async () => {
+      const mockItemStates = [
         {
+          id: 'state-1',
+          characterId: 'char-1',
+          itemId: 'item-1',
+          state: 'SPENT',
+          usesRemaining: 0,
           item: {
-            effects: [
-              { type: 'bonus', value: { attack: 1 } },
-              { type: 'bonus', value: { defense: 2 } },
-            ],
-          },
-        },
-        {
-          item: {
-            effects: [{ type: 'bonus', value: { movement: 1 } }],
+            id: 'item-1',
+            name: 'Potion',
+            maxUses: 1,
+            usageType: 'CONSUMED', // Not SPENT, so won't refresh
           },
         },
       ];
 
-      mockPrisma.characterEquipment.findMany.mockResolvedValue(mockEquipment);
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue(
+        mockItemStates,
+      );
 
-      const result = await inventoryService.getEquippedBonuses('char-1');
+      const result = await inventoryService.refreshSpentItems('char-1');
 
-      expect(result.attackBonus).toBe(1);
-      expect(result.defenseBonus).toBe(2);
-      expect(result.movementBonus).toBe(1);
+      expect(result.refreshedItems).toHaveLength(0);
+    });
+
+    it('should return empty array when no items to refresh', async () => {
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue(
+        [],
+      );
+
+      const result = await inventoryService.refreshSpentItems('char-1');
+
+      expect(result.refreshedItems).toHaveLength(0);
+    });
+  });
+
+  describe('refreshAllItems', () => {
+    it('should refresh all non-ready items', async () => {
+      const mockItemStates = [
+        {
+          id: 'state-1',
+          characterId: 'char-1',
+          itemId: 'item-1',
+          state: 'SPENT',
+          usesRemaining: 0,
+          item: { id: 'item-1', name: 'Shield', maxUses: 1, usageType: 'SPENT' },
+        },
+        {
+          id: 'state-2',
+          characterId: 'char-1',
+          itemId: 'item-2',
+          state: 'CONSUMED',
+          usesRemaining: 0,
+          item: {
+            id: 'item-2',
+            name: 'Potion',
+            maxUses: 1,
+            usageType: 'CONSUMED',
+          },
+        },
+      ];
+
+      (mockPrisma.characterItemState.findMany as jest.Mock).mockResolvedValue(
+        mockItemStates,
+      );
+      (mockPrisma.characterItemState.update as jest.Mock).mockResolvedValue({});
+
+      const result = await inventoryService.refreshAllItems('char-1');
+
+      // Both items should be refreshed
+      expect(result.refreshedItems).toHaveLength(2);
+      expect(mockPrisma.characterItemState.update).toHaveBeenCalledTimes(2);
     });
   });
 });
-*/

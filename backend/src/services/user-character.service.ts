@@ -4,6 +4,7 @@
  * Distinct from the in-game CharacterService (001) which manages session state
  */
 
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type {
   CreateCharacterDto,
@@ -14,9 +15,16 @@ import type {
   CharacterDetailResponse,
 } from '../types/user-character.types';
 import { ValidationError, NotFoundError, ConflictError } from '../types/errors';
+import { PrismaService } from './prisma.service';
+import { prisma as defaultPrisma } from '../db/client';
 
+@Injectable()
 export class UserCharacterService {
-  constructor(private prisma: PrismaClient) {}
+  private prisma: PrismaClient;
+
+  constructor(@Optional() prismaService?: PrismaService) {
+    this.prisma = prismaService || defaultPrisma;
+  }
 
   async createCharacter(
     userId: string,

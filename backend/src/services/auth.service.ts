@@ -3,6 +3,7 @@
  * Handles user registration, login, JWT token generation, and rate limiting
  */
 
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -13,7 +14,9 @@ import {
   UserResponse,
 } from '../types/auth.types';
 import { ConflictError, AuthError, ValidationError } from '../types/errors';
+import { prisma as defaultPrisma } from '../db/client';
 
+@Injectable()
 export class AuthService {
   private prisma: PrismaClient;
   private jwtSecret: string;
@@ -23,8 +26,8 @@ export class AuthService {
   private readonly RATE_LIMIT_MAX_ATTEMPTS = 5;
   private readonly RATE_LIMIT_LOCKOUT_MINUTES = 15;
 
-  constructor(prisma: PrismaClient) {
-    this.prisma = prisma;
+  constructor(@Optional() prismaClient?: PrismaClient) {
+    this.prisma = prismaClient || defaultPrisma;
     this.jwtSecret = process.env.JWT_SECRET || 'replace-this-in-production';
     this.jwtAccessExpiration = process.env.JWT_ACCESS_EXPIRATION || '7d';
     this.jwtRefreshExpiration = process.env.JWT_REFRESH_EXPIRATION || '30d';

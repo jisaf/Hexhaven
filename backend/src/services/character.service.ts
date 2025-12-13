@@ -9,7 +9,7 @@
  */
 
 import { Character } from '../models/character.model';
-import { NotFoundError, ConflictError } from '../utils/error-handler';
+import { NotFoundError, ConflictError } from '../types/errors';
 import {
   CharacterClass,
   type AxialCoordinates,

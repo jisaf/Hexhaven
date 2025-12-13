@@ -24,18 +24,13 @@ import type {
 } from '../types/game-state.types';
 import { GameStateService } from '../services/game-state.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { prisma } from '../db/client';
 import { ZodValidationPipe } from '../pipes/zod-validation.pipe';
 import { createGameSchema } from '../validation/schemas';
 
 @Controller('api/games')
 @UseGuards(JwtAuthGuard)
 export class GameManagementController {
-  private gameStateService: GameStateService;
-
-  constructor() {
-    this.gameStateService = new GameStateService(prisma);
-  }
+  constructor(private readonly gameStateService: GameStateService) {}
 
   /**
    * Create a new game with character

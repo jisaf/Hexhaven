@@ -26,16 +26,13 @@ import type {
 } from '../types/user-character.types';
 import { UserCharacterService } from '../services/user-character.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { prisma } from '../db/client';
 
 @Controller('api/user-characters')
 @UseGuards(JwtAuthGuard)
 export class UserCharacterController {
-  private userCharacterService: UserCharacterService;
-
-  constructor() {
-    this.userCharacterService = new UserCharacterService(prisma);
-  }
+  constructor(
+    private readonly userCharacterService: UserCharacterService,
+  ) {}
 
   /**
    * Create a new character

@@ -8,6 +8,9 @@
  * - POST /api/characters/:characterId/equip/:itemId - Equip an item
  * - DELETE /api/characters/:characterId/equip/:slot - Unequip an item
  * - POST /api/characters/:characterId/use-item/:itemId - Use an equipped item
+ *
+ * Note: Error handling is delegated to the global HttpExceptionFilter which handles
+ * NotFoundError, ValidationError, ConflictError, etc. from types/errors.ts
  */
 
 import {
@@ -21,9 +24,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { InventoryService } from '../services/inventory.service';
@@ -37,11 +38,7 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('api/characters')
 export class InventoryController {
-  private inventoryService: InventoryService;
-
-  constructor() {
-    this.inventoryService = new InventoryService();
-  }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   /**
    * GET /api/characters/:characterId/inventory
@@ -49,16 +46,14 @@ export class InventoryController {
    */
   @Get(':characterId/inventory')
   @UseGuards(JwtAuthGuard)
-  async getInventory(@Param('characterId') characterId: string) {
-    try {
-      const inventory = await this.inventoryService.getInventory(characterId);
-      return inventory;
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      throw error;
-    }
+  async getInventory(
+    @Req() req: AuthenticatedRequest,
+    @Param('characterId') characterId: string,
+  ) {
+    return await this.inventoryService.getInventory(
+      characterId,
+      req.user.userId,
+    );
   }
 
   /**
@@ -68,16 +63,9 @@ export class InventoryController {
   @Get(':characterId/equipped')
   @UseGuards(JwtAuthGuard)
   async getEquippedItems(@Param('characterId') characterId: string) {
-    try {
-      const equipped =
-        await this.inventoryService.getEquippedItemsWithDetails(characterId);
-      return { equipped };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      throw error;
-    }
+    const equipped =
+      await this.inventoryService.getEquippedItemsWithDetails(characterId);
+    return { equipped };
   }
 
   /**
@@ -96,30 +84,17 @@ export class InventoryController {
     @Param('itemId') itemId: string,
     @Query('deductGold') deductGold?: string,
   ) {
-    try {
-      const shouldDeductGold = deductGold !== 'false';
-      const result = await this.inventoryService.addToInventory(
-        characterId,
-        req.user.userId,
-        itemId,
-        shouldDeductGold,
-      );
-      return {
-        ...result,
-        message: 'Item added to inventory',
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException(error.message);
-      }
-      if (error.name === 'ConflictError') {
-        throw new ConflictException(error.message);
-      }
-      throw error;
-    }
+    const shouldDeductGold = deductGold !== 'false';
+    const result = await this.inventoryService.addToInventory(
+      characterId,
+      req.user.userId,
+      itemId,
+      shouldDeductGold,
+    );
+    return {
+      ...result,
+      message: 'Item added to inventory',
+    };
   }
 
   /**
@@ -137,30 +112,17 @@ export class InventoryController {
     @Param('itemId') itemId: string,
     @Query('refundGold') refundGold?: string,
   ) {
-    try {
-      const shouldRefundGold = refundGold !== 'false';
-      const result = await this.inventoryService.removeFromInventory(
-        characterId,
-        req.user.userId,
-        itemId,
-        shouldRefundGold,
-      );
-      return {
-        ...result,
-        message: 'Item removed from inventory',
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException(error.message);
-      }
-      if (error.name === 'ConflictError') {
-        throw new ConflictException(error.message);
-      }
-      throw error;
-    }
+    const shouldRefundGold = refundGold !== 'false';
+    const result = await this.inventoryService.removeFromInventory(
+      characterId,
+      req.user.userId,
+      itemId,
+      shouldRefundGold,
+    );
+    return {
+      ...result,
+      message: 'Item removed from inventory',
+    };
   }
 
   /**
@@ -175,31 +137,18 @@ export class InventoryController {
     @Param('characterId') characterId: string,
     @Param('itemId') itemId: string,
   ) {
-    try {
-      const result = await this.inventoryService.equipItem(
-        characterId,
-        req.user.userId,
-        itemId,
-      );
-      return {
-        equippedItems: result.equippedItems,
-        unequippedItemId: result.unequippedItemId,
-        message: result.unequippedItemId
-          ? 'Item equipped (previous item unequipped)'
-          : 'Item equipped',
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException(error.message);
-      }
-      if (error.name === 'ConflictError') {
-        throw new ConflictException(error.message);
-      }
-      throw error;
-    }
+    const result = await this.inventoryService.equipItem(
+      characterId,
+      req.user.userId,
+      itemId,
+    );
+    return {
+      equippedItems: result.equippedItems,
+      unequippedItemId: result.unequippedItemId,
+      message: result.unequippedItemId
+        ? 'Item equipped (previous item unequipped)'
+        : 'Item equipped',
+    };
   }
 
   /**
@@ -217,40 +166,27 @@ export class InventoryController {
     @Param('slot') slot: string,
     @Query('index') index?: string,
   ) {
-    try {
-      // Validate slot
-      const slotUpper = slot.toUpperCase();
-      if (!Object.values(ItemSlot).includes(slotUpper as ItemSlot)) {
-        throw new BadRequestException(
-          `Invalid slot: ${slot}. Valid slots: ${Object.values(ItemSlot).join(', ')}`,
-        );
-      }
-
-      const slotIndex = index !== undefined ? parseInt(index, 10) : undefined;
-
-      const result = await this.inventoryService.unequipItem(
-        characterId,
-        req.user.userId,
-        slotUpper as ItemSlot,
-        slotIndex,
+    // Validate slot (this is input validation, not service-level error)
+    const slotUpper = slot.toUpperCase();
+    if (!Object.values(ItemSlot).includes(slotUpper as ItemSlot)) {
+      throw new BadRequestException(
+        `Invalid slot: ${slot}. Valid slots: ${Object.values(ItemSlot).join(', ')}`,
       );
-      return {
-        equippedItems: result.equippedItems,
-        unequippedItemId: result.unequippedItemId,
-        message: 'Item unequipped',
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException(error.message);
-      }
-      if (error.name === 'ConflictError') {
-        throw new ConflictException(error.message);
-      }
-      throw error;
     }
+
+    const slotIndex = index !== undefined ? parseInt(index, 10) : undefined;
+
+    const result = await this.inventoryService.unequipItem(
+      characterId,
+      req.user.userId,
+      slotUpper as ItemSlot,
+      slotIndex,
+    );
+    return {
+      equippedItems: result.equippedItems,
+      unequippedItemId: result.unequippedItemId,
+      message: 'Item unequipped',
+    };
   }
 
   /**
@@ -264,23 +200,13 @@ export class InventoryController {
     @Param('characterId') characterId: string,
     @Param('itemId') itemId: string,
   ) {
-    try {
-      const result = await this.inventoryService.useItem(characterId, itemId);
-      return {
-        item: result.item,
-        newState: result.newState,
-        effects: result.effects,
-        message: 'Item used',
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      if (error.name === 'ValidationError') {
-        throw new BadRequestException(error.message);
-      }
-      throw error;
-    }
+    const result = await this.inventoryService.useItem(characterId, itemId);
+    return {
+      item: result.item,
+      newState: result.newState,
+      effects: result.effects,
+      message: 'Item used',
+    };
   }
 
   /**
@@ -297,22 +223,15 @@ export class InventoryController {
     @Param('characterId') characterId: string,
     @Query('trigger') trigger?: string,
   ) {
-    try {
-      const isScenarioEnd = trigger === 'scenario_end';
-      const result = isScenarioEnd
-        ? await this.inventoryService.refreshAllItems(characterId)
-        : await this.inventoryService.refreshSpentItems(characterId);
+    const isScenarioEnd = trigger === 'scenario_end';
+    const result = isScenarioEnd
+      ? await this.inventoryService.refreshAllItems(characterId)
+      : await this.inventoryService.refreshSpentItems(characterId);
 
-      return {
-        refreshedItems: result.refreshedItems,
-        trigger: isScenarioEnd ? 'scenario_end' : 'long_rest',
-        message: `${result.refreshedItems.length} item(s) refreshed`,
-      };
-    } catch (error: any) {
-      if (error.name === 'NotFoundError') {
-        throw new NotFoundException(error.message);
-      }
-      throw error;
-    }
+    return {
+      refreshedItems: result.refreshedItems,
+      trigger: isScenarioEnd ? 'scenario_end' : 'long_rest',
+      message: `${result.refreshedItems.length} item(s) refreshed`,
+    };
   }
 }

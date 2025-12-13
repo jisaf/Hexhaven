@@ -6,7 +6,7 @@
  */
 
 import { Player } from '../models/player.model';
-import { NotFoundError, ValidationError } from '../utils/error-handler';
+import { NotFoundError, ValidationError } from '../types/errors';
 import { ConnectionStatus } from '../../../shared/types/entities';
 
 export class PlayerService {

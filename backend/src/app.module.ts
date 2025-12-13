@@ -27,6 +27,9 @@ import { CardPileService } from './services/card-pile.service';
 import { RestService } from './services/rest.service';
 import { ExhaustionService } from './services/exhaustion.service';
 import { BackgroundUploadService } from './services/background-upload.service';
+import { AuthService } from './services/auth.service';
+import { UserCharacterService } from './services/user-character.service';
+import { GameStateService } from './services/game-state.service';
 
 @Module({
   imports: [],
@@ -62,6 +65,9 @@ import { BackgroundUploadService } from './services/background-upload.service';
     BackgroundUploadService, // Issue #191: Background image upload handling
     InventoryService, // Issue #205 Sprint 2: Character inventory management
     ItemService, // Issue #205: Item CRUD operations
+    AuthService, // User authentication service
+    UserCharacterService, // Persistent character management
+    GameStateService, // Game state and event sourcing
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

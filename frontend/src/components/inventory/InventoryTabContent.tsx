@@ -19,6 +19,11 @@ import {
   type EquippedItems,
   type ItemRuntimeState,
 } from '../../../../shared/types/entities';
+import {
+  getMaxSmallSlots,
+  SLOT_DISPLAY_INFO,
+  SLOT_ORDER,
+} from '../../../../shared/utils/inventory';
 
 interface InventoryTabContentProps {
   /** All items owned by the character */
@@ -45,33 +50,8 @@ interface InventoryTabContentProps {
   error?: string;
 }
 
-// Equipment slot order for display
-const SLOT_ORDER: ItemSlot[] = [
-  ItemSlot.HEAD,
-  ItemSlot.BODY,
-  ItemSlot.LEGS,
-  ItemSlot.ONE_HAND,
-  ItemSlot.TWO_HAND,
-  ItemSlot.SMALL,
-];
-
-// Slot display info
-const SLOT_INFO: Record<ItemSlot, { label: string; icon: string }> = {
-  [ItemSlot.HEAD]: { label: 'Head', icon: 'ra-helmet' },
-  [ItemSlot.BODY]: { label: 'Body', icon: 'ra-vest' },
-  [ItemSlot.LEGS]: { label: 'Legs', icon: 'ra-boot-stomp' },
-  [ItemSlot.ONE_HAND]: { label: 'One Hand', icon: 'ra-sword' },
-  [ItemSlot.TWO_HAND]: { label: 'Two Hands', icon: 'ra-axe' },
-  [ItemSlot.SMALL]: { label: 'Small Items', icon: 'ra-potion' },
-};
-
-/**
- * Get maximum small item slots for a character level
- * Gloomhaven rule: ceil(level / 2)
- */
-function getMaxSmallSlots(level: number): number {
-  return Math.ceil(level / 2);
-}
+// Use SLOT_DISPLAY_INFO as SLOT_INFO alias for backward compatibility in this file
+const SLOT_INFO = SLOT_DISPLAY_INFO;
 
 /**
  * Check if an item is currently equipped

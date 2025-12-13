@@ -1,7 +1,7 @@
 # Hexhaven Multiplayer - System Architecture
 
 **Version**: 1.0
-**Last Updated**: 2025-11-14
+**Last Updated**: 2025-12-13
 **Status**: Production-Ready (MVP)
 
 ---
@@ -65,6 +65,7 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 │  │   ├── Turn Order                                         │
 │  │   ├── Damage Calculation                                 │
 │  │   ├── Pathfinding (A*)                                   │
+│  │   ├── Items & Inventory (Issue #205)                     │
 │  │   └── Progression Tracking                               │
 │  └── Validation & Security                                  │
 └─────────────────────────────────────────────────────────────┘
@@ -134,6 +135,17 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 | **ESLint** | Code linting |
 | **Prettier** | Code formatting |
 
+### Shared Utilities (Issue #205)
+
+```
+shared/
+├── types/               # Shared TypeScript types
+│   ├── entities.ts      # Item, ItemState, ItemSlot, ItemRarity enums
+│   └── ...
+└── utils/               # Shared utility functions
+    └── inventory.ts     # getMaxSmallSlots, formatItemEffect, SLOT_DISPLAY_INFO
+```
+
 ---
 
 ## Data Flow
@@ -201,6 +213,11 @@ frontend/src/
 │   ├── CharacterSelect.tsx
 │   ├── TurnOrderDisplay.tsx
 │   ├── AccountUpgradeModal.tsx
+│   ├── inventory/       # Issue #205: Inventory components
+│   │   ├── InventoryPanel.tsx
+│   │   ├── InventoryTabContent.tsx
+│   │   ├── ItemCard.tsx
+│   │   └── ItemIcon.tsx
 │   └── ...
 ├── game/                # PixiJS rendering layer
 │   ├── PixiApp.tsx      # PixiJS application wrapper
@@ -237,6 +254,8 @@ backend/src/
 ├── api/                 # REST endpoints
 │   ├── rooms.controller.ts
 │   ├── scenarios.controller.ts
+│   ├── items.controller.ts      # Issue #205: Item CRUD endpoints
+│   ├── inventory.controller.ts  # Issue #205: Character inventory endpoints
 │   └── accounts.controller.ts
 ├── websocket/           # Real-time communication
 │   └── game.gateway.ts  # Socket.io event handlers
@@ -249,6 +268,8 @@ backend/src/
 │   ├── account.service.ts
 │   ├── progression.service.ts
 │   ├── scenario.service.ts
+│   ├── item.service.ts          # Issue #205: Item CRUD with role-based access
+│   ├── inventory.service.ts     # Issue #205: Character inventory management
 │   └── background-upload.service.ts  # Issue #191: Background image uploads
 ├── models/              # Domain models
 │   ├── player.model.ts
@@ -470,6 +491,63 @@ The Scenario Designer supports background image uploads for visual reference whe
 - Gold border drawn around world perimeter for visual reference
 - Viewport clamped to world bounds to prevent losing the map
 
+### Items and Inventory System (Issue #205)
+
+The game implements a Gloomhaven-inspired item and inventory system with role-based access control.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Frontend UI        │────>│  Backend Services   │────>│  PostgreSQL      │
+│  (React + RPG Icons)│     │  (NestJS + DI)      │     │  (Prisma ORM)    │
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │
+         │                           │
+         ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐
+│  Shared Utilities   │     │  WebSocket Gateway  │
+│  (inventory.ts)     │     │  (Real-time events) │
+└─────────────────────┘     └─────────────────────┘
+```
+
+**Key Components**:
+
+1. **ItemService** (`backend/src/services/item.service.ts`):
+   - CRUD operations for items with role-based access
+   - Creator role required for create/update
+   - Admin role required for delete
+   - Effect validation (heal, shield, attack_modifier, etc.)
+
+2. **InventoryService** (`backend/src/services/inventory.service.ts`):
+   - Character inventory management
+   - Equip/unequip with slot validation
+   - Item state tracking (READY, SPENT, CONSUMED)
+   - Slot capacity by level: `ceil(level / 2)` for small items
+
+3. **Shared Utilities** (`shared/utils/inventory.ts`):
+   - `getMaxSmallSlots(level)`: Calculate small item slots by level
+   - `formatItemEffect(effect)`: Format effect for display
+   - `SLOT_DISPLAY_INFO`: UI constants for slot icons/labels
+
+**Equipment Slots** (per Gloomhaven rules):
+- HEAD: 1 slot
+- BODY: 1 slot
+- LEGS: 1 slot
+- ONE_HAND: 2 slots (or 1 TWO_HAND)
+- TWO_HAND: Uses both hand slots
+- SMALL: Level-dependent (`ceil(level / 2)`)
+
+**Item States**:
+- `READY`: Can be used
+- `SPENT`: Used this round, refreshes on long rest
+- `CONSUMED`: Permanently used, removed from inventory
+
+**Security**:
+- JWT authentication via `JwtAuthGuard`
+- Character ownership verification for inventory operations
+- Role-based access for item CRUD (creator/admin)
+- In-game equipment changes blocked (ConflictError)
+
 ---
 
 ## Database Schema
@@ -535,6 +613,52 @@ CREATE TABLE progressions (
   character_experience JSONB,
   perks_unlocked JSONB,
   completed_scenario_ids JSONB
+);
+
+-- Items (Issue #205)
+CREATE TABLE items (
+  id UUID PRIMARY KEY,
+  name VARCHAR(100),
+  description TEXT,
+  slot VARCHAR(20),              -- HEAD, BODY, LEGS, ONE_HAND, TWO_HAND, SMALL
+  usage_type VARCHAR(20),        -- PERSISTENT, SPENT, CONSUMED
+  max_uses INTEGER,
+  cost INTEGER,
+  rarity VARCHAR(20),            -- COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
+  effects JSONB,                 -- Array of { type, value, description }
+  triggers JSONB,                -- Array of { event, conditions }
+  image_url VARCHAR(500),
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES accounts(id),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Character Inventory (Issue #205)
+CREATE TABLE character_inventory (
+  character_id UUID REFERENCES characters(id),
+  item_id UUID REFERENCES items(id),
+  acquired_at TIMESTAMP,
+  PRIMARY KEY (character_id, item_id)
+);
+
+-- Character Equipment (Issue #205)
+CREATE TABLE character_equipment (
+  id UUID PRIMARY KEY,
+  character_id UUID REFERENCES characters(id),
+  item_id UUID REFERENCES items(id),
+  slot VARCHAR(20),              -- Matches item slot
+  slot_index INTEGER,            -- For SMALL slots (0-based index)
+  equipped_at TIMESTAMP
+);
+
+-- Character Item State (Issue #205)
+CREATE TABLE character_item_state (
+  character_id UUID REFERENCES characters(id),
+  item_id UUID REFERENCES items(id),
+  state VARCHAR(20),             -- READY, SPENT, CONSUMED
+  uses_remaining INTEGER,
+  PRIMARY KEY (character_id, item_id)
 );
 ```
 
@@ -608,6 +732,18 @@ GET  /api/accounts/:uuid/progression     # Get progression
 POST /api/accounts/:uuid/progression     # Update progression
 POST /api/accounts/:uuid/progression/scenario  # Track completion
 POST /api/accounts/:uuid/progression/perk      # Unlock perk
+
+# Items (Issue #205)
+GET    /api/items             # List items (with filters: slot, usageType, rarity)
+GET    /api/items/:id         # Get item details
+POST   /api/items             # Create item (creator role required)
+PUT    /api/items/:id         # Update item (creator role required)
+DELETE /api/items/:id         # Delete item (admin role required)
+
+# Character Inventory (Issue #205)
+GET  /api/characters/:id/inventory  # Get character inventory (owner auth)
+POST /api/characters/:id/equip      # Equip item
+POST /api/characters/:id/unequip    # Unequip item
 ```
 
 ### WebSocket Events
@@ -623,6 +759,11 @@ select_cards     { roomCode, cards: { top, bottom } }
 attack_target    { roomCode, targetId }
 collect_loot     { roomCode, lootId }
 end_turn         { roomCode }
+
+# Items (Issue #205)
+use_item         { roomCode, characterId, itemId }
+equip_item       { roomCode, characterId, itemId, slotIndex? }
+unequip_item     { roomCode, characterId, itemId }
 ```
 
 **Server → Client**:
@@ -640,6 +781,12 @@ attack_resolved     { attackerId, targetId, damage }
 scenario_completed  { victory, reason }
 player_disconnected { playerId }
 player_reconnected  { playerId }
+
+# Items (Issue #205)
+item_used           { characterId, itemId, effects, newState }
+item_equipped       { characterId, itemId, slot, slotIndex }
+item_unequipped     { characterId, itemId }
+items_refreshed     { characterId, refreshedItems }
 ```
 
 ---
@@ -830,4 +977,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-11-14
+**Last Review**: 2025-12-13

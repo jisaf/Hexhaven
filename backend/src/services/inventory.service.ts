@@ -24,14 +24,7 @@ import {
   ItemState as SharedItemState,
 } from '../../../shared/types/entities';
 import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
-
-/**
- * Maximum small item slots by character level
- * ceil(level / 2) per Gloomhaven rules
- */
-function getMaxSmallSlots(level: number): number {
-  return Math.ceil(level / 2);
-}
+import { getMaxSmallSlots } from '../../../shared/utils/inventory';
 
 /**
  * Convert Prisma ItemState to shared ItemState
@@ -66,8 +59,13 @@ export class InventoryService {
 
   /**
    * Get character's full inventory with item details
+   * @param characterId - The character's database ID
+   * @param userId - Optional user ID for ownership verification (required for API calls)
    */
-  async getInventory(characterId: string): Promise<{
+  async getInventory(
+    characterId: string,
+    userId?: string,
+  ): Promise<{
     ownedItems: SharedItem[];
     equippedItems: EquippedItems;
     itemStates: Record<string, ItemRuntimeState>;
@@ -82,6 +80,11 @@ export class InventoryService {
     });
 
     if (!character) {
+      throw new NotFoundError('Character not found');
+    }
+
+    // Verify ownership if userId is provided
+    if (userId && character.userId !== userId) {
       throw new NotFoundError('Character not found');
     }
 

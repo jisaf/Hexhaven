@@ -4,27 +4,14 @@
  * Tests for item CRUD operations with role-based access:
  * - Listing and filtering items
  * - Getting item details
- * - Creating items (creator/admin only)
- * - Updating items (creator/admin only)
+ * - Creating items (creator role)
+ * - Updating items (creator role)
  * - Deleting items (admin only)
- *
- * NOTE: Tests temporarily skipped - mocks need to be updated to match
- * actual service implementation. Functionality manually tested.
- * TODO: Fix mocks in follow-up PR
  */
 
-// Skip all tests in this file until mocks are fixed
-describe.skip('ItemService', () => {
-  it('placeholder', () => {
-    expect(true).toBe(true);
-  });
-});
-
-/* Original tests below - to be re-enabled after fixing mocks
-
 import { ItemService } from './item.service';
-import { NotFoundError, ForbiddenError, ValidationError } from '../types/errors';
-import type { UserRole } from '../../../shared/types/entities';
+import { NotFoundError, ValidationError, ForbiddenError } from '../types/errors';
+import { PrismaClient } from '@prisma/client';
 
 // Mock Prisma Client
 const mockPrisma = {
@@ -39,21 +26,33 @@ const mockPrisma = {
   characterEquipment: {
     findFirst: jest.fn(),
   },
+  characterInventory: {
+    findFirst: jest.fn(),
+  },
   user: {
     findUnique: jest.fn(),
   },
+} as unknown as PrismaClient;
+
+// Helper to set up user with specific roles
+// Note: service checks lowercase role names ('creator', 'admin', 'player')
+const mockUserWithRoles = (roles: string[]) => {
+  (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+    id: 'user-1',
+    roles: roles.map((r) => r.toLowerCase()),
+  });
 };
 
 describe('ItemService', () => {
   let itemService: ItemService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    itemService = new ItemService(mockPrisma as any);
+    jest.resetAllMocks();
+    itemService = new ItemService(mockPrisma);
   });
 
   describe('listItems', () => {
-    it('should return paginated list of items', async () => {
+    it('should return list of items', async () => {
       const mockItems = [
         {
           id: 'item-1',
@@ -65,6 +64,8 @@ describe('ItemService', () => {
           effects: [],
           triggers: [],
           isActive: true,
+          rarity: 'COMMON',
+          createdAt: new Date(),
         },
         {
           id: 'item-2',
@@ -76,17 +77,17 @@ describe('ItemService', () => {
           effects: [],
           triggers: [],
           isActive: true,
+          rarity: 'UNCOMMON',
+          createdAt: new Date(),
         },
       ];
 
-      mockPrisma.item.findMany.mockResolvedValue(mockItems);
-      mockPrisma.item.count.mockResolvedValue(2);
+      (mockPrisma.item.findMany as jest.Mock).mockResolvedValue(mockItems);
 
-      const result = await itemService.listItems({}, 1, 10);
+      const result = await itemService.listItems();
 
-      expect(result.items).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(result.page).toBe(1);
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('Healing Potion');
     });
 
     it('should filter items by slot', async () => {
@@ -97,23 +98,32 @@ describe('ItemService', () => {
           slot: 'HEAD',
           usageType: 'PERSISTENT',
           isActive: true,
+          rarity: 'COMMON',
+          effects: [],
+          triggers: [],
+          createdAt: new Date(),
         },
       ];
 
-      mockPrisma.item.findMany.mockResolvedValue(mockItems);
-      mockPrisma.item.count.mockResolvedValue(1);
+      (mockPrisma.item.findMany as jest.Mock).mockResolvedValue(mockItems);
 
-      const result = await itemService.listItems({ slot: 'HEAD' }, 1, 10);
+      const result = await itemService.listItems({ slot: 'HEAD' });
 
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].slot).toBe('HEAD');
+      expect(result).toHaveLength(1);
+      expect(result[0].slot).toBe('HEAD');
+      expect(mockPrisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            slot: 'HEAD',
+          }),
+        }),
+      );
     });
 
     it('should filter items by usage type', async () => {
-      mockPrisma.item.findMany.mockResolvedValue([]);
-      mockPrisma.item.count.mockResolvedValue(0);
+      (mockPrisma.item.findMany as jest.Mock).mockResolvedValue([]);
 
-      await itemService.listItems({ usageType: 'CONSUMED' }, 1, 10);
+      await itemService.listItems({ usageType: 'CONSUMED' });
 
       expect(mockPrisma.item.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -124,16 +134,15 @@ describe('ItemService', () => {
       );
     });
 
-    it('should filter items by name search', async () => {
-      mockPrisma.item.findMany.mockResolvedValue([]);
-      mockPrisma.item.count.mockResolvedValue(0);
+    it('should filter items by rarity', async () => {
+      (mockPrisma.item.findMany as jest.Mock).mockResolvedValue([]);
 
-      await itemService.listItems({ search: 'potion' }, 1, 10);
+      await itemService.listItems({ rarity: 'RARE' });
 
       expect(mockPrisma.item.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            name: { contains: 'potion', mode: 'insensitive' },
+            rarity: 'RARE',
           }),
         }),
       );
@@ -152,78 +161,113 @@ describe('ItemService', () => {
         effects: [{ type: 'heal', value: 5 }],
         triggers: [],
         isActive: true,
+        rarity: 'COMMON',
+        createdAt: new Date(),
       };
 
-      mockPrisma.item.findUnique.mockResolvedValue(mockItem);
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(mockItem);
 
       const result = await itemService.getItem('item-1');
 
-      expect(result.id).toBe('item-1');
-      expect(result.name).toBe('Healing Potion');
+      expect(result?.id).toBe('item-1');
+      expect(result?.name).toBe('Healing Potion');
     });
 
-    it('should throw NotFoundError for non-existent item', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue(null);
+    it('should return null for non-existent item', async () => {
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(itemService.getItem('invalid-id')).rejects.toThrow(
+      const result = await itemService.getItem('invalid-id');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getItemOrThrow', () => {
+    it('should throw NotFoundError for non-existent item', async () => {
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(itemService.getItemOrThrow('invalid-id')).rejects.toThrow(
         NotFoundError,
       );
     });
   });
 
   describe('createItem', () => {
-    const createDto = {
+    const validCreateDto = {
       name: 'New Potion',
       slot: 'SMALL' as const,
       usageType: 'CONSUMED' as const,
+      rarity: 'COMMON' as const,
       maxUses: 1,
       cost: 15,
       effects: [{ type: 'heal', value: 3 }],
+      triggers: [],
     };
 
-    it('should create item when user is creator', async () => {
+    it('should create item with valid data when user has permission', async () => {
       const mockCreatedItem = {
         id: 'new-item',
-        ...createDto,
+        ...validCreateDto,
         isActive: true,
-        triggers: [],
+        createdBy: 'user-1',
+        createdAt: new Date(),
       };
 
-      mockPrisma.item.create.mockResolvedValue(mockCreatedItem);
+      mockUserWithRoles(['CREATOR']);
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockPrisma.item.create as jest.Mock).mockResolvedValue(mockCreatedItem);
 
-      const result = await itemService.createItem(createDto, 'creator');
+      const result = await itemService.createItem('user-1', validCreateDto);
 
       expect(result.name).toBe('New Potion');
       expect(mockPrisma.item.create).toHaveBeenCalled();
     });
 
-    it('should create item when user is admin', async () => {
-      mockPrisma.item.create.mockResolvedValue({
-        id: 'new-item',
-        ...createDto,
-        isActive: true,
-      });
+    it('should throw ForbiddenError when user lacks permission', async () => {
+      mockUserWithRoles(['PLAYER']);
 
-      await itemService.createItem(createDto, 'admin');
-
-      expect(mockPrisma.item.create).toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenError for regular users', async () => {
       await expect(
-        itemService.createItem(createDto, 'player'),
+        itemService.createItem('user-1', validCreateDto),
       ).rejects.toThrow(ForbiddenError);
     });
 
-    it('should throw ValidationError for invalid effect types', async () => {
+    it('should throw ValidationError for invalid effect type', async () => {
+      mockUserWithRoles(['CREATOR']);
+
       const invalidDto = {
-        ...createDto,
-        effects: [{ type: 'invalid_effect', value: 5 }],
+        ...validCreateDto,
+        effects: [{ type: 'invalid_effect_type', value: 5 }],
       };
 
-      await expect(
-        itemService.createItem(invalidDto, 'creator'),
-      ).rejects.toThrow(ValidationError);
+      await expect(itemService.createItem('user-1', invalidDto)).rejects.toThrow(
+        ValidationError,
+      );
+    });
+
+    it('should throw ValidationError for missing name', async () => {
+      mockUserWithRoles(['CREATOR']);
+
+      const invalidDto = {
+        ...validCreateDto,
+        name: '',
+      };
+
+      await expect(itemService.createItem('user-1', invalidDto)).rejects.toThrow(
+        ValidationError,
+      );
+    });
+
+    it('should throw ValidationError for negative cost', async () => {
+      mockUserWithRoles(['CREATOR']);
+
+      const invalidDto = {
+        ...validCreateDto,
+        cost: -5,
+      };
+
+      await expect(itemService.createItem('user-1', invalidDto)).rejects.toThrow(
+        ValidationError,
+      );
     });
   });
 
@@ -233,13 +277,17 @@ describe('ItemService', () => {
       cost: 20,
     };
 
-    it('should update item when user is creator', async () => {
+    it('should update item when user has permission', async () => {
       const mockExistingItem = {
         id: 'item-1',
         name: 'Old Potion',
         slot: 'SMALL',
         usageType: 'CONSUMED',
         isActive: true,
+        rarity: 'COMMON',
+        effects: [],
+        triggers: [],
+        createdAt: new Date(),
       };
 
       const mockUpdatedItem = {
@@ -248,65 +296,69 @@ describe('ItemService', () => {
         cost: 20,
       };
 
-      mockPrisma.item.findUnique.mockResolvedValue(mockExistingItem);
-      mockPrisma.item.update.mockResolvedValue(mockUpdatedItem);
+      mockUserWithRoles(['CREATOR']);
+      // First call: getItemOrThrow returns existing item
+      // Second call: duplicate check returns null (no duplicate)
+      (mockPrisma.item.findUnique as jest.Mock)
+        .mockResolvedValueOnce(mockExistingItem) // getItemOrThrow
+        .mockResolvedValueOnce(null); // duplicate check
+      (mockPrisma.item.update as jest.Mock).mockResolvedValue(mockUpdatedItem);
 
-      const result = await itemService.updateItem(
-        'item-1',
-        updateDto,
-        'creator',
-      );
+      const result = await itemService.updateItem('user-1', 'item-1', updateDto);
 
       expect(result.name).toBe('Updated Potion');
     });
 
-    it('should throw NotFoundError for non-existent item', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue(null);
+    it('should throw ForbiddenError when user lacks permission', async () => {
+      mockUserWithRoles(['PLAYER']);
 
       await expect(
-        itemService.updateItem('invalid-id', updateDto, 'creator'),
-      ).rejects.toThrow(NotFoundError);
+        itemService.updateItem('user-1', 'item-1', updateDto),
+      ).rejects.toThrow(ForbiddenError);
     });
 
-    it('should throw ForbiddenError for regular users', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue({ id: 'item-1' });
+    it('should throw NotFoundError for non-existent item', async () => {
+      mockUserWithRoles(['CREATOR']);
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        itemService.updateItem('item-1', updateDto, 'player'),
-      ).rejects.toThrow(ForbiddenError);
+        itemService.updateItem('user-1', 'invalid-id', updateDto),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe('deleteItem', () => {
     it('should delete item when user is admin', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue({ id: 'item-1' });
-      mockPrisma.characterEquipment.findFirst.mockResolvedValue(null);
-      mockPrisma.item.delete.mockResolvedValue({ id: 'item-1' });
+      mockUserWithRoles(['ADMIN']);
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue({
+        id: 'item-1',
+        isActive: true,
+        createdAt: new Date(),
+      });
+      (mockPrisma.item.delete as jest.Mock).mockResolvedValue({});
 
-      await itemService.deleteItem('item-1', 'admin');
+      await itemService.deleteItem('user-1', 'item-1');
 
       expect(mockPrisma.item.delete).toHaveBeenCalledWith({
         where: { id: 'item-1' },
       });
     });
 
-    it('should throw ForbiddenError for creator role', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue({ id: 'item-1' });
+    it('should throw ForbiddenError when non-admin tries to delete', async () => {
+      mockUserWithRoles(['CREATOR']);
 
-      await expect(
-        itemService.deleteItem('item-1', 'creator'),
-      ).rejects.toThrow(ForbiddenError);
+      await expect(itemService.deleteItem('user-1', 'item-1')).rejects.toThrow(
+        ForbiddenError,
+      );
     });
 
-    it('should throw ValidationError if item is equipped by characters', async () => {
-      mockPrisma.item.findUnique.mockResolvedValue({ id: 'item-1' });
-      mockPrisma.characterEquipment.findFirst.mockResolvedValue({
-        id: 'equip-1',
-      });
+    it('should throw NotFoundError for non-existent item', async () => {
+      mockUserWithRoles(['ADMIN']);
+      (mockPrisma.item.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        itemService.deleteItem('item-1', 'admin'),
-      ).rejects.toThrow(ValidationError);
+      await expect(itemService.deleteItem('user-1', 'invalid-id')).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 
@@ -321,11 +373,13 @@ describe('ItemService', () => {
         maxUses: null,
         cost: 50,
         imageUrl: '/images/item.png',
-        effects: [{ type: 'bonus', value: { defense: 1 } }],
+        effects: [{ type: 'defense', value: 1 }],
         triggers: [],
         isActive: true,
-        createdAt: new Date(),
+        rarity: 'UNCOMMON',
+        createdAt: new Date('2024-01-01'),
         updatedAt: new Date(),
+        createdBy: 'user-1',
       };
 
       const result = itemService.toSharedItem(prismaItem as any);
@@ -334,7 +388,69 @@ describe('ItemService', () => {
       expect(result.name).toBe('Test Item');
       expect(result.slot).toBe('HEAD');
       expect(result.effects).toHaveLength(1);
+      expect(result.rarity).toBe('UNCOMMON');
+      expect(result.createdAt).toBe('2024-01-01T00:00:00.000Z');
+    });
+
+    it('should handle null optional fields', () => {
+      const prismaItem = {
+        id: 'item-1',
+        name: 'Simple Item',
+        slot: 'SMALL',
+        usageType: 'CONSUMED',
+        maxUses: 1,
+        cost: 10,
+        effects: [],
+        triggers: [],
+        isActive: true,
+        rarity: 'COMMON',
+        description: null,
+        imageUrl: null,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date(),
+        createdBy: null,
+      };
+
+      const result = itemService.toSharedItem(prismaItem as any);
+
+      expect(result.id).toBe('item-1');
+      expect(result.description).toBeUndefined();
+      expect(result.imageUrl).toBeUndefined();
+      expect(result.createdBy).toBeUndefined();
+    });
+  });
+
+  describe('validateEffects', () => {
+    it('should validate correct effects', () => {
+      const effects = [
+        { type: 'heal', value: 5 },
+        { type: 'shield', value: 2 },
+      ];
+
+      const result = itemService.validateEffects(effects);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should reject invalid effect types', () => {
+      const effects = [{ type: 'invalid_type', value: 5 }];
+
+      const result = itemService.validateEffects(effects);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should require value for numeric effects', () => {
+      const effects = [{ type: 'heal' }];
+
+      const result = itemService.validateEffects(effects as any);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain(
+        'Effect 0: value is required for heal effects',
+      );
     });
   });
 });
-*/

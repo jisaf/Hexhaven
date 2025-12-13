@@ -93,6 +93,7 @@ export class GameGateway
     private readonly prisma: PrismaService,
     private readonly scenarioService: ScenarioService,
     private readonly deckManagement: DeckManagementService,
+    private readonly inventoryService: InventoryService,
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -111,7 +112,6 @@ export class GameGateway
   private readonly objectiveContextBuilderService =
     new ObjectiveContextBuilderService();
   private readonly gameResultService: GameResultService;
-  private readonly inventoryService = new InventoryService();
   private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
   private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
 

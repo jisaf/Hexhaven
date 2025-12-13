@@ -11,7 +11,7 @@ import {
   NotFoundError,
   ValidationError,
   ConflictError,
-} from '../utils/error-handler';
+} from '../types/errors';
 import { RoomStatus } from '../../../shared/types/entities';
 
 export class RoomService {

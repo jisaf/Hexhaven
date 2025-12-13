@@ -20,11 +20,7 @@ import { UserRole } from '../../../shared/types/entities';
 
 @Injectable()
 export class CreatorGuard implements CanActivate {
-  private authService: AuthService;
-
-  constructor() {
-    this.authService = new AuthService(prisma);
-  }
+  constructor(private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -76,11 +72,7 @@ export class CreatorGuard implements CanActivate {
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
-  private authService: AuthService;
-
-  constructor() {
-    this.authService = new AuthService(prisma);
-  }
+  constructor(private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();

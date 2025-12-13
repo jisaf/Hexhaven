@@ -12,12 +12,16 @@
 import React from 'react';
 import { ItemIcon } from './ItemIcon';
 import styles from './ItemCard.module.css';
-import type {
-  Item,
+import {
   ItemState,
-  ItemSlot,
-  ItemRarity,
+  ItemUsageType,
+  type Item,
+  type ItemRarity,
 } from '../../../../shared/types/entities';
+import {
+  SLOT_SHORT_NAMES,
+  formatEffectsSummary,
+} from '../../../../shared/utils/inventory';
 
 interface ItemCardProps {
   /** The item to display */
@@ -40,15 +44,8 @@ interface ItemCardProps {
   compact?: boolean;
 }
 
-// Slot display names
-const SLOT_NAMES: Record<ItemSlot, string> = {
-  HEAD: 'Head',
-  BODY: 'Body',
-  LEGS: 'Legs',
-  ONE_HAND: '1-Hand',
-  TWO_HAND: '2-Hand',
-  SMALL: 'Small',
-};
+// Use shared slot names
+const SLOT_NAMES = SLOT_SHORT_NAMES;
 
 // Rarity display names and CSS classes
 const RARITY_INFO: Record<ItemRarity, { label: string; className: string }> = {
@@ -72,9 +69,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 }) => {
   const rarityInfo = RARITY_INFO[item.rarity] || RARITY_INFO.COMMON;
   const slotName = SLOT_NAMES[item.slot] || item.slot;
-  const isSpent = state === 'spent';
-  const isConsumed = state === 'consumed';
-  const isUsable = item.usageType !== 'PERSISTENT' && !isConsumed && !isSpent;
+  const isSpent = state === ItemState.SPENT;
+  const isConsumed = state === ItemState.CONSUMED;
+  const isUsable = item.usageType !== ItemUsageType.PERSISTENT && !isConsumed && !isSpent;
 
   // Build card class names
   const cardClasses = [
@@ -89,28 +86,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  // Format effects for display
-  const effectsSummary = item.effects
-    .map((effect) => {
-      if (effect.description) return effect.description;
-      if (effect.type === 'attack_modifier' && effect.value !== undefined) {
-        return `+${effect.value} Attack`;
-      }
-      if (effect.type === 'defense' && effect.value !== undefined) {
-        return `+${effect.value} Defense`;
-      }
-      if (effect.type === 'heal' && effect.value !== undefined) {
-        return `Heal ${effect.value}`;
-      }
-      if (effect.type === 'movement' && effect.value !== undefined) {
-        return `+${effect.value} Move`;
-      }
-      if (effect.type === 'shield' && effect.value !== undefined) {
-        return `Shield ${effect.value}`;
-      }
-      return effect.type;
-    })
-    .join(', ');
+  // Format effects for display using shared utility
+  const effectsSummary = formatEffectsSummary(item.effects);
 
   return (
     <div className={cardClasses} onClick={!disabled ? onClick : undefined}>

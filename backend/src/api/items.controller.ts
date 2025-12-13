@@ -45,11 +45,7 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('api/items')
 export class ItemsController {
-  private itemService: ItemService;
-
-  constructor() {
-    this.itemService = new ItemService();
-  }
+  constructor(private readonly itemService: ItemService) {}
 
   /**
    * GET /api/items
