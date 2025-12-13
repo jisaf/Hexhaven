@@ -15,15 +15,14 @@ import type {
   CharacterDetailResponse,
 } from '../types/user-character.types';
 import { ValidationError, NotFoundError, ConflictError } from '../types/errors';
-import { PrismaService } from './prisma.service';
 import { prisma as defaultPrisma } from '../db/client';
 
 @Injectable()
 export class UserCharacterService {
   private prisma: PrismaClient;
 
-  constructor(@Optional() prismaService?: PrismaService) {
-    this.prisma = prismaService || defaultPrisma;
+  constructor(@Optional() prismaClient?: PrismaClient) {
+    this.prisma = prismaClient || defaultPrisma;
   }
 
   async createCharacter(
