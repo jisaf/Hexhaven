@@ -17,6 +17,7 @@ model User {
   username            String    @unique @db.VarChar(20)
   passwordHash        String    @db.VarChar(255)
   email               String?   @unique @db.VarChar(255) // Reserved for future use
+  roles               Json      @default("[\"player\"]") // ["player", "creator", "admin"] - RBAC (Issue #205)
   failedLoginAttempts Int       @default(0) @db.SmallInt
   lockedUntil         DateTime?
   deletedAt           DateTime? // Soft delete timestamp
@@ -116,24 +117,81 @@ model Character {
   gold          Int      @default(0)
   health        Int      @db.SmallInt // Current health
   perks         Json     @default("[]") // Array of unlocked perk names
-  inventory     Json     @default("[]") // Array of item IDs in character's possession
   currentGameId String?  @db.Uuid // NULL if not in game, gameId if in active game
   campaignId    String?  @db.Uuid // NULL or campaignId (features deferred)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class        CharacterClass    @relation(fields: [classId], references: [id])
-  currentGame  Game?             @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
-  campaign     Campaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  enhancements CardEnhancement[]
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class           CharacterClass       @relation(fields: [classId], references: [id])
+  currentGame     Game?                @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  campaign        Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  enhancements    CardEnhancement[]
+  ownedItems      CharacterInventory[] // Items owned by this character (Issue #205)
+  equippedItems   CharacterEquipment[] // Currently equipped items (Issue #205)
+  itemStates      CharacterItemState[] // Runtime state of items during gameplay (Issue #205)
 
   @@index([userId])
   @@index([classId])
   @@index([currentGameId])
   @@index([campaignId])
   @@map("characters")
+}
+
+// ========== CHARACTER INVENTORY & EQUIPMENT (Issue #205) ==========
+
+model CharacterInventory {
+  id          String   @id @default(uuid()) @db.Uuid
+  characterId String   @db.Uuid
+  itemId      String   @db.Uuid
+  acquiredAt  DateTime @default(now())
+
+  // Relations
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, itemId]) // Can only own each item once
+  @@index([characterId])
+  @@index([itemId])
+  @@map("character_inventory")
+}
+
+model CharacterEquipment {
+  id          String   @id @default(uuid()) @db.Uuid
+  characterId String   @db.Uuid
+  itemId      String   @db.Uuid
+  slot        ItemSlot // HEAD, BODY, LEGS, ONE_HAND, TWO_HAND, SMALL
+  slotIndex   Int      @default(0) @db.SmallInt // For slots with multiple items (hands: 0-1, small: 0-N)
+  equippedAt  DateTime @default(now())
+
+  // Relations
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, slot, slotIndex]) // Only one item per slot+index
+  @@unique([characterId, itemId]) // Can't equip same item twice
+  @@index([characterId])
+  @@index([itemId])
+  @@map("character_equipment")
+}
+
+model CharacterItemState {
+  id            String    @id @default(uuid()) @db.Uuid
+  characterId   String    @db.Uuid
+  itemId        String    @db.Uuid
+  state         ItemState @default(READY)
+  usesRemaining Int?      @db.SmallInt
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, itemId]) // One state per character+item
+  @@index([characterId])
+  @@index([itemId])
+  @@map("character_item_states")
 }
 
 model CardEnhancement {
@@ -153,20 +211,31 @@ model CardEnhancement {
   @@map("card_enhancements")
 }
 
-// ========== ITEMS (002) ==========
+// ========== ITEMS (002, Updated for #205) ==========
 
 model Item {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique @db.VarChar(100)
-  type        String   @db.VarChar(50) // "head", "body", "hands", "feet", "small-item", etc.
-  rarity      Rarity
-  effects     Json // Array of effect objects
-  cost        Int // Gold cost
-  description String?  @db.VarChar(500)
-  createdAt   DateTime @default(now())
+  id                  String        @id @default(uuid()) @db.Uuid
+  name                String        @unique @db.VarChar(100)
+  slot                ItemSlot      // HEAD, BODY, LEGS, ONE_HAND, TWO_HAND, SMALL
+  usageType           ItemUsageType // PERSISTENT, SPENT, CONSUMED
+  maxUses             Int?          @db.SmallInt // For multi-use items
+  rarity              Rarity
+  effects             Json          // Array of ItemEffect objects
+  triggers            Json?         // Array of ItemTrigger objects for reactive items
+  modifierDeckImpact  Json?         // { adds: ["-1", "-1"] } for items affecting attack deck
+  cost                Int           // Gold cost
+  description         String?       @db.VarChar(500)
+  imageUrl            String?       @db.VarChar(500) // Icon class (e.g., "ra-potion")
+  createdBy           String?       @db.Uuid // User ID of creator (for role-based creation)
+  createdAt           DateTime      @default(now())
 
+  // Relations (Issue #205)
+  ownedBy    CharacterInventory[]
+  equippedBy CharacterEquipment[]
+  states     CharacterItemState[]
+
+  @@index([slot])
   @@index([rarity])
-  @@index([type])
   @@map("items")
 }
 
@@ -429,4 +498,33 @@ enum Rarity {
   LEGENDARY
 
   @@map("rarity")
+}
+
+// ========== ITEM ENUMS (Issue #205) ==========
+
+enum ItemSlot {
+  HEAD
+  BODY
+  LEGS
+  ONE_HAND
+  TWO_HAND
+  SMALL
+
+  @@map("item_slot")
+}
+
+enum ItemUsageType {
+  PERSISTENT // No usage limits
+  SPENT      // Refresh on long rest
+  CONSUMED   // Refresh between scenarios
+
+  @@map("item_usage_type")
+}
+
+enum ItemState {
+  READY    // Item is ready to use
+  SPENT    // Item has been used, refreshes on long rest
+  CONSUMED // Item has been consumed, refreshes between scenarios
+
+  @@map("item_state")
 }

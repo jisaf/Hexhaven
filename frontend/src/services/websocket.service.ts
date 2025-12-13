@@ -99,6 +99,14 @@ export interface WebSocketEvents {
   // Rest mechanics
   'rest-event': (data: import('../../../shared/types/events').RestEventPayload) => void;
 
+  // Item & Inventory events (Issue #205)
+  item_used: (data: import('../../../shared/types/events').ItemUsedPayload) => void;
+  items_refreshed: (data: import('../../../shared/types/events').ItemsRefreshedPayload) => void;
+  item_equipped: (data: import('../../../shared/types/events').ItemEquippedPayload) => void;
+  item_unequipped: (data: import('../../../shared/types/events').ItemUnequippedPayload) => void;
+  equipment_changed: (data: { characterId: string; equipped: import('../../../shared/types/entities').EquippedItems }) => void;
+  inventory_updated: (data: { characterId: string; items: import('../../../shared/types/entities').Item[] }) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

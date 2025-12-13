@@ -2,15 +2,20 @@
  * LobbyRoomView Component
  *
  * Displays the in-room view with players, character selection, and game controls.
+ * Includes equipment management before game starts (Issue #205).
  */
 
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlayerList, type Player } from '../PlayerList';
 import { UserCharacterSelect } from '../UserCharacterSelect';
 import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
 import { ScenarioSelectionPanel } from '../ScenarioSelectionPanel';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
+import { InventoryTabContent } from '../inventory/InventoryTabContent';
+import { useInventory } from '../../hooks/useInventory';
 import { authService } from '../../services/auth.service';
+import { characterService } from '../../services/character.service';
 import styles from './LobbyRoomView.module.css';
 
 interface LobbyRoomViewProps {
@@ -45,6 +50,40 @@ export function LobbyRoomView({
   onStartGame,
 }: LobbyRoomViewProps) {
   const { t } = useTranslation('lobby');
+  const isAuthenticated = authService.isAuthenticated();
+
+  // Track character level for equipment slots (Issue #205)
+  const [characterLevel, setCharacterLevel] = useState(1);
+  const [showEquipment, setShowEquipment] = useState(false);
+
+  // Fetch character details when selected (for level)
+  useEffect(() => {
+    if (selectedCharacterId && isAuthenticated) {
+      characterService.getCharacter(selectedCharacterId).then((char) => {
+        if (char) {
+          setCharacterLevel(char.level || 1);
+        }
+      }).catch(() => {
+        // Fallback to level 1 if fetch fails
+        setCharacterLevel(1);
+      });
+    }
+  }, [selectedCharacterId, isAuthenticated]);
+
+  // Inventory hook - only for authenticated users with selected character
+  const {
+    ownedItems,
+    equippedItems,
+    itemStates,
+    loading: inventoryLoading,
+    error: inventoryError,
+    equipItem,
+    unequipItem,
+    useItem,
+  } = useInventory({
+    characterId: isAuthenticated ? selectedCharacterId || null : null,
+    enabled: isAuthenticated && !!selectedCharacterId,
+  });
 
   return (
     <div className={styles.inRoomMode} data-testid="lobby-page">
@@ -115,6 +154,41 @@ export function LobbyRoomView({
           )}
         </div>
       </div>
+
+      {/* Equipment Section (Issue #205) - Only for authenticated users with character */}
+      {isAuthenticated && selectedCharacterId && (
+        <div className={styles.equipmentSection}>
+          <button
+            className={styles.equipmentToggle}
+            onClick={() => setShowEquipment(!showEquipment)}
+          >
+            🎒 {t('equipment', 'Equipment')} {showEquipment ? '▲' : '▼'}
+          </button>
+
+          {showEquipment && (
+            <div className={styles.equipmentContent}>
+              {inventoryLoading && (
+                <p className={styles.loadingText}>{t('loadingInventory', 'Loading inventory...')}</p>
+              )}
+              {inventoryError && (
+                <p className={styles.errorText}>{inventoryError}</p>
+              )}
+              {!inventoryLoading && !inventoryError && (
+                <InventoryTabContent
+                  ownedItems={ownedItems}
+                  equippedItems={equippedItems}
+                  itemStates={itemStates}
+                  characterLevel={characterLevel}
+                  onEquipItem={equipItem}
+                  onUnequipItem={unequipItem}
+                  onUseItem={useItem}
+                  disabled={false}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Scenario Selection (US5 - Host Only) */}
       {isHost && (

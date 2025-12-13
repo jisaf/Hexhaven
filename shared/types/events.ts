@@ -3,7 +3,15 @@
  * Based on contracts/websocket-events.yaml
  */
 
-import type { AxialCoordinates, CharacterClass, ElementType, AbilityCard } from './entities';
+import type {
+  AxialCoordinates,
+  CharacterClass,
+  ElementType,
+  AbilityCard,
+  ItemSlot,
+  ItemState,
+  ItemEffect,
+} from './entities';
 
 // ========== CLIENT -> SERVER EVENTS ==========
 
@@ -66,6 +74,22 @@ export interface ReconnectPayload {
   roomId: string;
 }
 
+// ========== ITEM & INVENTORY EVENTS (Issue #205) ==========
+
+export interface UseItemPayload {
+  itemId: string;
+  targetId?: string;          // For targeted items (e.g., heal ally)
+  targetHex?: AxialCoordinates; // For area effect items
+}
+
+export interface EquipItemPayload {
+  itemId: string;
+}
+
+export interface UnequipItemPayload {
+  itemId: string; // Unequip by item ID - backend finds the slot
+}
+
 // ========== SERVER -> CLIENT EVENTS ==========
 
 export interface RoomJoinedPayload {
@@ -120,6 +144,7 @@ export interface GameStartedPayload {
   characters: {
     id: string;
     playerId: string;
+    userCharacterId?: string; // Database character ID for inventory API (Issue #205)
     classType: string;
     health: number;
     maxHealth: number;
@@ -390,6 +415,57 @@ export interface RestEventPayload {
   reason?: 'damage' | 'insufficient_cards';
 }
 
+// ========== SERVER -> CLIENT ITEM EVENTS (Issue #205) ==========
+
+export interface ItemUsedPayload {
+  characterId: string;
+  characterName: string;
+  itemId: string;
+  itemName: string;
+  effects: ItemEffect[];
+  newState: ItemState;
+  usesRemaining?: number;
+}
+
+export interface ItemsRefreshedPayload {
+  characterId: string;
+  refreshedItems: { itemId: string; itemName: string }[];
+  trigger: 'long_rest' | 'scenario_end' | 'ability';
+}
+
+export interface ItemEquippedPayload {
+  characterId: string;
+  itemId: string;
+  itemName: string;
+  slot: ItemSlot;
+}
+
+export interface ItemUnequippedPayload {
+  characterId: string;
+  itemId: string;
+  itemName: string;
+  slot: ItemSlot;
+}
+
+/**
+ * Payload sent when a character's inventory is loaded (Issue #205 - Phase 4.5)
+ * Sent after character selection for persistent characters
+ */
+export interface CharacterInventoryPayload {
+  characterId: string;
+  equippedItems: {
+    slot: string;
+    itemId: string;
+    itemName: string;
+  }[];
+  bonuses: {
+    attackBonus: number;
+    defenseBonus: number;
+    movementBonus: number;
+    rangeBonus: number;
+  };
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -405,6 +481,10 @@ export interface ClientEvents {
   long_rest: LongRestPayload;
   leave_room: LeaveRoomPayload;
   reconnect: ReconnectPayload;
+  // Item & Inventory events (Issue #205)
+  use_item: UseItemPayload;
+  equip_item: EquipItemPayload;
+  unequip_item: UnequipItemPayload;
 }
 
 export interface RoundStartedPayload {
@@ -449,4 +529,10 @@ export interface ServerEvents {
   character_exhausted: CharacterExhaustedPayload;
   // Phase 4: Rest mechanics events
   'rest-event': RestEventPayload;
+  // Issue #205: Item & Inventory events
+  item_used: ItemUsedPayload;
+  items_refreshed: ItemsRefreshedPayload;
+  item_equipped: ItemEquippedPayload;
+  item_unequipped: ItemUnequippedPayload;
+  character_inventory: CharacterInventoryPayload;
 }

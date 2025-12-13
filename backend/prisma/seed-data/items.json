@@ -1,238 +1,328 @@
 [
   {
     "name": "Leather Armor",
-    "type": "body",
+    "slot": "BODY",
+    "usageType": "PERSISTENT",
     "rarity": "COMMON",
-    "effects": [{ "type": "shield", "value": 1 }],
+    "effects": [{ "type": "defense", "value": 1, "description": "Shield 1" }],
     "cost": 5,
-    "description": "Basic leather armor providing minimal protection"
+    "description": "Basic leather armor providing minimal protection",
+    "imageUrl": "ra-vest"
   },
   {
     "name": "Iron Helmet",
-    "type": "head",
+    "slot": "HEAD",
+    "usageType": "PERSISTENT",
     "rarity": "COMMON",
-    "effects": [{ "type": "shield", "value": 1 }],
+    "effects": [{ "type": "defense", "value": 1, "description": "Shield 1" }],
     "cost": 10,
-    "description": "A sturdy iron helmet to protect your head"
+    "description": "A sturdy iron helmet to protect your head",
+    "imageUrl": "ra-helmet"
   },
   {
     "name": "Boots of Striding",
-    "type": "feet",
+    "slot": "LEGS",
+    "usageType": "PERSISTENT",
     "rarity": "COMMON",
-    "effects": [{ "type": "move-bonus", "value": 1 }],
+    "effects": [{ "type": "movement", "value": 1, "description": "+1 Movement" }],
     "cost": 20,
-    "description": "Lightweight boots that enhance movement speed"
+    "description": "Lightweight boots that enhance movement speed",
+    "imageUrl": "ra-boot-stomp"
   },
   {
     "name": "Minor Healing Potion",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "COMMON",
-    "effects": [{ "type": "heal", "value": 3 }],
+    "effects": [{ "type": "heal", "value": 3, "description": "Heal 3" }],
     "cost": 10,
-    "description": "A small vial that restores health when consumed"
+    "description": "A small vial that restores health when consumed",
+    "imageUrl": "ra-health"
   },
   {
     "name": "Minor Stamina Potion",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "COMMON",
-    "effects": [{ "type": "recover-cards", "value": 1 }],
+    "effects": [{ "type": "special", "description": "Recover 1 discarded card" }],
     "cost": 15,
-    "description": "Recovers one discarded card from your discard pile"
+    "description": "Recovers one discarded card from your discard pile",
+    "imageUrl": "ra-fizzing-flask"
   },
   {
     "name": "Chain Armor",
-    "type": "body",
+    "slot": "BODY",
+    "usageType": "PERSISTENT",
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "shield", "value": 2 }],
+    "effects": [{ "type": "defense", "value": 2, "description": "Shield 2" }],
     "cost": 25,
-    "description": "Chain mail armor providing moderate protection"
+    "description": "Chain mail armor providing moderate protection",
+    "imageUrl": "ra-armor-vest"
   },
   {
     "name": "Winged Shoes",
-    "type": "feet",
+    "slot": "LEGS",
+    "usageType": "SPENT",
+    "maxUses": 1,
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "jump", "value": 1 }, { "type": "move-bonus", "value": 1 }],
+    "effects": [{ "type": "special", "description": "Jump" }, { "type": "movement", "value": 1, "description": "+1 Movement" }],
+    "triggers": [{ "event": "on_move" }],
     "cost": 30,
-    "description": "Enchanted shoes that allow you to jump over obstacles"
+    "description": "Enchanted shoes that allow you to jump over obstacles",
+    "imageUrl": "ra-feathered-wing"
   },
   {
     "name": "Eagle Eye Goggles",
-    "type": "head",
+    "slot": "HEAD",
+    "usageType": "SPENT",
+    "maxUses": 1,
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "advantage", "value": 1 }],
+    "effects": [{ "type": "special", "description": "Advantage on next attack" }],
+    "triggers": [{ "event": "on_attack" }],
     "cost": 40,
-    "description": "Goggles that grant advantage on ranged attacks"
+    "description": "Goggles that grant advantage on ranged attacks",
+    "imageUrl": "ra-eye-target"
   },
   {
     "name": "Piercing Bow",
-    "type": "hands",
+    "slot": "TWO_HAND",
+    "usageType": "PERSISTENT",
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "pierce", "value": 2 }],
+    "effects": [{ "type": "pierce", "value": 2, "description": "Pierce 2" }],
     "cost": 35,
-    "description": "A powerful bow with armor-piercing arrows"
+    "description": "A powerful bow with armor-piercing arrows",
+    "imageUrl": "ra-crossbow"
   },
   {
     "name": "Major Healing Potion",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "heal", "value": 5 }],
+    "effects": [{ "type": "heal", "value": 5, "description": "Heal 5" }],
     "cost": 25,
-    "description": "A potent healing draught that restores significant health"
+    "description": "A potent healing draught that restores significant health",
+    "imageUrl": "ra-health"
   },
   {
     "name": "Power Potion",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "UNCOMMON",
-    "effects": [{ "type": "attack-bonus", "value": 2 }],
+    "effects": [{ "type": "attack_modifier", "value": 2, "description": "+2 Attack" }],
+    "triggers": [{ "event": "on_attack" }],
     "cost": 30,
-    "description": "Grants +2 Attack to your next attack action"
+    "description": "Grants +2 Attack to your next attack action",
+    "imageUrl": "ra-muscle-up"
   },
   {
     "name": "Plate Armor",
-    "type": "body",
+    "slot": "BODY",
+    "usageType": "PERSISTENT",
     "rarity": "RARE",
-    "effects": [{ "type": "shield", "value": 3 }],
+    "effects": [{ "type": "defense", "value": 3, "description": "Shield 3" }],
     "cost": 50,
-    "description": "Heavy plate armor providing excellent protection"
+    "description": "Heavy plate armor providing excellent protection",
+    "imageUrl": "ra-heavy-shield"
   },
   {
     "name": "Helm of Authority",
-    "type": "head",
+    "slot": "HEAD",
+    "usageType": "PERSISTENT",
     "rarity": "RARE",
-    "effects": [{ "type": "shield", "value": 2 }, { "type": "immunity", "value": "muddle" }],
+    "effects": [
+      { "type": "defense", "value": 2, "description": "Shield 2" },
+      { "type": "condition", "condition": "MUDDLE", "description": "Immunity to Muddle" }
+    ],
     "cost": 60,
-    "description": "A commanding helm that protects against confusion"
+    "description": "A commanding helm that protects against confusion",
+    "imageUrl": "ra-crown"
   },
   {
     "name": "Boots of Dashing",
-    "type": "feet",
+    "slot": "LEGS",
+    "usageType": "SPENT",
+    "maxUses": 1,
     "rarity": "RARE",
-    "effects": [{ "type": "move-bonus", "value": 2 }, { "type": "jump", "value": 1 }],
+    "effects": [
+      { "type": "movement", "value": 2, "description": "+2 Movement" },
+      { "type": "special", "description": "Jump" }
+    ],
+    "triggers": [{ "event": "on_move" }],
     "cost": 55,
-    "description": "Swift boots allowing rapid movement and jumping"
+    "description": "Swift boots allowing rapid movement and jumping",
+    "imageUrl": "ra-player-dodge"
   },
   {
     "name": "Gauntlets of Strength",
-    "type": "hands",
+    "slot": "ONE_HAND",
+    "usageType": "PERSISTENT",
     "rarity": "RARE",
-    "effects": [{ "type": "attack-bonus", "value": 2 }],
+    "effects": [{ "type": "attack_modifier", "value": 2, "description": "+2 Attack" }],
     "cost": 50,
-    "description": "Heavy gauntlets that enhance physical strength"
+    "description": "Heavy gauntlets that enhance physical strength",
+    "imageUrl": "ra-hand"
   },
   {
     "name": "Ring of Haste",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "SPENT",
+    "maxUses": 1,
     "rarity": "RARE",
-    "effects": [{ "type": "initiative-bonus", "value": -10 }],
+    "effects": [{ "type": "special", "description": "-10 Initiative" }],
+    "triggers": [{ "event": "start_of_turn" }],
     "cost": 60,
-    "description": "A magical ring that increases your turn order speed"
+    "description": "A magical ring that increases your turn order speed",
+    "imageUrl": "ra-gold-bar"
   },
   {
     "name": "Amulet of Life",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "PERSISTENT",
     "rarity": "RARE",
-    "effects": [{ "type": "max-health-bonus", "value": 4 }],
+    "effects": [{ "type": "special", "description": "+4 Max Health" }],
     "cost": 65,
-    "description": "A sacred amulet that increases maximum health"
+    "description": "A sacred amulet that increases maximum health",
+    "imageUrl": "ra-gem-pendant"
   },
   {
     "name": "Dragon Scale Armor",
-    "type": "body",
+    "slot": "BODY",
+    "usageType": "PERSISTENT",
     "rarity": "EPIC",
-    "effects": [{ "type": "shield", "value": 4 }, { "type": "immunity", "value": "fire" }],
+    "effects": [
+      { "type": "defense", "value": 4, "description": "Shield 4" },
+      { "type": "special", "description": "Immunity to Fire" }
+    ],
     "cost": 100,
-    "description": "Legendary armor crafted from dragon scales, immune to fire"
+    "description": "Legendary armor crafted from dragon scales, immune to fire",
+    "imageUrl": "ra-dragon-breath"
   },
   {
     "name": "Crown of the Tactician",
-    "type": "head",
+    "slot": "HEAD",
+    "usageType": "PERSISTENT",
     "rarity": "EPIC",
-    "effects": [{ "type": "initiative-bonus", "value": -15 }, { "type": "card-bonus", "value": 1 }],
+    "effects": [
+      { "type": "special", "description": "-15 Initiative" },
+      { "type": "special", "description": "+1 Card in hand" }
+    ],
     "cost": 110,
-    "description": "A mystical crown that enhances tactical awareness"
+    "description": "A mystical crown that enhances tactical awareness",
+    "imageUrl": "ra-crown"
   },
   {
     "name": "Boots of Teleportation",
-    "type": "feet",
+    "slot": "LEGS",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "EPIC",
-    "effects": [{ "type": "teleport", "value": 4 }],
+    "effects": [{ "type": "special", "description": "Teleport up to 4 hexes" }],
+    "triggers": [{ "event": "on_move" }],
     "cost": 105,
-    "description": "Magical boots allowing instant teleportation"
+    "description": "Magical boots allowing instant teleportation",
+    "imageUrl": "ra-lightning-bolt"
   },
   {
     "name": "Gloves of Missiles",
-    "type": "hands",
+    "slot": "TWO_HAND",
+    "usageType": "PERSISTENT",
     "rarity": "EPIC",
-    "effects": [{ "type": "attack-bonus", "value": 3 }, { "type": "range-bonus", "value": 2 }],
+    "effects": [
+      { "type": "attack_modifier", "value": 3, "description": "+3 Attack" },
+      { "type": "special", "description": "+2 Range" }
+    ],
     "cost": 100,
-    "description": "Enchanted gloves that enhance ranged attacks"
+    "description": "Enchanted gloves that enhance ranged attacks",
+    "imageUrl": "ra-hand"
   },
   {
     "name": "Phoenix Heart",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "EPIC",
-    "effects": [{ "type": "resurrect", "value": 1 }],
+    "effects": [{ "type": "special", "description": "Resurrect once if you fall (heal to half HP)" }],
+    "triggers": [{ "event": "on_damage" }],
     "cost": 120,
-    "description": "A mystical artifact that revives you once if you fall"
+    "description": "A mystical artifact that revives you once if you fall",
+    "imageUrl": "ra-phoenix"
   },
   {
     "name": "Artifact Armor of the Ancients",
-    "type": "body",
+    "slot": "BODY",
+    "usageType": "PERSISTENT",
     "rarity": "LEGENDARY",
     "effects": [
-      { "type": "shield", "value": 5 },
-      { "type": "immunity", "value": "poison" },
-      { "type": "immunity", "value": "wound" }
+      { "type": "defense", "value": 5, "description": "Shield 5" },
+      { "type": "condition", "condition": "POISON", "description": "Immunity to Poison" },
+      { "type": "condition", "condition": "WOUND", "description": "Immunity to Wound" }
     ],
     "cost": 200,
-    "description": "Ancient armor imbued with protective magic, granting immunity to poison and wounds"
+    "description": "Ancient armor imbued with protective magic, granting immunity to poison and wounds",
+    "imageUrl": "ra-shield"
   },
   {
     "name": "Crown of Dominance",
-    "type": "head",
+    "slot": "HEAD",
+    "usageType": "PERSISTENT",
     "rarity": "LEGENDARY",
     "effects": [
-      { "type": "initiative-bonus", "value": -20 },
-      { "type": "card-bonus", "value": 2 },
-      { "type": "immunity", "value": "curse" }
+      { "type": "special", "description": "-20 Initiative" },
+      { "type": "special", "description": "+2 Cards in hand" },
+      { "type": "condition", "condition": "CURSE", "description": "Immunity to Curse" }
     ],
     "cost": 220,
-    "description": "The ultimate crown of power, providing unmatched tactical superiority"
+    "description": "The ultimate crown of power, providing unmatched tactical superiority",
+    "imageUrl": "ra-crystal-ball"
   },
   {
     "name": "Seven-League Boots",
-    "type": "feet",
+    "slot": "LEGS",
+    "usageType": "SPENT",
+    "maxUses": 1,
     "rarity": "LEGENDARY",
     "effects": [
-      { "type": "move-bonus", "value": 3 },
-      { "type": "jump", "value": 1 },
-      { "type": "flying", "value": 1 }
+      { "type": "movement", "value": 3, "description": "+3 Movement" },
+      { "type": "special", "description": "Jump" },
+      { "type": "special", "description": "Flying" }
     ],
+    "triggers": [{ "event": "on_move" }],
     "cost": 210,
-    "description": "Legendary boots granting superhuman mobility and flight"
+    "description": "Legendary boots granting superhuman mobility and flight",
+    "imageUrl": "ra-boot-stomp"
   },
   {
     "name": "Fists of the Titans",
-    "type": "hands",
+    "slot": "TWO_HAND",
+    "usageType": "PERSISTENT",
     "rarity": "LEGENDARY",
     "effects": [
-      { "type": "attack-bonus", "value": 4 },
-      { "type": "pierce", "value": 3 },
-      { "type": "add-target", "value": 1 }
+      { "type": "attack_modifier", "value": 4, "description": "+4 Attack" },
+      { "type": "pierce", "value": 3, "description": "Pierce 3" },
+      { "type": "special", "description": "+1 Target" }
     ],
     "cost": 200,
-    "description": "Gauntlets of immense power, capable of striking multiple foes"
+    "description": "Gauntlets of immense power, capable of striking multiple foes",
+    "imageUrl": "ra-hand"
   },
   {
     "name": "Heart of the Phoenix",
-    "type": "small-item",
+    "slot": "SMALL",
+    "usageType": "CONSUMED",
+    "maxUses": 1,
     "rarity": "LEGENDARY",
     "effects": [
-      { "type": "resurrect", "value": 1 },
-      { "type": "max-health-bonus", "value": 8 },
-      { "type": "heal-on-revive", "value": 10 }
+      { "type": "special", "description": "Resurrect once if you fall" },
+      { "type": "special", "description": "+8 Max Health" },
+      { "type": "heal", "value": 10, "description": "Heal 10 on revive" }
     ],
+    "triggers": [{ "event": "on_damage" }],
     "cost": 250,
-    "description": "The ultimate life-preserving artifact, granting resurrection and vitality"
+    "description": "The ultimate life-preserving artifact, granting resurrection and vitality",
+    "imageUrl": "ra-phoenix"
   }
 ]

@@ -3,6 +3,7 @@
  * Manages game state with event sourcing and character progression
  */
 
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type {
   CreateGameDto,
@@ -15,11 +16,18 @@ import type {
   GameStatus,
 } from '../types/game-state.types';
 import { ValidationError, NotFoundError, ConflictError } from '../types/errors';
+import { PrismaService } from './prisma.service';
+import { prisma as defaultPrisma } from '../db/client';
 
 const SNAPSHOT_INTERVAL = 20; // Create snapshot every 20 events
 
+@Injectable()
 export class GameStateService {
-  constructor(private prisma: PrismaClient) {}
+  private prisma: PrismaClient;
+
+  constructor(@Optional() prismaService?: PrismaService) {
+    this.prisma = prismaService || defaultPrisma;
+  }
 
   /**
    * Create a new game with host character

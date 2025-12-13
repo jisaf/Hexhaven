@@ -1,0 +1,16 @@
+/**
+ * ItemIcon Styles (Issue #205)
+ */
+
+.itemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+/* Hover effect for interactive icons */
+.itemIcon:hover {
+  filter: brightness(1.2);
+}

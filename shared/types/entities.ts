@@ -124,6 +124,7 @@ export interface GameRoom {
 export interface Character {
   id: string;
   playerId: string;
+  userCharacterId?: string; // Database character ID (for inventory API)
   classType: CharacterClass | string;
   health: number;
   maxHealth: number;
@@ -360,4 +361,165 @@ export interface TurnEntity {
   name: string;
   entityType: 'character' | 'monster';
   initiative: number;
+}
+
+// ========== ITEMS & INVENTORY (Issue #205) ==========
+
+/**
+ * Item slot types following Gloomhaven rules
+ * Characters can equip: 1 head, 1 body, 1 legs, up to 2 one-hand OR 1 two-hand, and ceil(level/2) small items
+ */
+export enum ItemSlot {
+  HEAD = 'HEAD',
+  BODY = 'BODY',
+  LEGS = 'LEGS',
+  ONE_HAND = 'ONE_HAND',
+  TWO_HAND = 'TWO_HAND',
+  SMALL = 'SMALL',
+}
+
+/**
+ * Item usage type determining refresh mechanics
+ * - PERSISTENT: No usage limits, always available
+ * - SPENT: Rotated sideways after use, refreshed on long rest
+ * - CONSUMED: Flipped facedown after use, refreshed between scenarios
+ */
+export enum ItemUsageType {
+  PERSISTENT = 'PERSISTENT',
+  SPENT = 'SPENT',
+  CONSUMED = 'CONSUMED',
+}
+
+/**
+ * Runtime state of an item during gameplay
+ */
+export enum ItemState {
+  READY = 'ready',
+  SPENT = 'spent',
+  CONSUMED = 'consumed',
+}
+
+/**
+ * Rarity levels for items
+ */
+export enum ItemRarity {
+  COMMON = 'COMMON',
+  UNCOMMON = 'UNCOMMON',
+  RARE = 'RARE',
+  EPIC = 'EPIC',
+  LEGENDARY = 'LEGENDARY',
+}
+
+/**
+ * Effect types that items can provide
+ */
+export type ItemEffectType =
+  | 'attack_modifier'  // Adds to attack value
+  | 'defense'          // Reduces incoming damage
+  | 'heal'             // Heals HP
+  | 'shield'           // Provides shield value
+  | 'retaliate'        // Deals damage when attacked
+  | 'pierce'           // Ignores shield
+  | 'condition'        // Applies a condition
+  | 'movement'         // Modifies movement
+  | 'element'          // Generates/consumes element
+  | 'special';         // Custom effect described in description
+
+/**
+ * Item effect definition
+ */
+export interface ItemEffect {
+  type: ItemEffectType;
+  value?: number;
+  condition?: Condition;
+  element?: ElementType;
+  description?: string;
+}
+
+/**
+ * Trigger events for reactive items (e.g., "when attacked")
+ */
+export type ItemTriggerEvent =
+  | 'on_attack'        // When you attack
+  | 'when_attacked'    // When you are attacked
+  | 'on_damage'        // When you take damage
+  | 'on_move'          // When you move
+  | 'start_of_turn'    // At the start of your turn
+  | 'end_of_turn'      // At the end of your turn
+  | 'on_rest';         // When you rest
+
+/**
+ * Trigger condition for reactive items
+ */
+export interface ItemTrigger {
+  event: ItemTriggerEvent;
+  condition?: string; // Optional condition like "when attacked by adjacent enemy"
+}
+
+/**
+ * Full item definition
+ */
+export interface Item {
+  id: string;
+  name: string;
+  slot: ItemSlot;
+  usageType: ItemUsageType;
+  maxUses?: number;
+  rarity: ItemRarity;
+  effects: ItemEffect[];
+  triggers?: ItemTrigger[];
+  modifierDeckImpact?: { adds: string[] }; // e.g., { adds: ['-1', '-1'] }
+  cost: number;
+  description?: string;
+  imageUrl?: string;
+  createdBy?: string;
+  createdAt?: string;
+}
+
+/**
+ * Runtime item state during gameplay
+ */
+export interface ItemRuntimeState {
+  state: ItemState;
+  usesRemaining?: number;
+}
+
+/**
+ * Equipped items structure on character
+ * Follows Gloomhaven equip rules:
+ * - 1 head, 1 body, 1 legs
+ * - Up to 2 one-hand items OR 1 two-hand item
+ * - Up to ceil(level/2) small items
+ */
+export interface EquippedItems {
+  head?: string;       // Item ID
+  body?: string;       // Item ID
+  legs?: string;       // Item ID
+  hands: string[];     // 1-2 one-hand items OR 1 two-hand item
+  small: string[];     // Up to ceil(level/2) small items
+}
+
+/**
+ * Extended character interface with inventory fields
+ */
+export interface CharacterWithInventory extends Character {
+  equippedItems: EquippedItems;
+  itemStates: Record<string, ItemRuntimeState>;
+  inventory: string[]; // Array of owned item IDs
+  gold: number;
+}
+
+/**
+ * User roles for access control
+ */
+export type UserRole = 'player' | 'creator' | 'admin';
+
+/**
+ * Extended user interface with roles
+ */
+export interface UserWithRoles {
+  id: string;
+  username: string;
+  email?: string;
+  roles: UserRole[];
 }

@@ -27,11 +27,15 @@ interface AbilityCardSeed {
 
 interface ItemSeed {
   name: string;
-  type: string;
+  slot: 'HEAD' | 'BODY' | 'LEGS' | 'ONE_HAND' | 'TWO_HAND' | 'SMALL';
+  usageType: 'PERSISTENT' | 'SPENT' | 'CONSUMED';
+  maxUses?: number;
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
   effects: any[];
+  triggers?: any[];
   cost: number;
   description: string | null;
+  imageUrl?: string;
 }
 
 interface ScenarioSeed {
@@ -154,19 +158,27 @@ async function seedItems() {
     await prisma.item.upsert({
       where: { name: itemData.name },
       update: {
-        type: itemData.type,
+        slot: itemData.slot,
+        usageType: itemData.usageType,
+        maxUses: itemData.maxUses,
         rarity: itemData.rarity,
         effects: itemData.effects,
+        triggers: itemData.triggers,
         cost: itemData.cost,
         description: itemData.description,
+        imageUrl: itemData.imageUrl,
       },
       create: {
         name: itemData.name,
-        type: itemData.type,
+        slot: itemData.slot,
+        usageType: itemData.usageType,
+        maxUses: itemData.maxUses,
         rarity: itemData.rarity,
         effects: itemData.effects,
+        triggers: itemData.triggers,
         cost: itemData.cost,
         description: itemData.description,
+        imageUrl: itemData.imageUrl,
       },
     });
   }
@@ -235,9 +247,9 @@ async function seedTestUsers() {
   const passwordHash = await bcrypt.hash(password, saltRounds);
 
   const testUsersData = [
-    { username: 'foo', className: 'Brute' },
-    { username: 'bar', className: 'Tinkerer' },
-    { username: 'baz', className: 'Spellweaver' },
+    { username: 'foo', className: 'Brute', roles: ['player', 'creator'] },
+    { username: 'bar', className: 'Tinkerer', roles: ['player'] },
+    { username: 'baz', className: 'Spellweaver', roles: ['player'] },
   ];
 
   // Fetch all character classes and create a map by name
@@ -248,13 +260,14 @@ async function seedTestUsers() {
   let characterCount = 0;
 
   for (const userData of testUsersData) {
-    // Create or update user
+    // Create or update user with roles
     const user = await prisma.user.upsert({
       where: { username: userData.username },
-      update: { passwordHash },
+      update: { passwordHash, roles: userData.roles },
       create: {
         username: userData.username,
         passwordHash,
+        roles: userData.roles,
       },
     });
     userCount++;

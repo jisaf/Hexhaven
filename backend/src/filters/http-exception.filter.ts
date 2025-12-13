@@ -16,6 +16,7 @@ import type { ErrorResponse } from '../types/errors';
 import {
   ValidationError,
   AuthError,
+  ForbiddenError,
   NotFoundError,
   ConflictError,
   RateLimitError,
@@ -56,6 +57,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
           details: exception.retryAfter
             ? { retryAfter: exception.retryAfter }
             : undefined,
+          timestamp: new Date().toISOString(),
+          path: request.url,
+        },
+      };
+    } else if (exception instanceof ForbiddenError) {
+      status = exception.statusCode;
+      errorResponse = {
+        error: {
+          code: exception.code,
+          message: exception.message,
+          statusCode: status,
           timestamp: new Date().toISOString(),
           path: request.url,
         },

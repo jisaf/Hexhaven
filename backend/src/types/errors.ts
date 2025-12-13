@@ -4,6 +4,7 @@
  * Standard error types with associated HTTP status codes:
  * - ValidationError: 400 BAD_REQUEST
  * - AuthError: 401 UNAUTHORIZED
+ * - ForbiddenError: 403 FORBIDDEN
  * - NotFoundError: 404 NOT_FOUND
  * - ConflictError: 409 CONFLICT
  * - RateLimitError: 429 TOO_MANY_REQUESTS
@@ -34,6 +35,17 @@ export class AuthError extends Error {
     super(message);
     this.name = 'AuthError';
     this.retryAfter = options?.retryAfter;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export class ForbiddenError extends Error {
+  public readonly statusCode = 403;
+  public readonly code = 'FORBIDDEN';
+
+  constructor(message: string = 'Access denied') {
+    super(message);
+    this.name = 'ForbiddenError';
     Error.captureStackTrace(this, this.constructor);
   }
 }

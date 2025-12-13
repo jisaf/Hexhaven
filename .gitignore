@@ -69,3 +69,6 @@ shared/types/**/*.js.map
 lighthouse-report*
 lighthouse-test*.js
 analyze-lighthouse.js
+
+# Playwright MCP screenshots (test artifacts)
+.playwright-mcp/

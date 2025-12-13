@@ -5,7 +5,6 @@
 
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { prisma } from '../db/client';
 import type {
   RegisterDto,
   LoginDto,
@@ -16,11 +15,7 @@ import type {
 
 @Controller('api/auth')
 export class AuthController {
-  private authService: AuthService;
-
-  constructor() {
-    this.authService = new AuthService(prisma);
-  }
+  constructor(private readonly authService: AuthService) {}
 
   /**
    * T081: POST /api/auth/register
