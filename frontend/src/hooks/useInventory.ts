@@ -172,30 +172,102 @@ export function useInventory({
     [characterId]
   );
 
-  // Equip item action
+  // Equip item action - uses REST API for reliable database updates
   const equipItem = useCallback(
-    (itemId: string) => {
+    async (itemId: string) => {
       if (!characterId) return;
 
-      websocketService.emit('equip_item', {
-        characterId,
-        itemId,
-      });
+      try {
+        const token = localStorage.getItem('hexhaven_access_token');
+        if (!token) {
+          console.error('[useInventory] Not authenticated');
+          return;
+        }
+
+        const response = await fetch(`${getApiUrl()}/characters/${characterId}/equip/${itemId}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[useInventory] Equip failed:', errorData);
+          return;
+        }
+
+        const data = await response.json();
+        // Update local state with new equipped items
+        if (data.equippedItems) {
+          setEquippedItems(data.equippedItems);
+        }
+        // Refresh full inventory to ensure sync
+        fetchInventory();
+      } catch (err) {
+        console.error('[useInventory] Equip error:', err);
+      }
     },
-    [characterId]
+    [characterId, fetchInventory]
   );
 
-  // Unequip item action
+  // Unequip item action - uses REST API
   const unequipItem = useCallback(
-    (itemId: string) => {
+    async (itemId: string) => {
       if (!characterId) return;
 
-      websocketService.emit('unequip_item', {
-        characterId,
-        itemId,
-      });
+      try {
+        const token = localStorage.getItem('hexhaven_access_token');
+        if (!token) {
+          console.error('[useInventory] Not authenticated');
+          return;
+        }
+
+        // Find the item to get its slot
+        const item = ownedItems.find((i) => i.id === itemId);
+        if (!item) {
+          console.error('[useInventory] Item not found:', itemId);
+          return;
+        }
+
+        // Find the slot index for hand/small items
+        let slotIndex: number | undefined;
+        if (item.slot === 'ONE_HAND' || item.slot === 'TWO_HAND') {
+          slotIndex = equippedItems.hands.indexOf(itemId);
+        } else if (item.slot === 'SMALL') {
+          slotIndex = equippedItems.small.indexOf(itemId);
+        }
+
+        const url = slotIndex !== undefined && slotIndex >= 0
+          ? `${getApiUrl()}/characters/${characterId}/equip/${item.slot}?index=${slotIndex}`
+          : `${getApiUrl()}/characters/${characterId}/equip/${item.slot}`;
+
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[useInventory] Unequip failed:', errorData);
+          return;
+        }
+
+        const data = await response.json();
+        // Update local state with new equipped items
+        if (data.equippedItems) {
+          setEquippedItems(data.equippedItems);
+        }
+        // Refresh full inventory to ensure sync
+        fetchInventory();
+      } catch (err) {
+        console.error('[useInventory] Unequip error:', err);
+      }
     },
-    [characterId]
+    [characterId, ownedItems, equippedItems, fetchInventory]
   );
 
   // Refresh inventory

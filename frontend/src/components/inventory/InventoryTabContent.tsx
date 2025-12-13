@@ -230,8 +230,7 @@ export const InventoryTabContent: React.FC<InventoryTabContentProps> = ({
                           state={runtime?.state as ItemState}
                           usesRemaining={runtime?.usesRemaining}
                           isEquipped={false}
-                          onClick={() => onItemClick?.(item)}
-                          onEquipToggle={onEquipItem ? () => onEquipItem(item.id) : undefined}
+                          onClick={onEquipItem ? () => onEquipItem(item.id) : () => onItemClick?.(item)}
                           disabled={disabled}
                           compact
                         />
