@@ -1,63 +1,59 @@
 /**
  * ClassCardRow Styles
  *
- * Responsive card row that adapts to portrait/landscape:
- * - Portrait: 25vh height
- * - Landscape: 50vh height (more vertical space available)
+ * Fully responsive card row - cards scale to fit container height
+ * Card aspect ratio: 180:250 = 0.72 (width is 72% of height)
  */
 
 .class-card-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .class-card-row-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   background-color: rgba(201, 164, 68, 0.1);
   border-left: 4px solid #c9a444;
 }
 
 .class-card-row-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
   font-family: 'MedievalSharp', serif;
   color: #c9a444;
 }
 
 .card-count {
-  font-size: 0.875rem;
+  font-size: clamp(0.7rem, 1.5vw, 0.875rem);
   color: #95a5a6;
 }
 
 .class-card-row-container {
+  --row-height: min(280px, 40vh); /* Container height - responsive */
+  --card-padding: 8px;
+  --card-height: calc(var(--row-height) - var(--card-padding) * 2);
+  --card-width: calc(var(--card-height) * 0.72); /* Maintain aspect ratio */
+  --card-gap: max(5px, 1vw); /* Responsive gap, minimum 5px */
+
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
-  gap: 8px;
-  padding: 8px 16px;
-  height: 25vh; /* Portrait mode default */
-  min-height: 200px;
+  gap: var(--card-gap);
+  padding: var(--card-padding) 1rem;
+  height: var(--row-height);
   align-items: center;
   background-color: rgba(13, 26, 46, 0.5);
   border-radius: 8px;
 }
 
-/* Landscape mode - more vertical space */
-@media (orientation: landscape) {
-  .class-card-row-container {
-    height: 50vh;
-    min-height: 250px;
-  }
-}
-
 /* Hide scrollbar but keep functionality */
 .class-card-row-container::-webkit-scrollbar {
-  height: 8px;
+  height: 6px;
 }
 
 .class-card-row-container::-webkit-scrollbar-track {
@@ -76,22 +72,31 @@
 
 .class-card-wrapper {
   flex: 0 0 auto;
-  width: var(--card-width-compact);
-  height: var(--card-height-compact);
+  width: var(--card-width);
+  height: var(--card-height);
 }
 
-/* Small screens - reduce header size */
+/* Scale down cards in wrapper */
+.class-card-wrapper .ability-card2 {
+  width: 100%;
+  height: 100%;
+  font-size: calc(var(--card-height) / 250 * 16px); /* Scale font relative to card */
+}
+
+/* Small screens */
 @media (max-width: 600px) {
-  .class-card-row-header h2 {
-    font-size: 1.25rem;
-  }
-
-  .card-count {
-    font-size: 0.75rem;
-  }
-
   .class-card-row-container {
-    padding: 4px 8px;
-    gap: 6px;
+    --row-height: min(220px, 35vh);
+    --card-padding: 6px;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 400px) {
+  .class-card-row-container {
+    --row-height: min(180px, 30vh);
+    --card-gap: 4px;
   }
 }

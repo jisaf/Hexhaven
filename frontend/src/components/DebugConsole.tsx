@@ -357,6 +357,9 @@ export function DebugConsole() {
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-touch-callout: none;
         }
 
         .debug-toggle-button:hover {

@@ -22,12 +22,14 @@ export interface ActionModuleProps {
  * Get icon for action type
  */
 function getActionIcon(type: Action['type']): string {
-  const icons = {
+  const icons: Record<Action['type'], string> = {
     move: '🏃',
     attack: '⚔️',
     heal: '❤️',
     loot: '💰',
     special: '✨',
+    summon: '🐾',
+    text: '📜',
   };
   return icons[type] || '❓';
 }

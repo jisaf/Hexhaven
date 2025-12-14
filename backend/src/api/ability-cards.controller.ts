@@ -19,18 +19,21 @@ export class AbilityCardsController {
   constructor(private readonly abilityCardService: AbilityCardService) {}
 
   /**
-   * Get ability cards by character class
-   * GET /api/ability-cards?characterClass=Brute
+   * Get all ability cards grouped by class, or filter by class
+   * GET /api/ability-cards - Returns all cards grouped by class
+   * GET /api/ability-cards?characterClass=Brute - Returns cards for specific class
    */
   @Get()
   @HttpCode(HttpStatus.OK)
-  getCardsByClass(@Query('characterClass') characterClass?: string) {
-    if (!characterClass) {
-      return { error: 'characterClass query parameter is required' };
+  getCards(@Query('characterClass') characterClass?: string) {
+    if (characterClass) {
+      // Return cards for specific class
+      return this.abilityCardService.getCardsByClass(
+        characterClass as CharacterClass,
+      );
     }
-    return this.abilityCardService.getCardsByClass(
-      characterClass as CharacterClass,
-    );
+    // Return all cards grouped by class
+    return this.abilityCardService.getAllCardsGroupedByClass();
   }
 
   /**

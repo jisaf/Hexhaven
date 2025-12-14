@@ -189,7 +189,7 @@ export interface AbilityCard {
 }
 
 export interface Action {
-  type: 'move' | 'attack' | 'heal' | 'loot' | 'special';
+  type: 'move' | 'attack' | 'heal' | 'loot' | 'special' | 'summon' | 'text';
   value?: number;
   range?: number;
   effects?: string[];
@@ -198,6 +198,26 @@ export interface Action {
   elementBonus?: {
     effect: string;
     value: number;
+  };
+  // Card icons
+  isLost?: boolean; // Shows loss (X) icon - card goes to lost pile after use
+  isPersistent?: boolean; // Shows infinity icon - effect persists until lost
+  xp?: number; // Experience points gained when using this action
+  // Summon creature stats (for type: 'summon')
+  summon?: {
+    name: string;
+    health: number;
+    attack: number;
+    move: number;
+    range: number;
+    typeIcon?: string;
+    effects?: string[]; // Conditions like "Push 2", "Wound"
+  };
+  // Text content (for type: 'text')
+  textContent?: {
+    title?: string;
+    text: string;
+    quote?: string;
   };
 }
 

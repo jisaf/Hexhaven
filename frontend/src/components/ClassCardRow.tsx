@@ -1,13 +1,13 @@
 /**
- * ClassCardRow Component
+ * ClassCardRow Component (Updated for Issue #217)
  *
  * Displays a horizontal scrolling row of ability cards for a character class.
- * Designed to be 25vh in portrait, 50vh in landscape naturally.
+ * Now uses AbilityCard2 with 9-row grid layout.
  */
 
 import React from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
-import { AbilityCard } from './AbilityCard';
+import { AbilityCard2 } from './AbilityCard2';
 import './ClassCardRow.css';
 
 interface ClassCardRowProps {
@@ -25,8 +25,9 @@ export const ClassCardRow: React.FC<ClassCardRowProps> = ({ className, cards }) 
       <div className="class-card-row-container">
         {cards.map((card) => (
           <div key={card.id} className="class-card-wrapper">
-            <AbilityCard
+            <AbilityCard2
               card={card}
+              variant="full"
             />
           </div>
         ))}

@@ -1,0 +1,411 @@
+/**
+ * Layout Components CSS (Issue #217)
+ *
+ * Fully responsive - uses container query units (cqi/cqb) to scale with card.
+ * Styles for: ActionRowLayout, TextRowLayout, StatBlockLayout
+ *
+ * Container query units:
+ * - cqi = 1% of container's inline (width) size
+ * - cqb = 1% of container's block (height) size
+ */
+
+/* ========== ACTION ROW LAYOUT ========== */
+
+.action-row-layout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0.2em;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.action-row-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15em;
+  text-align: center;
+}
+
+/* Main action display (icon + value + range) */
+.action-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.8em;
+}
+
+.action-row-icon {
+  font-size: 1em;
+}
+
+.action-row-value {
+  font-weight: bold;
+  font-size: 1em;
+  color: #2c3e50;
+}
+
+.action-row-range {
+  display: flex;
+  align-items: center;
+  gap: 0.1em;
+  color: #7f8c8d;
+  font-size: 0.75em;
+}
+
+.range-icon {
+  font-size: 0.8em;
+}
+
+/* Element generation/consumption */
+.action-row-element {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  padding: 0.1em 0.3em;
+  border-radius: 0.2em;
+  font-size: 0.65em;
+  width: fit-content;
+}
+
+.action-row-element.generate {
+  background: rgba(46, 204, 113, 0.15);
+  color: #27ae60;
+}
+
+.action-row-element.consume {
+  background: rgba(231, 76, 60, 0.15);
+  color: #c0392b;
+}
+
+.element-icon {
+  font-size: 0.9em;
+}
+
+.element-action {
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+/* Effects */
+.action-row-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em;
+  margin-top: 0.1em;
+}
+
+.action-row-effect-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1em;
+  background: var(--effect-color, rgba(155, 89, 182, 0.15));
+  background: color-mix(in srgb, var(--effect-color, #8e44ad) 15%, transparent);
+  color: var(--effect-color, #8e44ad);
+  padding: 0.05em 0.2em;
+  border-radius: 0.5em;
+  font-size: clamp(0.38em, 5cqi, 0.65em);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.action-row-effect-tag .ra {
+  font-size: 1.1em;
+}
+
+.action-row-effect-tag .effect-value {
+  font-weight: bold;
+  font-size: 0.95em;
+}
+
+/* Element bonus */
+.action-row-bonus {
+  margin-top: 0.1em;
+  padding: 0.1em 0.3em;
+  background: rgba(241, 196, 15, 0.15);
+  border-radius: 0.2em;
+  width: fit-content;
+}
+
+.bonus-label {
+  color: #d68910;
+  font-size: 0.55em;
+  font-style: italic;
+}
+
+/* Action type colors */
+.action-type-attack .action-row-icon { color: #e74c3c; }
+.action-type-move .action-row-icon { color: #3498db; }
+.action-type-heal .action-row-icon { color: #27ae60; }
+.action-type-loot .action-row-icon { color: #f39c12; }
+.action-type-special .action-row-icon { color: #9b59b6; }
+
+.action-row-empty {
+  color: #95a5a6;
+  font-style: italic;
+  font-size: 0.6em;
+}
+
+/* Card icons base styles - used by CardIcons component */
+.card-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+}
+
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
+  padding: 0.1em;
+  border-radius: 0.15em;
+  font-size: clamp(0.5em, 5.5cqi, 0.8em);
+  font-weight: bold;
+}
+
+.card-icon .ra {
+  font-size: 1.1em;
+}
+
+.card-icon .xp-value {
+  font-size: 0.85em;
+  margin-left: 0.1em;
+}
+
+/* Summon action styles */
+.action-type-summon .action-row-icon { color: #8e44ad; }
+.action-type-text .action-row-icon { color: #2c3e50; }
+
+.action-row-summon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  width: 100%;
+}
+
+.summon-header {
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
+  font-size: clamp(0.42em, 5.5cqi, 0.7em);
+  font-weight: bold;
+  color: #8e44ad;
+  width: 100%;
+  max-width: 100%;
+}
+
+.summon-icon {
+  font-size: 0.9em;
+  flex-shrink: 0;
+}
+
+.summon-name {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.action-row-summon .stat-block-layout {
+  padding: 0.03em 0.08em;
+  font-size: clamp(0.75em, 8.5cqi, 1.1em);
+  width: 100%;
+}
+
+/* ========== TEXT ROW LAYOUT ========== */
+
+.text-row-layout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.2em 0.3em;
+  background: #ffffff;
+  border-radius: 0.2em;
+  overflow: hidden;
+}
+
+.text-row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+}
+
+.text-row-title {
+  font-weight: bold;
+  font-size: clamp(0.5em, 6cqi, 0.8em);
+  color: #e74c3c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.text-row-text {
+  color: #2c3e50;
+  font-size: clamp(0.45em, 5.5cqi, 0.75em);
+  line-height: 1.2;
+}
+
+.text-row-layout.multiline .text-row-text {
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Flavor text / quote styling - hidden on small cards */
+.text-row-quote {
+  color: #95a5a6;
+  font-size: clamp(0.4em, 4.5cqi, 0.6em);
+  font-style: italic;
+  line-height: 1.15;
+  margin-top: 0.1em;
+  display: none; /* Hidden by default */
+}
+
+/* Show quote only on larger cards using container query */
+@container card (min-width: 120px) {
+  .text-row-quote {
+    display: block;
+  }
+}
+
+/* Alignment variants */
+.text-row-layout.align-left { text-align: left; }
+.text-row-layout.align-center { text-align: center; }
+.text-row-layout.align-right { text-align: right; }
+
+/* ========== STAT BLOCK LAYOUT ========== */
+
+.stat-block-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.06em;
+  padding: 0.05em 0.1em;
+  background: #ffffff;
+  border-radius: 0.2em;
+  width: 100%;
+}
+
+/* Individual stat item */
+.stat-block-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.03em 0.1em;
+  border-radius: 0.1em;
+}
+
+.stat-block-label {
+  font-size: clamp(0.32em, 4cqi, 0.5em);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+.stat-block-value {
+  font-size: clamp(0.8em, 9cqi, 1.2em);
+  font-weight: bold;
+}
+
+/* Icon column - spans both rows, shows conditions */
+.stat-block-icon-column {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.05em 0.15em;
+  background: #f8f9fa;
+  border-radius: 0.1em;
+  min-width: 1.5em;
+}
+
+.stat-block-type-icon {
+  font-size: clamp(0.9em, 9cqi, 1.3em);
+  margin-bottom: 0.05em;
+}
+
+.stat-block-type-label {
+  font-size: clamp(0.28em, 3.5cqi, 0.42em);
+  text-transform: uppercase;
+  color: #7f8c8d;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Effects in icon column */
+.stat-block-effects {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+}
+
+.stat-block-effect {
+  display: flex;
+  align-items: center;
+  gap: 0.1em;
+  font-size: clamp(0.5em, 5cqi, 0.75em);
+  font-weight: 600;
+}
+
+.stat-block-effect .ra {
+  font-size: 1.1em;
+}
+
+.stat-block-effect span {
+  font-size: 0.9em;
+}
+
+/* Stat type colors - matching design mockup */
+.stat-block-item.stat-health {
+  background: #fce4ec;
+}
+.stat-block-item.stat-health .stat-block-label {
+  color: #e74c3c;
+}
+.stat-block-item.stat-health .stat-block-value {
+  color: #2c3e50;
+}
+
+.stat-block-item.stat-attack {
+  background: #fff8e1;
+}
+.stat-block-item.stat-attack .stat-block-label {
+  color: #e74c3c;
+}
+.stat-block-item.stat-attack .stat-block-value {
+  color: #2c3e50;
+}
+
+.stat-block-item.stat-move {
+  background: #e3f2fd;
+}
+.stat-block-item.stat-move .stat-block-label {
+  color: #5d6d7e;
+}
+.stat-block-item.stat-move .stat-block-value {
+  color: #2c3e50;
+}
+
+.stat-block-item.stat-range {
+  background: #e8f5e9;
+}
+.stat-block-item.stat-range .stat-block-label {
+  color: #e74c3c;
+}
+.stat-block-item.stat-range .stat-block-value {
+  color: #2c3e50;
+}
