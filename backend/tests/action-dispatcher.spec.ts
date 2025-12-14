@@ -13,7 +13,7 @@ import { DamageCalculationService } from '../src/services/damage-calculation.ser
 import { ValidationService } from '../src/services/validation.service';
 import { Character, CharacterData } from '../src/models/character.model';
 import { Condition, CharacterClass } from '../../shared/types/entities';
-import { AttackAction, MoveAction, HealAction, SpecialAction } from '../src/types/modifiers';
+import { AttackAction, MoveAction, HealAction, SpecialAction } from '../../shared/types/modifiers';
 
 // Helper to create test characters with proper CharacterData structure
 function createTestCharacter(overrides: Partial<CharacterData> & { id: string }): Character {
@@ -42,11 +42,19 @@ describe('ActionDispatcherService', () => {
   let mockForcedMovement: any;
 
   beforeEach(async () => {
-    // Mock dependencies
+    // Mock dependencies - includes all methods used by ActionDispatcherService
     mockConditionService = {
       applyCondition: jest.fn(),
       removeCondition: jest.fn(),
       hasCondition: jest.fn(),
+      // Shield/Retaliate methods (moved from ActionDispatcherService for SRP)
+      applyShield: jest.fn(),
+      getShieldEffect: jest.fn(),
+      clearShieldEffect: jest.fn(),
+      applyRetaliate: jest.fn(),
+      getRetaliateEffect: jest.fn(),
+      clearRetaliateEffect: jest.fn(),
+      clearRoundEffects: jest.fn(),
     };
 
     mockForcedMovement = {
@@ -339,7 +347,7 @@ describe('ActionDispatcherService', () => {
   });
 
   describe('Shield & Retaliate Modifiers', () => {
-    it('should apply shield modifier', async () => {
+    it('should apply shield modifier via ConditionService', async () => {
       const source = createTestCharacter({ id: 'character', position: { q: 0, r: 0 } });
 
       await service.applyModifiers(
@@ -347,14 +355,15 @@ describe('ActionDispatcherService', () => {
         source,
       );
 
-      // Shield is stored in the service, not on the character
-      const shieldEffect = service.getShieldEffect(source.id);
-      expect(shieldEffect).toBeDefined();
-      expect(shieldEffect?.value).toBe(2);
-      expect(shieldEffect?.duration).toBe('round');
+      // Shield should be delegated to ConditionService
+      expect(mockConditionService.applyShield).toHaveBeenCalledWith(
+        source.id,
+        2,
+        'round',
+      );
     });
 
-    it('should apply retaliate modifier', async () => {
+    it('should apply retaliate modifier via ConditionService', async () => {
       const source = createTestCharacter({ id: 'character', position: { q: 0, r: 0 } });
 
       await service.applyModifiers(
@@ -362,30 +371,22 @@ describe('ActionDispatcherService', () => {
         source,
       );
 
-      // Retaliate is stored in the service, not on the character
-      const retaliateEffect = service.getRetaliateEffect(source.id);
-      expect(retaliateEffect).toBeDefined();
-      expect(retaliateEffect?.value).toBe(2);
-      expect(retaliateEffect?.duration).toBe('persistent');
+      // Retaliate should be delegated to ConditionService
+      expect(mockConditionService.applyRetaliate).toHaveBeenCalledWith(
+        source.id,
+        2,
+        1, // default range
+        'persistent',
+      );
     });
 
-    it('should clear round effects at end of round', async () => {
+    it('should clear round effects via ConditionService', async () => {
       const source = createTestCharacter({ id: 'character', position: { q: 0, r: 0 } });
-
-      await service.applyModifiers(
-        [
-          { type: 'shield', value: 2, duration: 'round' },
-          { type: 'retaliate', value: 1, duration: 'persistent' },
-        ],
-        source,
-      );
 
       service.clearRoundEffects(source.id);
 
-      // Round-duration shield should be cleared
-      expect(service.getShieldEffect(source.id)).toBeUndefined();
-      // Persistent retaliate should remain
-      expect(service.getRetaliateEffect(source.id)).toBeDefined();
+      // Should delegate to ConditionService
+      expect(mockConditionService.clearRoundEffects).toHaveBeenCalledWith(source.id);
     });
   });
 

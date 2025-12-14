@@ -7,34 +7,16 @@
  */
 
 import { Injectable, Optional } from '@nestjs/common';
-import { Modifier, CardAction, EffectApplicationResult } from '../types/modifiers';
+import { Modifier, CardAction, EffectApplicationResult } from '../../../shared/types/modifiers';
 import { Condition } from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
-import { ConditionService } from './condition.service';
+import { ConditionService, ShieldEffect, RetaliateEffect } from './condition.service';
 import { DamageCalculationService } from './damage-calculation.service';
 import { ForcedMovementService } from './forced-movement.service';
 import { ValidationService } from './validation.service';
 
-// Shield and retaliate effect storage (per character ID)
-interface ShieldEffect {
-  value: number;
-  appliedAt: Date;
-  duration: 'round' | 'persistent';
-}
-
-interface RetaliateEffect {
-  value: number;
-  range: number;
-  appliedAt: Date;
-  duration: 'round' | 'persistent';
-}
-
 @Injectable()
 export class ActionDispatcherService {
-  // Store shield/retaliate effects per character ID
-  private shieldEffects: Map<string, ShieldEffect> = new Map();
-  private retaliateEffects: Map<string, RetaliateEffect> = new Map();
-
   constructor(
     private conditionService: ConditionService,
     @Optional() private damageCalc: DamageCalculationService,
@@ -376,75 +358,68 @@ export class ActionDispatcherService {
 
   /**
    * Apply shield modifier (temporary damage reduction)
+   * Delegates to ConditionService for centralized effect management
    */
   private async applyShieldModifier(
     modifier: Modifier & { type: 'shield' },
     target: Character,
   ): Promise<void> {
-    // Shield creates a temporary effect that reduces damage
-    this.shieldEffects.set(target.id, {
-      value: modifier.value,
-      appliedAt: new Date(),
-      duration: modifier.duration,
-    });
+    this.conditionService.applyShield(target.id, modifier.value, modifier.duration);
   }
 
   /**
    * Apply retaliate modifier (counter-attack on incoming damage)
+   * Delegates to ConditionService for centralized effect management
    */
   private async applyRetaliateModifier(
     modifier: Modifier & { type: 'retaliate' },
     target: Character,
   ): Promise<void> {
-    // Retaliate creates a persistent effect that triggers on incoming attacks
-    this.retaliateEffects.set(target.id, {
-      value: modifier.value,
-      range: modifier.range || 1,
-      appliedAt: new Date(),
-      duration: modifier.duration,
-    });
+    this.conditionService.applyRetaliate(
+      target.id,
+      modifier.value,
+      modifier.range || 1,
+      modifier.duration,
+    );
   }
 
   /**
    * Get shield effect for a character
+   * @deprecated Use conditionService.getShieldEffect() directly
    */
   getShieldEffect(characterId: string): ShieldEffect | undefined {
-    return this.shieldEffects.get(characterId);
+    return this.conditionService.getShieldEffect(characterId);
   }
 
   /**
    * Get retaliate effect for a character
+   * @deprecated Use conditionService.getRetaliateEffect() directly
    */
   getRetaliateEffect(characterId: string): RetaliateEffect | undefined {
-    return this.retaliateEffects.get(characterId);
+    return this.conditionService.getRetaliateEffect(characterId);
   }
 
   /**
    * Clear shield effect for a character
+   * @deprecated Use conditionService.clearShieldEffect() directly
    */
   clearShieldEffect(characterId: string): void {
-    this.shieldEffects.delete(characterId);
+    this.conditionService.clearShieldEffect(characterId);
   }
 
   /**
    * Clear retaliate effect for a character
+   * @deprecated Use conditionService.clearRetaliateEffect() directly
    */
   clearRetaliateEffect(characterId: string): void {
-    this.retaliateEffects.delete(characterId);
+    this.conditionService.clearRetaliateEffect(characterId);
   }
 
   /**
    * Clear all temporary effects for a character (at end of round)
+   * @deprecated Use conditionService.clearRoundEffects() directly
    */
   clearRoundEffects(characterId: string): void {
-    const shield = this.shieldEffects.get(characterId);
-    if (shield && shield.duration === 'round') {
-      this.shieldEffects.delete(characterId);
-    }
-
-    const retaliate = this.retaliateEffects.get(characterId);
-    if (retaliate && retaliate.duration === 'round') {
-      this.retaliateEffects.delete(characterId);
-    }
+    this.conditionService.clearRoundEffects(characterId);
   }
 }

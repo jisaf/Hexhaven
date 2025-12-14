@@ -12,9 +12,6 @@ import React from 'react';
 import type {
   Action,
   ElementType,
-  Modifier,
-  InfuseModifier,
-  ConsumeModifier,
   SummonAction,
   TextAction as TextActionType,
 } from '../../../../shared/types/entities';
@@ -23,6 +20,12 @@ import type { CardVariant } from '../AbilityCard2';
 import { StatBlockLayout, createDefaultStats } from './StatBlockLayout';
 import { TextRowLayout } from './TextRowLayout';
 import { formatEffect, ACTION_ICONS, ELEMENT_ICONS, CARD_ICONS } from './effectIcons';
+import {
+  getInfuseModifier,
+  getConsumeModifier,
+  getActionValue,
+  getEffectStrings,
+} from '../../utils/action-helpers';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import './layouts.css';
 
@@ -68,84 +71,6 @@ function getActionTypeClass(type: Action['type']): string {
   return `action-type-${type}`;
 }
 
-/**
- * Get infuse modifier from action modifiers
- */
-function getInfuseModifier(modifiers: Modifier[] = []): InfuseModifier | undefined {
-  return modifiers.find((m): m is InfuseModifier => m.type === 'infuse');
-}
-
-/**
- * Get consume modifier from action modifiers
- */
-function getConsumeModifier(modifiers: Modifier[] = []): ConsumeModifier | undefined {
-  return modifiers.find((m): m is ConsumeModifier => m.type === 'consume');
-}
-
-/**
- * Extract action value based on action type
- */
-function getActionValue(action: Action): number | undefined {
-  if (action.type === 'attack' || action.type === 'move' || action.type === 'heal') {
-    return action.value;
-  }
-  if (action.type === 'loot') {
-    return action.value;
-  }
-  return undefined;
-}
-
-/**
- * Convert modifiers to display-friendly effect strings
- */
-function getEffectStrings(modifiers: Modifier[] = []): string[] {
-  const effects: string[] = [];
-
-  for (const mod of modifiers) {
-    switch (mod.type) {
-      case 'push':
-        effects.push(`Push ${mod.distance}`);
-        break;
-      case 'pull':
-        effects.push(`Pull ${mod.distance}`);
-        break;
-      case 'pierce':
-        effects.push(`Pierce ${mod.value}`);
-        break;
-      case 'condition':
-        effects.push(mod.condition.charAt(0).toUpperCase() + mod.condition.slice(1));
-        break;
-      case 'shield':
-        effects.push(`Shield ${mod.value}`);
-        break;
-      case 'retaliate':
-        effects.push(`Retaliate ${mod.value}`);
-        break;
-      case 'jump':
-        effects.push('Jump');
-        break;
-      case 'target':
-        effects.push(`Target ${mod.count}`);
-        break;
-      case 'aoe':
-        effects.push(`${mod.pattern} ${mod.size}`);
-        break;
-      // Skip these as they're shown elsewhere
-      case 'range':
-      case 'infuse':
-      case 'consume':
-      case 'lost':
-      case 'persistent':
-      case 'round':
-      case 'xp':
-        break;
-      default:
-        break;
-    }
-  }
-
-  return effects;
-}
 
 /**
  * Card icons component - shows loss, persistence, and XP icons

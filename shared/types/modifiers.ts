@@ -273,3 +273,12 @@ export function getTarget(modifiers: Modifier[] = []): TargetModifier | undefine
 export function getAoE(modifiers: Modifier[] = []): AreaOfEffectModifier | undefined {
   return modifiers.find((m) => m.type === 'aoe') as AreaOfEffectModifier | undefined;
 }
+
+// ========== EFFECT APPLICATION RESULT ==========
+
+export interface EffectApplicationResult {
+  success: boolean;
+  appliedModifiers: Modifier[];
+  failedModifiers?: { modifier: Modifier; reason: string }[];
+  affectedEntities?: string[]; // Entity IDs affected
+}

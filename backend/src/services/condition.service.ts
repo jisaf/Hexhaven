@@ -19,10 +19,28 @@ export interface ConditionState {
   metadata?: Record<string, unknown>; // Condition-specific data
 }
 
+// Temporary effect types (shield, retaliate) - moved from ActionDispatcherService for SRP
+export interface ShieldEffect {
+  value: number;
+  appliedAt: Date;
+  duration: 'round' | 'persistent';
+}
+
+export interface RetaliateEffect {
+  value: number;
+  range: number;
+  appliedAt: Date;
+  duration: 'round' | 'persistent';
+}
+
 @Injectable()
 export class ConditionService {
   // Store condition states per character ID (since Character model doesn't have this)
   private conditionStates: Map<string, ConditionState[]> = new Map();
+
+  // Store temporary effects per character ID (shield, retaliate)
+  private shieldEffects: Map<string, ShieldEffect> = new Map();
+  private retaliateEffects: Map<string, RetaliateEffect> = new Map();
 
   /**
    * Apply a condition to a target character
@@ -275,5 +293,85 @@ export class ConditionService {
     };
 
     return descriptions[condition] || 'Unknown condition';
+  }
+
+  // ========== SHIELD EFFECT MANAGEMENT ==========
+
+  /**
+   * Apply shield effect to a character
+   */
+  applyShield(characterId: string, value: number, duration: 'round' | 'persistent'): void {
+    this.shieldEffects.set(characterId, {
+      value,
+      appliedAt: new Date(),
+      duration,
+    });
+  }
+
+  /**
+   * Get shield effect for a character
+   */
+  getShieldEffect(characterId: string): ShieldEffect | undefined {
+    return this.shieldEffects.get(characterId);
+  }
+
+  /**
+   * Clear shield effect for a character
+   */
+  clearShieldEffect(characterId: string): void {
+    this.shieldEffects.delete(characterId);
+  }
+
+  // ========== RETALIATE EFFECT MANAGEMENT ==========
+
+  /**
+   * Apply retaliate effect to a character
+   */
+  applyRetaliate(
+    characterId: string,
+    value: number,
+    range: number,
+    duration: 'round' | 'persistent',
+  ): void {
+    this.retaliateEffects.set(characterId, {
+      value,
+      range,
+      appliedAt: new Date(),
+      duration,
+    });
+  }
+
+  /**
+   * Get retaliate effect for a character
+   */
+  getRetaliateEffect(characterId: string): RetaliateEffect | undefined {
+    return this.retaliateEffects.get(characterId);
+  }
+
+  /**
+   * Clear retaliate effect for a character
+   */
+  clearRetaliateEffect(characterId: string): void {
+    this.retaliateEffects.delete(characterId);
+  }
+
+  // ========== ROUND-BASED EFFECT CLEANUP ==========
+
+  /**
+   * Clear all round-based effects for a character (at end of round)
+   * This includes round-based shield, retaliate, and conditions
+   */
+  clearRoundEffects(characterId: string): void {
+    // Clear round-based shield
+    const shield = this.shieldEffects.get(characterId);
+    if (shield && shield.duration === 'round') {
+      this.shieldEffects.delete(characterId);
+    }
+
+    // Clear round-based retaliate
+    const retaliate = this.retaliateEffects.get(characterId);
+    if (retaliate && retaliate.duration === 'round') {
+      this.retaliateEffects.delete(characterId);
+    }
   }
 }

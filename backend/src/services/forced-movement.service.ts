@@ -104,21 +104,20 @@ export class ForcedMovementService {
   }
 
   /**
-   * Calculate direction vector for push (away from source)
+   * Calculate normalized direction vector between two positions
+   * Returns a unit vector in axial coordinates pointing from 'from' to 'to'
    */
-  private calculatePushDirection(
-    sourcePos: AxialCoordinates,
-    targetPos: AxialCoordinates,
-    direction: 'away' | 'direct',
+  private calculateDirectionVector(
+    from: AxialCoordinates,
+    to: AxialCoordinates,
   ): { q: number; r: number } {
-    if (direction === 'direct') {
-      // Push in a specific cardinal direction (not implemented yet)
+    const dq = to.q - from.q;
+    const dr = to.r - from.r;
+
+    // Handle zero movement case
+    if (dq === 0 && dr === 0) {
       return { q: 0, r: 0 };
     }
-
-    // Calculate direction away from source
-    const dq = targetPos.q - sourcePos.q;
-    const dr = targetPos.r - sourcePos.r;
 
     // Normalize to single hex direction
     const absQ = Math.abs(dq);
@@ -135,27 +134,31 @@ export class ForcedMovementService {
   }
 
   /**
+   * Calculate direction vector for push (away from source)
+   */
+  private calculatePushDirection(
+    sourcePos: AxialCoordinates,
+    targetPos: AxialCoordinates,
+    direction: 'away' | 'direct',
+  ): { q: number; r: number } {
+    if (direction === 'direct') {
+      // Push in a specific cardinal direction (not implemented yet)
+      return { q: 0, r: 0 };
+    }
+
+    // Push = direction from source to target (away from source)
+    return this.calculateDirectionVector(sourcePos, targetPos);
+  }
+
+  /**
    * Calculate direction vector for pull (toward source)
    */
   private calculatePullDirection(
     sourcePos: AxialCoordinates,
     targetPos: AxialCoordinates,
   ): { q: number; r: number } {
-    const dq = sourcePos.q - targetPos.q;
-    const dr = sourcePos.r - targetPos.r;
-
-    // Normalize to single hex direction
-    const absQ = Math.abs(dq);
-    const absR = Math.abs(dr);
-
-    if (absQ > absR) {
-      return { q: dq > 0 ? 1 : -1, r: 0 };
-    } else if (absR > absQ) {
-      return { q: 0, r: dr > 0 ? 1 : -1 };
-    } else {
-      // Diagonal direction
-      return { q: dq > 0 ? 1 : -1, r: dr > 0 ? 1 : -1 };
-    }
+    // Pull = direction from target to source (toward source)
+    return this.calculateDirectionVector(targetPos, sourcePos);
   }
 
   /**
