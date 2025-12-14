@@ -1,0 +1,238 @@
+{
+  "abilityCards": [
+    {
+      "id": "brute-trample",
+      "characterClass": "Brute",
+      "name": "Trample",
+      "level": 1,
+      "initiative": 72,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "xp", "value": 1 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "push", "distance": 1 }
+        ]
+      }
+    },
+    {
+      "id": "brute-eye-for-eye",
+      "characterClass": "Brute",
+      "name": "Eye for an Eye",
+      "level": 1,
+      "initiative": 51,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "retaliate", "value": 2, "duration": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "shield", "value": 1, "duration": "persistent" }
+        ]
+      }
+    },
+    {
+      "id": "brute-balanced-measure",
+      "characterClass": "Brute",
+      "name": "Balanced Measure",
+      "level": 1,
+      "initiative": 20,
+      "topAction": {
+        "type": "attack",
+        "value": 4
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
+    },
+    {
+      "id": "brute-shield-bash",
+      "characterClass": "Brute",
+      "name": "Shield Bash",
+      "level": 1,
+      "initiative": 15,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "push", "distance": 1 },
+          { "type": "condition", "condition": "stun", "duration": "round" },
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "brute-warding-strength",
+      "characterClass": "Brute",
+      "name": "Warding Strength",
+      "level": 1,
+      "initiative": 32,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "light", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "consume", "element": "light", "bonus": { "effect": "heal", "value": 2 } }
+        ]
+      }
+    },
+    {
+      "id": "brute-leaping-cleave",
+      "characterClass": "Brute",
+      "name": "Leaping Cleave",
+      "level": 1,
+      "initiative": 54,
+      "topAction": {
+        "type": "attack",
+        "value": 4
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "jump" }
+        ]
+      }
+    },
+    {
+      "id": "spellweaver-mana-bolt",
+      "characterClass": "Spellweaver",
+      "name": "Mana Bolt",
+      "level": 1,
+      "initiative": 25,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 4 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "spellweaver-fire-orbs",
+      "characterClass": "Spellweaver",
+      "name": "Fire Orbs",
+      "level": 1,
+      "initiative": 69,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "target", "count": 2 },
+          { "type": "infuse", "element": "fire", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "spellweaver-aid-from-ether",
+      "characterClass": "Spellweaver",
+      "name": "Aid from the Ether",
+      "level": 1,
+      "initiative": 91,
+      "topAction": {
+        "type": "summon",
+        "modifiers": [
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ],
+        "summon": {
+          "name": "Mystic Ally",
+          "health": 4,
+          "attack": 2,
+          "move": 3,
+          "range": 2,
+          "typeIcon": "🔮",
+          "modifiers": [
+            { "type": "push", "distance": 1 }
+          ]
+        }
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ]
+      }
+    },
+    {
+      "id": "spellweaver-spirit-of-doom",
+      "characterClass": "Spellweaver",
+      "name": "Spirit of Doom",
+      "level": 1,
+      "initiative": 82,
+      "topAction": {
+        "type": "summon",
+        "modifiers": [
+          { "type": "infuse", "element": "dark", "state": "generate" },
+          { "type": "lost" },
+          { "type": "persistent" },
+          { "type": "xp", "value": 3 }
+        ],
+        "summon": {
+          "name": "Shadow Spirit",
+          "health": 6,
+          "attack": 3,
+          "move": 2,
+          "range": 0,
+          "typeIcon": "👻",
+          "modifiers": [
+            { "type": "condition", "condition": "wound", "duration": "until-consumed" }
+          ]
+        }
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "spellweaver-frost-armor",
+      "characterClass": "Spellweaver",
+      "name": "Frost Armor",
+      "level": 1,
+      "initiative": 19,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "infuse", "element": "ice", "state": "generate" },
+          { "type": "shield", "value": 2, "duration": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
+    }
+  ]
+}

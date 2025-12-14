@@ -68,13 +68,22 @@ export interface HexFeature {
 }
 
 export enum Condition {
+  // Negative Conditions (Enemies)
   POISON = 'poison',
   WOUND = 'wound',
-  STUN = 'stun',
+  MUDDLE = 'muddle',
   IMMOBILIZE = 'immobilize',
   DISARM = 'disarm',
-  MUDDLE = 'muddle',
+  STUN = 'stun',
+  CURSE = 'curse',
+  BRITTLE = 'brittle',
+  BANE = 'bane',
+
+  // Positive Conditions (Allies)
   STRENGTHEN = 'strengthen',
+  BLESS = 'bless',
+  REGENERATE = 'regenerate',
+  WARD = 'ward',
   INVISIBLE = 'invisible',
 }
 
