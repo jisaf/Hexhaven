@@ -1,95 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-family: 'Georgia', serif;
   line-height: 1.6;
   font-weight: 400;
 
   color: #f0e6d2;
-  background-color: var(--primary-bg-color, #0d1a2e);
+  background-color: #0d1a2e;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* ========== CARD LAYOUT SYSTEM CSS VARIABLES ========== */
-
-  /* Card Container */
-  --card-bg: #2c3e50;
-  --card-bg-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  --card-border: #7f8c8d;
-  --card-border-width: 2px;
-  --card-border-radius: 10px;
-  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --card-padding: 12px;
-
-  /* Module Backgrounds */
-  --module-bg: rgba(255, 255, 255, 0.05);
-  --textbox-bg: rgba(255, 255, 255, 0.08);
-
-  /* Text Colors */
-  --text-primary: #ecf0f1;
-  --text-secondary: #95a5a6;
-  --text-initiative: #f39c12;
-
-  /* Dividers & Borders */
-  --divider-color: rgba(255, 255, 255, 0.3);
-  --faded-border-gradient: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
-  --faded-border-height: 2px;
-  --faded-border-compact-height: 1px;
-
-  /* Creature Module Stats */
-  --creature-health-bg: rgba(231, 76, 60, 0.2);
-  --creature-health-text: #e74c3c;
-  --creature-move-bg: rgba(52, 152, 219, 0.2);
-  --creature-move-text: #3498db;
-  --creature-attack-bg: rgba(243, 156, 18, 0.2);
-  --creature-attack-text: #f39c12;
-  --creature-range-bg: rgba(46, 204, 113, 0.2);
-  --creature-range-text: #2ecc71;
-
-  /* Interactive States */
-  --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-  --card-hover-transform: translateY(-4px);
-  --card-selected-border: #2ecc71;
-  --card-selected-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
-  --card-selected-bg: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-
-  /* Module Sizing */
-  --module-padding: 8px;
-  --module-padding-compact: 4px;
-  --module-gap: 6px;
-  --module-gap-compact: 4px;
-
-  /* Element Display */
-  --element-generate-bg: rgba(46, 204, 113, 0.2);
-  --element-generate-text: #2ecc71;
-  --element-consume-bg: rgba(231, 76, 60, 0.2);
-  --element-consume-text: #e74c3c;
-
-  /* Effect Tags */
-  --effect-tag-bg: rgba(155, 89, 182, 0.3);
-  --effect-tag-text: #9b59b6;
-  --effect-tag-radius: 10px;
-
-  /* Card Dimensions */
-  --card-width: 180px;
-  --card-height: 250px;
-  --card-width-compact: 120px;
-  --card-height-compact: 180px;
-
-  /* Animations */
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
 }
-
-/* Future theme support - themes can be applied by setting data-theme attribute on body or html */
-/* Example: [data-theme="fantasy"] { --card-bg: ...; } */
 
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100vh; /* Allow scrolling on non-game pages */
+  min-height: 100vh;
   box-sizing: border-box;
 }
 
