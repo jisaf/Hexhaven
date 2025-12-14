@@ -242,4 +242,142 @@ export class CardPileService {
   canRest(character: Character, required: number = 2): boolean {
     return character.discardPile.length >= required;
   }
+
+  /**
+   * Recover cards from lost pile to hand (Issue #220 - Phase 4)
+   * Used by cards with "Recover X" effect
+   *
+   * @param character - Character state
+   * @param cardIds - Specific card IDs to recover, or empty for random
+   * @param count - Number of cards to recover if random
+   * @returns Updated character with recovered cards in hand
+   */
+  recoverCards(
+    character: Character,
+    cardIds?: string[],
+    count?: number,
+  ): Character {
+    const lostPile = [...character.lostPile];
+
+    if (lostPile.length === 0) {
+      return character; // Nothing to recover
+    }
+
+    let cardsToRecover: string[];
+
+    if (cardIds && cardIds.length > 0) {
+      // Recover specific cards
+      cardsToRecover = cardIds.filter((id) => lostPile.includes(id));
+    } else if (count && count > 0) {
+      // Recover random cards (player chooses in real game, we take from end)
+      cardsToRecover = lostPile.slice(-Math.min(count, lostPile.length));
+    } else {
+      return character; // No cards specified
+    }
+
+    // Move cards from lost to hand
+    const newLostPile = lostPile.filter((id) => !cardsToRecover.includes(id));
+    const newHand = [...character.hand, ...cardsToRecover];
+
+    return {
+      ...character,
+      hand: newHand,
+      lostPile: newLostPile,
+    };
+  }
+
+  /**
+   * Return cards from lost pile to discard pile (Issue #220 - Phase 4)
+   * Used by cards with "Return X to discard" effect
+   *
+   * @param character - Character state
+   * @param cardIds - Specific card IDs to return, or empty for random
+   * @param count - Number of cards to return if random
+   * @returns Updated character with cards in discard
+   */
+  returnCardsToDiscard(
+    character: Character,
+    cardIds?: string[],
+    count?: number,
+  ): Character {
+    const lostPile = [...character.lostPile];
+
+    if (lostPile.length === 0) {
+      return character; // Nothing to return
+    }
+
+    let cardsToReturn: string[];
+
+    if (cardIds && cardIds.length > 0) {
+      // Return specific cards
+      cardsToReturn = cardIds.filter((id) => lostPile.includes(id));
+    } else if (count && count > 0) {
+      // Return random cards (player chooses in real game, we take from end)
+      cardsToReturn = lostPile.slice(-Math.min(count, lostPile.length));
+    } else {
+      return character; // No cards specified
+    }
+
+    // Move cards from lost to discard
+    const newLostPile = lostPile.filter((id) => !cardsToReturn.includes(id));
+    const newDiscard = [...character.discardPile, ...cardsToReturn];
+
+    return {
+      ...character,
+      discardPile: newDiscard,
+      lostPile: newLostPile,
+    };
+  }
+
+  /**
+   * Discard cards from hand (Issue #220 - Phase 4)
+   * Used when character needs to discard to prevent damage
+   *
+   * @param character - Character state
+   * @param cardIds - Card IDs to discard from hand
+   * @returns Updated character with cards in discard
+   */
+  discardFromHand(character: Character, cardIds: string[]): Character {
+    const hand = [...character.hand];
+    const cardsToDiscard = cardIds.filter((id) => hand.includes(id));
+
+    if (cardsToDiscard.length === 0) {
+      return character;
+    }
+
+    const newHand = hand.filter((id) => !cardsToDiscard.includes(id));
+    const newDiscard = [...character.discardPile, ...cardsToDiscard];
+
+    return {
+      ...character,
+      hand: newHand,
+      discardPile: newDiscard,
+    };
+  }
+
+  /**
+   * Lose cards from hand (Issue #220 - Phase 4)
+   * Used when character needs to lose a card to prevent damage
+   *
+   * @param character - Character state
+   * @param cardIds - Card IDs to lose from hand
+   * @returns Updated character with cards in lost pile
+   */
+  loseFromHand(character: Character, cardIds: string[]): Character {
+    const hand = [...character.hand];
+    const cardsToLose = cardIds.filter((id) => hand.includes(id));
+
+    if (cardsToLose.length === 0) {
+      return character;
+    }
+
+    const newHand = hand.filter((id) => !cardsToLose.includes(id));
+    const newLost = [...character.lostPile, ...cardsToLose];
+
+    return {
+      ...character,
+      hand: newHand,
+      lostPile: newLost,
+    };
+  }
 }

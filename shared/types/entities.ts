@@ -3,6 +3,69 @@
  * Used across both frontend and backend for type-safe communication
  */
 
+// Import action types from modifiers for local use
+import type { CardAction as _CardAction } from './modifiers';
+
+// Re-export action types from modifiers
+export type {
+  CardAction,
+  Modifier,
+  AttackAction,
+  MoveAction,
+  HealAction,
+  LootAction,
+  SpecialAction,
+  SummonAction,
+  TextAction,
+  SummonDefinition,
+  // Modifier types
+  RangeModifier,
+  TargetModifier,
+  PierceModifier,
+  AreaOfEffectModifier,
+  JumpModifier,
+  TeleportModifier,
+  PushModifier,
+  PullModifier,
+  InfuseModifier,
+  ConsumeModifier,
+  ConditionModifier,
+  RoundModifier,
+  PersistentModifier,
+  LostModifier,
+  RecoverModifier,
+  DiscardModifier,
+  ShieldModifier,
+  RetaliateModifier,
+  HealModifier,
+  XPModifier,
+} from './modifiers';
+
+// Re-export CardAction as Action for backward compatibility
+export type { CardAction as Action } from './modifiers';
+
+// Type alias for use within this file
+type Action = _CardAction;
+
+// Re-export helper functions
+export {
+  getRange,
+  hasJump,
+  getPush,
+  getPull,
+  getConditions,
+  isLostAction,
+  isPersistent,
+  getXPValue,
+  getShield,
+  getRetaliate,
+  getInfuseModifiers,
+  getConsumeModifiers,
+  getPierce,
+  getTarget,
+  getAoE,
+} from './modifiers';
+
 // ========== COORDINATE TYPES ==========
 
 export interface AxialCoordinates {
@@ -197,38 +260,8 @@ export interface AbilityCard {
   imageUrl?: string;
 }
 
-export interface Action {
-  type: 'move' | 'attack' | 'heal' | 'loot' | 'special' | 'summon' | 'text';
-  value?: number;
-  range?: number;
-  effects?: string[];
-  elementGenerate?: ElementType;
-  elementConsume?: ElementType;
-  elementBonus?: {
-    effect: string;
-    value: number;
-  };
-  // Card icons
-  isLost?: boolean; // Shows loss (X) icon - card goes to lost pile after use
-  isPersistent?: boolean; // Shows infinity icon - effect persists until lost
-  xp?: number; // Experience points gained when using this action
-  // Summon creature stats (for type: 'summon')
-  summon?: {
-    name: string;
-    health: number;
-    attack: number;
-    move: number;
-    range: number;
-    typeIcon?: string;
-    effects?: string[]; // Conditions like "Push 2", "Wound"
-  };
-  // Text content (for type: 'text')
-  textContent?: {
-    title?: string;
-    text: string;
-    quote?: string;
-  };
-}
+// Action interface is now imported from ./modifiers as CardAction
+// The old string-based Action interface has been replaced with typed modifiers
 
 // Card Enhancement interface (matches Prisma model)
 export interface CardEnhancement {

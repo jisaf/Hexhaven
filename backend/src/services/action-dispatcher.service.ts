@@ -2,26 +2,44 @@
  * Action Dispatcher Service
  * Central service for dispatching and applying card actions to game entities
  * Handles effect resolution, validation, and state updates
+ *
+ * Updated for Issue #220 - works with existing Character model
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Modifier, CardAction, EffectApplicationResult } from '../types/modifiers';
 import { Condition } from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
-import { GameStateManager } from './game-state.service';
 import { ConditionService } from './condition.service';
 import { DamageCalculationService } from './damage-calculation.service';
 import { ForcedMovementService } from './forced-movement.service';
 import { ValidationService } from './validation.service';
 
+// Shield and retaliate effect storage (per character ID)
+interface ShieldEffect {
+  value: number;
+  appliedAt: Date;
+  duration: 'round' | 'persistent';
+}
+
+interface RetaliateEffect {
+  value: number;
+  range: number;
+  appliedAt: Date;
+  duration: 'round' | 'persistent';
+}
+
 @Injectable()
 export class ActionDispatcherService {
+  // Store shield/retaliate effects per character ID
+  private shieldEffects: Map<string, ShieldEffect> = new Map();
+  private retaliateEffects: Map<string, RetaliateEffect> = new Map();
+
   constructor(
-    private gameState: GameStateManager,
     private conditionService: ConditionService,
-    private damageCalc: DamageCalculationService,
-    private forcedMovement: ForcedMovementService,
-    private validation: ValidationService,
+    @Optional() private damageCalc: DamageCalculationService,
+    @Optional() private forcedMovement: ForcedMovementService,
+    @Optional() private validation: ValidationService,
   ) {}
 
   /**
@@ -94,15 +112,19 @@ export class ActionDispatcherService {
             break;
 
           case 'push':
-            await this.forcedMovement.applyPush(source, target, modifier.distance);
-            result.appliedModifiers.push(modifier);
-            if (target) result.affectedEntities.push(target.id);
+            if (target && this.forcedMovement) {
+              await this.forcedMovement.applyPush(source, target, modifier.distance);
+              result.appliedModifiers.push(modifier);
+              result.affectedEntities!.push(target.id);
+            }
             break;
 
           case 'pull':
-            await this.forcedMovement.applyPull(source, target, modifier.distance);
-            result.appliedModifiers.push(modifier);
-            if (target) result.affectedEntities.push(target.id);
+            if (target && this.forcedMovement) {
+              await this.forcedMovement.applyPull(source, target, modifier.distance);
+              result.appliedModifiers.push(modifier);
+              result.affectedEntities!.push(target.id);
+            }
             break;
 
           case 'infuse':
@@ -116,14 +138,14 @@ export class ActionDispatcherService {
             break;
 
           case 'shield':
-            // Shield stored as temporary condition
-            await this.applyShieldModifier(modifier, source, gameId);
+            // Shield stored as temporary effect
+            await this.applyShieldModifier(modifier, source);
             result.appliedModifiers.push(modifier);
             break;
 
           case 'retaliate':
-            // Retaliate stored as persistent condition
-            await this.applyRetaliateModifier(modifier, source, gameId);
+            // Retaliate stored as persistent effect
+            await this.applyRetaliateModifier(modifier, source);
             result.appliedModifiers.push(modifier);
             break;
 
@@ -155,7 +177,7 @@ export class ActionDispatcherService {
           default:
             result.failedModifiers?.push({
               modifier,
-              reason: `Unknown modifier type: ${(modifier as any).type}`,
+              reason: `Unknown modifier type: ${(modifier as Modifier).type}`,
             });
         }
       } catch (error) {
@@ -173,7 +195,7 @@ export class ActionDispatcherService {
    * Apply an attack action
    */
   private async applyAttackAction(
-    action: any,
+    action: CardAction & { type: 'attack' },
     source: Character,
     targetId?: string,
     gameId?: string,
@@ -189,22 +211,15 @@ export class ActionDispatcherService {
       return result;
     }
 
-    // Validate attacker is not disarmed or stunned
-    if (source.conditions.has(Condition.DISARM) || source.conditions.has(Condition.STUN)) {
-      result.success = false;
-      return result;
-    }
-
-    // Get target
-    const target = await this.gameState.getEntity(targetId);
-    if (!target) {
+    // Validate attacker is not disarmed or stunned - use Character's built-in getters
+    if (source.isDisarmed || source.isStunned) {
       result.success = false;
       return result;
     }
 
     // Apply base damage
     const damage = action.value || 0;
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, target, gameId);
+    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
 
     result.appliedModifiers = modifierResult.appliedModifiers;
     result.affectedEntities = [targetId];
@@ -216,7 +231,7 @@ export class ActionDispatcherService {
    * Apply a move action
    */
   private async applyMoveAction(
-    action: any,
+    action: CardAction & { type: 'move' },
     source: Character,
     gameId?: string,
   ): Promise<EffectApplicationResult> {
@@ -226,8 +241,8 @@ export class ActionDispatcherService {
       failedModifiers: [],
     };
 
-    // Validate character is not immobilized or stunned
-    if (source.conditions.has(Condition.IMMOBILIZE) || source.conditions.has(Condition.STUN)) {
+    // Validate character is not immobilized or stunned - use Character's built-in getters
+    if (source.isImmobilized || source.isStunned) {
       result.success = false;
       return result;
     }
@@ -248,7 +263,7 @@ export class ActionDispatcherService {
    * Apply a heal action
    */
   private async applyHealAction(
-    action: any,
+    action: CardAction & { type: 'heal' },
     source: Character,
     targetId?: string,
     gameId?: string,
@@ -261,25 +276,21 @@ export class ActionDispatcherService {
 
     const healAmount = action.value || 0;
 
-    // Determine target - can be self or another character
-    let target: Character | undefined;
-    if (targetId) {
-      target = await this.gameState.getEntity(targetId);
-    } else {
-      // Default to self
-      target = source;
-    }
+    // Determine target - if no targetId, heal self
+    const isSelfHeal = !targetId;
+    const actualTargetId = targetId || source.id;
 
-    if (!target) {
-      result.success = false;
-      return result;
+    // If self heal, apply healing directly
+    if (isSelfHeal) {
+      source.heal(healAmount);
     }
+    // Note: For target heal, the gateway should apply the heal since it has access to the target Character
 
     // Apply modifiers
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, target, gameId);
+    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
 
     result.appliedModifiers = modifierResult.appliedModifiers;
-    result.affectedEntities = [target.id];
+    result.affectedEntities = [actualTargetId];
 
     return result;
   }
@@ -288,7 +299,7 @@ export class ActionDispatcherService {
    * Apply a loot action
    */
   private async applyLootAction(
-    action: any,
+    action: CardAction & { type: 'loot' },
     source: Character,
     gameId?: string,
   ): Promise<EffectApplicationResult> {
@@ -310,7 +321,7 @@ export class ActionDispatcherService {
    * Apply a special action
    */
   private async applySpecialAction(
-    action: any,
+    action: CardAction & { type: 'special' },
     source: Character,
     gameId?: string,
   ): Promise<EffectApplicationResult> {
@@ -334,7 +345,7 @@ export class ActionDispatcherService {
    * Apply a summon action
    */
   private async applySummonAction(
-    action: any,
+    action: CardAction & { type: 'summon' },
     source: Character,
     gameId?: string,
   ): Promise<EffectApplicationResult> {
@@ -352,7 +363,11 @@ export class ActionDispatcherService {
   /**
    * Apply condition modifier
    */
-  private async applyConditionModifier(modifier: any, target: Character, gameId?: string): Promise<void> {
+  private async applyConditionModifier(
+    modifier: Modifier & { type: 'condition' },
+    target: Character,
+    gameId?: string,
+  ): Promise<void> {
     const condition = modifier.condition as Condition;
     const duration = modifier.duration as 'round' | 'persistent' | 'until-consumed';
 
@@ -362,28 +377,74 @@ export class ActionDispatcherService {
   /**
    * Apply shield modifier (temporary damage reduction)
    */
-  private async applyShieldModifier(modifier: any, target: Character, gameId?: string): Promise<void> {
-    // Shield creates a temporary condition that reduces damage
-    // Stored as metadata on character
-    target.metadata = target.metadata || {};
-    target.metadata.shield = {
+  private async applyShieldModifier(
+    modifier: Modifier & { type: 'shield' },
+    target: Character,
+  ): Promise<void> {
+    // Shield creates a temporary effect that reduces damage
+    this.shieldEffects.set(target.id, {
       value: modifier.value,
       appliedAt: new Date(),
       duration: modifier.duration,
-    };
+    });
   }
 
   /**
    * Apply retaliate modifier (counter-attack on incoming damage)
    */
-  private async applyRetaliateModifier(modifier: any, target: Character, gameId?: string): Promise<void> {
+  private async applyRetaliateModifier(
+    modifier: Modifier & { type: 'retaliate' },
+    target: Character,
+  ): Promise<void> {
     // Retaliate creates a persistent effect that triggers on incoming attacks
-    target.metadata = target.metadata || {};
-    target.metadata.retaliate = {
+    this.retaliateEffects.set(target.id, {
       value: modifier.value,
       range: modifier.range || 1,
       appliedAt: new Date(),
       duration: modifier.duration,
-    };
+    });
+  }
+
+  /**
+   * Get shield effect for a character
+   */
+  getShieldEffect(characterId: string): ShieldEffect | undefined {
+    return this.shieldEffects.get(characterId);
+  }
+
+  /**
+   * Get retaliate effect for a character
+   */
+  getRetaliateEffect(characterId: string): RetaliateEffect | undefined {
+    return this.retaliateEffects.get(characterId);
+  }
+
+  /**
+   * Clear shield effect for a character
+   */
+  clearShieldEffect(characterId: string): void {
+    this.shieldEffects.delete(characterId);
+  }
+
+  /**
+   * Clear retaliate effect for a character
+   */
+  clearRetaliateEffect(characterId: string): void {
+    this.retaliateEffects.delete(characterId);
+  }
+
+  /**
+   * Clear all temporary effects for a character (at end of round)
+   */
+  clearRoundEffects(characterId: string): void {
+    const shield = this.shieldEffects.get(characterId);
+    if (shield && shield.duration === 'round') {
+      this.shieldEffects.delete(characterId);
+    }
+
+    const retaliate = this.retaliateEffects.get(characterId);
+    if (retaliate && retaliate.duration === 'round') {
+      this.retaliateEffects.delete(characterId);
+    }
   }
 }

@@ -2,6 +2,8 @@
  * Condition Management Service
  * Handles application, removal, and expiration of status conditions
  * Manages condition duration and effects
+ *
+ * Updated for Issue #220 - works with existing Character model
  */
 
 import { Injectable } from '@nestjs/common';
@@ -14,11 +16,14 @@ export interface ConditionState {
   duration: 'round' | 'persistent' | 'until-consumed';
   roundNumber?: number; // Round when condition was applied (for round-based duration)
   expiresAt?: Date; // When persistent condition expires
-  metadata?: Record<string, any>; // Condition-specific data
+  metadata?: Record<string, unknown>; // Condition-specific data
 }
 
 @Injectable()
 export class ConditionService {
+  // Store condition states per character ID (since Character model doesn't have this)
+  private conditionStates: Map<string, ConditionState[]> = new Map();
+
   /**
    * Apply a condition to a target character
    */
@@ -26,40 +31,53 @@ export class ConditionService {
     target: Character,
     condition: Condition,
     duration: 'round' | 'persistent' | 'until-consumed' = 'until-consumed',
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
-    // Add condition to character's condition set
-    if (!target.conditions) {
-      target.conditions = new Set<Condition>();
-    }
-
-    target.conditions.add(condition);
+    // Use Character's built-in method to add condition
+    target.addCondition(condition);
 
     // Store condition state for duration tracking
-    if (!target.conditionStates) {
-      target.conditionStates = [];
+    if (!this.conditionStates.has(target.id)) {
+      this.conditionStates.set(target.id, []);
     }
 
-    const conditionState: ConditionState = {
-      condition,
-      appliedAt: new Date(),
-      duration,
-      metadata,
-    };
+    const states = this.conditionStates.get(target.id)!;
 
-    target.conditionStates.push(conditionState);
+    // Don't add duplicate state for same condition
+    const existingIndex = states.findIndex((s) => s.condition === condition);
+    if (existingIndex >= 0) {
+      // Update existing state
+      states[existingIndex] = {
+        condition,
+        appliedAt: new Date(),
+        duration,
+        metadata,
+      };
+    } else {
+      // Add new state
+      states.push({
+        condition,
+        appliedAt: new Date(),
+        duration,
+        metadata,
+      });
+    }
   }
 
   /**
    * Remove a condition from a target
    */
   async removeCondition(target: Character, condition: Condition): Promise<void> {
-    if (target.conditions) {
-      target.conditions.delete(condition);
-    }
+    // Use Character's built-in method
+    target.removeCondition(condition);
 
-    if (target.conditionStates) {
-      target.conditionStates = target.conditionStates.filter((c) => c.condition !== condition);
+    // Remove from condition states
+    const states = this.conditionStates.get(target.id);
+    if (states) {
+      const index = states.findIndex((s) => s.condition === condition);
+      if (index >= 0) {
+        states.splice(index, 1);
+      }
     }
   }
 
@@ -67,29 +85,34 @@ export class ConditionService {
    * Clear all conditions from a target
    */
   async clearConditions(target: Character): Promise<void> {
-    target.conditions = new Set<Condition>();
-    target.conditionStates = [];
+    // Use Character's built-in method
+    target.clearConditions();
+
+    // Clear condition states
+    this.conditionStates.set(target.id, []);
   }
 
   /**
    * Check if condition is active on target
    */
   hasCondition(target: Character, condition: Condition): boolean {
-    return target.conditions?.has(condition) ?? false;
+    // Character.conditions returns an array
+    return target.conditions.includes(condition);
   }
 
   /**
    * Get all active conditions on target
    */
   getConditions(target: Character): Condition[] {
-    return Array.from(target.conditions || new Set());
+    return target.conditions;
   }
 
   /**
    * Get condition state details
    */
   getConditionState(target: Character, condition: Condition): ConditionState | undefined {
-    return target.conditionStates?.find((c) => c.condition === condition);
+    const states = this.conditionStates.get(target.id);
+    return states?.find((c) => c.condition === condition);
   }
 
   /**
@@ -98,20 +121,21 @@ export class ConditionService {
    */
   async expireRoundBasedConditions(target: Character, currentRound: number): Promise<Condition[]> {
     const expiredConditions: Condition[] = [];
+    const states = this.conditionStates.get(target.id);
 
-    if (!target.conditionStates) {
+    if (!states) {
       return expiredConditions;
     }
 
     const statesToKeep: ConditionState[] = [];
 
-    for (const state of target.conditionStates) {
+    for (const state of states) {
       // Round-based conditions expire after 1 round (next turn)
       if (state.duration === 'round' && state.roundNumber !== undefined) {
         if (currentRound > state.roundNumber) {
           // Expire this condition
           expiredConditions.push(state.condition);
-          target.conditions?.delete(state.condition);
+          target.removeCondition(state.condition);
           continue;
         }
       }
@@ -119,7 +143,7 @@ export class ConditionService {
       statesToKeep.push(state);
     }
 
-    target.conditionStates = statesToKeep;
+    this.conditionStates.set(target.id, statesToKeep);
     return expiredConditions;
   }
 
@@ -225,11 +249,8 @@ export class ConditionService {
    * Check if character is incapacitated (cannot act)
    */
   isIncapacitated(target: Character): boolean {
-    return (
-      this.hasCondition(target, Condition.STUN) ||
-      this.hasCondition(target, Condition.IMMOBILIZE) ||
-      this.hasCondition(target, Condition.DISARM)
-    );
+    // Use Character's built-in boolean getters
+    return target.isStunned || target.isImmobilized || target.isDisarmed;
   }
 
   /**

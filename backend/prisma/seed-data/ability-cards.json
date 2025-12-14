@@ -7,15 +7,14 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": [],
-      "range": 0,
-      "target": 1
+      "modifiers": []
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": ["push:1"],
-      "target": 1
+      "modifiers": [
+        { "type": "push", "distance": 1 }
+      ]
     }
   },
   {
@@ -26,16 +25,14 @@
     "topAction": {
       "type": "attack",
       "value": 2,
-      "effects": ["retaliate:2"],
-      "range": 0,
-      "target": 1
+      "modifiers": [
+        { "type": "retaliate", "value": 2, "duration": "round" }
+      ]
     },
     "bottomAction": {
       "type": "heal",
       "value": 3,
-      "effects": [],
-      "range": 0,
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -46,15 +43,14 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": [],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -65,15 +61,14 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": [],
-      "range": 0,
-      "target": 1
+      "modifiers": []
     },
     "bottomAction": {
       "type": "move",
       "value": 4,
-      "effects": ["jump"],
-      "target": "self"
+      "modifiers": [
+        { "type": "jump" }
+      ]
     }
   },
   {
@@ -84,15 +79,14 @@
     "topAction": {
       "type": "move",
       "value": 4,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     },
     "bottomAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["stun"],
-      "range": 0,
-      "target": 1
+      "modifiers": [
+        { "type": "condition", "condition": "stun", "duration": "round" }
+      ]
     }
   },
   {
@@ -103,15 +97,15 @@
     "topAction": {
       "type": "attack",
       "value": 2,
-      "effects": ["pull:3"],
-      "range": 4,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 4 },
+        { "type": "pull", "distance": 3 }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -122,15 +116,14 @@
     "topAction": {
       "type": "heal",
       "value": 3,
-      "effects": [],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -139,17 +132,16 @@
     "level": 1,
     "initiative": 74,
     "topAction": {
-      "type": "buff",
-      "value": 0,
-      "effects": ["shield:1"],
-      "range": 3,
-      "target": "all-allies"
+      "type": "special",
+      "modifiers": [
+        { "type": "shield", "value": 1, "duration": "round" },
+        { "type": "range", "distance": 3 }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -160,16 +152,18 @@
     "topAction": {
       "type": "attack",
       "value": 2,
-      "effects": ["wound"],
-      "range": 4,
-      "target": 2
+      "modifiers": [
+        { "type": "range", "distance": 4 },
+        { "type": "target", "count": 2 },
+        { "type": "condition", "condition": "wound", "duration": "until-consumed" }
+      ]
     },
     "bottomAction": {
       "type": "heal",
       "value": 2,
-      "effects": [],
-      "range": 2,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 2 }
+      ]
     }
   },
   {
@@ -180,15 +174,14 @@
     "topAction": {
       "type": "heal",
       "value": 4,
-      "effects": [],
-      "range": 3,
-      "target": "all-allies"
+      "modifiers": [
+        { "type": "range", "distance": 3 }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 4,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -199,16 +192,19 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["element:fire"],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "infuse", "element": "fire", "state": "generate" }
+      ]
     },
     "bottomAction": {
       "type": "attack",
       "value": 2,
-      "effects": ["element:fire"],
-      "range": 3,
-      "target": 2
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "target", "count": 2 },
+        { "type": "infuse", "element": "fire", "state": "generate" }
+      ]
     }
   },
   {
@@ -217,17 +213,17 @@
     "level": 1,
     "initiative": 41,
     "topAction": {
-      "type": "buff",
-      "value": 0,
-      "effects": ["shield:2", "element:ice"],
-      "range": 0,
-      "target": "self"
+      "type": "special",
+      "modifiers": [
+        { "type": "shield", "value": 2, "duration": "persistent" },
+        { "type": "infuse", "element": "ice", "state": "generate" },
+        { "type": "persistent" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -238,15 +234,15 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["element:earth"],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "infuse", "element": "earth", "state": "generate" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -257,16 +253,20 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["wound", "consume:fire"],
-      "range": 4,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 4 },
+        { "type": "condition", "condition": "wound", "duration": "until-consumed" },
+        { "type": "consume", "element": "fire", "bonus": { "effect": "damage", "value": 2 } }
+      ]
     },
     "bottomAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["immobilize", "consume:ice"],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "condition", "condition": "immobilize", "duration": "round" },
+        { "type": "consume", "element": "ice", "bonus": { "effect": "damage", "value": 2 } }
+      ]
     }
   },
   {
@@ -276,16 +276,17 @@
     "initiative": 19,
     "topAction": {
       "type": "special",
-      "value": 0,
-      "effects": ["recover-discards:2"],
-      "range": 0,
-      "target": "self"
+      "modifiers": [
+        { "type": "recover", "cardCount": 2 },
+        { "type": "lost" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 4,
-      "effects": ["element:any"],
-      "target": "self"
+      "modifiers": [
+        { "type": "infuse", "element": "light", "state": "generate" }
+      ]
     }
   },
   {
@@ -296,15 +297,14 @@
     "topAction": {
       "type": "attack",
       "value": 2,
-      "effects": [],
-      "range": 0,
-      "target": 1
+      "modifiers": []
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": ["invisible"],
-      "target": "self"
+      "modifiers": [
+        { "type": "condition", "condition": "invisible", "duration": "round" }
+      ]
     }
   },
   {
@@ -315,15 +315,14 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["bonus-adjacent:2"],
-      "range": 0,
-      "target": 1
+      "modifiers": [],
+      "requirement": "adjacent-to-ally",
+      "bonusAttack": 2
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -334,15 +333,12 @@
     "topAction": {
       "type": "loot",
       "value": 1,
-      "effects": [],
-      "range": 0,
-      "target": "self"
+      "modifiers": []
     },
     "bottomAction": {
       "type": "move",
       "value": 4,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -353,15 +349,14 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["bonus-adjacent:2"],
-      "range": 0,
-      "target": 1
+      "modifiers": [],
+      "requirement": "adjacent-to-ally",
+      "bonusAttack": 2
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -372,15 +367,16 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["pierce:2", "bonus-adjacent:2"],
-      "range": 0,
-      "target": 1
+      "modifiers": [
+        { "type": "pierce", "value": 2 }
+      ],
+      "requirement": "adjacent-to-ally",
+      "bonusAttack": 2
     },
     "bottomAction": {
       "type": "move",
       "value": 5,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -391,15 +387,16 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["element:earth"],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "infuse", "element": "earth", "state": "generate" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": ["create-obstacle"],
-      "target": "self"
+      "modifiers": [],
+      "special": "create-obstacle"
     }
   },
   {
@@ -410,15 +407,16 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["immobilize", "consume:earth"],
-      "range": 3,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "condition", "condition": "immobilize", "duration": "round" },
+        { "type": "consume", "element": "earth", "bonus": { "effect": "damage", "value": 2 } }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -429,15 +427,17 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["element:earth", "aoe:cone"],
-      "range": 3,
-      "target": 3
+      "modifiers": [
+        { "type": "range", "distance": 3 },
+        { "type": "aoe", "pattern": "cone", "size": 1 },
+        { "type": "target", "count": 3 },
+        { "type": "infuse", "element": "earth", "state": "generate" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -447,16 +447,15 @@
     "initiative": 41,
     "topAction": {
       "type": "special",
-      "value": 0,
-      "effects": ["destroy-obstacle", "create-obstacle"],
-      "range": 4,
-      "target": 1
+      "modifiers": [
+        { "type": "range", "distance": 4 }
+      ],
+      "special": "destroy-and-create-obstacle"
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -467,16 +466,18 @@
     "topAction": {
       "type": "move",
       "value": 3,
-      "effects": ["jump"],
-      "range": 0,
+      "modifiers": [
+        { "type": "jump" }
+      ],
       "target": "all-allies"
     },
     "bottomAction": {
       "type": "special",
-      "value": 0,
-      "effects": ["destroy-obstacle:2"],
-      "range": 3,
-      "target": 2
+      "modifiers": [
+        { "type": "range", "distance": 3 }
+      ],
+      "special": "destroy-obstacle",
+      "targetCount": 2
     }
   },
   {
@@ -487,15 +488,14 @@
     "topAction": {
       "type": "attack",
       "value": 2,
-      "effects": ["invisible"],
-      "range": 0,
-      "target": 1
+      "modifiers": [
+        { "type": "condition", "condition": "invisible", "duration": "round", "target": "self" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -506,15 +506,15 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["retaliate:2", "consume:ice"],
-      "range": 0,
-      "target": 1
+      "modifiers": [
+        { "type": "retaliate", "value": 2, "duration": "round" },
+        { "type": "consume", "element": "ice", "bonus": { "effect": "damage", "value": 2 } }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -523,17 +523,16 @@
     "level": 1,
     "initiative": 68,
     "topAction": {
-      "type": "attack",
-      "value": 2,
-      "effects": ["control"],
-      "range": 3,
-      "target": 1
+      "type": "special",
+      "modifiers": [
+        { "type": "range", "distance": 3 }
+      ],
+      "special": "control-enemy"
     },
     "bottomAction": {
       "type": "move",
       "value": 4,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -544,15 +543,14 @@
     "topAction": {
       "type": "attack",
       "value": 4,
-      "effects": ["bonus-ally-adjacent:1"],
-      "range": 0,
-      "target": 1
+      "modifiers": [],
+      "requirement": "adjacent-to-ally",
+      "bonusAttack": 1
     },
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "effects": [],
-      "target": "self"
+      "modifiers": []
     }
   },
   {
@@ -563,15 +561,17 @@
     "topAction": {
       "type": "attack",
       "value": 3,
-      "effects": ["muddle", "aoe:all-adjacent"],
-      "range": 0,
-      "target": "all-adjacent"
+      "modifiers": [
+        { "type": "aoe", "pattern": "burst", "size": 1 },
+        { "type": "condition", "condition": "muddle", "duration": "round" }
+      ]
     },
     "bottomAction": {
       "type": "move",
       "value": 2,
-      "effects": ["jump"],
-      "target": "self"
+      "modifiers": [
+        { "type": "jump" }
+      ]
     }
   }
 ]

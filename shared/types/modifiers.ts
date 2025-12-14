@@ -1,65 +1,57 @@
 /**
- * Modifier Type Definitions for Card Actions
- * Defines structured types for all action modifiers and effects in Gloomhaven
- * Replaces legacy string-based effects with typed, validated structures
+ * Shared Modifier Type Definitions for Card Actions
+ * Used by both frontend and backend for type-safe card handling
  */
 
-import { Condition, ElementType } from '../../../shared/types/entities';
+import { Condition, ElementType } from './entities';
 
-// ========== ATTACK MODIFIERS ==========
+// ========== BASE MODIFIER TYPES ==========
 
 export interface RangeModifier {
   type: 'range';
-  distance: number; // Hexes away target can be
+  distance: number;
 }
 
 export interface TargetModifier {
   type: 'target';
-  count: number; // Number of separate targets
+  count: number;
 }
 
 export interface PierceModifier {
   type: 'pierce';
-  value: number; // Ignore X shield
+  value: number;
 }
 
 export interface AreaOfEffectModifier {
   type: 'aoe';
-  pattern: 'triangle' | 'line' | 'burst' | 'cone'; // AoE shape
-  size: number; // Radius or extent
+  pattern: 'triangle' | 'line' | 'burst' | 'cone';
+  size: number;
 }
-
-// ========== MOVEMENT MODIFIERS ==========
 
 export interface JumpModifier {
   type: 'jump';
-  // Allows ignoring hexes with enemies/obstacles/traps
 }
 
 export interface TeleportModifier {
   type: 'teleport';
-  range?: number; // Optional: teleport distance (default = move distance)
+  range?: number;
 }
-
-// ========== FORCED MOVEMENT ==========
 
 export interface PushModifier {
   type: 'push';
-  distance: number; // Hexes to push
-  direction?: 'away' | 'towards'; // Default 'away' from attacker
+  distance: number;
+  direction?: 'away' | 'towards';
 }
 
 export interface PullModifier {
   type: 'pull';
-  distance: number; // Hexes to pull
+  distance: number;
 }
-
-// ========== ELEMENT MODIFIERS ==========
 
 export interface InfuseModifier {
   type: 'infuse';
   element: ElementType;
-  state: 'generate' | 'generate-after'; // Generate now or after turn
+  state: 'generate' | 'generate-after';
 }
 
 export interface ConsumeModifier {
@@ -71,73 +63,62 @@ export interface ConsumeModifier {
   };
 }
 
-// ========== CONDITION MODIFIERS ==========
-
 export interface ConditionModifier {
   type: 'condition';
   condition: Condition;
   duration: 'round' | 'persistent' | 'until-consumed';
-  target?: 'self' | 'target' | 'allies' | 'enemies'; // Default depends on condition type
+  target?: 'self' | 'target' | 'allies' | 'enemies';
 }
-
-// ========== DURATION MODIFIERS ==========
 
 export interface RoundModifier {
   type: 'round';
-  // Effect lasts until end of character's next turn
 }
 
 export interface PersistentModifier {
   type: 'persistent';
-  // Effect lasts for rest of scenario (until card lost)
 }
-
-// ========== CARD STATE MODIFIERS ==========
 
 export interface LostModifier {
   type: 'lost';
-  // Card goes to lost pile after use (burn)
 }
 
 export interface RecoverModifier {
   type: 'recover';
-  cardCount: number; // Return X cards from lost pile to hand
+  cardCount: number;
 }
 
 export interface DiscardModifier {
   type: 'discard';
-  cardCount: number; // Return X cards from lost pile to discard pile
+  cardCount: number;
 }
-
-// ========== SPECIAL MODIFIERS ==========
 
 export interface ShieldModifier {
   type: 'shield';
-  value: number; // Reduce damage by X
+  value: number;
   duration: 'round' | 'persistent';
 }
 
 export interface RetaliateModifier {
   type: 'retaliate';
-  value: number; // Damage dealt to attackers
-  range?: number; // Hex range (default = adjacent)
+  value: number;
+  range?: number;
   duration: 'round' | 'persistent';
 }
 
 export interface HealModifier {
   type: 'heal';
   value: number;
-  range?: number; // Range in hexes
-  target?: 'self' | 'allies' | 'other'; // Who can be healed
-  elementBonus?: number; // Additional heal if element is consumed
+  range?: number;
+  target?: 'self' | 'allies' | 'other';
+  elementBonus?: number;
 }
 
 export interface XPModifier {
   type: 'xp';
-  value: number; // Experience points awarded
+  value: number;
 }
 
-// ========== EFFECT TYPES UNION ==========
+// ========== MODIFIER UNION ==========
 
 export type Modifier =
   | RangeModifier
@@ -161,47 +142,62 @@ export type Modifier =
   | HealModifier
   | XPModifier;
 
-// ========== ACTION TYPES ==========
+// ========== SUMMON DEFINITION ==========
 
-export interface AttackAction {
+export interface SummonDefinition {
+  name: string;
+  health: number;
+  attack: number;
+  move: number;
+  range: number;
+  typeIcon?: string;
+  modifiers?: Modifier[];
+}
+
+// ========== CARD ACTION TYPES ==========
+
+export interface BaseAction {
+  modifiers?: Modifier[];
+}
+
+export interface AttackAction extends BaseAction {
   type: 'attack';
-  value: number; // Base attack damage
-  modifiers?: Modifier[];
+  value: number;
+  requirement?: string;
 }
 
-export interface MoveAction {
+export interface MoveAction extends BaseAction {
   type: 'move';
-  value: number; // Base movement distance
-  modifiers?: Modifier[];
+  value: number;
+  special?: string;
 }
 
-export interface HealAction {
+export interface HealAction extends BaseAction {
   type: 'heal';
-  value: number; // Base heal amount
-  modifiers?: Modifier[];
+  value: number;
+  target?: string;
 }
 
-export interface LootAction {
+export interface LootAction extends BaseAction {
   type: 'loot';
-  value?: number; // Number of loot tokens to collect (or range to collect from)
-  modifiers?: Modifier[];
+  value?: number;
 }
 
-export interface SpecialAction {
+export interface SpecialAction extends BaseAction {
   type: 'special';
-  modifiers?: Modifier[]; // Special actions are effect-based
+  special?: string;
+  xpOnKill?: number;
 }
 
-export interface SummonAction {
+export interface SummonAction extends BaseAction {
   type: 'summon';
   summon: SummonDefinition;
-  modifiers?: Modifier[];
 }
 
-export interface TextAction {
+export interface TextAction extends BaseAction {
   type: 'text';
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   quote?: string;
 }
 
@@ -214,97 +210,66 @@ export type CardAction =
   | SummonAction
   | TextAction;
 
-// ========== SUMMON DEFINITION ==========
+// ========== HELPER FUNCTIONS ==========
 
-export interface SummonDefinition {
-  name: string;
-  health: number;
-  attack: number;
-  move: number;
-  range: number;
-  typeIcon: string; // Emoji or icon
-  modifiers?: Modifier[]; // Summon's abilities
-}
-
-// ========== EFFECT APPLICATION RESULT ==========
-
-export interface EffectApplicationResult {
-  success: boolean;
-  appliedModifiers: Modifier[];
-  failedModifiers?: { modifier: Modifier; reason: string }[];
-  affectedEntities?: string[]; // Entity IDs affected
-}
-
-// ========== HELPERS ==========
-
-/**
- * Extract range from modifiers
- */
 export function getRange(modifiers: Modifier[] = []): number {
   const rangeModifier = modifiers.find((m) => m.type === 'range') as RangeModifier | undefined;
   return rangeModifier?.distance ?? 0;
 }
 
-/**
- * Check if action has jump modifier
- */
 export function hasJump(modifiers: Modifier[] = []): boolean {
   return modifiers.some((m) => m.type === 'jump');
 }
 
-/**
- * Check if action pushes targets
- */
 export function getPush(modifiers: Modifier[] = []): PushModifier | undefined {
   return modifiers.find((m) => m.type === 'push') as PushModifier | undefined;
 }
 
-/**
- * Check if action pulls targets
- */
 export function getPull(modifiers: Modifier[] = []): PullModifier | undefined {
   return modifiers.find((m) => m.type === 'pull') as PullModifier | undefined;
 }
 
-/**
- * Get all conditions from modifiers
- */
 export function getConditions(modifiers: Modifier[] = []): ConditionModifier[] {
   return modifiers.filter((m) => m.type === 'condition') as ConditionModifier[];
 }
 
-/**
- * Check if modifier is lost (burn) action
- */
 export function isLostAction(modifiers: Modifier[] = []): boolean {
   return modifiers.some((m) => m.type === 'lost');
 }
 
-/**
- * Check if modifier is persistent
- */
 export function isPersistent(modifiers: Modifier[] = []): boolean {
   return modifiers.some((m) => m.type === 'persistent');
 }
 
-/**
- * Get XP value from modifiers
- */
 export function getXPValue(modifiers: Modifier[] = []): number {
   const xpMod = modifiers.find((m) => m.type === 'xp') as XPModifier | undefined;
   return xpMod?.value ?? 0;
 }
 
-/**
- * Get all infuse modifiers (element generation)
- */
+export function getShield(modifiers: Modifier[] = []): ShieldModifier | undefined {
+  return modifiers.find((m) => m.type === 'shield') as ShieldModifier | undefined;
+}
+
+export function getRetaliate(modifiers: Modifier[] = []): RetaliateModifier | undefined {
+  return modifiers.find((m) => m.type === 'retaliate') as RetaliateModifier | undefined;
+}
+
 export function getInfuseModifiers(modifiers: Modifier[] = []): InfuseModifier[] {
   return modifiers.filter((m) => m.type === 'infuse') as InfuseModifier[];
 }
 
-/**
- * Get all consume modifiers (element consumption)
- */
 export function getConsumeModifiers(modifiers: Modifier[] = []): ConsumeModifier[] {
   return modifiers.filter((m) => m.type === 'consume') as ConsumeModifier[];
+}
+
+export function getPierce(modifiers: Modifier[] = []): PierceModifier | undefined {
+  return modifiers.find((m) => m.type === 'pierce') as PierceModifier | undefined;
+}
+
+export function getTarget(modifiers: Modifier[] = []): TargetModifier | undefined {
+  return modifiers.find((m) => m.type === 'target') as TargetModifier | undefined;
+}
+
+export function getAoE(modifiers: Modifier[] = []): AreaOfEffectModifier | undefined {
+  return modifiers.find((m) => m.type === 'aoe') as AreaOfEffectModifier | undefined;
 }

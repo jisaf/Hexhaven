@@ -17,6 +17,7 @@ import { createPortal } from 'react-dom';
 import { CardDataProvider, abilityCardToCardData } from '../contexts/CardDataContext';
 import { ActionRowLayout, CardIcons } from './layouts/ActionRowLayout';
 import type { AbilityCard as AbilityCardType, Action } from '../../../shared/types/entities';
+import { isLostAction, isPersistent, getXPValue } from '../../../shared/types/modifiers';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import './AbilityCard2.css';
 
@@ -75,16 +76,16 @@ const RightColumn: React.FC<{
       <div className="card2-initiative">{initiative}</div>
       <div className="card2-right-icons top">
         <CardIcons
-          isLost={topAction.isLost}
-          isPersistent={topAction.isPersistent}
-          xp={topAction.xp}
+          isLost={isLostAction(topAction.modifiers)}
+          isPersistent={isPersistent(topAction.modifiers)}
+          xp={getXPValue(topAction.modifiers)}
         />
       </div>
       <div className="card2-right-icons bottom">
         <CardIcons
-          isLost={bottomAction.isLost}
-          isPersistent={bottomAction.isPersistent}
-          xp={bottomAction.xp}
+          isLost={isLostAction(bottomAction.modifiers)}
+          isPersistent={isPersistent(bottomAction.modifiers)}
+          xp={getXPValue(bottomAction.modifiers)}
         />
       </div>
     </div>

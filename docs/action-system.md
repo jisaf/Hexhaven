@@ -538,12 +538,438 @@ The modular design supports future additions:
    - Custom modifier types per character class
    - Dynamic ability effects
 
+## Element System
+
+The element system allows cards to generate and consume elemental energy for bonus effects.
+
+### Element States
+
+Elements cycle through three states:
+
+```
+INERT → STRONG → WANING → INERT
+```
+
+| State | Description | Consumable |
+|-------|-------------|------------|
+| `INERT` | No elemental energy present | No |
+| `STRONG` | Freshly generated, full power | Yes |
+| `WANING` | Decaying, still usable | Yes |
+
+### Element Types
+
+Six elements are available:
+- `fire` - Offensive, damage bonuses
+- `ice` - Defensive, immobilize effects
+- `air` - Movement, evasion bonuses
+- `earth` - Durability, obstacle manipulation
+- `light` - Healing, positive effects
+- `dark` - Stealth, negative conditions
+
+### Element Lifecycle
+
+#### Generation (Infuse)
+
+When a card with an `infuse` modifier is played:
+
+```typescript
+// Element becomes STRONG immediately
+elementalState[element] = ElementState.STRONG;
+
+// WebSocket event emitted
+server.emit('elemental_state_updated', { roomCode, elementalState });
+```
+
+**Infuse Modifier**:
+```json
+{ "type": "infuse", "element": "fire", "state": "generate" }
+```
+
+The `state` field can be:
+- `generate` - Element available immediately after action
+- `generate-after` - Element available at end of turn (rare)
+
+#### Consumption (Consume)
+
+When a card with a `consume` modifier is played and the element is available:
+
+```typescript
+// Check if element is consumable (STRONG or WANING)
+if (elementalState[element] !== ElementState.INERT) {
+  // Apply bonus effect
+  applyBonus(consume.bonus);
+
+  // Element returns to INERT
+  elementalState[element] = ElementState.INERT;
+}
+```
+
+**Consume Modifier**:
+```json
+{
+  "type": "consume",
+  "element": "light",
+  "bonus": { "effect": "heal", "value": 2 }
+}
+```
+
+**Bonus Effect Types**:
+- `damage` - Add value to attack damage
+- `heal` - Add value to healing
+- `move` - Add value to movement
+- `range` - Add value to range
+- `custom` - Special effect (see card description)
+
+#### Decay
+
+At the end of each round, all elements decay one step:
+
+```typescript
+function decayElements(elementalState: ElementalInfusion): void {
+  for (const element of Object.keys(elementalState)) {
+    if (elementalState[element] === ElementState.STRONG) {
+      elementalState[element] = ElementState.WANING;
+    } else if (elementalState[element] === ElementState.WANING) {
+      elementalState[element] = ElementState.INERT;
+    }
+  }
+}
+```
+
+**Decay Timeline**:
+| Round | Action | Fire State |
+|-------|--------|------------|
+| 1 | Player generates Fire | STRONG |
+| 1 (end) | Round ends, decay | WANING |
+| 2 | Element still available | WANING |
+| 2 (end) | Round ends, decay | INERT |
+| 3 | Element no longer available | INERT |
+
+### Element Integration Example
+
+```typescript
+// In attack handler (game.gateway.ts)
+
+// 1. Check for element consumption before damage
+const consumeModifiers = getConsumeModifiers(attackModifiers);
+for (const consume of consumeModifiers) {
+  const elementState = roomElementalState.get(roomCode);
+  if (elementState && elementState[consume.element] !== ElementState.INERT) {
+    // Apply bonus
+    if (consume.bonus.effect === 'damage') {
+      damage += consume.bonus.value;
+    }
+    // Consume the element
+    elementState[consume.element] = ElementState.INERT;
+  }
+}
+
+// 2. Apply damage...
+
+// 3. Generate elements after attack
+const infuseModifiers = getInfuseModifiers(attackModifiers);
+for (const infuse of infuseModifiers) {
+  elementState[infuse.element] = ElementState.STRONG;
+}
+
+// 4. Emit updated state
+server.emit('elemental_state_updated', { roomCode, elementalState });
+```
+
+## Experience (XP) System
+
+Characters earn experience points during scenarios for performing certain actions.
+
+### XP Sources
+
+1. **Card Actions** - Some cards grant XP when used
+2. **Kill Bonuses** - Some cards grant XP when killing enemies (via `xpOnKill`)
+3. **Scenario Completion** - Base XP for completing objectives
+
+### XP Modifier
+
+Cards can include an XP modifier:
+
+```json
+{
+  "type": "attack",
+  "value": 3,
+  "modifiers": [
+    { "type": "xp", "value": 2 }
+  ]
+}
+```
+
+### XP Tracking
+
+Experience is tracked per-character during the scenario:
+
+```typescript
+// Character model
+class Character {
+  private _experience: number = 0;
+
+  get experience(): number {
+    return this._experience;
+  }
+
+  addExperience(amount: number): number {
+    if (amount < 0) {
+      throw new Error('Experience amount must be non-negative');
+    }
+    this._experience += amount;
+    return this._experience;
+  }
+}
+```
+
+### XP Award Flow
+
+When an action with XP modifier is executed:
+
+```typescript
+// In attack handler
+const xpValue = getXPValue(attackModifiers);
+if (xpValue > 0) {
+  character.addExperience(xpValue);
+
+  // Notify clients
+  server.emit('xp_awarded', {
+    characterId: character.id,
+    amount: xpValue,
+    total: character.experience,
+  });
+}
+```
+
+### Helper Function
+
+```typescript
+import { getXPValue } from '../../../shared/types/modifiers';
+
+// Returns XP value from modifiers, or 0 if none
+const xp = getXPValue(action.modifiers);
+```
+
+## Card Recovery & Discard System
+
+Managing card piles is central to Gloomhaven gameplay. The `CardPileService` handles all pile operations.
+
+### Card Piles
+
+Each character has three card piles:
+
+| Pile | Description | Recovery |
+|------|-------------|----------|
+| `hand` | Cards available to play | - |
+| `discardPile` | Used cards, recoverable | Short/Long rest |
+| `lostPile` | Burned cards, limited recovery | Special abilities only |
+
+### Pile Operations
+
+#### Moving Cards Between Piles
+
+```typescript
+// Move single card
+const updated = cardPileService.moveCard(
+  character,
+  'card-id',
+  'hand',      // from
+  'discard'    // to
+);
+
+// Move multiple cards
+const updated = cardPileService.moveCards(
+  character,
+  ['card-1', 'card-2'],
+  'discard',
+  'hand'
+);
+```
+
+#### Playing Cards
+
+When two cards are selected for a round:
+
+```typescript
+const updated = cardPileService.playCards(
+  character,
+  topCardId,
+  bottomCardId,
+  topHasLoss,    // true if top action has loss icon
+  bottomHasLoss  // true if bottom action has loss icon
+);
+```
+
+Cards with `lost` modifier go to `lostPile`, others go to `discardPile`.
+
+### Recovery Mechanics
+
+#### Recover Cards (Lost → Hand)
+
+Used by cards with "Recover X" effect:
+
+```typescript
+// Recover specific cards
+const updated = cardPileService.recoverCards(
+  character,
+  ['card-1', 'card-2']  // specific card IDs
+);
+
+// Recover N random cards
+const updated = cardPileService.recoverCards(
+  character,
+  undefined,  // no specific cards
+  2           // recover 2 cards
+);
+```
+
+**Recover Modifier**:
+```json
+{ "type": "recover", "cardCount": 2 }
+```
+
+#### Return to Discard (Lost → Discard)
+
+Less powerful recovery, returns lost cards to discard pile:
+
+```typescript
+const updated = cardPileService.returnCardsToDiscard(
+  character,
+  ['card-1'],  // specific cards, or undefined
+  1            // count if random
+);
+```
+
+**Discard Modifier**:
+```json
+{ "type": "discard", "cardCount": 1 }
+```
+
+#### Discard from Hand
+
+Used when taking damage (discard 2 cards to negate):
+
+```typescript
+const updated = cardPileService.discardFromHand(
+  character,
+  ['card-1', 'card-2']
+);
+```
+
+#### Lose from Hand
+
+Used for damage mitigation (lose 1 card to negate):
+
+```typescript
+const updated = cardPileService.loseFromHand(
+  character,
+  ['card-1']
+);
+```
+
+### Rest Mechanics
+
+#### Short Rest
+
+Automatic recovery with random card loss:
+
+```typescript
+// Execute short rest
+const { character: rested, randomCard } = restService.executeShortRest(character);
+
+// Player can reroll once (loses 1 HP)
+const rerolled = restService.rerollShortRest(rested);
+
+// Finalize rest
+const final = restService.finalizeShortRest(rerolled);
+```
+
+#### Long Rest
+
+Player chooses which card to lose, heals 2 HP:
+
+```typescript
+// Declare intent (affects initiative to 99)
+const declared = restService.declareLongRest(character);
+
+// Execute at end of round
+const rested = restService.executeLongRest(declared, 'card-to-lose');
+```
+
+### Card Count Queries
+
+```typescript
+const counts = cardPileService.getCardCounts(character);
+// { hand: 5, discard: 3, lost: 2, total: 10 }
+
+const canPlay = cardPileService.canPlayCards(character, 2);
+// true if hand.length >= 2
+
+const canRest = cardPileService.canRest(character, 2);
+// true if discardPile.length >= 2
+```
+
+### Exhaustion
+
+Characters become exhausted when they cannot continue:
+
+```typescript
+const check = exhaustionService.checkExhaustion(character);
+// { isExhausted: true/false, reason: 'damage' | 'insufficient_cards' }
+
+if (check.isExhausted) {
+  const exhausted = exhaustionService.executeExhaustion(character, check.reason);
+  // Character removed from play, all cards to lost pile
+}
+```
+
+**Exhaustion Triggers**:
+- Health reaches 0 (damage)
+- Cannot play 2 cards and cannot rest (insufficient_cards)
+
+## Testing
+
+### Test File Locations
+
+```
+backend/tests/
+├── unit/
+│   ├── card-pile.service.test.ts      # Card pile operations
+│   ├── rest.service.test.ts           # Rest mechanics
+│   ├── exhaustion.service.test.ts     # Exhaustion detection
+│   ├── deck-management.service.test.ts # Deck facade
+│   ├── elemental-state.test.ts        # Element system
+│   ├── damage-calculation.test.ts     # Damage computation
+│   └── condition.service.test.ts      # Condition management (if exists)
+├── contract/
+│   ├── attack-target.test.ts          # Attack action contract
+│   ├── move-character.test.ts         # Move action contract
+│   └── select-cards.test.ts           # Card selection contract
+└── integration/
+    └── game-flow.test.ts              # Full game flow
+```
+
+### Running Tests
+
+```bash
+# All tests
+npm run test:backend
+
+# Specific test file
+npm test -- card-pile.service.test.ts
+
+# With coverage
+npm test -- --coverage
+```
+
 ## Performance Considerations
 
 - Condition checking is O(n) where n is conditions on entity (typically < 5)
 - Action validation is O(1) for most actions
 - Pathfinding for movement is O(n log n) using A* algorithm
 - Terrain effect application is O(1) per hex
+- Element state lookup is O(1) per element
 
 ## Common Patterns
 
