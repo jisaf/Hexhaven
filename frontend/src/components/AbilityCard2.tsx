@@ -226,7 +226,7 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
     cancelLongPress();
   }, [cancelLongPress]);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleClick = useCallback(() => {
     // Only handle click if it wasn't a long press (for mouse)
     if (!isLongPress.current && !disabled && onClick) {
       onClick();

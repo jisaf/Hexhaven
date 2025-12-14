@@ -93,7 +93,7 @@ export default {
     '/tests/setup.ts',
     '/tests/e2e/',  // E2E tests run via Playwright, not Jest
     'playwright.*\\.config\\.ts$',  // Playwright config files
-    '^.*/screenshot\\.spec\\.ts$'  // Playwright screenshot tests
+    '.*screenshot\\.spec\\.ts$'  // Playwright screenshot tests
   ],
 
   // Clear mocks between tests
