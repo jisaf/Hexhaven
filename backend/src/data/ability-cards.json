@@ -6,24 +6,8 @@
       "name": "Trample",
       "level": 1,
       "initiative": 72,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": ["Push 1 (all adjacent enemies)"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": ["Push 1"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
       "id": "brute-eye-for-eye",
@@ -31,24 +15,8 @@
       "name": "Eye for an Eye",
       "level": 1,
       "initiative": 51,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Retaliate 2 for the round"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Shield 1 for the round"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Retaliate 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isPersistent": true },
+      "bottomAction": { "type": "special", "value": null, "range": null, "effects": ["Shield 1"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isPersistent": true }
     },
     {
       "id": "brute-balanced-measure",
@@ -56,49 +24,8 @@
       "name": "Balanced Measure",
       "level": 1,
       "initiative": 20,
-      "topAction": {
-        "type": "attack",
-        "value": 4,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-overwhelming-assault",
-      "characterClass": "Brute",
-      "name": "Overwhelming Assault",
-      "level": 1,
-      "initiative": 65,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 0,
-        "effects": ["Target all adjacent enemies"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
       "id": "brute-shield-bash",
@@ -106,24 +33,8 @@
       "name": "Shield Bash",
       "level": 1,
       "initiative": 15,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 0,
-        "effects": ["Push 1", "Stun"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": ["Push 1", "Stun"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isLost": true, "xp": 2 },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
       "id": "brute-warding-strength",
@@ -131,102 +42,8 @@
       "name": "Warding Strength",
       "level": 1,
       "initiative": 32,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": "light",
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Heal 2 self"],
-        "elementGenerate": null,
-        "elementConsume": "light",
-        "elementBonus": {
-          "effect": "Heal +2",
-          "value": 2
-        }
-      }
-    },
-    {
-      "id": "brute-skewer",
-      "characterClass": "Brute",
-      "name": "Skewer",
-      "level": 1,
-      "initiative": 43,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 1,
-        "effects": ["Pull 1"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-spare-dagger",
-      "characterClass": "Brute",
-      "name": "Spare Dagger",
-      "level": 1,
-      "initiative": 27,
-      "topAction": {
-        "type": "attack",
-        "value": 1,
-        "range": 3,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "brute-grab-and-go",
-      "characterClass": "Brute",
-      "name": "Grab and Go",
-      "level": 1,
-      "initiative": 64,
-      "topAction": {
-        "type": "loot",
-        "value": 1,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 4,
-        "range": null,
-        "effects": ["Jump"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": "light", "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": "light", "elementBonus": { "effect": "Heal", "value": 2 } }
     },
     {
       "id": "brute-leaping-cleave",
@@ -234,224 +51,325 @@
       "name": "Leaping Cleave",
       "level": 1,
       "initiative": 54,
-      "topAction": {
-        "type": "attack",
-        "value": 4,
-        "range": 0,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": ["Jump"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": ["Jump"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
-      "id": "tinkerer-ink-bomb",
-      "characterClass": "Tinkerer",
-      "name": "Ink Bomb",
+      "id": "spellweaver-mana-bolt",
+      "characterClass": "Spellweaver",
+      "name": "Mana Bolt",
       "level": 1,
-      "initiative": 62,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 2,
-        "effects": ["Target all adjacent enemies", "Muddle"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "initiative": 25,
+      "topAction": { "type": "attack", "value": 3, "range": 4, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
-      "id": "tinkerer-potent-potables",
-      "characterClass": "Tinkerer",
-      "name": "Potent Potables",
+      "id": "spellweaver-fire-orbs",
+      "characterClass": "Spellweaver",
+      "name": "Fire Orbs",
       "level": 1,
-      "initiative": 21,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Heal 3"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Bless"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "initiative": 69,
+      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Target 2 enemies"], "elementGenerate": "fire", "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
-      "id": "tinkerer-enhancement-field",
-      "characterClass": "Tinkerer",
-      "name": "Enhancement Field",
+      "id": "spellweaver-aid-from-ether",
+      "characterClass": "Spellweaver",
+      "name": "Aid from the Ether",
       "level": 1,
-      "initiative": 74,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Strengthen", "All allies within range"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-volatile-concoction",
-      "characterClass": "Tinkerer",
-      "name": "Volatile Concoction",
-      "level": 1,
-      "initiative": 47,
-      "topAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 3,
-        "effects": ["Wound"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "attack",
-        "value": 2,
-        "range": 2,
-        "effects": ["Poison"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-crank-bow",
-      "characterClass": "Tinkerer",
-      "name": "Crank Bow",
-      "level": 1,
-      "initiative": 33,
-      "topAction": {
-        "type": "attack",
-        "value": 1,
-        "range": 3,
-        "effects": ["Attack 3 times"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-restorative-mist",
-      "characterClass": "Tinkerer",
-      "name": "Restorative Mist",
-      "level": 1,
-      "initiative": 24,
-      "topAction": {
-        "type": "special",
-        "value": null,
-        "range": 2,
-        "effects": ["Heal 3", "All allies in range"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-gas-canister",
-      "characterClass": "Tinkerer",
-      "name": "Gas Canister",
-      "level": 1,
-      "initiative": 56,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 2,
-        "effects": ["Poison"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "special",
-        "value": null,
-        "range": null,
-        "effects": ["Create poison trap"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
-    },
-    {
-      "id": "tinkerer-micro-bots",
-      "characterClass": "Tinkerer",
-      "name": "Micro Bots",
-      "level": 1,
-      "initiative": 81,
+      "initiative": 91,
       "topAction": {
         "type": "summon",
         "value": null,
         "range": null,
-        "effects": ["Summon Micro Bot", "Move 3", "Attack 1"],
+        "effects": [],
         "elementGenerate": null,
         "elementConsume": null,
-        "elementBonus": null
+        "elementBonus": null,
+        "isLost": true,
+        "xp": 2,
+        "summon": {
+          "name": "Mystic Ally",
+          "health": 4,
+          "attack": 2,
+          "move": 3,
+          "range": 2,
+          "typeIcon": "🔮",
+          "effects": ["Push 1"]
+        }
       },
-      "bottomAction": {
-        "type": "move",
-        "value": 3,
+      "bottomAction": { "type": "heal", "value": 2, "range": 2, "effects": ["All allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "spellweaver-spirit-of-doom",
+      "characterClass": "Spellweaver",
+      "name": "Spirit of Doom",
+      "level": 1,
+      "initiative": 82,
+      "topAction": {
+        "type": "summon",
+        "value": null,
+        "range": null,
+        "effects": [],
+        "elementGenerate": "dark",
+        "elementConsume": null,
+        "elementBonus": null,
+        "isLost": true,
+        "isPersistent": true,
+        "xp": 3,
+        "summon": {
+          "name": "Shadow Spirit",
+          "health": 6,
+          "attack": 3,
+          "move": 2,
+          "range": 0,
+          "typeIcon": "👻",
+          "effects": ["Wound"]
+        }
+      },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "spellweaver-frost-armor",
+      "characterClass": "Spellweaver",
+      "name": "Frost Armor",
+      "level": 1,
+      "initiative": 19,
+      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Shield 2"], "elementGenerate": "ice", "elementConsume": null, "elementBonus": null, "isPersistent": true },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "spellweaver-living-torch",
+      "characterClass": "Spellweaver",
+      "name": "Living Torch",
+      "level": 1,
+      "initiative": 76,
+      "topAction": {
+        "type": "summon",
+        "value": null,
+        "range": null,
+        "effects": [],
+        "elementGenerate": "fire",
+        "elementConsume": null,
+        "elementBonus": null,
+        "isLost": true,
+        "xp": 2,
+        "summon": {
+          "name": "Fire Elemental",
+          "health": 3,
+          "attack": 2,
+          "move": 4,
+          "range": 3,
+          "typeIcon": "🔥",
+          "effects": ["Wound", "Push 2"]
+        }
+      },
+      "bottomAction": { "type": "attack", "value": 2, "range": 2, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 }
+    },
+    {
+      "id": "scoundrel-backstab",
+      "characterClass": "Scoundrel",
+      "name": "Backstab",
+      "level": 1,
+      "initiative": 12,
+      "topAction": { "type": "attack", "value": 5, "range": 0, "effects": ["Adjacent to ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "scoundrel-throwing-knives",
+      "characterClass": "Scoundrel",
+      "name": "Throwing Knives",
+      "level": 1,
+      "initiative": 48,
+      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Target 2 enemies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "scoundrel-quick-hands",
+      "characterClass": "Scoundrel",
+      "name": "Quick Hands",
+      "level": 1,
+      "initiative": 10,
+      "topAction": { "type": "loot", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "scoundrel-smoke-bomb",
+      "characterClass": "Scoundrel",
+      "name": "Smoke Bomb",
+      "level": 1,
+      "initiative": 30,
+      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Invisible"], "elementGenerate": "dark", "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 5, "range": null, "effects": ["Jump"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "scoundrel-venom-shiv",
+      "characterClass": "Scoundrel",
+      "name": "Venom Shiv",
+      "level": 1,
+      "initiative": 35,
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": ["Poison"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "scoundrel-flanking-strike",
+      "characterClass": "Scoundrel",
+      "name": "Flanking Strike",
+      "level": 1,
+      "initiative": 22,
+      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": "dark", "elementBonus": { "effect": "Attack", "value": 2 } },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-rock-tunnel",
+      "characterClass": "Cragheart",
+      "name": "Rock Tunnel",
+      "level": 1,
+      "initiative": 41,
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": "earth", "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": ["Through obstacles"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-massive-boulder",
+      "characterClass": "Cragheart",
+      "name": "Massive Boulder",
+      "level": 1,
+      "initiative": 87,
+      "topAction": { "type": "attack", "value": 4, "range": 3, "effects": ["Push 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "special", "value": null, "range": null, "effects": ["Create obstacle"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-earthen-clod",
+      "characterClass": "Cragheart",
+      "name": "Earthen Clod",
+      "level": 1,
+      "initiative": 52,
+      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Immobilize"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-rumbling-advance",
+      "characterClass": "Cragheart",
+      "name": "Rumbling Advance",
+      "level": 1,
+      "initiative": 29,
+      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": ["All adjacent"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": "earth", "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-backup-ammunition",
+      "characterClass": "Cragheart",
+      "name": "Backup Ammunition",
+      "level": 1,
+      "initiative": 77,
+      "topAction": { "type": "attack", "value": 1, "range": 4, "effects": ["Attack 3 times"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "cragheart-natures-lift",
+      "characterClass": "Cragheart",
+      "name": "Nature's Lift",
+      "level": 1,
+      "initiative": 44,
+      "topAction": { "type": "heal", "value": 3, "range": 2, "effects": ["Ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": "earth", "elementBonus": { "effect": "Move", "value": 2 } }
+    },
+    {
+      "id": "mindthief-perverse-edge",
+      "characterClass": "Mindthief",
+      "name": "Perverse Edge",
+      "level": 1,
+      "initiative": 7,
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "mindthief-the-minds-weakness",
+      "characterClass": "Mindthief",
+      "name": "The Mind's Weakness",
+      "level": 1,
+      "initiative": 75,
+      "topAction": {
+        "type": "text",
+        "value": null,
         "range": null,
         "effects": [],
         "elementGenerate": null,
         "elementConsume": null,
-        "elementBonus": null
-      }
+        "elementBonus": null,
+        "isPersistent": true,
+        "textContent": {
+          "title": "AUGMENT",
+          "text": "Add +2 Attack to all your melee attacks this round.",
+          "quote": "The enemy's fear becomes your strength."
+        }
+      },
+      "bottomAction": { "type": "attack", "value": 2, "range": 0, "effects": [], "elementGenerate": "dark", "elementConsume": null, "elementBonus": null, "xp": 1 }
+    },
+    {
+      "id": "mindthief-feedback-loop",
+      "characterClass": "Mindthief",
+      "name": "Feedback Loop",
+      "level": 1,
+      "initiative": 79,
+      "topAction": { "type": "attack", "value": 2, "range": 2, "effects": ["Pull 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "mindthief-scurry",
+      "characterClass": "Mindthief",
+      "name": "Scurry",
+      "level": 1,
+      "initiative": 4,
+      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 6, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "mindthief-withering-claw",
+      "characterClass": "Mindthief",
+      "name": "Withering Claw",
+      "level": 1,
+      "initiative": 55,
+      "topAction": {
+        "type": "text",
+        "value": null,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": "dark",
+        "elementBonus": null,
+        "textContent": {
+          "title": "CURSE",
+          "text": "Target enemy suffers Curse and Muddle. On kill, gain 2 XP.",
+          "quote": "Their mind unravels at your touch."
+        }
+      },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "mindthief-gnawing-horde",
+      "characterClass": "Mindthief",
+      "name": "Gnawing Horde",
+      "level": 1,
+      "initiative": 85,
+      "topAction": {
+        "type": "summon",
+        "value": null,
+        "range": null,
+        "effects": [],
+        "elementGenerate": null,
+        "elementConsume": null,
+        "elementBonus": null,
+        "summon": {
+          "name": "Rat Swarm",
+          "health": 2,
+          "attack": 1,
+          "move": 4,
+          "range": 0,
+          "typeIcon": "🐀"
+        }
+      },
+      "bottomAction": { "type": "attack", "value": 3, "range": 0, "effects": ["Adjacent to summon"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
       "id": "tinkerer-flamethrower",
@@ -459,49 +377,69 @@
       "name": "Flamethrower",
       "level": 1,
       "initiative": 68,
-      "topAction": {
-        "type": "attack",
-        "value": 3,
-        "range": 0,
-        "effects": ["Target all adjacent enemies"],
-        "elementGenerate": "fire",
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      }
+      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": ["All adjacent"], "elementGenerate": "fire", "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     },
     {
-      "id": "tinkerer-reviving-ether",
+      "id": "tinkerer-crank-bow",
       "characterClass": "Tinkerer",
-      "name": "Reviving Ether",
+      "name": "Crank Bow",
       "level": 1,
-      "initiative": 14,
+      "initiative": 33,
+      "topAction": { "type": "attack", "value": 1, "range": 3, "effects": ["Attack 3 times"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "tinkerer-restorative-mist",
+      "characterClass": "Tinkerer",
+      "name": "Restorative Mist",
+      "level": 1,
+      "initiative": 24,
+      "topAction": { "type": "heal", "value": 3, "range": 2, "effects": ["All allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "tinkerer-enhancement-field",
+      "characterClass": "Tinkerer",
+      "name": "Enhancement Field",
+      "level": 1,
+      "initiative": 74,
+      "topAction": { "type": "special", "value": null, "range": 2, "effects": ["Strengthen allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "tinkerer-stun-shot",
+      "characterClass": "Tinkerer",
+      "name": "Stun Shot",
+      "level": 1,
+      "initiative": 19,
+      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Stun"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
+      "bottomAction": { "type": "heal", "value": 2, "range": 1, "effects": ["Ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+    },
+    {
+      "id": "tinkerer-harmless-contraption",
+      "characterClass": "Tinkerer",
+      "name": "Harmless Contraption",
+      "level": 1,
+      "initiative": 88,
       "topAction": {
-        "type": "special",
+        "type": "summon",
         "value": null,
-        "range": 3,
-        "effects": ["Heal 6"],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null
-      },
-      "bottomAction": {
-        "type": "move",
-        "value": 2,
         "range": null,
         "effects": [],
         "elementGenerate": null,
         "elementConsume": null,
-        "elementBonus": null
-      }
+        "elementBonus": null,
+        "summon": {
+          "name": "Decoy Bot",
+          "health": 5,
+          "attack": 0,
+          "move": 2,
+          "range": 0,
+          "typeIcon": "🤖"
+        }
+      },
+      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
     }
   ]
 }

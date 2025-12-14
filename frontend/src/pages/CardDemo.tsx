@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ClassCardRow } from '../components/ClassCardRow';
+import { getApiUrl } from '../config/api';
 import type { AbilityCard } from '../../../shared/types/entities';
 import './CardDemo.css';
 
@@ -23,7 +24,7 @@ export const CardDemo: React.FC = () => {
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/ability-cards');
+        const response = await fetch(`${getApiUrl()}/ability-cards`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch cards: ${response.statusText}`);

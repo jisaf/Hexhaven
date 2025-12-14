@@ -29,6 +29,7 @@ const Characters = lazy(() => import('./pages/Characters').then(m => ({ default:
 const CreateCharacter = lazy(() => import('./pages/CreateCharacter').then(m => ({ default: m.CreateCharacter })));
 const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ default: m.MatchHistory })));
 const ItemCreatorTool = lazy(() => import('./pages/ItemCreatorTool').then(m => ({ default: m.ItemCreatorTool })));
+const CardDemo = lazy(() => import('./pages/CardDemo').then(m => ({ default: m.CardDemo })));
 
 /**
  * Loading Component
@@ -161,6 +162,7 @@ function Layout() {
         <Route path="/demo" element={<HexMapDemo />} />
         <Route path="/design" element={<ScenarioDesigner />} />
         <Route path="/test-videos" element={<TestVideos />} />
+        <Route path="/carddemo" element={<CardDemo />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

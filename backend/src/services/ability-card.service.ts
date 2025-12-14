@@ -83,6 +83,23 @@ export class AbilityCardService {
   }
 
   /**
+   * Get all ability cards grouped by class
+   */
+  getAllCardsGroupedByClass(): Record<string, AbilityCard[]> {
+    const cards = this.loadAbilityCardsFromFile();
+    const grouped: Record<string, AbilityCard[]> = {};
+
+    for (const card of cards) {
+      if (!grouped[card.characterClass]) {
+        grouped[card.characterClass] = [];
+      }
+      grouped[card.characterClass].push(card);
+    }
+
+    return grouped;
+  }
+
+  /**
    * Get cards by class and level (cards available at or below character level)
    */
   getCardsByClassAndLevel(

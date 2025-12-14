@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
-import { AbilityCard } from './AbilityCard';
+import { AbilityCard2 } from './AbilityCard2';
 import './CardSelectionPanel.css';
 
 interface CardSelectionPanelProps {
@@ -72,8 +71,9 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
               onMouseEnter={() => !waiting && setFocusedId(card.id)}
               onMouseLeave={() => !waiting && setFocusedId(null)}
             >
-              <AbilityCard
+              <AbilityCard2
                 card={card}
+                variant="full"
                 isSelected={isSelected}
                 isTop={
                   card.id === selectedTopAction?.id
