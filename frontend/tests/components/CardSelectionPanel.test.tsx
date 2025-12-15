@@ -514,7 +514,7 @@ describe('CardSelectionPanel', () => {
     it('should pass onClick handler to AbilityCard2', () => {
       // This test specifically verifies the fix for Issue #220
       // The onClick handler must be passed to AbilityCard2, not on the wrapper div
-      const { container } = render(
+      render(
         <CardSelectionPanel
           cards={mockCards}
           onCardSelect={mockOnCardSelect}

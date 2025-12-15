@@ -7,7 +7,12 @@
  */
 
 import { Injectable, Optional } from '@nestjs/common';
-import { AxialCoordinates, TerrainType, HexFeature } from '../../../shared/types/entities';
+import {
+  AxialCoordinates,
+  TerrainType,
+  HexFeature,
+  HexFeatureType,
+} from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
 import { PathfindingService } from './pathfinding.service';
 
@@ -33,16 +38,20 @@ export class ForcedMovementService {
    * Apply a push effect to a target
    * Moves target away from source in a straight line
    */
-  async applyPush(
+  applyPush(
     source: Character,
     target: Character,
     distance: number,
     direction?: 'away' | 'direct',
-  ): Promise<MovementResult> {
+  ): MovementResult {
     direction = direction || 'away';
 
     // Calculate push direction
-    const pushDirection = this.calculatePushDirection(source.position, target.position, direction);
+    const pushDirection = this.calculatePushDirection(
+      source.position,
+      target.position,
+      direction,
+    );
 
     // Apply movement
     return this.applyForcedMovement(target, pushDirection, distance);
@@ -52,9 +61,16 @@ export class ForcedMovementService {
    * Apply a pull effect to a target
    * Moves target toward source in a straight line
    */
-  async applyPull(source: Character, target: Character, distance: number): Promise<MovementResult> {
+  applyPull(
+    source: Character,
+    target: Character,
+    distance: number,
+  ): MovementResult {
     // Calculate pull direction (toward source)
-    const pullDirection = this.calculatePullDirection(source.position, target.position);
+    const pullDirection = this.calculatePullDirection(
+      source.position,
+      target.position,
+    );
 
     // Apply movement
     return this.applyForcedMovement(target, pullDirection, distance);
@@ -64,11 +80,11 @@ export class ForcedMovementService {
    * Apply forced movement in a specific direction
    * Stops when hitting obstacles or other entities
    */
-  private async applyForcedMovement(
+  private applyForcedMovement(
     target: Character,
     direction: { q: number; r: number },
     distance: number,
-  ): Promise<MovementResult> {
+  ): MovementResult {
     const result: MovementResult = {
       success: true,
       finalPosition: target.position,
@@ -175,7 +191,10 @@ export class ForcedMovementService {
     }
 
     // Check for wall features
-    if (hex.features && hex.features.some((f: HexFeature) => f.type === 'wall')) {
+    if (
+      hex.features &&
+      hex.features.some((f: HexFeature) => f.type === HexFeatureType.WALL)
+    ) {
       return false;
     }
 
@@ -200,7 +219,9 @@ export class ForcedMovementService {
 
     // Check for trap features
     if (hex.features) {
-      const traps = hex.features.filter((f: HexFeature) => f.type === 'trap');
+      const traps = hex.features.filter(
+        (f: HexFeature) => f.type === HexFeatureType.TRAP,
+      );
       damage += traps.length; // Each trap deals 1 damage
     }
 

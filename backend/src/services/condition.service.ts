@@ -45,12 +45,12 @@ export class ConditionService {
   /**
    * Apply a condition to a target character
    */
-  async applyCondition(
+  applyCondition(
     target: Character,
     condition: Condition,
     duration: 'round' | 'persistent' | 'until-consumed' = 'until-consumed',
     metadata?: Record<string, unknown>,
-  ): Promise<void> {
+  ): void {
     // Use Character's built-in method to add condition
     target.addCondition(condition);
 
@@ -85,7 +85,7 @@ export class ConditionService {
   /**
    * Remove a condition from a target
    */
-  async removeCondition(target: Character, condition: Condition): Promise<void> {
+  removeCondition(target: Character, condition: Condition): void {
     // Use Character's built-in method
     target.removeCondition(condition);
 
@@ -102,7 +102,7 @@ export class ConditionService {
   /**
    * Clear all conditions from a target
    */
-  async clearConditions(target: Character): Promise<void> {
+  clearConditions(target: Character): void {
     // Use Character's built-in method
     target.clearConditions();
 
@@ -128,7 +128,10 @@ export class ConditionService {
   /**
    * Get condition state details
    */
-  getConditionState(target: Character, condition: Condition): ConditionState | undefined {
+  getConditionState(
+    target: Character,
+    condition: Condition,
+  ): ConditionState | undefined {
     const states = this.conditionStates.get(target.id);
     return states?.find((c) => c.condition === condition);
   }
@@ -137,7 +140,10 @@ export class ConditionService {
    * Process round-based condition expiration
    * Called at end of each round to expire conditions that lasted 'round'
    */
-  async expireRoundBasedConditions(target: Character, currentRound: number): Promise<Condition[]> {
+  expireRoundBasedConditions(
+    target: Character,
+    currentRound: number,
+  ): Condition[] {
     const expiredConditions: Condition[] = [];
     const states = this.conditionStates.get(target.id);
 
@@ -169,7 +175,7 @@ export class ConditionService {
    * Consume a condition (for conditions that are consumed by healing, etc.)
    * Returns true if condition was consumed, false if it doesn't exist
    */
-  async consumeCondition(target: Character, condition: Condition): Promise<boolean> {
+  consumeCondition(target: Character, condition: Condition): boolean {
     const state = this.getConditionState(target, condition);
 
     if (!state) {
@@ -178,7 +184,7 @@ export class ConditionService {
 
     // Only consume if it's marked as 'until-consumed'
     if (state.duration === 'until-consumed') {
-      await this.removeCondition(target, condition);
+      this.removeCondition(target, condition);
       return true;
     }
 
@@ -231,12 +237,19 @@ export class ConditionService {
     switch (category) {
       case 'damage':
         // Conditions that deal damage
-        return conditions.filter((c) => [Condition.POISON, Condition.WOUND, Condition.BANE].includes(c));
+        return conditions.filter((c) =>
+          [Condition.POISON, Condition.WOUND, Condition.BANE].includes(c),
+        );
 
       case 'control':
         // Conditions that restrict actions
         return conditions.filter((c) =>
-          [Condition.STUN, Condition.IMMOBILIZE, Condition.DISARM, Condition.MUDDLE].includes(c),
+          [
+            Condition.STUN,
+            Condition.IMMOBILIZE,
+            Condition.DISARM,
+            Condition.MUDDLE,
+          ].includes(c),
         );
 
       case 'buff':
@@ -254,12 +267,19 @@ export class ConditionService {
    * Apply conditions from condition modifiers (plural)
    * Useful for applying multiple conditions at once
    */
-  async applyConditions(
+  applyConditions(
     target: Character,
-    conditions: Array<{ condition: Condition; duration?: 'round' | 'persistent' | 'until-consumed' }>,
-  ): Promise<void> {
+    conditions: Array<{
+      condition: Condition;
+      duration?: 'round' | 'persistent' | 'until-consumed';
+    }>,
+  ): void {
     for (const cond of conditions) {
-      await this.applyCondition(target, cond.condition, cond.duration || 'until-consumed');
+      this.applyCondition(
+        target,
+        cond.condition,
+        cond.duration || 'until-consumed',
+      );
     }
   }
 
@@ -300,7 +320,11 @@ export class ConditionService {
   /**
    * Apply shield effect to a character
    */
-  applyShield(characterId: string, value: number, duration: 'round' | 'persistent'): void {
+  applyShield(
+    characterId: string,
+    value: number,
+    duration: 'round' | 'persistent',
+  ): void {
     this.shieldEffects.set(characterId, {
       value,
       appliedAt: new Date(),

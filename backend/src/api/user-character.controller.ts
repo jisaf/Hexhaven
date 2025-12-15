@@ -30,9 +30,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 @Controller('api/user-characters')
 @UseGuards(JwtAuthGuard)
 export class UserCharacterController {
-  constructor(
-    private readonly userCharacterService: UserCharacterService,
-  ) {}
+  constructor(private readonly userCharacterService: UserCharacterService) {}
 
   /**
    * Create a new character

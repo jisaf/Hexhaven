@@ -6,7 +6,11 @@
  */
 
 import type { AbilityCard, CardAction } from '../../../shared/types/entities';
-import { isLostAction, isPersistent, getXPValue } from '../../../shared/types/modifiers';
+import {
+  isLostAction,
+  isPersistent,
+  getXPValue,
+} from '../../../shared/types/modifiers';
 
 export interface CardEnhancement {
   id: string;
@@ -29,7 +33,10 @@ export class CardUtils {
    * @param enhancements - Character's enhancements for this card
    * @returns Enhanced card with enhancements applied
    */
-  static enhanceCard(template: AbilityCard, enhancements: CardEnhancement[]): EnhancedAbilityCard {
+  static enhanceCard(
+    template: AbilityCard,
+    enhancements: CardEnhancement[],
+  ): EnhancedAbilityCard {
     return {
       ...template,
       enhancements,

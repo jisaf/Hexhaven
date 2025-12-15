@@ -75,8 +75,16 @@ import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
 import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
-import { getPush, getPull, getConditions, getInfuseModifiers, getConsumeModifiers, getPierce, getXPValue } from '../../../shared/types/modifiers';
-import type { Modifier, CardAction, InfuseModifier, ConsumeModifier } from '../../../shared/types/modifiers';
+import {
+  getPush,
+  getPull,
+  getConditions,
+  getInfuseModifiers,
+  getConsumeModifiers,
+  getPierce,
+  getXPValue,
+} from '../../../shared/types/modifiers';
+import type { Modifier, CardAction } from '../../../shared/types/modifiers';
 import { ElementalStateService } from '../services/elemental-state.service';
 import type { ElementalInfusion } from '../../../shared/types/entities';
 import {
@@ -281,7 +289,12 @@ export class GameGateway
     }
 
     for (const consume of consumeModifiers) {
-      if (this.elementalStateService.canConsumeElement(elementalState, consume.element)) {
+      if (
+        this.elementalStateService.canConsumeElement(
+          elementalState,
+          consume.element,
+        )
+      ) {
         elementalState = this.elementalStateService.consumeElement(
           elementalState,
           consume.element,
@@ -1908,7 +1921,10 @@ export class GameGateway
       const elementDamageBonus = elementBonuses.get('damage') || 0;
 
       // Calculate damage (with element bonus)
-      let damage = this.damageService.calculateDamage(baseAttack + elementDamageBonus, modifierCard);
+      let damage = this.damageService.calculateDamage(
+        baseAttack + elementDamageBonus,
+        modifierCard,
+      );
       if (elementDamageBonus > 0) {
         this.logger.log(
           `Element damage bonus applied: +${elementDamageBonus} (base: ${baseAttack} -> ${baseAttack + elementDamageBonus})`,
@@ -2095,7 +2111,7 @@ export class GameGateway
         const pushModifier = getPush(attackModifiers);
         if (pushModifier && pushModifier.distance > 0) {
           try {
-            const pushResult = await this.forcedMovementService.applyPush(
+            const pushResult = this.forcedMovementService.applyPush(
               attacker,
               target,
               pushModifier.distance,
@@ -2114,7 +2130,9 @@ export class GameGateway
               });
             }
           } catch (pushError) {
-            this.logger.warn(`Push failed: ${pushError instanceof Error ? pushError.message : String(pushError)}`);
+            this.logger.warn(
+              `Push failed: ${pushError instanceof Error ? pushError.message : String(pushError)}`,
+            );
           }
         }
 
@@ -2122,7 +2140,7 @@ export class GameGateway
         const pullModifier = getPull(attackModifiers);
         if (pullModifier && pullModifier.distance > 0) {
           try {
-            const pullResult = await this.forcedMovementService.applyPull(
+            const pullResult = this.forcedMovementService.applyPull(
               attacker,
               target,
               pullModifier.distance,
@@ -2141,7 +2159,9 @@ export class GameGateway
               });
             }
           } catch (pullError) {
-            this.logger.warn(`Pull failed: ${pullError instanceof Error ? pullError.message : String(pullError)}`);
+            this.logger.warn(
+              `Pull failed: ${pullError instanceof Error ? pullError.message : String(pullError)}`,
+            );
           }
         }
 
@@ -2149,27 +2169,41 @@ export class GameGateway
         const conditionModifiers = getConditions(attackModifiers);
         for (const condMod of conditionModifiers) {
           try {
-            await this.conditionService.applyCondition(target, condMod.condition, 'until-consumed');
-            this.logger.log(`Condition ${condMod.condition} applied to ${target.id}`);
+            this.conditionService.applyCondition(
+              target,
+              condMod.condition,
+              'until-consumed',
+            );
+            this.logger.log(
+              `Condition ${condMod.condition} applied to ${target.id}`,
+            );
             this.server.to(room.roomCode).emit('condition_applied', {
               targetId: target.id,
               condition: condMod.condition,
             });
           } catch (condError) {
-            this.logger.warn(`Condition application failed: ${condError instanceof Error ? condError.message : String(condError)}`);
+            this.logger.warn(
+              `Condition application failed: ${condError instanceof Error ? condError.message : String(condError)}`,
+            );
           }
         }
       }
 
       // Apply retaliate if target has it and attacker is in range (Issue #220 - Phase 3)
       if (!targetDead && damage > 0) {
-        const retaliateEffect = this.conditionService.getRetaliateEffect(target.id);
+        const retaliateEffect = this.conditionService.getRetaliateEffect(
+          target.id,
+        );
         if (retaliateEffect && retaliateEffect.value > 0) {
           // Check if attacker is in retaliate range
           const distance = Math.max(
             Math.abs(attacker.position.q - target.position.q),
             Math.abs(attacker.position.r - target.position.r),
-            Math.abs((-attacker.position.q - attacker.position.r) - (-target.position.q - target.position.r)),
+            Math.abs(
+              -attacker.position.q -
+                attacker.position.r -
+                (-target.position.q - target.position.r),
+            ),
           );
 
           if (distance <= retaliateEffect.range) {
@@ -2196,7 +2230,9 @@ export class GameGateway
       const xpValue = getXPValue(attackModifiers);
       if (xpValue > 0) {
         attacker.addExperience(xpValue);
-        this.logger.log(`Awarded ${xpValue} XP to ${attacker.id} (total: ${attacker.experience})`);
+        this.logger.log(
+          `Awarded ${xpValue} XP to ${attacker.id} (total: ${attacker.experience})`,
+        );
         this.server.to(room.roomCode).emit('xp_awarded', {
           characterId: attacker.id,
           amount: xpValue,

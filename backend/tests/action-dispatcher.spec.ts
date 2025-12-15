@@ -58,8 +58,8 @@ describe('ActionDispatcherService', () => {
     };
 
     mockForcedMovement = {
-      applyPush: jest.fn().mockResolvedValue({ success: true }),
-      applyPull: jest.fn().mockResolvedValue({ success: true }),
+      applyPush: jest.fn().mockReturnValue({ success: true }),
+      applyPull: jest.fn().mockReturnValue({ success: true }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -7,11 +7,7 @@
 
 import { GameRoom } from '../models/game-room.model';
 import { Player } from '../models/player.model';
-import {
-  NotFoundError,
-  ValidationError,
-  ConflictError,
-} from '../types/errors';
+import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
 import { RoomStatus } from '../../../shared/types/entities';
 
 export class RoomService {

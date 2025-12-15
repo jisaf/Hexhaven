@@ -7,8 +7,11 @@
  */
 
 import { Injectable, Optional } from '@nestjs/common';
-import { Modifier, CardAction, EffectApplicationResult } from '../../../shared/types/modifiers';
-import { Condition } from '../../../shared/types/entities';
+import {
+  Modifier,
+  CardAction,
+  EffectApplicationResult,
+} from '../../../shared/types/modifiers';
 import { Character } from '../models/character.model';
 import { ConditionService } from './condition.service';
 import { DamageCalculationService } from './damage-calculation.service';
@@ -28,12 +31,12 @@ export class ActionDispatcherService {
    * Apply an action to a target
    * Validates and applies all effects
    */
-  async applyAction(
+  applyAction(
     action: CardAction,
     source: Character,
     targetId?: string,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -44,17 +47,17 @@ export class ActionDispatcherService {
     try {
       switch (action.type) {
         case 'attack':
-          return await this.applyAttackAction(action, source, targetId, gameId);
+          return this.applyAttackAction(action, source, targetId, gameId);
         case 'move':
-          return await this.applyMoveAction(action, source, gameId);
+          return this.applyMoveAction(action, source, gameId);
         case 'heal':
-          return await this.applyHealAction(action, source, targetId, gameId);
+          return this.applyHealAction(action, source, targetId, gameId);
         case 'loot':
-          return await this.applyLootAction(action, source, gameId);
+          return this.applyLootAction(action, source, gameId);
         case 'special':
-          return await this.applySpecialAction(action, source, gameId);
+          return this.applySpecialAction(action, source, gameId);
         case 'summon':
-          return await this.applySummonAction(action, source, gameId);
+          return this.applySummonAction(action, source, gameId);
         case 'text':
           // Text actions are informational only
           return result;
@@ -62,7 +65,7 @@ export class ActionDispatcherService {
           result.success = false;
           return result;
       }
-    } catch (error) {
+    } catch {
       result.success = false;
       return result;
     }
@@ -72,12 +75,12 @@ export class ActionDispatcherService {
    * Apply modifiers to an action
    * Validates that modifiers are legal and applies them
    */
-  async applyModifiers(
+  applyModifiers(
     modifiers: Modifier[] = [],
     source: Character,
     target?: Character,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -89,13 +92,13 @@ export class ActionDispatcherService {
       try {
         switch (modifier.type) {
           case 'condition':
-            await this.applyConditionModifier(modifier, target || source, gameId);
+            this.applyConditionModifier(modifier, target || source, gameId);
             result.appliedModifiers.push(modifier);
             break;
 
           case 'push':
             if (target && this.forcedMovement) {
-              await this.forcedMovement.applyPush(source, target, modifier.distance);
+              this.forcedMovement.applyPush(source, target, modifier.distance);
               result.appliedModifiers.push(modifier);
               result.affectedEntities!.push(target.id);
             }
@@ -103,7 +106,7 @@ export class ActionDispatcherService {
 
           case 'pull':
             if (target && this.forcedMovement) {
-              await this.forcedMovement.applyPull(source, target, modifier.distance);
+              this.forcedMovement.applyPull(source, target, modifier.distance);
               result.appliedModifiers.push(modifier);
               result.affectedEntities!.push(target.id);
             }
@@ -121,13 +124,13 @@ export class ActionDispatcherService {
 
           case 'shield':
             // Shield stored as temporary effect
-            await this.applyShieldModifier(modifier, source);
+            this.applyShieldModifier(modifier, source);
             result.appliedModifiers.push(modifier);
             break;
 
           case 'retaliate':
             // Retaliate stored as persistent effect
-            await this.applyRetaliateModifier(modifier, source);
+            this.applyRetaliateModifier(modifier, source);
             result.appliedModifiers.push(modifier);
             break;
 
@@ -176,12 +179,12 @@ export class ActionDispatcherService {
   /**
    * Apply an attack action
    */
-  private async applyAttackAction(
+  private applyAttackAction(
     action: CardAction & { type: 'attack' },
     source: Character,
     targetId?: string,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -199,9 +202,14 @@ export class ActionDispatcherService {
       return result;
     }
 
-    // Apply base damage
-    const damage = action.value || 0;
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
+    // Apply base damage (value used by caller for actual damage application)
+    const _damage = action.value || 0;
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
 
     result.appliedModifiers = modifierResult.appliedModifiers;
     result.affectedEntities = [targetId];
@@ -212,11 +220,11 @@ export class ActionDispatcherService {
   /**
    * Apply a move action
    */
-  private async applyMoveAction(
+  private applyMoveAction(
     action: CardAction & { type: 'move' },
     source: Character,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -229,11 +237,16 @@ export class ActionDispatcherService {
       return result;
     }
 
-    // Movement distance is the action value
-    const moveDistance = action.value || 0;
+    // Movement distance is the action value (used by caller for actual movement)
+    const _moveDistance = action.value || 0;
 
     // Apply modifiers (jump, teleport, etc.)
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
 
     result.appliedModifiers = modifierResult.appliedModifiers;
     result.affectedEntities = [source.id];
@@ -244,12 +257,12 @@ export class ActionDispatcherService {
   /**
    * Apply a heal action
    */
-  private async applyHealAction(
+  private applyHealAction(
     action: CardAction & { type: 'heal' },
     source: Character,
     targetId?: string,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -269,7 +282,12 @@ export class ActionDispatcherService {
     // Note: For target heal, the gateway should apply the heal since it has access to the target Character
 
     // Apply modifiers
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
 
     result.appliedModifiers = modifierResult.appliedModifiers;
     result.affectedEntities = [actualTargetId];
@@ -280,21 +298,21 @@ export class ActionDispatcherService {
   /**
    * Apply a loot action
    */
-  private async applyLootAction(
+  private applyLootAction(
     action: CardAction & { type: 'loot' },
-    source: Character,
-    gameId?: string,
-  ): Promise<EffectApplicationResult> {
+    _source: Character,
+    _gameId?: string,
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
       failedModifiers: [],
     };
 
-    // Loot action collects tokens in range
-    const lootRange = action.value || 1;
+    // Loot action collects tokens in range (used when implemented)
+    const _lootRange = action.value || 1;
 
-    // TODO: Implement loot collection logic
+    // TODO: Implement loot collection logic (Issue #227)
 
     return result;
   }
@@ -302,11 +320,11 @@ export class ActionDispatcherService {
   /**
    * Apply a special action
    */
-  private async applySpecialAction(
+  private applySpecialAction(
     action: CardAction & { type: 'special' },
     source: Character,
     gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
@@ -314,7 +332,12 @@ export class ActionDispatcherService {
     };
 
     // Special actions are modifier-based
-    const modifierResult = await this.applyModifiers(action.modifiers || [], source, undefined, gameId);
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
 
     result.appliedModifiers = modifierResult.appliedModifiers;
     result.failedModifiers = modifierResult.failedModifiers;
@@ -326,18 +349,18 @@ export class ActionDispatcherService {
   /**
    * Apply a summon action
    */
-  private async applySummonAction(
-    action: CardAction & { type: 'summon' },
-    source: Character,
-    gameId?: string,
-  ): Promise<EffectApplicationResult> {
+  private applySummonAction(
+    _action: CardAction & { type: 'summon' },
+    _source: Character,
+    _gameId?: string,
+  ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
       failedModifiers: [],
     };
 
-    // TODO: Implement summon creation logic
+    // TODO: Implement summon creation logic (Issue #228)
 
     return result;
   }
@@ -345,36 +368,40 @@ export class ActionDispatcherService {
   /**
    * Apply condition modifier
    */
-  private async applyConditionModifier(
+  private applyConditionModifier(
     modifier: Modifier & { type: 'condition' },
     target: Character,
-    gameId?: string,
-  ): Promise<void> {
-    const condition = modifier.condition as Condition;
-    const duration = modifier.duration as 'round' | 'persistent' | 'until-consumed';
+    _gameId?: string,
+  ): void {
+    const condition = modifier.condition;
+    const duration = modifier.duration;
 
-    await this.conditionService.applyCondition(target, condition, duration);
+    this.conditionService.applyCondition(target, condition, duration);
   }
 
   /**
    * Apply shield modifier (temporary damage reduction)
    * Delegates to ConditionService for centralized effect management
    */
-  private async applyShieldModifier(
+  private applyShieldModifier(
     modifier: Modifier & { type: 'shield' },
     target: Character,
-  ): Promise<void> {
-    this.conditionService.applyShield(target.id, modifier.value, modifier.duration);
+  ): void {
+    this.conditionService.applyShield(
+      target.id,
+      modifier.value,
+      modifier.duration,
+    );
   }
 
   /**
    * Apply retaliate modifier (counter-attack on incoming damage)
    * Delegates to ConditionService for centralized effect management
    */
-  private async applyRetaliateModifier(
+  private applyRetaliateModifier(
     modifier: Modifier & { type: 'retaliate' },
     target: Character,
-  ): Promise<void> {
+  ): void {
     this.conditionService.applyRetaliate(
       target.id,
       modifier.value,
@@ -382,5 +409,4 @@ export class ActionDispatcherService {
       modifier.duration,
     );
   }
-
 }
