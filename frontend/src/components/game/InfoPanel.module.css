@@ -48,6 +48,9 @@
     height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
     z-index: 30; /* Above turn status and game log */
     animation: slideUpIn 300ms ease-out forwards;
+    /* Prevent click-through to underlying elements */
+    background-color: transparent;
+    pointer-events: auto;
   }
 
   @keyframes slideUpIn {
@@ -99,6 +102,9 @@
     height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
     z-index: 30; /* Above turn status and game log */
     animation: slideLeftIn 300ms ease-out forwards;
+    /* Prevent click-through to underlying elements */
+    background-color: transparent;
+    pointer-events: auto;
   }
 
   @keyframes slideLeftIn {

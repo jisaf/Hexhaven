@@ -1,30 +1,14 @@
 /**
  * Action Helper Utilities
  *
- * Shared helper functions for extracting and formatting action data
+ * Frontend-specific helper functions for extracting and formatting action data
  * from the modifier-based card action format (Issue #220).
+ *
+ * Note: For modifier extraction (getInfuseModifier, getConsumeModifier, etc.),
+ * use the shared types from '../../../shared/types/modifiers'.
  */
 
-import type {
-  Action,
-  Modifier,
-  InfuseModifier,
-  ConsumeModifier,
-} from '../../../shared/types/entities';
-
-/**
- * Get infuse modifier from action modifiers
- */
-export function getInfuseModifier(modifiers: Modifier[] = []): InfuseModifier | undefined {
-  return modifiers.find((m): m is InfuseModifier => m.type === 'infuse');
-}
-
-/**
- * Get consume modifier from action modifiers
- */
-export function getConsumeModifier(modifiers: Modifier[] = []): ConsumeModifier | undefined {
-  return modifiers.find((m): m is ConsumeModifier => m.type === 'consume');
-}
+import type { Action, Modifier } from '../../../shared/types/entities';
 
 /**
  * Extract action value based on action type

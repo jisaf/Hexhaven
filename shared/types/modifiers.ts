@@ -258,8 +258,16 @@ export function getInfuseModifiers(modifiers: Modifier[] = []): InfuseModifier[]
   return modifiers.filter((m) => m.type === 'infuse') as InfuseModifier[];
 }
 
+export function getInfuseModifier(modifiers: Modifier[] = []): InfuseModifier | undefined {
+  return modifiers.find((m): m is InfuseModifier => m.type === 'infuse');
+}
+
 export function getConsumeModifiers(modifiers: Modifier[] = []): ConsumeModifier[] {
   return modifiers.filter((m) => m.type === 'consume') as ConsumeModifier[];
+}
+
+export function getConsumeModifier(modifiers: Modifier[] = []): ConsumeModifier | undefined {
+  return modifiers.find((m): m is ConsumeModifier => m.type === 'consume');
 }
 
 export function getPierce(modifiers: Modifier[] = []): PierceModifier | undefined {

@@ -87,6 +87,7 @@ export function InfoPanel({
   };
 
   const handleClose = () => {
+    console.log('[InfoPanel] handleClose called, onSheetClose defined:', !!onSheetClose);
     onSheetClose?.();
   };
 

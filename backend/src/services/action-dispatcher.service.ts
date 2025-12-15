@@ -10,7 +10,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { Modifier, CardAction, EffectApplicationResult } from '../../../shared/types/modifiers';
 import { Condition } from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
-import { ConditionService, ShieldEffect, RetaliateEffect } from './condition.service';
+import { ConditionService } from './condition.service';
 import { DamageCalculationService } from './damage-calculation.service';
 import { ForcedMovementService } from './forced-movement.service';
 import { ValidationService } from './validation.service';
@@ -383,43 +383,4 @@ export class ActionDispatcherService {
     );
   }
 
-  /**
-   * Get shield effect for a character
-   * @deprecated Use conditionService.getShieldEffect() directly
-   */
-  getShieldEffect(characterId: string): ShieldEffect | undefined {
-    return this.conditionService.getShieldEffect(characterId);
-  }
-
-  /**
-   * Get retaliate effect for a character
-   * @deprecated Use conditionService.getRetaliateEffect() directly
-   */
-  getRetaliateEffect(characterId: string): RetaliateEffect | undefined {
-    return this.conditionService.getRetaliateEffect(characterId);
-  }
-
-  /**
-   * Clear shield effect for a character
-   * @deprecated Use conditionService.clearShieldEffect() directly
-   */
-  clearShieldEffect(characterId: string): void {
-    this.conditionService.clearShieldEffect(characterId);
-  }
-
-  /**
-   * Clear retaliate effect for a character
-   * @deprecated Use conditionService.clearRetaliateEffect() directly
-   */
-  clearRetaliateEffect(characterId: string): void {
-    this.conditionService.clearRetaliateEffect(characterId);
-  }
-
-  /**
-   * Clear all temporary effects for a character (at end of round)
-   * @deprecated Use conditionService.clearRoundEffects() directly
-   */
-  clearRoundEffects(characterId: string): void {
-    this.conditionService.clearRoundEffects(characterId);
-  }
 }

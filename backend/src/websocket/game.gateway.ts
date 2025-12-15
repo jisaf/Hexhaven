@@ -1916,7 +1916,7 @@ export class GameGateway
       }
 
       // Apply shield reduction with pierce (Issue #220 - Phase 3/4)
-      const shieldEffect = this.actionDispatcher.getShieldEffect(target.id);
+      const shieldEffect = this.conditionService.getShieldEffect(target.id);
       if (shieldEffect && shieldEffect.value > 0) {
         // Check for pierce modifier - reduces effective shield
         const pierceModifier = getPierce(attackModifiers);
@@ -2163,7 +2163,7 @@ export class GameGateway
 
       // Apply retaliate if target has it and attacker is in range (Issue #220 - Phase 3)
       if (!targetDead && damage > 0) {
-        const retaliateEffect = this.actionDispatcher.getRetaliateEffect(target.id);
+        const retaliateEffect = this.conditionService.getRetaliateEffect(target.id);
         if (retaliateEffect && retaliateEffect.value > 0) {
           // Check if attacker is in retaliate range
           const distance = Math.max(

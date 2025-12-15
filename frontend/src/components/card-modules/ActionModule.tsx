@@ -11,13 +11,8 @@ import React from 'react';
 import { FadedBorder } from './FadedBorder';
 import type { CardModule } from '../../../../shared/types/card-config';
 import type { Action, ElementType } from '../../../../shared/types/entities';
-import { getRange } from '../../../../shared/types/modifiers';
-import {
-  getInfuseModifier,
-  getConsumeModifier,
-  getActionValue,
-  getEffectStrings,
-} from '../../utils/action-helpers';
+import { getRange, getInfuseModifier, getConsumeModifier } from '../../../../shared/types/modifiers';
+import { getActionValue, getEffectStrings } from '../../utils/action-helpers';
 import '../../styles/card-modules.css';
 
 export interface ActionModuleProps {

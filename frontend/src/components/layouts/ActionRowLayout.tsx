@@ -15,17 +15,12 @@ import type {
   SummonAction,
   TextAction as TextActionType,
 } from '../../../../shared/types/entities';
-import { getRange } from '../../../../shared/types/modifiers';
+import { getRange, getInfuseModifier, getConsumeModifier } from '../../../../shared/types/modifiers';
 import type { CardVariant } from '../AbilityCard2';
 import { StatBlockLayout, createDefaultStats } from './StatBlockLayout';
 import { TextRowLayout } from './TextRowLayout';
 import { formatEffect, ACTION_ICONS, ELEMENT_ICONS, CARD_ICONS } from './effectIcons';
-import {
-  getInfuseModifier,
-  getConsumeModifier,
-  getActionValue,
-  getEffectStrings,
-} from '../../utils/action-helpers';
+import { getActionValue, getEffectStrings } from '../../utils/action-helpers';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import './layouts.css';
 

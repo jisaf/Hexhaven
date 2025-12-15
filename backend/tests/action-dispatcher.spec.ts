@@ -379,15 +379,6 @@ describe('ActionDispatcherService', () => {
         'persistent',
       );
     });
-
-    it('should clear round effects via ConditionService', async () => {
-      const source = createTestCharacter({ id: 'character', position: { q: 0, r: 0 } });
-
-      service.clearRoundEffects(source.id);
-
-      // Should delegate to ConditionService
-      expect(mockConditionService.clearRoundEffects).toHaveBeenCalledWith(source.id);
-    });
   });
 
   describe('Special Actions', () => {
