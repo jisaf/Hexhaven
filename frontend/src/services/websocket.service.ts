@@ -364,21 +364,42 @@ class WebSocketService {
   }
 
   /**
-   * Select character (002 - Updated for persistent characters)
+   * Select/add a character (multi-character support)
    * @param characterIdOrClass - Either a character UUID (persistent character) or a CharacterClass name (legacy)
+   * @param action - 'add' to add a character, 'remove' to remove by index, 'set_active' to set active character
+   * @param index - Index for 'remove' or 'set_active' actions
    */
-  selectCharacter(characterIdOrClass: string): void {
+  selectCharacter(characterIdOrClass: string, action: 'add' | 'remove' | 'set_active' = 'add', index?: number): void {
+    // Handle remove and set_active actions
+    if (action === 'remove' || action === 'set_active') {
+      this.emit('select_character', { action, index });
+      return;
+    }
+
     // Check if input is a UUID (contains hyphens) or a character class name
     const isUUID = characterIdOrClass.includes('-');
 
     if (isUUID) {
       // Persistent character selection - send characterId
-      this.emit('select_character', { characterId: characterIdOrClass });
+      this.emit('select_character', { characterId: characterIdOrClass, action });
     } else {
       // Legacy character class selection - send characterClass
-      this.emit('select_character', { characterClass: characterIdOrClass });
+      this.emit('select_character', { characterClass: characterIdOrClass, action });
     }
-    // Character selection logging removed
+  }
+
+  /**
+   * Remove a character by index (multi-character support)
+   */
+  removeCharacter(index: number): void {
+    this.emit('select_character', { action: 'remove', index });
+  }
+
+  /**
+   * Set active character by index (multi-character support)
+   */
+  setActiveCharacter(index: number): void {
+    this.emit('select_character', { action: 'set_active', index });
   }
 
   /**
@@ -411,9 +432,12 @@ class WebSocketService {
 
   /**
    * Select cards for the turn
+   * @param topCardId - Card ID for top action
+   * @param bottomCardId - Card ID for bottom action
+   * @param characterId - Optional: which character's cards (for multi-character support)
    */
-  selectCards(topCardId: string, bottomCardId: string): void {
-    this.emit('select_cards', { topCardId, bottomCardId });
+  selectCards(topCardId: string, bottomCardId: string, characterId?: string): void {
+    this.emit('select_cards', { topCardId, bottomCardId, characterId });
   }
 
   /**

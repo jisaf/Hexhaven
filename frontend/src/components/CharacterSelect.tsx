@@ -18,6 +18,8 @@ export interface CharacterSelectProps {
   selectedClass?: CharacterClass;
   disabledClasses?: CharacterClass[];
   onSelect: (characterClass: CharacterClass) => void;
+  /** Compact mode for inline display (smaller cards, no descriptions) */
+  compact?: boolean;
 }
 
 const characterColors: Record<CharacterClass, string> = {
@@ -47,7 +49,7 @@ const characterStats: Record<CharacterClass, { health: number; handSize: number 
   Mindthief: { health: 6, handSize: 10 },
 };
 
-export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect }: CharacterSelectProps) {
+export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect, compact = false }: CharacterSelectProps) {
   const { t } = useTranslation();
 
   const characters: CharacterClass[] = [
@@ -66,10 +68,12 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
   };
 
   return (
-    <div className="character-select" data-testid="character-select">
-      <h3 className="character-select-title">
-        {t('lobby:selectCharacter', 'Select Your Character')}
-      </h3>
+    <div className={`character-select ${compact ? 'compact' : ''}`} data-testid="character-select">
+      {!compact && (
+        <h3 className="character-select-title">
+          {t('lobby:selectCharacter', 'Select Your Character')}
+        </h3>
+      )}
 
       <div className="character-grid">
         {characters.map((characterClass) => {
@@ -99,19 +103,21 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
                 <div className="character-name">
                   {t(`characters.${characterClass}.name`, characterClass)}
                 </div>
-                <div className="character-description" data-testid="character-description">
-                  {t(
-                    `characters.${characterClass}.description`,
-                    characterDescriptions[characterClass]
-                  )}
-                </div>
+                {!compact && (
+                  <div className="character-description" data-testid="character-description">
+                    {t(
+                      `characters.${characterClass}.description`,
+                      characterDescriptions[characterClass]
+                    )}
+                  </div>
+                )}
                 <div className="character-stats">
                   <div className="stat-item">
-                    <span className="stat-label">❤️ HP:</span>
+                    <span className="stat-label">❤️</span>
                     <span className="stat-value" data-testid="character-health">{stats.health}</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-label">🃏 Hand:</span>
+                    <span className="stat-label">🃏</span>
                     <span className="stat-value" data-testid="character-hand-size">{stats.handSize}</span>
                   </div>
                 </div>
@@ -295,6 +301,56 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect 
             font-size: 28px;
             margin-bottom: 0;
             flex-shrink: 0;
+          }
+        }
+
+        /* Compact mode for inline display */
+        .character-select.compact .character-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+        }
+
+        .character-select.compact .character-card {
+          padding: 12px;
+          min-height: 80px;
+          flex-direction: row;
+          gap: 8px;
+        }
+
+        .character-select.compact .character-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 20px;
+          margin-bottom: 0;
+          flex-shrink: 0;
+        }
+
+        .character-select.compact .character-name {
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+
+        .character-select.compact .character-stats {
+          gap: 8px;
+          margin-top: 4px;
+        }
+
+        .character-select.compact .stat-item {
+          font-size: 12px;
+          gap: 2px;
+        }
+
+        .character-select.compact .selected-indicator {
+          width: 24px;
+          height: 24px;
+          font-size: 14px;
+          top: 8px;
+          right: 8px;
+        }
+
+        @media (max-width: 600px) {
+          .character-select.compact .character-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
       `}</style>

@@ -3,3 +3,4 @@
  */
 
 export * from './inventory';
+export * from './character-colors';

@@ -70,6 +70,14 @@
   font-family: 'MedievalSharp', serif;
 }
 
+.selection-instructions .character-progress {
+  display: block;
+  font-size: 12px;
+  color: #88c0d0;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
 .selection-instructions p {
   margin: 0;
   font-size: 14px;
@@ -157,6 +165,22 @@
 .btn-confirm:hover:not(:disabled) {
   background: #f0e6d2;
   border-color: #f0e6d2;
+}
+
+.btn-confirm.all-ready {
+  background: linear-gradient(135deg, #5a9e4a 0%, #3d7a35 100%);
+  border-color: #5a9e4a;
+  color: #ffffff;
+  animation: pulse-ready 2s infinite;
+}
+
+.btn-confirm.all-ready:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6ab55a 0%, #4d8a45 100%);
+}
+
+@keyframes pulse-ready {
+  0%, 100% { box-shadow: 0 0 8px rgba(90, 158, 74, 0.4); }
+  50% { box-shadow: 0 0 16px rgba(90, 158, 74, 0.8); }
 }
 
 .btn-long-rest {

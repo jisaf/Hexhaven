@@ -1,7 +1,7 @@
 # Hexhaven Multiplayer - System Architecture
 
 **Version**: 1.0
-**Last Updated**: 2025-12-13
+**Last Updated**: 2025-12-15
 **Status**: Production-Ready (MVP)
 
 ---
@@ -135,15 +135,21 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 | **ESLint** | Code linting |
 | **Prettier** | Code formatting |
 
-### Shared Utilities (Issue #205)
+### Shared Utilities
 
 ```
 shared/
+├── constants/           # Shared constants
+│   ├── index.ts         # Barrel export
+│   └── game.ts          # MAX_CHARACTERS_PER_PLAYER, LONG_REST_INITIATIVE, etc.
 ├── types/               # Shared TypeScript types
 │   ├── entities.ts      # Item, ItemState, ItemSlot, ItemRarity enums
+│   ├── events.ts        # WebSocket event payloads
 │   └── ...
 └── utils/               # Shared utility functions
-    └── inventory.ts     # getMaxSmallSlots, formatItemEffect, SLOT_DISPLAY_INFO
+    ├── index.ts         # Barrel export
+    ├── inventory.ts     # getMaxSmallSlots, formatItemEffect, SLOT_DISPLAY_INFO
+    └── character-colors.ts # CHARACTER_COLORS, getCharacterColor, getCharacterColorWithOpacity
 ```
 
 ---
@@ -237,11 +243,12 @@ frontend/src/
 │   ├── game-session-coordinator.service.ts # Lifecycle coordinator (facade pattern)
 │   └── api.service.ts                     # REST API client
 ├── hooks/               # React hooks
-│   ├── useGameState.ts       # Game state subscription hook
-│   ├── useRoomSession.ts     # Room session subscription hook
-│   ├── useHexGrid.ts         # HexGrid rendering management
-│   ├── useOrientation.ts     # Orientation handling
-│   └── useBackgroundImage.ts # Issue #191: Background image state management
+│   ├── useGameState.ts           # Game state subscription hook
+│   ├── useRoomSession.ts         # Room session subscription hook
+│   ├── useCharacterSelection.ts  # Character selection management
+│   ├── useHexGrid.ts             # HexGrid rendering management
+│   ├── useOrientation.ts         # Orientation handling
+│   └── useBackgroundImage.ts     # Issue #191: Background image state management
 └── i18n/                # Internationalization
     ├── index.ts
     └── locales/         # Translation files (en, es, fr, de, zh)
@@ -548,6 +555,72 @@ The game implements a Gloomhaven-inspired item and inventory system with role-ba
 - Role-based access for item CRUD (creator/admin)
 - In-game equipment changes blocked (ConflictError)
 
+### Multi-Character Control System
+
+Players can control multiple characters (up to 4) in a single game session, enabling solo play with multiple characters or controlling additional characters when fewer players are available.
+
+**Architecture**:
+```
+┌─────────────────────────┐     ┌─────────────────────────┐
+│  useCharacterSelection  │────>│  RoomSessionManager     │
+│  (React Hook)           │     │  (Single Source of Truth)│
+└─────────────────────────┘     └─────────────────────────┘
+         │                               │
+         │ WebSocket emit                │ State subscription
+         ▼                               ▼
+┌─────────────────────────┐     ┌─────────────────────────┐
+│  WebSocket Service      │────>│  Backend Gateway        │
+│  (Socket.io Client)     │     │  (NestJS + Socket.io)   │
+└─────────────────────────┘     └─────────────────────────┘
+```
+
+**Key Components**:
+
+1. **useCharacterSelection Hook** (`frontend/src/hooks/useCharacterSelection.ts`):
+   - Subscribes to RoomSessionManager for authoritative state
+   - Provides `addCharacter`, `removeCharacter`, `setActiveCharacter` methods
+   - ID-based operations (preferred) with index-based deprecated methods
+   - Calculates `disabledCharacterIds` for characters selected by other players
+
+2. **RoomSessionManager** (`frontend/src/services/room-session.service.ts`):
+   - Single source of truth for character selection state
+   - Stores `currentPlayerCharacters: { characterClasses, characterIds, activeIndex }`
+   - Updates state when receiving `character_selected` events
+
+3. **Shared Constants** (`shared/constants/game.ts`):
+   - `MAX_CHARACTERS_PER_PLAYER = 4`
+   - Shared between frontend and backend to prevent duplication
+
+4. **Character Colors** (`shared/utils/character-colors.ts`):
+   - `CHARACTER_COLORS`: Color mapping for each character class
+   - `getCharacterColor(classType)`: Get hex color for character
+   - `getCharacterColorWithOpacity(classType, opacity)`: Get RGBA color
+
+**WebSocket Events**:
+```typescript
+// Client → Server
+select_character {
+  characterId?: string;      // Character UUID or class name
+  action: 'add' | 'remove' | 'set_active';
+  targetCharacterId?: string; // For ID-based remove/set_active (preferred)
+  index?: number;            // Deprecated: For index-based operations
+}
+
+// Server → Client
+character_selected {
+  playerId: string;
+  characterClasses: CharacterClass[];  // All selected characters
+  characterIds?: string[];             // Persistent character IDs
+  activeIndex: number;                 // Currently active character
+}
+```
+
+**Design Decisions**:
+- **No optimistic updates**: Wait for server confirmation before UI updates
+- **ID-based operations**: More robust than index-based (deprecated)
+- **Single source of truth**: RoomSessionManager, not component state
+- **Backward compatibility**: Both ID and index methods supported during migration
+
 ---
 
 ## Database Schema
@@ -752,11 +825,11 @@ POST /api/characters/:id/unequip    # Unequip item
 ```typescript
 join_room        { roomCode, nickname }
 leave_room       { roomCode }
-select_character { roomCode, characterClass }
+select_character { characterId?, action?, targetCharacterId?, index? }  # Multi-character support
 start_game       { roomCode, scenarioId }
 move_character   { roomCode, characterId, targetHex }
-select_cards     { roomCode, cards: { top, bottom } }
-attack_target    { roomCode, targetId }
+select_cards     { roomCode, characterId?, cards: { top, bottom } }
+attack_target    { roomCode, characterId?, targetId }
 collect_loot     { roomCode, lootId }
 end_turn         { roomCode }
 
@@ -768,10 +841,10 @@ unequip_item     { roomCode, characterId, itemId }
 
 **Server → Client**:
 ```typescript
-room_joined         { roomCode, players }
+room_joined         { roomCode, players }  # players include characterClasses[]
 player_joined       { player }
 player_left         { playerId }
-character_selected  { playerId, characterClass }
+character_selected  { playerId, characterClasses[], characterIds?, activeIndex }
 game_started        { scenario, initialState }
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
@@ -977,4 +1050,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-13
+**Last Review**: 2025-12-15
