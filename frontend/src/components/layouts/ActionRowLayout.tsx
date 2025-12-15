@@ -5,15 +5,22 @@
  * Displays action type, value, range, elements, and effects.
  * Supports summon creatures (StatBlockLayout) and text boxes (TextRowLayout).
  *
- * Design: Shows action icon, value, range, and element generation/consumption.
+ * Updated for Issue #220 - uses new modifier-based format
  */
 
 import React from 'react';
-import type { Action, ElementType } from '../../../../shared/types/entities';
+import type {
+  Action,
+  ElementType,
+  SummonAction,
+  TextAction as TextActionType,
+} from '../../../../shared/types/entities';
+import { getRange, getInfuseModifier, getConsumeModifier } from '../../../../shared/types/modifiers';
 import type { CardVariant } from '../AbilityCard2';
 import { StatBlockLayout, createDefaultStats } from './StatBlockLayout';
 import { TextRowLayout } from './TextRowLayout';
 import { formatEffect, ACTION_ICONS, ELEMENT_ICONS, CARD_ICONS } from './effectIcons';
+import { getActionValue, getEffectStrings } from '../../utils/action-helpers';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import './layouts.css';
 
@@ -58,6 +65,7 @@ function getElementColor(element: ElementType): string | undefined {
 function getActionTypeClass(type: Action['type']): string {
   return `action-type-${type}`;
 }
+
 
 /**
  * Card icons component - shows loss, persistence, and XP icons
@@ -126,7 +134,10 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
 
   // Render summon action with StatBlockLayout
   if (action.type === 'summon' && action.summon) {
-    const { summon } = action;
+    const { summon } = action as SummonAction;
+    const summonEffects = getEffectStrings(summon.modifiers);
+    const summonInfuse = getInfuseModifier(action.modifiers);
+
     return (
       <div
         className={`action-row-layout ${variant} ${position} action-type-summon ${className}`}
@@ -143,15 +154,15 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
           <StatBlockLayout
             stats={createDefaultStats(summon.health, summon.attack, summon.move, summon.range)}
             typeIcon={summon.typeIcon}
-            typeLabel={!summon.effects?.length ? "SUMMON" : undefined}
-            effects={summon.effects}
+            typeLabel={summonEffects.length === 0 ? 'SUMMON' : undefined}
+            effects={summonEffects}
             variant={variant}
           />
           {/* Element generation for summon */}
-          {action.elementGenerate && (
+          {summonInfuse && (
             <div className="action-row-element generate">
-              <span className="element-icon" style={{ color: getElementColor(action.elementGenerate) }}>
-                <i className={`ra ${getElementIconClass(action.elementGenerate)}`} aria-hidden="true" />
+              <span className="element-icon" style={{ color: getElementColor(summonInfuse.element) }}>
+                <i className={`ra ${getElementIconClass(summonInfuse.element)}`} aria-hidden="true" />
               </span>
               <span className="element-action">+</span>
             </div>
@@ -162,8 +173,8 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
   }
 
   // Render text action with TextRowLayout
-  if (action.type === 'text' && action.textContent) {
-    const { textContent } = action;
+  if (action.type === 'text') {
+    const textAction = action as TextActionType;
     return (
       <div
         className={`action-row-layout ${variant} ${position} action-type-text ${className}`}
@@ -171,9 +182,9 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
         data-testid={`action-row-${position}`}
       >
         <TextRowLayout
-          title={textContent.title}
-          text={textContent.text}
-          quote={textContent.quote}
+          title={textAction.title}
+          text={textAction.description || ''}
+          quote={textAction.quote}
           variant={variant}
           alignment="center"
           multiLine
@@ -181,6 +192,13 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
       </div>
     );
   }
+
+  // Extract values from modifiers
+  const value = getActionValue(action);
+  const range = getRange(action.modifiers);
+  const infuseModifier = getInfuseModifier(action.modifiers);
+  const consumeModifier = getConsumeModifier(action.modifiers);
+  const effectStrings = getEffectStrings(action.modifiers);
 
   return (
     <div
@@ -199,57 +217,59 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
             <i className={`ra ${getActionIconClass(action.type)}`} aria-hidden="true" />
           </span>
 
-          {action.value !== undefined && (
-            <span className="action-row-value">{action.value}</span>
-          )}
+          {value !== undefined && <span className="action-row-value">{value}</span>}
 
-          {action.range !== undefined && action.range > 0 && (
+          {range > 0 && (
             <span className="action-row-range">
               <i className="ra ra-target-arrows range-icon" aria-hidden="true" />
-              {action.range}
+              {range}
             </span>
           )}
         </div>
 
         {/* Element generation */}
-        {action.elementGenerate && (
+        {infuseModifier && (
           <div className="action-row-element generate">
             <span
               className="element-icon"
-              aria-label={`Generate ${action.elementGenerate}`}
-              style={{ color: getElementColor(action.elementGenerate) }}
+              aria-label={`Generate ${infuseModifier.element}`}
+              style={{ color: getElementColor(infuseModifier.element) }}
             >
-              <i className={`ra ${getElementIconClass(action.elementGenerate)}`} aria-hidden="true" />
+              <i className={`ra ${getElementIconClass(infuseModifier.element)}`} aria-hidden="true" />
             </span>
             <span className="element-action">+</span>
           </div>
         )}
 
         {/* Element consumption */}
-        {action.elementConsume && (
+        {consumeModifier && (
           <div className="action-row-element consume">
             <span
               className="element-icon"
-              aria-label={`Consume ${action.elementConsume}`}
-              style={{ color: getElementColor(action.elementConsume) }}
+              aria-label={`Consume ${consumeModifier.element}`}
+              style={{ color: getElementColor(consumeModifier.element) }}
             >
-              <i className={`ra ${getElementIconClass(action.elementConsume)}`} aria-hidden="true" />
+              <i className={`ra ${getElementIconClass(consumeModifier.element)}`} aria-hidden="true" />
             </span>
             <span className="element-action">−</span>
           </div>
         )}
 
-        {/* Effects */}
-        {action.effects && action.effects.length > 0 && (
+        {/* Effects from modifiers */}
+        {effectStrings.length > 0 && (
           <div className="action-row-effects">
-            {action.effects.map((effect, idx) => {
+            {effectStrings.map((effect, idx) => {
               const formatted = formatEffect(effect);
               return (
                 <span
                   key={idx}
                   className="action-row-effect-tag"
                   title={effect}
-                  style={formatted.icon?.color ? { '--effect-color': formatted.icon.color } as React.CSSProperties : undefined}
+                  style={
+                    formatted.icon?.color
+                      ? ({ '--effect-color': formatted.icon.color } as React.CSSProperties)
+                      : undefined
+                  }
                 >
                   {formatted.icon ? (
                     <>
@@ -266,10 +286,10 @@ export const ActionRowLayout: React.FC<ActionRowLayoutProps> = ({
         )}
 
         {/* Element bonus (conditional) */}
-        {action.elementBonus && (
+        {consumeModifier?.bonus && (
           <div className="action-row-bonus">
             <span className="bonus-label">
-              {action.elementBonus.effect} +{action.elementBonus.value}
+              {consumeModifier.bonus.effect} +{consumeModifier.bonus.value}
             </span>
           </div>
         )}

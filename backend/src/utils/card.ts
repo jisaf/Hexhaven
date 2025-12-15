@@ -2,9 +2,15 @@
  * Card Utility Functions
  *
  * Helper functions for card management and transformation
+ * Updated for Issue #220 - uses new modifier-based actions
  */
 
-import type { AbilityCard, Action } from '../../../shared/types/entities';
+import type { AbilityCard, CardAction } from '../../../shared/types/entities';
+import {
+  isLostAction,
+  isPersistent,
+  getXPValue,
+} from '../../../shared/types/modifiers';
 
 export interface CardEnhancement {
   id: string;
@@ -39,37 +45,26 @@ export class CardUtils {
 
   /**
    * Check if card action has loss icon (card goes to lost pile)
+   * Uses new modifier system
    *
    * @param action - Top or bottom action
    * @returns True if action has loss icon
    */
-  static hasLossIcon(action: Action): boolean {
-    // Check if action has 'loss' in effects
-    // This is a placeholder - actual implementation depends on
-    // how loss icons are stored in Action type
-    return (
-      action.effects?.some(
-        (effect) =>
-          typeof effect === 'string' && effect.toLowerCase().includes('loss'),
-      ) || false
-    );
+  static hasLossIcon(action: CardAction): boolean {
+    // Check for lost modifier in the new format
+    return isLostAction(action.modifiers || []);
   }
 
   /**
    * Check if card has persistent bonus effect
+   * Uses new modifier system
    *
    * @param action - Top or bottom action
    * @returns True if action has persistent effect
    */
-  static hasPersistentEffect(action: Action): boolean {
-    // Check for persistent bonus indicators
-    return (
-      action.effects?.some(
-        (effect) =>
-          typeof effect === 'string' &&
-          (effect.includes('persistent') || effect.includes('until')),
-      ) || false
-    );
+  static hasPersistentEffect(action: CardAction): boolean {
+    // Check for persistent modifier in the new format
+    return isPersistent(action.modifiers || []);
   }
 
   /**
@@ -78,13 +73,20 @@ export class CardUtils {
    * @param action - Top or bottom action
    * @returns True if action has round bonus
    */
-  static hasRoundBonus(action: Action): boolean {
-    // Check for round bonus indicators
-    return (
-      action.effects?.some(
-        (effect) => typeof effect === 'string' && effect.includes('this round'),
-      ) || false
-    );
+  static hasRoundBonus(action: CardAction): boolean {
+    // Check for round modifier in the new format
+    const modifiers = action.modifiers || [];
+    return modifiers.some((m) => m.type === 'round');
+  }
+
+  /**
+   * Get XP value for an action
+   *
+   * @param action - Top or bottom action
+   * @returns XP value (0 if none)
+   */
+  static getXP(action: CardAction): number {
+    return getXPValue(action.modifiers || []);
   }
 
   /**

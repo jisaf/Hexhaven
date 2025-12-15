@@ -30,6 +30,11 @@ import { BackgroundUploadService } from './services/background-upload.service';
 import { AuthService } from './services/auth.service';
 import { UserCharacterService } from './services/user-character.service';
 import { GameStateService } from './services/game-state.service';
+import { ConditionService } from './services/condition.service';
+import { ActionDispatcherService } from './services/action-dispatcher.service';
+import { ForcedMovementService } from './services/forced-movement.service';
+import { ValidationService } from './services/validation.service';
+import { ElementalStateService } from './services/elemental-state.service';
 
 @Module({
   imports: [],
@@ -68,6 +73,11 @@ import { GameStateService } from './services/game-state.service';
     AuthService, // User authentication service
     UserCharacterService, // Persistent character management
     GameStateService, // Game state and event sourcing
+    ConditionService, // Issue #220: Condition application and tracking
+    ActionDispatcherService, // Issue #220: Card action dispatcher
+    ForcedMovementService, // Issue #220: Push/pull mechanics
+    ValidationService, // Issue #220: Action validation
+    ElementalStateService, // Issue #220: Element infusion/consumption
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

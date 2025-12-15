@@ -58,6 +58,7 @@ export function GameBoard() {
   const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
   const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
   const [showPileView, setShowPileView] = useState(false);
+  const closingRef = useRef(false); // Guard against click-through after close
 
   // Inventory / BottomSheet state (Issue #205)
   const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
@@ -124,14 +125,12 @@ export function GameBoard() {
 
     const initializeGame = async () => {
       try {
-        console.log('[GameBoard] Ensuring joined to room:', roomCode);
         // Save URL roomCode to localStorage so ensureJoined uses the correct room
         // This is critical when navigating directly to /game/:roomCode via URL
         saveLastRoomCode(roomCode);
         // Ensure we're joined to the room with 'refresh' intent
         // This will trigger the backend to send game_started event with current state
         await roomSessionManager.ensureJoined('refresh');
-        console.log('[GameBoard] Join request sent successfully');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to join game';
         console.error('[GameBoard] Failed to join game:', errorMessage);
@@ -180,46 +179,24 @@ export function GameBoard() {
   // Extract objectives from game state when it loads (Primary method)
   useEffect(() => {
     if (gameState.gameData?.objectives) {
-      console.log('[GameBoard] ✅ Objectives loaded from game state:', {
-        primary: {
-          id: gameState.gameData.objectives.primary.id,
-          description: gameState.gameData.objectives.primary.description,
-          trackProgress: gameState.gameData.objectives.primary.trackProgress,
-        },
-        secondary: gameState.gameData.objectives.secondary?.length || 0,
-        failureConditions: gameState.gameData.objectives.failureConditions?.length || 0,
-      });
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setObjectives(gameState.gameData.objectives);
-    } else {
-      console.log('[GameBoard] ⚠️ No objectives in game state');
     }
   }, [gameState.gameData]);
 
   // WebSocket event listeners for objective progress and completion
   useEffect(() => {
-    console.log('[GameBoard] Registering objective_progress listener');
-
     // Objective progress updates
     const unsubObjectiveProgress = websocketService.on('objective_progress', (payload: ObjectiveProgressUpdatePayload) => {
-      console.log('[GameBoard] ✅ Received objective_progress event:', {
-        objectiveId: payload.objectiveId,
-        description: payload.description,
-        progress: `${payload.current}/${payload.target}`,
-        percentage: payload.percentage,
-        milestone: payload.milestone,
-      });
       setObjectiveProgress(prev => {
         const newMap = new Map(prev);
         newMap.set(payload.objectiveId, payload);
-        console.log('[GameBoard] Updated progress map, now has', newMap.size, 'entries');
         return newMap;
       });
     });
 
     // Scenario completed
     const unsubScenarioCompleted = websocketService.on('scenario_completed', (payload: ScenarioCompletedPayload) => {
-      console.log('[GameBoard] Scenario completed:', payload);
 
       // Build player stats with names
       const playerStats = payload.playerStats.map(s => {
@@ -292,7 +269,6 @@ export function GameBoard() {
   useEffect(() => {
     if (!hexGridReady) {
       boardInitializedRef.current = false;
-      console.log('[GameBoard] HexGrid destroyed, reset boardInitializedRef');
     }
   }, [hexGridReady]);
 
@@ -302,8 +278,6 @@ export function GameBoard() {
     if (!hexGridReady || !gameState.gameData || boardInitializedRef.current) {
       return;
     }
-
-    console.log('[GameBoard] Initializing board (one-time)');
 
     const typedTiles: HexTile[] = gameState.gameData.mapLayout.map(tile => ({
       ...tile,
@@ -322,23 +296,10 @@ export function GameBoard() {
     boardInitializedRef.current = true;
 
     // Load background image immediately after board initialization
-    const { backgroundImageUrl, backgroundOpacity = 1, backgroundScale = 1, scenarioId, scenarioName } = gameState.gameData;
-
-    console.log('[GameBoard] Background check:', {
-      scenarioId,
-      scenarioName,
-      url: backgroundImageUrl || 'NOT SET',
-      opacity: backgroundOpacity,
-      scale: backgroundScale,
-    });
+    const { backgroundImageUrl, backgroundOpacity = 1 } = gameState.gameData;
 
     if (backgroundImageUrl) {
-      console.log('[GameBoard] Loading background image (auto-fits to 20x20 world)');
-
       setBackgroundImage(backgroundImageUrl, backgroundOpacity)
-        .then(() => {
-          console.log('[GameBoard] Background loaded');
-        })
         .catch((error) => {
           console.error('[GameBoard] Failed to load background image:', error);
         });
@@ -393,6 +354,10 @@ export function GameBoard() {
 
   // Handle card pile clicks
   const handlePileClick = (pile: PileType) => {
+    // Guard against click-through after closing the panel
+    if (closingRef.current) {
+      return;
+    }
     // Toggle selection - if clicking the same pile, close it
     if (selectedPile === pile) {
       setSelectedPile(null);
@@ -460,17 +425,22 @@ export function GameBoard() {
         showCardSelection={gameState.showCardSelection || showPileView || showInventory}
         activeTab={activeSheetTab}
         onTabChange={(tab) => setActiveSheetTab(tab)}
-        onSheetClose={() => {
-          if (showInventory) {
+        onSheetClose={
+          // Only allow closing if it's not mandatory card selection
+          // Card selection is controlled by game state, not closed manually
+          (!gameState.showCardSelection && (showInventory || showPileView)) ? () => {
+            // Set closing flag to prevent click-through to pile buttons
+            closingRef.current = true;
+            setTimeout(() => {
+              closingRef.current = false;
+            }, 300);
+            // Clear both states
             setShowInventory(false);
-          }
-          if (showPileView) {
             setShowPileView(false);
             setSelectedPile(null);
             setPileViewCards([]);
-          }
-          // Card selection is controlled by game state, not closed manually
-        }}
+          } : undefined
+        }
         inventoryCount={ownedItems.length}
         turnStatus={
           <TurnStatus

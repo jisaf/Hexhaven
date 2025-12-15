@@ -69,7 +69,7 @@ describe('DeckManagementService', () => {
       isExhausted: false,
     };
 
-    // Mock card template
+    // Mock card template - uses new modifier-based format (Issue #220)
     mockCardTemplate = {
       id: 'card-1',
       characterClass: CharacterClass.BRUTE,
@@ -79,13 +79,12 @@ describe('DeckManagementService', () => {
       topAction: {
         type: 'attack',
         value: 3,
-        range: 1,
-        effects: [],
+        modifiers: [{ type: 'range', distance: 1 }],
       },
       bottomAction: {
         type: 'move',
         value: 2,
-        effects: [],
+        modifiers: [],
       },
     } as any;
 
@@ -199,7 +198,7 @@ describe('DeckManagementService', () => {
     it('should move cards to correct piles based on loss icons', () => {
       const topLossTemplate = {
         ...mockCardTemplate,
-        topAction: { ...mockCardTemplate.topAction, effects: ['loss'] },
+        topAction: { ...mockCardTemplate.topAction, modifiers: [{ type: 'lost' }] },
       };
       const bottomNormalTemplate = mockCardTemplate;
 
@@ -399,8 +398,8 @@ describe('DeckManagementService', () => {
       // Play cards (both have loss icons)
       const topLossTemplate = {
         ...mockCardTemplate,
-        topAction: { ...mockCardTemplate.topAction, effects: ['loss'] },
-        bottomAction: { ...mockCardTemplate.bottomAction, effects: ['loss'] },
+        topAction: { ...mockCardTemplate.topAction, modifiers: [{ type: 'lost' }] },
+        bottomAction: { ...mockCardTemplate.bottomAction, modifiers: [{ type: 'lost' }] },
       };
       (CardTemplateCache.get as jest.Mock).mockReturnValue(topLossTemplate);
 

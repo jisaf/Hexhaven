@@ -72,9 +72,25 @@ import type {
   CharacterInventoryPayload,
 } from '../../../shared/types/events';
 import { InventoryService } from '../services/inventory.service';
+import { ActionDispatcherService } from '../services/action-dispatcher.service';
+import { ConditionService } from '../services/condition.service';
+import { ForcedMovementService } from '../services/forced-movement.service';
+import {
+  getPush,
+  getPull,
+  getConditions,
+  getInfuseModifiers,
+  getConsumeModifiers,
+  getPierce,
+  getXPValue,
+} from '../../../shared/types/modifiers';
+import type { Modifier, CardAction } from '../../../shared/types/modifiers';
+import { ElementalStateService } from '../services/elemental-state.service';
+import type { ElementalInfusion } from '../../../shared/types/entities';
 import {
   ConnectionStatus,
   RoomStatus,
+  getRange,
   type CharacterClass,
 } from '../../../shared/types/entities';
 
@@ -94,6 +110,10 @@ export class GameGateway
     private readonly scenarioService: ScenarioService,
     private readonly deckManagement: DeckManagementService,
     private readonly inventoryService: InventoryService,
+    private readonly actionDispatcher: ActionDispatcherService,
+    private readonly conditionService: ConditionService,
+    private readonly forcedMovementService: ForcedMovementService,
+    private readonly elementalStateService: ElementalStateService,
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -128,6 +148,9 @@ export class GameGateway
     string,
     Map<string, number>
   >(); // roomCode -> (monsterType -> initiative)
+
+  // Issue #220: Elemental state tracking per room
+  private readonly roomElementalState = new Map<string, ElementalInfusion>(); // roomCode -> elemental state
 
   // Phase 2: Objective System state
   private readonly roomObjectives = new Map<string, ScenarioObjectives>(); // roomCode -> scenario objectives
@@ -175,6 +198,150 @@ export class GameGateway
     }
 
     return { room, roomCode };
+  }
+
+  /**
+   * Get the attack action from a character's selected cards
+   * Returns the attack action (could be from top or bottom of either card)
+   */
+  private getAttackActionFromSelectedCards(character: any): CardAction | null {
+    if (!character.selectedCards) {
+      return null;
+    }
+
+    const { topCardId, bottomCardId } = character.selectedCards;
+    const topCard = this.abilityCardService.getCardById(topCardId);
+    const bottomCard = this.abilityCardService.getCardById(bottomCardId);
+
+    // Check for attack action in order of preference
+    if (topCard?.topAction?.type === 'attack') {
+      return topCard.topAction;
+    }
+    if (bottomCard?.bottomAction?.type === 'attack') {
+      return bottomCard.bottomAction;
+    }
+    if (topCard?.bottomAction?.type === 'attack') {
+      return topCard.bottomAction;
+    }
+    if (bottomCard?.topAction?.type === 'attack') {
+      return bottomCard.topAction;
+    }
+
+    return null;
+  }
+
+  /**
+   * Process element infusion modifiers (generate elements)
+   * Issue #220: Elements are generated when an action with infuse completes
+   */
+  private processInfuseModifiers(
+    roomCode: string,
+    modifiers: Modifier[],
+  ): void {
+    const infuseModifiers = getInfuseModifiers(modifiers);
+    if (infuseModifiers.length === 0) return;
+
+    let elementalState = this.roomElementalState.get(roomCode);
+    if (!elementalState) {
+      elementalState = this.elementalStateService.initializeElementalState();
+      this.roomElementalState.set(roomCode, elementalState);
+    }
+
+    for (const infuse of infuseModifiers) {
+      // 'generate' infuses immediately, 'generate-after' would be handled at turn end
+      if (infuse.state === 'generate') {
+        elementalState = this.elementalStateService.generateElement(
+          elementalState,
+          infuse.element,
+        );
+        this.logger.log(`Element infused: ${infuse.element} is now STRONG`);
+      }
+    }
+
+    this.roomElementalState.set(roomCode, elementalState);
+
+    // Emit elemental state update to all clients
+    this.server.to(roomCode).emit('elemental_state_updated', {
+      elementalState,
+    });
+  }
+
+  /**
+   * Process element consumption modifiers (consume elements for bonuses)
+   * Issue #220: Elements must be strong or waning to be consumed
+   * Returns the total bonus value if element was successfully consumed
+   */
+  private processConsumeModifiers(
+    roomCode: string,
+    modifiers: Modifier[],
+  ): { bonuses: Map<string, number>; consumed: boolean } {
+    const consumeModifiers = getConsumeModifiers(modifiers);
+    const bonuses = new Map<string, number>();
+    let anyConsumed = false;
+
+    if (consumeModifiers.length === 0) {
+      return { bonuses, consumed: false };
+    }
+
+    let elementalState = this.roomElementalState.get(roomCode);
+    if (!elementalState) {
+      return { bonuses, consumed: false };
+    }
+
+    for (const consume of consumeModifiers) {
+      if (
+        this.elementalStateService.canConsumeElement(
+          elementalState,
+          consume.element,
+        )
+      ) {
+        elementalState = this.elementalStateService.consumeElement(
+          elementalState,
+          consume.element,
+        );
+        anyConsumed = true;
+
+        // Track the bonus by effect type
+        const currentBonus = bonuses.get(consume.bonus.effect) || 0;
+        bonuses.set(consume.bonus.effect, currentBonus + consume.bonus.value);
+
+        this.logger.log(
+          `Element consumed: ${consume.element} for +${consume.bonus.value} ${consume.bonus.effect}`,
+        );
+      } else {
+        this.logger.log(
+          `Element ${consume.element} not available for consumption (inert)`,
+        );
+      }
+    }
+
+    if (anyConsumed) {
+      this.roomElementalState.set(roomCode, elementalState);
+
+      // Emit elemental state update to all clients
+      this.server.to(roomCode).emit('elemental_state_updated', {
+        elementalState,
+      });
+    }
+
+    return { bonuses, consumed: anyConsumed };
+  }
+
+  /**
+   * Decay all elements at end of round
+   * Issue #220: strong -> waning -> inert
+   */
+  private decayRoomElements(roomCode: string): void {
+    let elementalState = this.roomElementalState.get(roomCode);
+    if (!elementalState) return;
+
+    elementalState = this.elementalStateService.decayElements(elementalState);
+    this.roomElementalState.set(roomCode, elementalState);
+
+    // Emit elemental state update to all clients
+    this.server.to(roomCode).emit('elemental_state_updated', {
+      elementalState,
+    });
   }
 
   /**
@@ -1029,6 +1196,12 @@ export class GameGateway
       // Initialize round counter
       this.currentRound.set(room.roomCode, 0);
 
+      // Issue #220: Initialize elemental state for this room
+      this.roomElementalState.set(
+        room.roomCode,
+        this.elementalStateService.initializeElementalState(),
+      );
+
       // Phase 3: Initialize objective system state
       this.roomGameStartTime.set(room.roomCode, Date.now());
       this.initializeObjectiveSystem(room.roomCode, scenario);
@@ -1444,27 +1617,28 @@ export class GameGateway
       }
 
       // Extract attack and range - check top action first (most common)
+      // Range is now in modifiers, use getRange() helper
       if (topCard.topAction?.type === 'attack' && topCard.topAction.value) {
         attackValue = topCard.topAction.value;
-        attackRange = topCard.topAction.range ?? 0;
+        attackRange = getRange(topCard.topAction.modifiers);
       } else if (
         bottomCard.bottomAction?.type === 'attack' &&
         bottomCard.bottomAction.value
       ) {
         attackValue = bottomCard.bottomAction.value;
-        attackRange = bottomCard.bottomAction.range ?? 0;
+        attackRange = getRange(bottomCard.bottomAction.modifiers);
       } else if (
         topCard.bottomAction?.type === 'attack' &&
         topCard.bottomAction.value
       ) {
         attackValue = topCard.bottomAction.value;
-        attackRange = topCard.bottomAction.range ?? 0;
+        attackRange = getRange(topCard.bottomAction.modifiers);
       } else if (
         bottomCard.topAction?.type === 'attack' &&
         bottomCard.topAction.value
       ) {
         attackValue = bottomCard.topAction.value;
-        attackRange = bottomCard.topAction.range ?? 0;
+        attackRange = getRange(bottomCard.topAction.modifiers);
       }
 
       // Set the effective values for this turn
@@ -1734,8 +1908,49 @@ export class GameGateway
         this.modifierDecks.set(room.roomCode, reshuffled);
       }
 
-      // Calculate damage
-      let damage = this.damageService.calculateDamage(baseAttack, modifierCard);
+      // Get attack action modifiers for push/pull/conditions (Issue #220)
+      const attackAction = this.getAttackActionFromSelectedCards(attacker);
+      const attackModifiers = attackAction?.modifiers || [];
+
+      // Process element consumption for bonuses (Issue #220 - Phase 3)
+      // Elements must be consumed BEFORE damage calculation to apply bonuses
+      const { bonuses: elementBonuses } = this.processConsumeModifiers(
+        room.roomCode,
+        attackModifiers,
+      );
+      const elementDamageBonus = elementBonuses.get('damage') || 0;
+
+      // Calculate damage (with element bonus)
+      let damage = this.damageService.calculateDamage(
+        baseAttack + elementDamageBonus,
+        modifierCard,
+      );
+      if (elementDamageBonus > 0) {
+        this.logger.log(
+          `Element damage bonus applied: +${elementDamageBonus} (base: ${baseAttack} -> ${baseAttack + elementDamageBonus})`,
+        );
+      }
+
+      // Apply shield reduction with pierce (Issue #220 - Phase 3/4)
+      const shieldEffect = this.conditionService.getShieldEffect(target.id);
+      if (shieldEffect && shieldEffect.value > 0) {
+        // Check for pierce modifier - reduces effective shield
+        const pierceModifier = getPierce(attackModifiers);
+        const pierceValue = pierceModifier?.value || 0;
+        const effectiveShield = Math.max(0, shieldEffect.value - pierceValue);
+
+        if (pierceValue > 0) {
+          this.logger.log(
+            `Pierce ${pierceValue} reduces shield from ${shieldEffect.value} to ${effectiveShield}`,
+          );
+        }
+
+        const shieldReduction = Math.min(effectiveShield, damage);
+        damage = Math.max(0, damage - shieldReduction);
+        this.logger.log(
+          `Shield absorbed ${shieldReduction} damage (target: ${target.id}, effective shield: ${effectiveShield})`,
+        );
+      }
 
       // Apply damage to target
       let targetHealth: number;
@@ -1889,6 +2104,141 @@ export class GameGateway
       this.logger.log(
         `Attack resolved: ${attacker.id} -> ${payload.targetId}, damage: ${damage}, modifier: ${modifierCard.modifier}`,
       );
+
+      // Apply push/pull modifiers if target is still alive (Issue #220 - Phase 3)
+      if (!targetDead && attackModifiers.length > 0) {
+        // Check for push modifier
+        const pushModifier = getPush(attackModifiers);
+        if (pushModifier && pushModifier.distance > 0) {
+          try {
+            const pushResult = this.forcedMovementService.applyPush(
+              attacker,
+              target,
+              pushModifier.distance,
+            );
+            if (pushResult.success) {
+              this.logger.log(
+                `Push applied: ${target.id} moved to (${pushResult.finalPosition.q}, ${pushResult.finalPosition.r})`,
+              );
+              // Emit position update
+              this.server.to(room.roomCode).emit('entity_moved', {
+                entityId: target.id,
+                entityType: isMonsterTarget ? 'monster' : 'character',
+                fromHex: target.currentHex,
+                toHex: pushResult.finalPosition,
+                movementType: 'push',
+              });
+            }
+          } catch (pushError) {
+            this.logger.warn(
+              `Push failed: ${pushError instanceof Error ? pushError.message : String(pushError)}`,
+            );
+          }
+        }
+
+        // Check for pull modifier
+        const pullModifier = getPull(attackModifiers);
+        if (pullModifier && pullModifier.distance > 0) {
+          try {
+            const pullResult = this.forcedMovementService.applyPull(
+              attacker,
+              target,
+              pullModifier.distance,
+            );
+            if (pullResult.success) {
+              this.logger.log(
+                `Pull applied: ${target.id} moved to (${pullResult.finalPosition.q}, ${pullResult.finalPosition.r})`,
+              );
+              // Emit position update
+              this.server.to(room.roomCode).emit('entity_moved', {
+                entityId: target.id,
+                entityType: isMonsterTarget ? 'monster' : 'character',
+                fromHex: target.currentHex,
+                toHex: pullResult.finalPosition,
+                movementType: 'pull',
+              });
+            }
+          } catch (pullError) {
+            this.logger.warn(
+              `Pull failed: ${pullError instanceof Error ? pullError.message : String(pullError)}`,
+            );
+          }
+        }
+
+        // Apply conditions from attack modifiers
+        const conditionModifiers = getConditions(attackModifiers);
+        for (const condMod of conditionModifiers) {
+          try {
+            this.conditionService.applyCondition(
+              target,
+              condMod.condition,
+              'until-consumed',
+            );
+            this.logger.log(
+              `Condition ${condMod.condition} applied to ${target.id}`,
+            );
+            this.server.to(room.roomCode).emit('condition_applied', {
+              targetId: target.id,
+              condition: condMod.condition,
+            });
+          } catch (condError) {
+            this.logger.warn(
+              `Condition application failed: ${condError instanceof Error ? condError.message : String(condError)}`,
+            );
+          }
+        }
+      }
+
+      // Apply retaliate if target has it and attacker is in range (Issue #220 - Phase 3)
+      if (!targetDead && damage > 0) {
+        const retaliateEffect = this.conditionService.getRetaliateEffect(
+          target.id,
+        );
+        if (retaliateEffect && retaliateEffect.value > 0) {
+          // Check if attacker is in retaliate range
+          const distance = Math.max(
+            Math.abs(attacker.position.q - target.position.q),
+            Math.abs(attacker.position.r - target.position.r),
+            Math.abs(
+              -attacker.position.q -
+                attacker.position.r -
+                (-target.position.q - target.position.r),
+            ),
+          );
+
+          if (distance <= retaliateEffect.range) {
+            const retaliateDamage = retaliateEffect.value;
+            attacker.takeDamage(retaliateDamage);
+            this.logger.log(
+              `Retaliate triggered: ${target.id} dealt ${retaliateDamage} damage to ${attacker.id}`,
+            );
+            this.server.to(room.roomCode).emit('retaliate_triggered', {
+              retaliator: target.id,
+              attackerId: attacker.id,
+              damage: retaliateDamage,
+              attackerHealth: attacker.currentHealth,
+            });
+          }
+        }
+      }
+
+      // Process element infusion from attack modifiers (Issue #220 - Phase 3)
+      // Elements are generated AFTER the action completes
+      this.processInfuseModifiers(room.roomCode, attackModifiers);
+
+      // Award XP from attack action (Issue #220 - Phase 4)
+      const xpValue = getXPValue(attackModifiers);
+      if (xpValue > 0) {
+        attacker.addExperience(xpValue);
+        this.logger.log(
+          `Awarded ${xpValue} XP to ${attacker.id} (total: ${attacker.experience})`,
+        );
+        this.server.to(room.roomCode).emit('xp_awarded', {
+          characterId: attacker.id,
+          amount: xpValue,
+          total: attacker.experience,
+        });
+      }
 
       // Check scenario completion after attack (in case last monster died)
       if (targetDead && isMonsterTarget) {
@@ -3116,6 +3466,9 @@ export class GameGateway
     if (monsters.length > 0) {
       this.drawMonsterInitiatives(roomCode, monsters);
     }
+
+    // Issue #220: Decay elements at end of round (strong -> waning -> inert)
+    this.decayRoomElements(roomCode);
 
     // Notify all players that round ended and to select new cards
     // The next round will start automatically when all players have selected cards (in handleSelectCards)

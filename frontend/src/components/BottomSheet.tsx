@@ -167,7 +167,13 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         {showCloseButton && (
           <button
             className={styles.closeButton}
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('[BottomSheet] Close button clicked');
+              onClose();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             aria-label="Close"
           >
             &times;

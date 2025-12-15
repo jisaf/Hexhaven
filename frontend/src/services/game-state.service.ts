@@ -2,6 +2,7 @@ import { websocketService } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
+import { getRange } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -822,13 +823,13 @@ class GameStateManager {
     if (this.state.selectedTopAction?.topAction?.type === 'attack') {
       return {
         value: this.state.selectedTopAction.topAction.value || 0,
-        range: this.state.selectedTopAction.topAction.range ?? 0,
+        range: getRange(this.state.selectedTopAction.topAction.modifiers),
       };
     }
     if (this.state.selectedBottomAction?.bottomAction?.type === 'attack') {
       return {
         value: this.state.selectedBottomAction.bottomAction.value || 0,
-        range: this.state.selectedBottomAction.bottomAction.range ?? 0,
+        range: getRange(this.state.selectedBottomAction.bottomAction.modifiers),
       };
     }
     return null;

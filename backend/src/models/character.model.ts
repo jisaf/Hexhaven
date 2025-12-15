@@ -32,6 +32,7 @@ export interface CharacterData {
   hand: string[]; // Card IDs in hand
   discardPile: string[]; // Card IDs in discard pile
   lostPile: string[]; // Card IDs in lost pile
+  experience: number; // Issue #220: XP earned this scenario
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,7 @@ export class Character {
   private _hand: string[]; // Card IDs in hand
   private _discardPile: string[]; // Card IDs in discard pile
   private _lostPile: string[]; // Card IDs in lost pile
+  private _experience: number = 0; // Issue #220: XP earned this scenario
   private _selectedCards?: {
     topCardId: string;
     bottomCardId: string;
@@ -74,6 +76,7 @@ export class Character {
     this._hand = data.hand || [];
     this._discardPile = data.discardPile || [];
     this._lostPile = data.lostPile || [];
+    this._experience = data.experience || 0;
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
   }
@@ -219,6 +222,25 @@ export class Character {
   set lostPile(cards: string[]) {
     this._lostPile = [...cards];
     this._updatedAt = new Date();
+  }
+
+  // Issue #220: Experience tracking
+  get experience(): number {
+    return this._experience;
+  }
+
+  /**
+   * Add experience points (Issue #220 - Phase 4)
+   * @param amount - XP to add (must be positive)
+   * @returns The new total experience
+   */
+  addExperience(amount: number): number {
+    if (amount < 0) {
+      throw new Error('Experience amount must be non-negative');
+    }
+    this._experience += amount;
+    this._updatedAt = new Date();
+    return this._experience;
   }
 
   // Card pile management methods
@@ -411,6 +433,7 @@ export class Character {
       hand: [...this._hand],
       discardPile: [...this._discardPile],
       lostPile: [...this._lostPile],
+      experience: this._experience,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };
@@ -443,6 +466,7 @@ export class Character {
       hand: cardIds, // Start with all cards in hand
       discardPile: [], // Empty discard pile
       lostPile: [], // Empty lost pile
+      experience: 0, // Issue #220: Start with 0 XP
       createdAt: now,
       updatedAt: now,
     });
@@ -484,6 +508,7 @@ export class Character {
       hand: cardIds,
       discardPile: [],
       lostPile: [],
+      experience: 0, // Issue #220: Start with 0 XP
       createdAt: now,
       updatedAt: now,
     });

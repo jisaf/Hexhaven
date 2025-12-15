@@ -67,7 +67,6 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
             <div
               key={card.id}
               className={wrapperClassName}
-              onClick={() => !waiting && onCardSelect(card)}
               onMouseEnter={() => !waiting && setFocusedId(card.id)}
               onMouseLeave={() => !waiting && setFocusedId(null)}
             >
@@ -83,6 +82,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                       : undefined
                 }
                 disabled={disabled || waiting}
+                onClick={() => !waiting && onCardSelect(card)}
               />
             </div>
           );

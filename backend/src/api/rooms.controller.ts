@@ -18,11 +18,7 @@ import {
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { Player } from '../models/player.model';
-import {
-  NotFoundError,
-  ValidationError,
-  ConflictError,
-} from '../types/errors';
+import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
 import { RoomStatus } from '../../../shared/types/entities';
 
 interface CreateRoomRequest {

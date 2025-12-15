@@ -6,8 +6,20 @@
       "name": "Trample",
       "level": 1,
       "initiative": 72,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": ["Push 1"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "xp", "value": 1 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "push", "distance": 1 }
+        ]
+      }
     },
     {
       "id": "brute-eye-for-eye",
@@ -15,8 +27,20 @@
       "name": "Eye for an Eye",
       "level": 1,
       "initiative": 51,
-      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Retaliate 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isPersistent": true },
-      "bottomAction": { "type": "special", "value": null, "range": null, "effects": ["Shield 1"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isPersistent": true }
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "retaliate", "value": 2, "duration": "persistent" },
+          { "type": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "shield", "value": 1, "duration": "persistent" },
+          { "type": "persistent" }
+        ]
+      }
     },
     {
       "id": "brute-balanced-measure",
@@ -24,8 +48,14 @@
       "name": "Balanced Measure",
       "level": 1,
       "initiative": 20,
-      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 4
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
     },
     {
       "id": "brute-shield-bash",
@@ -33,8 +63,20 @@
       "name": "Shield Bash",
       "level": 1,
       "initiative": 15,
-      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": ["Push 1", "Stun"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "isLost": true, "xp": 2 },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "push", "distance": 1 },
+          { "type": "condition", "condition": "stun", "duration": "round" },
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "brute-warding-strength",
@@ -42,8 +84,20 @@
       "name": "Warding Strength",
       "level": 1,
       "initiative": 32,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": "light", "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": "light", "elementBonus": { "effect": "Heal", "value": 2 } }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "light", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "consume", "element": "light", "bonus": { "effect": "heal", "value": 2 } }
+        ]
+      }
     },
     {
       "id": "brute-leaping-cleave",
@@ -51,8 +105,17 @@
       "name": "Leaping Cleave",
       "level": 1,
       "initiative": 54,
-      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": ["Jump"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 4
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "jump" }
+        ]
+      }
     },
     {
       "id": "spellweaver-mana-bolt",
@@ -60,8 +123,17 @@
       "name": "Mana Bolt",
       "level": 1,
       "initiative": 25,
-      "topAction": { "type": "attack", "value": 3, "range": 4, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 4 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "spellweaver-fire-orbs",
@@ -69,8 +141,19 @@
       "name": "Fire Orbs",
       "level": 1,
       "initiative": 69,
-      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Target 2 enemies"], "elementGenerate": "fire", "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "target", "count": 2 },
+          { "type": "infuse", "element": "fire", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
     },
     {
       "id": "spellweaver-aid-from-ether",
@@ -80,14 +163,10 @@
       "initiative": 91,
       "topAction": {
         "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null,
-        "isLost": true,
-        "xp": 2,
+        "modifiers": [
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ],
         "summon": {
           "name": "Mystic Ally",
           "health": 4,
@@ -95,10 +174,18 @@
           "move": 3,
           "range": 2,
           "typeIcon": "🔮",
-          "effects": ["Push 1"]
+          "modifiers": [
+            { "type": "push", "distance": 1 }
+          ]
         }
       },
-      "bottomAction": { "type": "heal", "value": 2, "range": 2, "effects": ["All allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ]
+      }
     },
     {
       "id": "spellweaver-spirit-of-doom",
@@ -108,15 +195,12 @@
       "initiative": 82,
       "topAction": {
         "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": "dark",
-        "elementConsume": null,
-        "elementBonus": null,
-        "isLost": true,
-        "isPersistent": true,
-        "xp": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "dark", "state": "generate" },
+          { "type": "lost" },
+          { "type": "persistent" },
+          { "type": "xp", "value": 3 }
+        ],
         "summon": {
           "name": "Shadow Spirit",
           "health": 6,
@@ -124,10 +208,15 @@
           "move": 2,
           "range": 0,
           "typeIcon": "👻",
-          "effects": ["Wound"]
+          "modifiers": [
+            { "type": "condition", "condition": "wound", "duration": "until-consumed" }
+          ]
         }
       },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "spellweaver-frost-armor",
@@ -135,8 +224,18 @@
       "name": "Frost Armor",
       "level": 1,
       "initiative": 19,
-      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Shield 2"], "elementGenerate": "ice", "elementConsume": null, "elementBonus": null, "isPersistent": true },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "infuse", "element": "ice", "state": "generate" },
+          { "type": "shield", "value": 2, "duration": "persistent" },
+          { "type": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
     },
     {
       "id": "spellweaver-living-torch",
@@ -146,14 +245,11 @@
       "initiative": 76,
       "topAction": {
         "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": "fire",
-        "elementConsume": null,
-        "elementBonus": null,
-        "isLost": true,
-        "xp": 2,
+        "modifiers": [
+          { "type": "infuse", "element": "fire", "state": "generate" },
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ],
         "summon": {
           "name": "Fire Elemental",
           "health": 3,
@@ -161,10 +257,20 @@
           "move": 4,
           "range": 3,
           "typeIcon": "🔥",
-          "effects": ["Wound", "Push 2"]
+          "modifiers": [
+            { "type": "condition", "condition": "wound", "duration": "until-consumed" },
+            { "type": "push", "distance": 2 }
+          ]
         }
       },
-      "bottomAction": { "type": "attack", "value": 2, "range": 2, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 }
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 2 },
+          { "type": "xp", "value": 1 }
+        ]
+      }
     },
     {
       "id": "scoundrel-backstab",
@@ -172,8 +278,18 @@
       "name": "Backstab",
       "level": 1,
       "initiative": 12,
-      "topAction": { "type": "attack", "value": 5, "range": 0, "effects": ["Adjacent to ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null, "xp": 1 },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 5,
+        "modifiers": [
+          { "type": "xp", "value": 1 }
+        ],
+        "requirement": "adjacent-to-ally"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "scoundrel-throwing-knives",
@@ -181,8 +297,18 @@
       "name": "Throwing Knives",
       "level": 1,
       "initiative": 48,
-      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Target 2 enemies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "target", "count": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "loot",
+        "value": 1
+      }
     },
     {
       "id": "scoundrel-quick-hands",
@@ -190,8 +316,14 @@
       "name": "Quick Hands",
       "level": 1,
       "initiative": 10,
-      "topAction": { "type": "loot", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "loot",
+        "value": 2
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
     },
     {
       "id": "scoundrel-smoke-bomb",
@@ -199,8 +331,20 @@
       "name": "Smoke Bomb",
       "level": 1,
       "initiative": 30,
-      "topAction": { "type": "special", "value": null, "range": null, "effects": ["Invisible"], "elementGenerate": "dark", "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 5, "range": null, "effects": ["Jump"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "condition", "condition": "invisible", "duration": "round" },
+          { "type": "infuse", "element": "dark", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 5,
+        "modifiers": [
+          { "type": "jump" }
+        ]
+      }
     },
     {
       "id": "scoundrel-venom-shiv",
@@ -208,8 +352,17 @@
       "name": "Venom Shiv",
       "level": 1,
       "initiative": 35,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": ["Poison"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "condition", "condition": "poison", "duration": "until-consumed" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
     },
     {
       "id": "scoundrel-flanking-strike",
@@ -217,8 +370,17 @@
       "name": "Flanking Strike",
       "level": 1,
       "initiative": 22,
-      "topAction": { "type": "attack", "value": 4, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": "dark", "elementBonus": { "effect": "Attack", "value": 2 } },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "modifiers": [
+          { "type": "consume", "element": "dark", "bonus": { "effect": "damage", "value": 2 } }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "cragheart-rock-tunnel",
@@ -226,8 +388,21 @@
       "name": "Rock Tunnel",
       "level": 1,
       "initiative": 41,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": "earth", "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": ["Through obstacles"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "earth", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "modifiers": [
+          { "type": "jump" }
+        ],
+        "special": "through-obstacles"
+      }
     },
     {
       "id": "cragheart-massive-boulder",
@@ -235,8 +410,19 @@
       "name": "Massive Boulder",
       "level": 1,
       "initiative": 87,
-      "topAction": { "type": "attack", "value": 4, "range": 3, "effects": ["Push 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "special", "value": null, "range": null, "effects": ["Create obstacle"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "push", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [],
+        "special": "create-obstacle"
+      }
     },
     {
       "id": "cragheart-earthen-clod",
@@ -244,8 +430,18 @@
       "name": "Earthen Clod",
       "level": 1,
       "initiative": 52,
-      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Immobilize"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "condition", "condition": "immobilize", "duration": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2
+      }
     },
     {
       "id": "cragheart-rumbling-advance",
@@ -253,8 +449,20 @@
       "name": "Rumbling Advance",
       "level": 1,
       "initiative": 29,
-      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": ["All adjacent"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": "earth", "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "aoe", "pattern": "burst", "size": 1 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "earth", "state": "generate" }
+        ]
+      }
     },
     {
       "id": "cragheart-backup-ammunition",
@@ -262,8 +470,18 @@
       "name": "Backup Ammunition",
       "level": 1,
       "initiative": 77,
-      "topAction": { "type": "attack", "value": 1, "range": 4, "effects": ["Attack 3 times"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 1,
+        "modifiers": [
+          { "type": "range", "distance": 4 },
+          { "type": "target", "count": 3 }
+        ]
+      },
+      "bottomAction": {
+        "type": "loot",
+        "value": 1
+      }
     },
     {
       "id": "cragheart-natures-lift",
@@ -271,8 +489,20 @@
       "name": "Nature's Lift",
       "level": 1,
       "initiative": 44,
-      "topAction": { "type": "heal", "value": 3, "range": 2, "effects": ["Ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": "earth", "elementBonus": { "effect": "Move", "value": 2 } }
+      "topAction": {
+        "type": "heal",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "modifiers": [
+          { "type": "consume", "element": "earth", "bonus": { "effect": "move", "value": 2 } }
+        ]
+      }
     },
     {
       "id": "mindthief-perverse-edge",
@@ -280,8 +510,14 @@
       "name": "Perverse Edge",
       "level": 1,
       "initiative": 7,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 4, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
     },
     {
       "id": "mindthief-the-minds-weakness",
@@ -291,20 +527,21 @@
       "initiative": 75,
       "topAction": {
         "type": "text",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null,
-        "isPersistent": true,
-        "textContent": {
-          "title": "AUGMENT",
-          "text": "Add +2 Attack to all your melee attacks this round.",
-          "quote": "The enemy's fear becomes your strength."
-        }
+        "title": "AUGMENT",
+        "description": "Add +2 Attack to all your melee attacks this round.",
+        "quote": "The enemy's fear becomes your strength.",
+        "modifiers": [
+          { "type": "persistent" }
+        ]
       },
-      "bottomAction": { "type": "attack", "value": 2, "range": 0, "effects": [], "elementGenerate": "dark", "elementConsume": null, "elementBonus": null, "xp": 1 }
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "infuse", "element": "dark", "state": "generate" },
+          { "type": "xp", "value": 1 }
+        ]
+      }
     },
     {
       "id": "mindthief-feedback-loop",
@@ -312,8 +549,18 @@
       "name": "Feedback Loop",
       "level": 1,
       "initiative": 79,
-      "topAction": { "type": "attack", "value": 2, "range": 2, "effects": ["Pull 2"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "heal", "value": 2, "range": null, "effects": ["Self"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 2 },
+          { "type": "pull", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2
+      }
     },
     {
       "id": "mindthief-scurry",
@@ -321,8 +568,14 @@
       "name": "Scurry",
       "level": 1,
       "initiative": 4,
-      "topAction": { "type": "attack", "value": 2, "range": 0, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 6, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 6
+      }
     },
     {
       "id": "mindthief-withering-claw",
@@ -331,20 +584,18 @@
       "level": 1,
       "initiative": 55,
       "topAction": {
-        "type": "text",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": "dark",
-        "elementBonus": null,
-        "textContent": {
-          "title": "CURSE",
-          "text": "Target enemy suffers Curse and Muddle. On kill, gain 2 XP.",
-          "quote": "Their mind unravels at your touch."
-        }
+        "type": "special",
+        "modifiers": [
+          { "type": "condition", "condition": "curse", "duration": "until-consumed" },
+          { "type": "condition", "condition": "muddle", "duration": "round" },
+          { "type": "consume", "element": "dark", "bonus": { "effect": "custom", "value": 0 } }
+        ],
+        "xpOnKill": 2
       },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "mindthief-gnawing-horde",
@@ -354,12 +605,6 @@
       "initiative": 85,
       "topAction": {
         "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null,
         "summon": {
           "name": "Rat Swarm",
           "health": 2,
@@ -369,7 +614,11 @@
           "typeIcon": "🐀"
         }
       },
-      "bottomAction": { "type": "attack", "value": 3, "range": 0, "effects": ["Adjacent to summon"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "bottomAction": {
+        "type": "attack",
+        "value": 3,
+        "requirement": "adjacent-to-summon"
+      }
     },
     {
       "id": "tinkerer-flamethrower",
@@ -377,8 +626,18 @@
       "name": "Flamethrower",
       "level": 1,
       "initiative": 68,
-      "topAction": { "type": "attack", "value": 3, "range": 0, "effects": ["All adjacent"], "elementGenerate": "fire", "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "aoe", "pattern": "burst", "size": 1 },
+          { "type": "infuse", "element": "fire", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
     },
     {
       "id": "tinkerer-crank-bow",
@@ -386,8 +645,18 @@
       "name": "Crank Bow",
       "level": 1,
       "initiative": 33,
-      "topAction": { "type": "attack", "value": 1, "range": 3, "effects": ["Attack 3 times"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 3, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 1,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "target", "count": 3 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     },
     {
       "id": "tinkerer-restorative-mist",
@@ -395,8 +664,18 @@
       "name": "Restorative Mist",
       "level": 1,
       "initiative": 24,
-      "topAction": { "type": "heal", "value": 3, "range": 2, "effects": ["All allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "heal",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ],
+        "target": "all-allies"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
     },
     {
       "id": "tinkerer-enhancement-field",
@@ -404,8 +683,17 @@
       "name": "Enhancement Field",
       "level": 1,
       "initiative": 74,
-      "topAction": { "type": "special", "value": null, "range": 2, "effects": ["Strengthen allies"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "move", "value": 2, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "range", "distance": 2 },
+          { "type": "condition", "condition": "strengthen", "duration": "round", "target": "allies" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
     },
     {
       "id": "tinkerer-stun-shot",
@@ -413,8 +701,21 @@
       "name": "Stun Shot",
       "level": 1,
       "initiative": 19,
-      "topAction": { "type": "attack", "value": 2, "range": 3, "effects": ["Stun"], "elementGenerate": null, "elementConsume": null, "elementBonus": null },
-      "bottomAction": { "type": "heal", "value": 2, "range": 1, "effects": ["Ally"], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "condition", "condition": "stun", "duration": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 1 }
+        ]
+      }
     },
     {
       "id": "tinkerer-harmless-contraption",
@@ -424,12 +725,6 @@
       "initiative": 88,
       "topAction": {
         "type": "summon",
-        "value": null,
-        "range": null,
-        "effects": [],
-        "elementGenerate": null,
-        "elementConsume": null,
-        "elementBonus": null,
         "summon": {
           "name": "Decoy Bot",
           "health": 5,
@@ -439,7 +734,10 @@
           "typeIcon": "🤖"
         }
       },
-      "bottomAction": { "type": "loot", "value": 1, "range": null, "effects": [], "elementGenerate": null, "elementConsume": null, "elementBonus": null }
+      "bottomAction": {
+        "type": "loot",
+        "value": 1
+      }
     }
   ]
 }
