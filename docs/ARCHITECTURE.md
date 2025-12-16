@@ -598,13 +598,20 @@ Players can control multiple characters (up to 4) in a single game session, enab
 
 **WebSocket Events**:
 ```typescript
-// Client → Server
+// Client → Server (Lobby)
 select_character {
   characterId?: string;      // Character UUID or class name
   action: 'add' | 'remove' | 'set_active';
   targetCharacterId?: string; // For ID-based remove/set_active (preferred)
   index?: number;            // Deprecated: For index-based operations
 }
+
+// Client → Server (In-Game) - ALL require characterId
+select_cards     { characterId: string, topCardId: string, bottomCardId: string }
+move_character   { characterId: string, targetHex: AxialCoordinates }
+attack_target    { characterId: string, targetId: string }
+collect_loot     { characterId: string, hexCoordinates: AxialCoordinates }
+use_item         { characterId: string, itemId: string }
 
 // Server → Client
 character_selected {
@@ -615,11 +622,32 @@ character_selected {
 }
 ```
 
+**Character Service Cleanup Pattern**:
+```typescript
+// Centralized cleanup for game initialization
+characterService.prepareForNewGame(playerIds[]): number  // Returns removed count
+
+// Single-player operations
+characterService.removeAllCharactersForPlayer(playerId)  // Player leaves
+characterService.removeCharacterForPlayer(playerId, charId)  // Lobby deselection
+```
+
+**Turn Detection & Auto-Switching**:
+When a turn starts, the frontend checks if the entity is ANY of the player's characters (not just the active one) and auto-switches to that character:
+```typescript
+const isMyCharacter = myCharacterIds.includes(data.entityId);
+if (isMyCharacter) {
+  switchActiveCharacter(myCharacterIds.indexOf(data.entityId));
+}
+```
+
 **Design Decisions**:
+- **All actions require characterId**: No reliance on `getCharacterByPlayerId()` which only returns first character
+- **ID-based lookups**: `getCharacterById()` is the standard, `getCharacterByPlayerId()` is deprecated
+- **Turn-based auto-switching**: Frontend automatically switches to the character whose turn it is
+- **Centralized cleanup**: `prepareForNewGame()` clears all characters before game start
 - **No optimistic updates**: Wait for server confirmation before UI updates
-- **ID-based operations**: More robust than index-based (deprecated)
 - **Single source of truth**: RoomSessionManager, not component state
-- **Backward compatibility**: Both ID and index methods supported during migration
 
 ---
 

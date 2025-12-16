@@ -86,6 +86,9 @@ export class CharacterService {
   /**
    * Create a new character for a player (backward compatibility)
    * Replaces any existing character
+   *
+   * @deprecated Use addCharacterForPlayer() for multi-character support.
+   * This method removes all existing characters which breaks multi-character scenarios.
    */
   createCharacter(
     playerId: string,
@@ -107,6 +110,9 @@ export class CharacterService {
    * Select or update character class for a player
    * If character doesn't exist, create it; if it exists, update the class
    * For backward compatibility - replaces all existing characters with single new one
+   *
+   * @deprecated Use addCharacterForPlayer() for multi-character support.
+   * This method removes all existing characters which breaks multi-character scenarios.
    */
   selectCharacter(
     playerId: string,
@@ -144,8 +150,15 @@ export class CharacterService {
   /**
    * Get character by player ID (backward compatibility)
    * Returns first character or null
+   *
+   * @deprecated Use getCharacterById() instead. This method only returns the first
+   * character and is not safe for multi-character scenarios. All handlers should
+   * receive characterId in the payload and use getCharacterById() for lookups.
    */
   getCharacterByPlayerId(playerId: string): Character | null {
+    console.warn(
+      '[CharacterService] getCharacterByPlayerId is deprecated. Use getCharacterById() instead.',
+    );
     const characters = this.getCharactersByPlayerId(playerId);
     return characters[0] || null;
   }
@@ -280,6 +293,26 @@ export class CharacterService {
   clearAllCharacters(): void {
     this.characters.clear();
     this.playerCharacters.clear();
+  }
+
+  /**
+   * Prepare for a new game by clearing all characters for specified players.
+   * This is the SINGLE centralized cleanup point - all game initialization should use this.
+   *
+   * @param playerIds - Array of player UUIDs to clear characters for
+   * @returns Number of characters removed
+   */
+  prepareForNewGame(playerIds: string[]): number {
+    let removedCount = 0;
+    for (const playerId of playerIds) {
+      const characterIds = this.playerCharacters.get(playerId);
+      if (characterIds && characterIds.length > 0) {
+        removedCount += characterIds.length;
+        characterIds.forEach((id) => this.characters.delete(id));
+        this.playerCharacters.delete(playerId);
+      }
+    }
+    return removedCount;
   }
 
   /**

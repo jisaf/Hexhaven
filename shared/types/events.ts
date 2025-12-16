@@ -46,7 +46,7 @@ export interface SelectCardsPayload {
 }
 
 export interface AttackTargetPayload {
-  characterId?: string; // Explicit attacker (for multi-character control)
+  characterId: string; // Required: which character is attacking (multi-character support)
   targetId: string; // Monster or Character UUID
   attackingCardId: string;
 }
@@ -59,6 +59,7 @@ export interface UseAbilityPayload {
 }
 
 export interface CollectLootPayload {
+  characterId: string; // Required: which character is collecting (multi-character support)
   hexCoordinates: AxialCoordinates;
 }
 
@@ -67,6 +68,7 @@ export interface EndTurnPayload {
 }
 
 export interface LongRestPayload {
+  characterId: string; // Required: which character is resting (multi-character support)
   cardToLose: string; // AbilityCard UUID to permanently lose
 }
 
@@ -86,16 +88,19 @@ export interface ReconnectPayload {
 // ========== ITEM & INVENTORY EVENTS (Issue #205) ==========
 
 export interface UseItemPayload {
+  characterId: string; // Required: which character is using item (multi-character support)
   itemId: string;
   targetId?: string;          // For targeted items (e.g., heal ally)
   targetHex?: AxialCoordinates; // For area effect items
 }
 
 export interface EquipItemPayload {
+  characterId: string; // Required: which character is equipping (multi-character support)
   itemId: string;
 }
 
 export interface UnequipItemPayload {
+  characterId: string; // Required: which character is unequipping (multi-character support)
   itemId: string; // Unequip by item ID - backend finds the slot
 }
 

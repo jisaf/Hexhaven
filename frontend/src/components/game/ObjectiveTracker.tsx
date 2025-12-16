@@ -44,14 +44,6 @@ export const ObjectiveTracker: React.FC<ObjectiveTrackerProps> = ({ objectives, 
   const primaryProgress = progress.get(objectives.primary.id);
   const primaryPercentage = primaryProgress ? Math.min(100, Math.max(0, primaryProgress.percentage)) : 0;
 
-  // Debug logging
-  console.log('[ObjectiveTracker] Render:', {
-    objectiveId: objectives.primary.id,
-    progressMapSize: progress.size,
-    primaryProgress: primaryProgress ? `${primaryProgress.current}/${primaryProgress.target} (${primaryProgress.percentage}%)` : 'none',
-    allProgressKeys: Array.from(progress.keys()),
-  });
-
   // Compact view - just a progress indicator button
   if (!isExpanded) {
     return (
