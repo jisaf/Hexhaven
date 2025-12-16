@@ -4297,6 +4297,28 @@ export class GameGateway
 
         this.logger.log(`Game result saved to database for room ${roomCode}`);
 
+        // Persist character gold from scenario completion (Issue #204)
+        // Gold collected during gameplay is now added to character's persistent gold balance
+        for (const playerResult of playerResults) {
+          try {
+            // Load current character gold and add earned gold (saveCharacterState sets exact value, not increment)
+            const character = await this.prisma.character.findUniqueOrThrow({
+              where: { id: playerResult.characterId },
+            });
+            const newTotalGold = character.gold + playerResult.goldGained;
+
+            await characterService.saveCharacterState(
+              playerResult.characterId,
+              { gold: newTotalGold }
+            );
+          } catch (error) {
+            // Non-persistent characters (anonymous players) will throw - log and continue
+            this.logger.warn(
+              `Could not persist gold for character ${playerResult.characterId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+          }
+        }
+
         // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
         // This resets consumed items and refreshes spent items for the next scenario
         for (const player of room.players) {
