@@ -28,6 +28,7 @@ import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
+import { useCharacterSelection } from '../hooks/useCharacterSelection';
 import {
   getPlayerNickname,
   getDisplayName,
@@ -45,7 +46,6 @@ export function Lobby() {
 
   // State
   const [mode, setMode] = useState<LobbyMode>('initial');
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | undefined>();
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +54,16 @@ export function Lobby() {
   const sessionState = useRoomSession();
   const room = sessionState.roomCode ? { roomCode: sessionState.roomCode, status: sessionState.status } : null;
   const players = sessionState.players;
+
+  // Character selection hook - single source of truth from RoomSessionManager
+  const {
+    selectedCharacters,
+    activeCharacterIndex,
+    addCharacter,
+    removeCharacter,
+    setActiveCharacter,
+    disabledCharacterIds,
+  } = useCharacterSelection();
 
   const [activeRooms, setActiveRooms] = useState([]);
   const [myRooms, setMyRooms] = useState([]);
@@ -186,12 +196,6 @@ export function Lobby() {
     }
   };
 
-  // Character selection (T069) - Updated for persistent characters
-  const handleSelectCharacter = (characterId: string) => {
-    setSelectedCharacterId(characterId);
-    websocketService.selectCharacter(characterId);
-  };
-
   // Scenario selection (US5 - T179)
   const handleSelectScenario = (scenarioId: string) => {
     setSelectedScenario(scenarioId);
@@ -212,11 +216,8 @@ export function Lobby() {
     websocketService.startGame(selectedScenario);
   };
 
-  // Get disabled character IDs (characters already selected by other players)
+  // Get current player info
   const currentPlayerId = websocketService.getPlayerUUID();
-  // TODO: Implement getDisabledCharacterIds when backend supports character ID in player state
-  const disabledCharacterIds: string[] = [];
-
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
   const isCurrentPlayerHost = sessionState.playerRole === 'host' || isPlayerHost(currentPlayer);
 
@@ -317,13 +318,24 @@ export function Lobby() {
             players={players}
             currentPlayerId={currentPlayerId || undefined}
             isHost={isCurrentPlayerHost}
-            selectedCharacterId={selectedCharacterId}
+            selectedCharacters={selectedCharacters}
             disabledCharacterIds={disabledCharacterIds}
+            activeCharacterIndex={activeCharacterIndex}
             selectedScenario={selectedScenario}
             canStartGame={canStartGame}
             allPlayersReady={playersReady}
             error={error}
-            onSelectCharacter={handleSelectCharacter}
+            onAddCharacter={addCharacter}
+            onRemoveCharacter={(index: number) => {
+              // Convert index-based to ID-based removal
+              const char = selectedCharacters[index];
+              if (char) removeCharacter(char.id);
+            }}
+            onSetActiveCharacter={(index: number) => {
+              // Convert index-based to ID-based set active
+              const char = selectedCharacters[index];
+              if (char) setActiveCharacter(char.id);
+            }}
             onSelectScenario={handleSelectScenario}
             onStartGame={handleStartGame}
           />

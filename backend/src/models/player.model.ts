@@ -7,14 +7,16 @@
 
 import type { CharacterClass } from '../../../shared/types/entities';
 import { ConnectionStatus } from '../../../shared/types/entities';
+import { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
 
 export interface PlayerData {
   id: string;
   uuid: string;
   nickname: string;
   roomId: string | null; // Room this player instance belongs to
-  characterClass: CharacterClass | null;
-  characterId: string | null; // Persistent character ID (002)
+  characterClasses: CharacterClass[]; // Support multi-character control
+  characterIds: string[]; // Persistent character IDs (002)
+  activeCharacterIndex: number; // Which character is currently focused (0-3)
   isHost: boolean;
   connectionStatus: ConnectionStatus;
   isReady: boolean;
@@ -23,13 +25,17 @@ export interface PlayerData {
   updatedAt: Date;
 }
 
+// Re-export for backward compatibility
+export { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
+
 export class Player {
   public readonly id: string;
   public readonly uuid: string;
   private _nickname: string;
   private _roomId: string | null;
-  private _characterClass: CharacterClass | null;
-  private _characterId: string | null; // Persistent character ID (002)
+  private _characterClasses: CharacterClass[]; // Support multi-character control
+  private _characterIds: string[]; // Persistent character IDs (002)
+  private _activeCharacterIndex: number; // Which character is currently focused
   private _isHost: boolean;
   private _connectionStatus: ConnectionStatus;
   private _isReady: boolean;
@@ -42,8 +48,9 @@ export class Player {
     this.uuid = data.uuid;
     this._nickname = data.nickname;
     this._roomId = data.roomId;
-    this._characterClass = data.characterClass;
-    this._characterId = data.characterId || null;
+    this._characterClasses = data.characterClasses || [];
+    this._characterIds = data.characterIds || [];
+    this._activeCharacterIndex = data.activeCharacterIndex || 0;
     this._isHost = data.isHost;
     this._connectionStatus = data.connectionStatus;
     this._isReady = data.isReady;
@@ -61,12 +68,25 @@ export class Player {
     return this._roomId;
   }
 
+  get characterClasses(): CharacterClass[] {
+    return this._characterClasses;
+  }
+
+  get characterIds(): string[] {
+    return this._characterIds;
+  }
+
+  get activeCharacterIndex(): number {
+    return this._activeCharacterIndex;
+  }
+
+  // Backward compatibility - returns first character
   get characterClass(): CharacterClass | null {
-    return this._characterClass;
+    return this._characterClasses[0] || null;
   }
 
   get characterId(): string | null {
-    return this._characterId;
+    return this._characterIds[0] || null;
   }
 
   get isHost(): boolean {
@@ -78,7 +98,7 @@ export class Player {
   }
 
   get isReady(): boolean {
-    return this._isReady;
+    return this._characterClasses.length >= 1;
   }
 
   get lastSeenAt(): Date {
@@ -94,18 +114,66 @@ export class Player {
   }
 
   // Methods
-  selectCharacter(characterClass: CharacterClass, characterId?: string): void {
-    this._characterClass = characterClass;
-    this._characterId = characterId || null;
-    this._isReady = true;
+  addCharacter(characterClass: CharacterClass, characterId?: string): void {
+    if (this._characterClasses.length >= MAX_CHARACTERS_PER_PLAYER) {
+      throw new Error(
+        `Cannot add more than ${MAX_CHARACTERS_PER_PLAYER} characters per player`,
+      );
+    }
+    this._characterClasses.push(characterClass);
+    this._characterIds.push(characterId || '');
     this._updatedAt = new Date();
   }
 
-  clearCharacter(): void {
-    this._characterClass = null;
-    this._characterId = null;
-    this._isReady = false;
+  removeCharacter(index: number): void {
+    if (index < 0 || index >= this._characterClasses.length) {
+      throw new Error('Invalid character index');
+    }
+    this._characterClasses.splice(index, 1);
+    this._characterIds.splice(index, 1);
+    // Adjust active index if needed
+    if (this._activeCharacterIndex >= this._characterClasses.length) {
+      this._activeCharacterIndex = Math.max(
+        0,
+        this._characterClasses.length - 1,
+      );
+    }
     this._updatedAt = new Date();
+  }
+
+  setActiveCharacter(index: number): void {
+    if (index < 0 || index >= this._characterClasses.length) {
+      throw new Error('Invalid character index');
+    }
+    this._activeCharacterIndex = index;
+    this._updatedAt = new Date();
+  }
+
+  getActiveCharacter(): {
+    characterClass: CharacterClass | null;
+    characterId: string | null;
+  } {
+    const index = this._activeCharacterIndex;
+    if (index >= 0 && index < this._characterClasses.length) {
+      return {
+        characterClass: this._characterClasses[index],
+        characterId: this._characterIds[index] || null,
+      };
+    }
+    return { characterClass: null, characterId: null };
+  }
+
+  clearCharacters(): void {
+    this._characterClasses = [];
+    this._characterIds = [];
+    this._activeCharacterIndex = 0;
+    this._updatedAt = new Date();
+  }
+
+  // Backward compatibility method
+  selectCharacter(characterClass: CharacterClass, characterId?: string): void {
+    this.clearCharacters();
+    this.addCharacter(characterClass, characterId);
   }
 
   joinRoom(roomId: string, isHost: boolean = false): void {
@@ -117,9 +185,7 @@ export class Player {
   leaveRoom(): void {
     this._roomId = null;
     this._isHost = false;
-    this._characterClass = null;
-    this._characterId = null;
-    this._isReady = false;
+    this.clearCharacters();
     this._updatedAt = new Date();
   }
 
@@ -154,11 +220,12 @@ export class Player {
       uuid: this.uuid,
       nickname: this._nickname,
       roomId: this._roomId,
-      characterClass: this._characterClass,
-      characterId: this._characterId,
+      characterClasses: this._characterClasses,
+      characterIds: this._characterIds,
+      activeCharacterIndex: this._activeCharacterIndex,
       isHost: this._isHost,
       connectionStatus: this._connectionStatus,
-      isReady: this._isReady,
+      isReady: this.isReady,
       lastSeenAt: this._lastSeenAt,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
@@ -175,8 +242,9 @@ export class Player {
       uuid,
       nickname: nickname.trim(),
       roomId: null,
-      characterClass: null,
-      characterId: null,
+      characterClasses: [],
+      characterIds: [],
+      activeCharacterIndex: 0,
       isHost: false,
       connectionStatus: ConnectionStatus.CONNECTED,
       isReady: false,

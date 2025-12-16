@@ -74,6 +74,12 @@ const hasAttackTarget = (hex: Axial, state: GameState, attackerId: string): bool
     return false;
 }
 
+// Per-character card selection tracking for multi-character support
+interface CharacterCardSelection {
+  topCardId: string | null;
+  bottomCardId: string | null;
+}
+
 interface GameState {
   // Core game data
   gameData: GameStartedPayload | null;
@@ -84,13 +90,18 @@ interface GameState {
   currentTurnEntityId: string | null;
   isMyTurn: boolean;
 
-  // Player state
-  myCharacterId: string | null;
+  // Player state (multi-character support)
+  myCharacterIds: string[]; // All controlled character IDs
+  myUserCharacterIds: string[]; // Database character IDs for inventory API (Issue #205)
+  activeCharacterIndex: number; // Which character is currently active (0-3)
+  myCharacterId: string | null; // Backward compatibility - active character ID
   myUserCharacterId: string | null; // Database character ID for inventory API (Issue #205)
   abilityDeck: AbilityCard[]; // Master copy of ALL cards (never modified)
+  abilityDecks: Map<string, AbilityCard[]>; // Per-character ability decks
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
   selectedBottomAction: AbilityCard | null;
+  characterCardSelections: Map<string, CharacterCardSelection>; // Per-character card selections
 
   // Movement state
   selectedCharacterId: string | null;
@@ -209,12 +220,17 @@ class GameStateManager {
     turnOrder: [],
     currentTurnEntityId: null,
     isMyTurn: false,
+    myCharacterIds: [], // Multi-character support
+    myUserCharacterIds: [], // Multi-character support
+    activeCharacterIndex: 0, // Multi-character support
     myCharacterId: null,
     myUserCharacterId: null,
     abilityDeck: [],
+    abilityDecks: new Map(), // Per-character ability decks
     playerHand: [],
     selectedTopAction: null,
     selectedBottomAction: null,
+    characterCardSelections: new Map(), // Per-character card selections
     selectedCharacterId: null,
     selectedHex: null,
     currentMovementPoints: 0,
@@ -282,7 +298,36 @@ class GameStateManager {
     const playerUUID = websocketService.getPlayerUUID();
     if (!playerUUID) return;
 
-    const myCharacter = data.characters.find(char => char.playerId === playerUUID);
+    // Multi-character support: find ALL characters belonging to current player
+    const myCharacters = data.characters.filter(char => char.playerId === playerUUID);
+    this.state.myCharacterIds = myCharacters.map(c => c.id);
+    this.state.myUserCharacterIds = myCharacters.map(c => c.userCharacterId || '').filter(id => id !== '');
+    this.state.activeCharacterIndex = 0;
+
+    // Initialize card selections and ability decks for ALL characters
+    this.state.characterCardSelections = new Map();
+    this.state.abilityDecks = new Map();
+
+    // Process ALL characters to initialize their decks and selections
+    myCharacters.forEach((char) => {
+      const characterWithDeck = char as typeof char & {
+        abilityDeck?: AbilityCard[];
+        selectedCards?: { topCardId: string; bottomCardId: string; initiative: number };
+      };
+
+      // Initialize card selection tracking for this character
+      this.state.characterCardSelections.set(char.id, {
+        topCardId: characterWithDeck.selectedCards?.topCardId || null,
+        bottomCardId: characterWithDeck.selectedCards?.bottomCardId || null,
+      });
+
+      // Store ability deck for this character
+      if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
+        this.state.abilityDecks.set(char.id, characterWithDeck.abilityDeck);
+      }
+    });
+
+    const myCharacter = myCharacters[0]; // Use first character for backward compatibility
     if (myCharacter) {
       this.state.myCharacterId = myCharacter.id;
       this.state.myUserCharacterId = myCharacter.userCharacterId || null; // Database ID for inventory API
@@ -297,7 +342,7 @@ class GameStateManager {
       };
 
       if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
-        // Store master copy of ALL cards (never modified)
+        // Store master copy of ALL cards (never modified) - backward compatibility
         this.state.abilityDeck = characterWithDeck.abilityDeck;
 
         // Check if character already has card piles (from backend during rejoin)
@@ -354,6 +399,7 @@ class GameStateManager {
 
     this.state.gameData = data;
     this.state.currentRound = 1;
+    console.log(`[GameStateManager] Game started with ${myCharacters.length} characters for player`);
     this.emitStateUpdate();
   }
 
@@ -406,33 +452,65 @@ class GameStateManager {
   private handleRoundEnded(data: { roundNumber: number }): void {
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
 
-    // Move played cards to discard pile BEFORE clearing selection
-    if (this.state.selectedTopAction && this.state.selectedBottomAction && this.state.gameData) {
-      const myCharacter = this.state.gameData.characters.find(c => c.id === this.state.myCharacterId);
-      if (myCharacter && myCharacter.hand && myCharacter.discardPile) {
-        const topCardId = this.state.selectedTopAction.id;
-        const bottomCardId = this.state.selectedBottomAction.id;
+    // Move played cards to discard pile for ALL controlled characters
+    if (this.state.gameData) {
+      for (const charId of this.state.myCharacterIds) {
+        const character = this.state.gameData.characters.find(c => c.id === charId);
+        const selection = this.state.characterCardSelections.get(charId);
 
-        // Remove played cards from hand pile
-        myCharacter.hand = myCharacter.hand.filter(id => id !== topCardId && id !== bottomCardId);
+        if (character && character.hand && character.discardPile && selection?.topCardId && selection?.bottomCardId) {
+          const topCardId = selection.topCardId;
+          const bottomCardId = selection.bottomCardId;
 
-        // Add played cards to discard pile
-        myCharacter.discardPile.push(topCardId, bottomCardId);
+          // Remove played cards from hand pile
+          character.hand = character.hand.filter(id => id !== topCardId && id !== bottomCardId);
 
-        // Also remove from playerHand so they don't appear in card selection
-        this.state.playerHand = this.state.playerHand.filter(card =>
-          card.id !== topCardId && card.id !== bottomCardId
-        );
+          // Add played cards to discard pile
+          character.discardPile.push(topCardId, bottomCardId);
 
-        console.log(`[GameStateManager] Moved played cards to discard: ${topCardId}, ${bottomCardId}`);
-        console.log(`[GameStateManager] Remaining hand: ${myCharacter.hand.length}, Discard: ${myCharacter.discardPile.length}`);
+          console.log(`[GameStateManager] Moved played cards to discard for ${charId}: ${topCardId}, ${bottomCardId}`);
+        }
+      }
+
+      // Update playerHand for the currently active character
+      const activeCharacter = this.state.gameData.characters.find(c => c.id === this.state.myCharacterId);
+      if (activeCharacter) {
+        const characterDeck = this.state.abilityDecks.get(this.state.myCharacterId!) || this.state.abilityDeck;
+        this.state.playerHand = characterDeck.filter(card => activeCharacter.hand?.includes(card.id));
       }
     }
 
-    // Clear previously selected cards so players can select new ones for next round
+    // Clear all character card selections for new round
+    this.state.characterCardSelections = new Map();
+    for (const charId of this.state.myCharacterIds) {
+      this.state.characterCardSelections.set(charId, {
+        topCardId: null,
+        bottomCardId: null,
+      });
+    }
+
+    // Clear currently displayed selections
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+
+    // Reset to first character for card selection
+    if (this.state.myCharacterIds.length > 0) {
+      this.state.activeCharacterIndex = 0;
+      this.state.myCharacterId = this.state.myCharacterIds[0];
+      this.state.myUserCharacterId = this.state.myUserCharacterIds[0] || null;
+
+      // Load first character's hand
+      if (this.state.gameData) {
+        const firstChar = this.state.gameData.characters.find(c => c.id === this.state.myCharacterId);
+        if (firstChar) {
+          const characterDeck = this.state.abilityDecks.get(this.state.myCharacterId!) || this.state.abilityDeck;
+          this.state.playerHand = characterDeck.filter(card => firstChar.hand?.includes(card.id));
+        }
+      }
+    }
+
     this.state.showCardSelection = true;
+    this.state.waitingForRoundStart = false;
     this.emitStateUpdate();
   }
 
@@ -681,27 +759,72 @@ class GameStateManager {
     } else if (!this.state.selectedBottomAction && card.id !== this.state.selectedTopAction.id) {
       this.state.selectedBottomAction = card;
     }
+
+    // Update characterCardSelections for multi-character tracking
+    if (this.state.myCharacterId) {
+      this.state.characterCardSelections.set(this.state.myCharacterId, {
+        topCardId: this.state.selectedTopAction?.id || null,
+        bottomCardId: this.state.selectedBottomAction?.id || null,
+      });
+    }
+
     this.emitStateUpdate();
   }
 
   public confirmCardSelection(): void {
-    if (this.state.selectedTopAction && this.state.selectedBottomAction) {
-      websocketService.selectCards(this.state.selectedTopAction.id, this.state.selectedBottomAction.id);
-      this.addLog([
-          { text: 'Cards selected: '},
-          { text: this.state.selectedTopAction.name, color: 'white' },
-          { text: ' and ' },
-          { text: this.state.selectedBottomAction.name, color: 'white' }
-      ]);
-      // Keep panel visible but show waiting state
-      this.state.waitingForRoundStart = true;
-      this.emitStateUpdate();
+    // Save current character's selections first
+    if (this.state.myCharacterId && this.state.selectedTopAction && this.state.selectedBottomAction) {
+      this.state.characterCardSelections.set(this.state.myCharacterId, {
+        topCardId: this.state.selectedTopAction.id,
+        bottomCardId: this.state.selectedBottomAction.id,
+      });
     }
+
+    // Check if all characters have selected cards (multi-character mode)
+    if (this.state.myCharacterIds.length > 1) {
+      if (!this.allCharactersHaveSelectedCards()) {
+        // Not all characters have selected - find next character without selections
+        for (let i = 0; i < this.state.myCharacterIds.length; i++) {
+          const charId = this.state.myCharacterIds[i];
+          const selection = this.state.characterCardSelections.get(charId);
+          if (!selection || !selection.topCardId || !selection.bottomCardId) {
+            this.switchActiveCharacter(i);
+            this.addLog([{ text: `Select cards for next character (${i + 1}/${this.state.myCharacterIds.length})` }]);
+            return;
+          }
+        }
+      }
+    }
+
+    // All characters have selections - submit ALL card selections to server
+    for (const charId of this.state.myCharacterIds) {
+      const selection = this.state.characterCardSelections.get(charId);
+      if (selection?.topCardId && selection?.bottomCardId) {
+        websocketService.selectCards(selection.topCardId, selection.bottomCardId, charId);
+      }
+    }
+
+    this.addLog([
+      { text: `Cards selected for ${this.state.myCharacterIds.length} character(s)` },
+    ]);
+
+    // Keep panel visible but show waiting state
+    this.state.waitingForRoundStart = true;
+    this.emitStateUpdate();
   }
 
   public clearCardSelection(): void {
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+
+    // Clear from characterCardSelections too
+    if (this.state.myCharacterId) {
+      this.state.characterCardSelections.set(this.state.myCharacterId, {
+        topCardId: null,
+        bottomCardId: null,
+      });
+    }
+
     this.emitStateUpdate();
   }
 
@@ -1126,11 +1249,15 @@ class GameStateManager {
         turnOrder: [],
         currentTurnEntityId: null,
         isMyTurn: false,
+        myCharacterIds: [], // Multi-character support
+        myUserCharacterIds: [], // Multi-character support
+        activeCharacterIndex: 0, // Multi-character support
         myCharacterId: null,
         myUserCharacterId: null,
         playerHand: [],
         selectedTopAction: null,
         selectedBottomAction: null,
+        characterCardSelections: new Map(), // Per-character card selections
         selectedCharacterId: null,
         selectedHex: null,
         currentMovementPoints: 0,
@@ -1146,8 +1273,89 @@ class GameStateManager {
         restState: null,
         exhaustionState: null,
         abilityDeck: [],
+        abilityDecks: new Map(), // Per-character ability decks
     };
     this.emitStateUpdate();
+  }
+
+  /**
+   * Switch active character (multi-character support)
+   * Saves current character's card selections and loads new character's hand/selections
+   */
+  public switchActiveCharacter(index: number): void {
+    if (index < 0 || index >= this.state.myCharacterIds.length) {
+      console.warn('[GameStateManager] Invalid character index:', index);
+      return;
+    }
+
+    // Save current character's selections before switching
+    const currentCharId = this.state.myCharacterId;
+    if (currentCharId) {
+      this.state.characterCardSelections.set(currentCharId, {
+        topCardId: this.state.selectedTopAction?.id || null,
+        bottomCardId: this.state.selectedBottomAction?.id || null,
+      });
+    }
+
+    this.state.activeCharacterIndex = index;
+    this.state.myCharacterId = this.state.myCharacterIds[index];
+    this.state.myUserCharacterId = this.state.myUserCharacterIds[index] || null;
+
+    // Load the new character's hand and selections
+    if (this.state.gameData && this.state.myCharacterId) {
+      const activeCharacter = this.state.gameData.characters.find(c => c.id === this.state.myCharacterId);
+      if (activeCharacter) {
+        // Get this character's ability deck
+        const characterDeck = this.state.abilityDecks.get(this.state.myCharacterId) || this.state.abilityDeck;
+
+        // Filter to cards currently in hand
+        this.state.playerHand = characterDeck.filter(card => activeCharacter.hand?.includes(card.id));
+
+        // Restore this character's card selections
+        const savedSelections = this.state.characterCardSelections.get(this.state.myCharacterId);
+        if (savedSelections) {
+          this.state.selectedTopAction = savedSelections.topCardId
+            ? characterDeck.find(card => card.id === savedSelections.topCardId) || null
+            : null;
+          this.state.selectedBottomAction = savedSelections.bottomCardId
+            ? characterDeck.find(card => card.id === savedSelections.bottomCardId) || null
+            : null;
+        } else {
+          this.state.selectedTopAction = null;
+          this.state.selectedBottomAction = null;
+        }
+      }
+    }
+
+    this.emitStateUpdate();
+    console.log(`[GameStateManager] Switched to character ${index}: ${this.state.myCharacterId}`);
+  }
+
+  /**
+   * Check if all controlled characters have selected their cards
+   */
+  public allCharactersHaveSelectedCards(): boolean {
+    for (const charId of this.state.myCharacterIds) {
+      const selection = this.state.characterCardSelections.get(charId);
+      if (!selection || !selection.topCardId || !selection.bottomCardId) {
+        return false;
+      }
+    }
+    return this.state.myCharacterIds.length > 0;
+  }
+
+  /**
+   * Get count of characters that have selected cards
+   */
+  public getCharactersWithSelectionsCount(): number {
+    let count = 0;
+    for (const charId of this.state.myCharacterIds) {
+      const selection = this.state.characterCardSelections.get(charId);
+      if (selection?.topCardId && selection?.bottomCardId) {
+        count++;
+      }
+    }
+    return count;
   }
 }
 

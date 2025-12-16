@@ -15,6 +15,10 @@ interface CardSelectionPanelProps {
   waiting?: boolean;
   canLongRest?: boolean;
   discardPileCount?: number;
+  // Multi-character support
+  activeCharacterName?: string;
+  totalCharacters?: number;
+  charactersWithSelections?: number;
 }
 
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -31,6 +35,9 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   waiting = false,
   canLongRest = false,
   discardPileCount = 0,
+  activeCharacterName,
+  totalCharacters = 1,
+  charactersWithSelections = 0,
 }) => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const isPortrait = useMediaQuery('(orientation: portrait)');
@@ -39,21 +46,51 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   const mustRest = cards.length < 2 && canLongRest;
   const panelClassName = `card-selection-panel ${isPortrait ? 'portrait' : ''}`;
 
+  // Multi-character: check if current character has both cards selected
+  const currentCharacterHasSelection = selectedTopAction !== null && selectedBottomAction !== null;
+  // All characters ready when all have selections
+  const allCharactersReady = totalCharacters > 1
+    ? (charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)) >= totalCharacters
+    : canConfirm;
+
+  // Build instruction text
+  const getInstructionText = () => {
+    if (waiting) return 'Waiting for other players...';
+    if (mustRest) return `Cannot play 2 cards (${cards.length} in hand). Must rest.`;
+    if (!selectedTopAction) return 'Select a card for your TOP action';
+    if (!selectedBottomAction) return 'Select a card for your BOTTOM action';
+    if (totalCharacters > 1 && !allCharactersReady) {
+      return `Cards selected! Click confirm to select for next character.`;
+    }
+    return 'Cards selected! Ready to confirm.';
+  };
+
+  // Build confirm button text
+  const getConfirmText = () => {
+    if (waiting) return 'Waiting...';
+    if (totalCharacters > 1) {
+      if (allCharactersReady) {
+        return `Confirm All (${totalCharacters})`;
+      }
+      return `Next Character (${charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/${totalCharacters})`;
+    }
+    return 'Confirm';
+  };
+
   return (
     <div className={panelClassName}>
       <div className="selection-instructions">
-        <h3>Select Your Actions</h3>
-        <p>
-          {waiting
-            ? 'Waiting for other players...'
-            : mustRest
-              ? `Cannot play 2 cards (${cards.length} in hand). Must rest.`
-              : !selectedTopAction
-                ? 'Select a card for your TOP action'
-                : !selectedBottomAction
-                  ? 'Select a card for your BOTTOM action'
-                  : 'Cards selected! Ready to confirm.'}
-        </p>
+        <h3>
+          {activeCharacterName && totalCharacters > 1
+            ? `Select Actions: ${activeCharacterName}`
+            : 'Select Your Actions'}
+        </h3>
+        {totalCharacters > 1 && (
+          <span className="character-progress">
+            {charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/{totalCharacters} characters ready
+          </span>
+        )}
+        <p>{getInstructionText()}</p>
       </div>
 
       <div className="cards-container">
@@ -110,11 +147,11 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
               Clear
             </button>
             <button
-              className="btn-confirm"
+              className={`btn-confirm ${allCharactersReady ? 'all-ready' : ''}`}
               onClick={onConfirmSelection}
               disabled={!canConfirm || disabled || waiting}
             >
-              {waiting ? 'Waiting...' : 'Confirm'}
+              {getConfirmText()}
             </button>
           </>
         )}

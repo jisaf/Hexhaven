@@ -3,13 +3,13 @@
  *
  * Displays the in-room view with players, character selection, and game controls.
  * Includes equipment management before game starts (Issue #205).
+ * Supports multi-character selection per player.
  */
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlayerList, type Player } from '../PlayerList';
-import { UserCharacterSelect } from '../UserCharacterSelect';
-import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
+import { MultiCharacterPanel, type SelectedCharacter } from './MultiCharacterPanel';
 import { ScenarioSelectionPanel } from '../ScenarioSelectionPanel';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
 import { InventoryTabContent } from '../inventory/InventoryTabContent';
@@ -23,13 +23,17 @@ interface LobbyRoomViewProps {
   players: Player[];
   currentPlayerId?: string;
   isHost: boolean;
-  selectedCharacterId: string | undefined;
+  // Multi-character support
+  selectedCharacters: SelectedCharacter[];
   disabledCharacterIds: string[];
+  activeCharacterIndex: number;
   selectedScenario: string;
   canStartGame: boolean;
   allPlayersReady: boolean;
   error: string | null;
-  onSelectCharacter: (characterIdOrClass: string) => void;
+  onAddCharacter: (characterIdOrClass: string) => void;
+  onRemoveCharacter: (index: number) => void;
+  onSetActiveCharacter: (index: number) => void;
   onSelectScenario: (scenarioId: string) => void;
   onStartGame: () => void;
 }
@@ -39,13 +43,16 @@ export function LobbyRoomView({
   players,
   currentPlayerId,
   isHost,
-  selectedCharacterId,
+  selectedCharacters,
   disabledCharacterIds,
+  activeCharacterIndex,
   selectedScenario,
   canStartGame,
   allPlayersReady,
   error,
-  onSelectCharacter,
+  onAddCharacter,
+  onRemoveCharacter,
+  onSetActiveCharacter,
   onSelectScenario,
   onStartGame,
 }: LobbyRoomViewProps) {
@@ -56,10 +63,14 @@ export function LobbyRoomView({
   const [characterLevel, setCharacterLevel] = useState(1);
   const [showEquipment, setShowEquipment] = useState(false);
 
+  // Get the active character ID for equipment display
+  const activeCharacter = selectedCharacters[activeCharacterIndex];
+  const activeCharacterId = activeCharacter?.id;
+
   // Fetch character details when selected (for level)
   useEffect(() => {
-    if (selectedCharacterId && isAuthenticated) {
-      characterService.getCharacter(selectedCharacterId).then((char) => {
+    if (activeCharacterId && isAuthenticated) {
+      characterService.getCharacter(activeCharacterId).then((char) => {
         if (char) {
           setCharacterLevel(char.level || 1);
         }
@@ -68,7 +79,7 @@ export function LobbyRoomView({
         setCharacterLevel(1);
       });
     }
-  }, [selectedCharacterId, isAuthenticated]);
+  }, [activeCharacterId, isAuthenticated]);
 
   // Inventory hook - only for authenticated users with selected character
   const {
@@ -81,8 +92,8 @@ export function LobbyRoomView({
     unequipItem,
     useItem,
   } = useInventory({
-    characterId: isAuthenticated ? selectedCharacterId || null : null,
-    enabled: isAuthenticated && !!selectedCharacterId,
+    characterId: isAuthenticated ? activeCharacterId || null : null,
+    enabled: isAuthenticated && !!activeCharacterId,
   });
 
   return (
@@ -139,24 +150,19 @@ export function LobbyRoomView({
         </div>
 
         <div className={styles.roomSection}>
-          {authService.isAuthenticated() ? (
-            <UserCharacterSelect
-              selectedCharacterId={selectedCharacterId}
-              disabledCharacterIds={disabledCharacterIds}
-              onSelect={onSelectCharacter}
-            />
-          ) : (
-            <CharacterSelect
-              selectedClass={selectedCharacterId as CharacterClass | undefined}
-              disabledClasses={[]}
-              onSelect={(charClass) => onSelectCharacter(charClass)}
-            />
-          )}
+          <MultiCharacterPanel
+            selectedCharacters={selectedCharacters}
+            disabledCharacterIds={disabledCharacterIds}
+            onAddCharacter={onAddCharacter}
+            onRemoveCharacter={onRemoveCharacter}
+            onSetActiveCharacter={onSetActiveCharacter}
+            activeCharacterIndex={activeCharacterIndex}
+          />
         </div>
       </div>
 
       {/* Equipment Section (Issue #205) - Only for authenticated users with character */}
-      {isAuthenticated && selectedCharacterId && (
+      {isAuthenticated && activeCharacterId && (
         <div className={styles.equipmentSection}>
           <button
             className={styles.equipmentToggle}

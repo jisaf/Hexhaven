@@ -401,7 +401,7 @@ describe('PlayerService', () => {
       const player = playerService.createPlayer('uuid', 'Player');
 
       player.selectCharacter(CharacterClass.BRUTE);
-      player.clearCharacter();
+      player.clearCharacters();
 
       expect(player.characterClass).toBeNull();
       expect(player.isReady).toBe(false);

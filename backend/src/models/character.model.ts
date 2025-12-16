@@ -33,6 +33,7 @@ export interface CharacterData {
   discardPile: string[]; // Card IDs in discard pile
   lostPile: string[]; // Card IDs in lost pile
   experience: number; // Issue #220: XP earned this scenario
+  userCharacterId?: string; // Database character ID for persistent characters (002)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +62,7 @@ export class Character {
   private _effectiveAttackThisTurn: number = 0; // Attack value from selected card (Gloomhaven: attack comes from cards, not base stats)
   private _effectiveRangeThisTurn: number = 0; // Attack range from selected card
   private _hasAttackedThisTurn: boolean = false;
+  private _userCharacterId?: string; // Database character ID for persistent characters (002)
   private readonly _createdAt: Date;
   private _updatedAt: Date;
 
@@ -77,6 +79,7 @@ export class Character {
     this._discardPile = data.discardPile || [];
     this._lostPile = data.lostPile || [];
     this._experience = data.experience || 0;
+    this._userCharacterId = data.userCharacterId;
     this._createdAt = data.createdAt;
     this._updatedAt = data.updatedAt;
   }
@@ -140,6 +143,15 @@ export class Character {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get userCharacterId(): string | undefined {
+    return this._userCharacterId;
+  }
+
+  setUserCharacterId(id: string): void {
+    this._userCharacterId = id;
+    this._updatedAt = new Date();
   }
 
   get selectedCards():
@@ -434,6 +446,7 @@ export class Character {
       discardPile: [...this._discardPile],
       lostPile: [...this._lostPile],
       experience: this._experience,
+      userCharacterId: this._userCharacterId,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };

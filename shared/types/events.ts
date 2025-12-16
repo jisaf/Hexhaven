@@ -25,6 +25,9 @@ export interface JoinRoomPayload {
 export interface SelectCharacterPayload {
   characterClass?: CharacterClass; // Legacy - for backward compatibility
   characterId?: string; // New persistent character ID (002)
+  action?: 'add' | 'remove' | 'set_active'; // Multi-character control action
+  index?: number; // Deprecated: For remove/set_active operations by index
+  targetCharacterId?: string; // Preferred: ID-based remove/set_active operations
 }
 
 export interface StartGamePayload {
@@ -37,11 +40,13 @@ export interface MoveCharacterPayload {
 }
 
 export interface SelectCardsPayload {
+  characterId?: string; // Which character's cards (for multi-character control)
   topCardId: string;
   bottomCardId: string;
 }
 
 export interface AttackTargetPayload {
+  characterId?: string; // Explicit attacker (for multi-character control)
   targetId: string; // Monster or Character UUID
   attackingCardId: string;
 }
@@ -67,6 +72,10 @@ export interface LongRestPayload {
 
 export interface LeaveRoomPayload {
   // No additional data needed
+}
+
+export interface SwitchActiveCharacterPayload {
+  characterIndex: number; // 0-3
 }
 
 export interface ReconnectPayload {
@@ -100,7 +109,9 @@ export interface RoomJoinedPayload {
     id: string;
     nickname: string;
     isHost: boolean;
-    characterClass?: CharacterClass;
+    characterClass?: CharacterClass; // Backward compatibility - first character
+    characterClasses?: CharacterClass[]; // Multi-character support
+    characterIds?: string[]; // Persistent character IDs
   }[];
   scenarioId?: string;
 }
@@ -119,7 +130,10 @@ export interface PlayerLeftPayload {
 
 export interface CharacterSelectedPayload {
   playerId: string;
-  characterClass: CharacterClass;
+  characterClass?: CharacterClass; // Backward compatibility - first character
+  characterClasses: CharacterClass[]; // All selected characters
+  characterIds?: string[]; // Persistent character IDs
+  activeIndex: number; // Which character is active
 }
 
 export interface GameStartedPayload {

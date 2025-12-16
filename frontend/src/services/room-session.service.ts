@@ -32,6 +32,7 @@ import {
 } from '../utils/storage';
 import { getApiUrl } from '../config/api';
 import type { GameStartedPayload } from '../../../shared/types/events';
+import type { CharacterClass } from '../../../shared/types/entities';
 
 /**
  * Join intent - indicates WHY a join is happening
@@ -50,6 +51,16 @@ export type RoomStatus = 'disconnected' | 'joining' | 'lobby' | 'active';
 export type PlayerRole = 'host' | 'player' | null;
 
 /**
+ * Current player's character selection state
+ * Single source of truth for character selections
+ */
+export interface CurrentPlayerCharacters {
+  characterClasses: CharacterClass[];
+  characterIds: string[];
+  activeIndex: number;
+}
+
+/**
  * Room session state
  */
 import type { Player } from '../components/PlayerList';
@@ -62,6 +73,8 @@ export interface RoomSessionState {
   gameState: GameStartedPayload | null;
   lastJoinIntent: JoinIntent | null;
   error: { message: string } | null;
+  /** Current player's character selections (single source of truth) */
+  currentPlayerCharacters: CurrentPlayerCharacters;
 }
 
 /**
@@ -98,6 +111,11 @@ class RoomSessionManager {
     gameState: null,
     lastJoinIntent: null,
     error: null,
+    currentPlayerCharacters: {
+      characterClasses: [],
+      characterIds: [],
+      activeIndex: 0,
+    },
   };
 
   // Prevents duplicate joins within same session
@@ -121,7 +139,12 @@ class RoomSessionManager {
       isReady: false,
     }));
     websocketService.on('player_left', (data) => this.onPlayerLeft(data.playerId));
-    websocketService.on('character_selected', (data) => this.onCharacterSelected(data.playerId, data.characterClass));
+    websocketService.on('character_selected', (data) => this.onCharacterSelected(
+      data.playerId,
+      data.characterClasses || (data.characterClass ? [data.characterClass] : []),
+      data.characterIds || [],
+      data.activeIndex ?? 0
+    ));
     websocketService.on('game_started', this.onGameStarted.bind(this));
     websocketService.on('ws_disconnected', this.onDisconnected.bind(this));
   }
@@ -316,17 +339,36 @@ class RoomSessionManager {
     this.emitStateUpdate();
   }
 
-  public onCharacterSelected(playerId: string, characterClass: string): void {
-    console.log('[RoomSessionManager] onCharacterSelected:', { playerId, characterClass });
+  public onCharacterSelected(
+    playerId: string,
+    characterClasses: string[],
+    characterIds: string[] = [],
+    activeIndex: number = 0
+  ): void {
+    console.log('[RoomSessionManager] onCharacterSelected:', { playerId, characterClasses, characterIds, activeIndex });
     console.log('[RoomSessionManager] Current players:', this.state.players);
 
+    const currentPlayerId = getPlayerUUID();
+
+    // Update players array (all players)
     this.state.players = this.state.players.map(p => {
       if (p.id === playerId) {
-        console.log('[RoomSessionManager] Updating player:', p.id, 'to', characterClass);
-        return { ...p, characterClass, isReady: true };
+        const characterClass = characterClasses[0] || undefined; // First character for backward compatibility
+        console.log('[RoomSessionManager] Updating player:', p.id, 'to', characterClasses.join(', '));
+        return { ...p, characterClass, characterClasses, isReady: characterClasses.length > 0 };
       }
       return p;
     });
+
+    // If this is the current player, update their dedicated character selection state
+    if (playerId === currentPlayerId) {
+      console.log('[RoomSessionManager] Updating current player character state');
+      this.state.currentPlayerCharacters = {
+        characterClasses: characterClasses as CharacterClass[],
+        characterIds,
+        activeIndex,
+      };
+    }
 
     console.log('[RoomSessionManager] Updated players:', this.state.players);
     this.emitStateUpdate();
@@ -410,6 +452,11 @@ class RoomSessionManager {
       gameState: null,
       lastJoinIntent: null,
       error: null,
+      currentPlayerCharacters: {
+        characterClasses: [],
+        characterIds: [],
+        activeIndex: 0,
+      },
     };
 
     this.hasJoinedInSession = false;
@@ -436,6 +483,11 @@ class RoomSessionManager {
       gameState: null,
       lastJoinIntent: null,
       error: null,
+      currentPlayerCharacters: {
+        characterClasses: [],
+        characterIds: [],
+        activeIndex: 0,
+      },
     };
 
     this.hasJoinedInSession = false;

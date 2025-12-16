@@ -18,6 +18,7 @@ import { Logger, Injectable } from '@nestjs/common';
 import { roomService } from '../services/room.service';
 import { playerService } from '../services/player.service';
 import { characterService } from '../services/character.service';
+import { Character } from '../models/character.model';
 import { sessionService } from '../services/session.service';
 import { PrismaService } from '../services/prisma.service';
 import { Player } from '../models/player.model';
@@ -670,7 +671,9 @@ export class GameGateway
           id: p.uuid,
           nickname: p.nickname,
           isHost: p.isHost,
-          characterClass: p.characterClass || undefined,
+          characterClass: p.characterClass || undefined, // Backward compatibility
+          characterClasses: p.characterClasses, // Multi-character support
+          characterIds: p.characterIds.filter((id: string) => id !== ''),
         })),
         scenarioId: room.scenarioId || undefined,
       };
@@ -952,104 +955,195 @@ export class GameGateway
         throw new Error('Game has already started');
       }
 
-      let characterClass: CharacterClass;
-      let characterId: string | undefined;
+      // Determine action type (default to 'add' for backward compatibility)
+      const action = payload.action || 'add';
 
-      // Handle persistent character selection (002)
-      if (payload.characterId) {
-        // Look up character from database
-        const character = await this.prisma.character.findUnique({
-          where: { id: payload.characterId },
-          include: { class: true },
-        });
+      // Handle 'remove' action
+      if (action === 'remove') {
+        let index: number;
 
-        if (!character) {
-          throw new Error('Character not found');
+        // Preferred: ID-based removal
+        if (payload.targetCharacterId) {
+          // Find index by character ID first
+          index = player.characterIds.indexOf(payload.targetCharacterId);
+          // Fallback: try finding by class name (for anonymous users)
+          if (index === -1) {
+            index = player.characterClasses.indexOf(
+              payload.targetCharacterId as CharacterClass,
+            );
+          }
+          if (index === -1) {
+            throw new Error('Character not found for removal');
+          }
+        }
+        // Deprecated: Index-based removal (backward compatibility)
+        else if (payload.index !== undefined) {
+          this.logger.warn(
+            `[DEPRECATED] Index-based character removal used by player ${player.nickname}. Use targetCharacterId instead.`,
+          );
+          index = payload.index;
+        } else {
+          throw new Error(
+            'Must provide targetCharacterId or index for removal',
+          );
         }
 
-        // Check if character is already in a game
-        if (character.currentGameId) {
-          throw new Error('Character is already in an active game');
+        if (index < 0 || index >= player.characterClasses.length) {
+          throw new Error('Invalid character index for removal');
+        }
+        player.removeCharacter(index);
+        this.logger.log(
+          `Player ${player.nickname} removed character at index ${index}`,
+        );
+      }
+      // Handle 'set_active' action
+      else if (action === 'set_active') {
+        let index: number;
+
+        // Preferred: ID-based set_active
+        if (payload.targetCharacterId) {
+          // Find index by character ID first
+          index = player.characterIds.indexOf(payload.targetCharacterId);
+          // Fallback: try finding by class name (for anonymous users)
+          if (index === -1) {
+            index = player.characterClasses.indexOf(
+              payload.targetCharacterId as CharacterClass,
+            );
+          }
+          if (index === -1) {
+            throw new Error('Character not found for set_active');
+          }
+        }
+        // Deprecated: Index-based set_active (backward compatibility)
+        else if (payload.index !== undefined) {
+          this.logger.warn(
+            `[DEPRECATED] Index-based set_active used by player ${player.nickname}. Use targetCharacterId instead.`,
+          );
+          index = payload.index;
+        } else {
+          throw new Error(
+            'Must provide targetCharacterId or index for set_active',
+          );
         }
 
-        // Extract character class name
-        characterClass = character.class.name as CharacterClass;
-        characterId = character.id;
+        if (index < 0 || index >= player.characterClasses.length) {
+          throw new Error('Invalid character index for set_active');
+        }
+        player.setActiveCharacter(index);
+        this.logger.log(
+          `Player ${player.nickname} set active character to index ${index}`,
+        );
+      }
+      // Handle 'add' action (default)
+      else {
+        let characterClass: CharacterClass;
+        let characterId: string | undefined;
+
+        // Handle persistent character selection (002)
+        if (payload.characterId) {
+          // Look up character from database
+          const character = await this.prisma.character.findUnique({
+            where: { id: payload.characterId },
+            include: { class: true },
+          });
+
+          if (!character) {
+            throw new Error('Character not found');
+          }
+
+          // Check if character is already in a game
+          if (character.currentGameId) {
+            throw new Error('Character is already in an active game');
+          }
+
+          // Extract character class name
+          characterClass = character.class.name as CharacterClass;
+          characterId = character.id;
+
+          this.logger.log(
+            `Player ${player.nickname} adding persistent character: ${character.name} (${characterClass})`,
+          );
+        } else if (payload.characterClass) {
+          // Legacy: Direct character class selection
+          characterClass = payload.characterClass;
+          this.logger.log(
+            `Player ${player.nickname} adding character class: ${characterClass}`,
+          );
+        } else {
+          throw new Error('Must provide either characterId or characterClass');
+        }
+
+        // Check if character class is already taken by ANY player (including self)
+        const characterTakenByOther = room.players.some(
+          (p: Player) =>
+            p.characterClasses.includes(characterClass) &&
+            p.uuid !== playerUUID,
+        );
+
+        if (characterTakenByOther) {
+          throw new Error('Character class already selected by another player');
+        }
+
+        // Check if player already has this character class
+        if (player.characterClasses.includes(characterClass)) {
+          throw new Error('You have already selected this character class');
+        }
+
+        // Add character (will validate max limit)
+        player.addCharacter(characterClass, characterId);
 
         this.logger.log(
-          `Player ${player.nickname} selected persistent character: ${character.name} (${characterClass})`,
+          `Player ${player.nickname} successfully added ${characterClass}${characterId ? ` (ID: ${characterId})` : ''} (total: ${player.characterClasses.length})`,
         );
-      } else if (payload.characterClass) {
-        // Legacy: Direct character class selection
-        characterClass = payload.characterClass;
-        this.logger.log(
-          `Player ${player.nickname} selected legacy character class: ${characterClass}`,
-        );
-      } else {
-        throw new Error('Must provide either characterId or characterClass');
+
+        // Send inventory data for persistent characters (Issue #205 - Phase 4.5)
+        if (characterId) {
+          try {
+            // Fetch equipped items with details
+            const equippedItems =
+              await this.inventoryService.getEquippedItemsWithDetails(
+                characterId,
+              );
+            const bonuses =
+              await this.inventoryService.getEquippedBonuses(characterId);
+
+            const inventoryPayload: CharacterInventoryPayload = {
+              characterId,
+              equippedItems: equippedItems.map((eq) => ({
+                slot: eq.slot,
+                itemId: eq.item.id,
+                itemName: eq.item.name,
+              })),
+              bonuses,
+            };
+
+            // Send to the specific client who selected the character
+            client.emit('character_inventory', inventoryPayload);
+
+            this.logger.log(
+              `Sent inventory data to player ${player.nickname}: ${equippedItems.length} items equipped`,
+            );
+          } catch (inventoryError) {
+            this.logger.warn(
+              `Failed to send inventory for character ${characterId}: ${inventoryError instanceof Error ? inventoryError.message : String(inventoryError)}`,
+            );
+            // Don't fail character selection if inventory fetch fails
+          }
+        }
       }
 
-      // Check if character class is already taken by another player
-      const characterTaken = room.players.some(
-        (p: Player) =>
-          p.characterClass === characterClass && p.uuid !== playerUUID,
-      );
-
-      if (characterTaken) {
-        throw new Error('Character class already selected by another player');
-      }
-
-      // Select character (store both class and ID)
-      player.selectCharacter(characterClass, characterId);
-
-      // Broadcast to all players in room
+      // Broadcast updated character list to all players in room
       const characterSelectedPayload: CharacterSelectedPayload = {
         playerId: player.uuid,
-        characterClass: characterClass,
+        characterClass: player.characterClass || undefined, // Backward compatibility
+        characterClasses: player.characterClasses,
+        characterIds: player.characterIds.filter((id: string) => id !== ''),
+        activeIndex: player.activeCharacterIndex,
       };
 
       this.server
         .to(room.roomCode)
         .emit('character_selected', characterSelectedPayload);
-
-      this.logger.log(
-        `Player ${player.nickname} successfully selected ${characterClass}${characterId ? ` (ID: ${characterId})` : ''}`,
-      );
-
-      // Send inventory data for persistent characters (Issue #205 - Phase 4.5)
-      if (characterId) {
-        try {
-          // Fetch equipped items with details
-          const equippedItems =
-            await this.inventoryService.getEquippedItemsWithDetails(
-              characterId,
-            );
-          const bonuses =
-            await this.inventoryService.getEquippedBonuses(characterId);
-
-          const inventoryPayload: CharacterInventoryPayload = {
-            characterId,
-            equippedItems: equippedItems.map((eq) => ({
-              slot: eq.slot,
-              itemId: eq.item.id,
-              itemName: eq.item.name,
-            })),
-            bonuses,
-          };
-
-          // Send to the specific client who selected the character
-          client.emit('character_inventory', inventoryPayload);
-
-          this.logger.log(
-            `Sent inventory data to player ${player.nickname}: ${equippedItems.length} items equipped, bonuses: +${bonuses.attackBonus} attack, +${bonuses.defenseBonus} defense`,
-          );
-        } catch (inventoryError) {
-          this.logger.warn(
-            `Failed to send inventory for character ${characterId}: ${inventoryError instanceof Error ? inventoryError.message : String(inventoryError)}`,
-          );
-          // Don't fail character selection if inventory fetch fails
-        }
-      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1126,39 +1220,62 @@ export class GameGateway
       // This would improve UX and remove the need for player-count-specific position arrays
 
       // Get player starting positions from scenario
-      const playerCount = room.players.filter(
-        (p: Player) => p.characterClass,
-      ).length;
-      const startingPositions = scenario.playerStartPositions[playerCount];
-      if (!startingPositions || startingPositions.length < playerCount) {
-        throw new Error(`Scenario does not support ${playerCount} players`);
+      // Count total characters (multi-character support)
+      const totalCharacters = room.players.reduce(
+        (sum: number, p: Player) => sum + p.characterClasses.length,
+        0,
+      );
+      const startingPositions = scenario.playerStartPositions[totalCharacters];
+      if (!startingPositions || startingPositions.length < totalCharacters) {
+        throw new Error(
+          `Scenario does not support ${totalCharacters} characters`,
+        );
       }
 
-      // Create characters for all players at starting positions
+      // Create characters for all players at starting positions (multi-character support)
       this.logger.log(
-        `🎭 Creating characters for ${room.players.length} players`,
+        `🎭 Creating ${totalCharacters} characters for ${room.players.length} players`,
       );
       room.players.forEach((p: Player, idx: number) => {
         this.logger.log(
-          `   Player ${idx}: ${p.nickname} - characterClass: ${p.characterClass}`,
+          `   Player ${idx}: ${p.nickname} - characters: ${p.characterClasses.join(', ') || 'none'}`,
         );
       });
 
-      const characters = room.players
-        .filter((p: Player) => p.characterClass)
-        .map((p: Player, index: number) => {
-          const startingPosition = startingPositions[index];
+      // Flatten all characters across all players
+      let positionIndex = 0;
+      const characters: Character[] = [];
+
+      for (const p of room.players as Player[]) {
+        for (let charIdx = 0; charIdx < p.characterClasses.length; charIdx++) {
+          const characterClass = p.characterClasses[charIdx];
+          const characterId = p.characterIds[charIdx];
+          const startingPosition = startingPositions[positionIndex];
+
           this.logger.log(`🎭 Creating character for player ${p.nickname}:`, {
             uuid: p.uuid,
-            characterClass: p.characterClass,
+            characterClass,
+            characterId: characterId || 'none',
             startingPosition,
+            positionIndex,
           });
-          return characterService.selectCharacter(
+
+          // Use addCharacterForPlayer to support multiple characters per player
+          const character = characterService.addCharacterForPlayer(
             p.uuid,
-            p.characterClass as CharacterClass,
+            characterClass,
             startingPosition,
           );
-        });
+
+          // Store persistent character ID if available
+          if (characterId) {
+            character.setUserCharacterId(characterId);
+          }
+
+          characters.push(character);
+          positionIndex++;
+        }
+      }
 
       this.logger.log(`✅ Created ${characters.length} characters`);
 
@@ -1254,12 +1371,16 @@ export class GameGateway
         return {
           id: charData.id,
           playerId: charData.playerId,
+          userCharacterId: charData.userCharacterId, // Database character ID for inventory API
           classType: charData.characterClass,
           health: charData.currentHealth,
           maxHealth: charData.stats.maxHealth,
           currentHex: charData.position,
           conditions: charData.conditions,
           isExhausted: charData.exhausted,
+          hand: charData.hand || [],
+          discardPile: charData.discardPile || [],
+          lostPile: charData.lostPile || [],
           abilityDeck, // Include ability deck for card selection
         };
       });

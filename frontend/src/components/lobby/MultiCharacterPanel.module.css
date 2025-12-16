@@ -1,0 +1,210 @@
+/**
+ * MultiCharacterPanel Styles
+ *
+ * Component for selecting multiple characters in the lobby.
+ * Extracted from inline styles for maintainability.
+ */
+
+.panel {
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.characterCount {
+  font-size: 16px;
+  font-weight: 500;
+  color: #888;
+  background: #333;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.selectedCharacters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+}
+
+.emptyState p {
+  margin: 0 0 8px 0;
+}
+
+.hint {
+  font-size: 14px;
+  color: #666;
+}
+
+.characterChip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #2c2c2c;
+  border: 2px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.characterChip:hover {
+  border-color: var(--chip-color);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.characterChipActive {
+  border-color: var(--chip-color);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 12px rgba(90, 159, 212, 0.3);
+}
+
+.chipIcon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffffff;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chipInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chipName {
+  font-size: 16px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.chipLevel {
+  font-size: 12px;
+  color: #888;
+}
+
+.removeButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #888;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeButton:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.addButton {
+  width: 100%;
+  padding: 16px;
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #5a9fd4;
+  background: transparent;
+  border: 2px dashed #5a9fd4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addButton:hover {
+  background: rgba(90, 159, 212, 0.1);
+  border-style: solid;
+}
+
+.inlineSelection {
+  margin-top: 16px;
+  padding: 16px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+.selectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.selectionHeader h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #888;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  color: #ffffff;
+  border-color: #888;
+}
+
+.selectionContent {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .characterChip {
+    padding: 10px 12px;
+  }
+
+  .chipIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .selectionContent {
+    max-height: 300px;
+  }
+}

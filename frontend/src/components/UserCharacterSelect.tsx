@@ -16,12 +16,15 @@ export interface UserCharacterSelectProps {
   selectedCharacterId?: string;
   disabledCharacterIds?: string[];
   onSelect: (characterId: string) => void;
+  /** Compact mode for inline display (smaller cards) */
+  compact?: boolean;
 }
 
 export function UserCharacterSelect({
   selectedCharacterId,
   disabledCharacterIds = [],
   onSelect,
+  compact = false,
 }: UserCharacterSelectProps) {
   const { t } = useTranslation();
   const [characters, setCharacters] = useState<CharacterResponse[]>([]);
@@ -106,10 +109,12 @@ export function UserCharacterSelect({
   }
 
   return (
-    <div className="user-character-select" data-testid="user-character-select">
-      <h3 className="character-select-title">
-        {t('lobby:selectCharacter', 'Select Your Character')}
-      </h3>
+    <div className={`user-character-select ${compact ? 'compact' : ''}`} data-testid="user-character-select">
+      {!compact && (
+        <h3 className="character-select-title">
+          {t('lobby:selectCharacter', 'Select Your Character')}
+        </h3>
+      )}
 
       <div className="character-grid">
         {characters.map((character) => {
@@ -132,25 +137,27 @@ export function UserCharacterSelect({
 
               <div className="character-stats-row">
                 <div className="stat-item">
-                  <span className="stat-label">Level:</span>
+                  <span className="stat-label">{compact ? 'Lv' : 'Level'}:</span>
                   <span className="stat-value">{character.level}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">❤️ HP:</span>
+                  <span className="stat-label">❤️</span>
                   <span className="stat-value">{character.health}</span>
                 </div>
               </div>
 
-              <div className="character-stats-row">
-                <div className="stat-item">
-                  <span className="stat-label">⭐ XP:</span>
-                  <span className="stat-value">{character.experience}</span>
+              {!compact && (
+                <div className="character-stats-row">
+                  <div className="stat-item">
+                    <span className="stat-label">⭐ XP:</span>
+                    <span className="stat-value">{character.experience}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">💰 Gold:</span>
+                    <span className="stat-value">{character.gold}</span>
+                  </div>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">💰 Gold:</span>
-                  <span className="stat-value">{character.gold}</span>
-                </div>
-              </div>
+              )}
 
               {isSelected && <div className="selected-indicator">✓</div>}
               {isInGame && (
@@ -168,13 +175,16 @@ export function UserCharacterSelect({
         })}
       </div>
 
-      <div className="character-actions">
-        <Link to="/characters/create" className="create-new-link">
-          + Create New Character
-        </Link>
-      </div>
+      {!compact && (
+        <div className="character-actions">
+          <Link to="/characters/create" className="create-new-link">
+            + Create New Character
+          </Link>
+        </div>
+      )}
 
       <style>{characterSelectStyles}</style>
+      {compact && <style>{compactStyles}</style>}
     </div>
   );
 }
@@ -386,5 +396,48 @@ const noCharactersStyles = `
   .create-character-link:hover {
     background: #059669;
     transform: translateY(-2px);
+  }
+`;
+
+const compactStyles = `
+  .user-character-select.compact .character-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .user-character-select.compact .character-card {
+    padding: 12px;
+    min-height: 80px;
+  }
+
+  .user-character-select.compact .character-header {
+    margin-bottom: 8px;
+  }
+
+  .user-character-select.compact .character-name {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .user-character-select.compact .character-class {
+    font-size: 12px;
+  }
+
+  .user-character-select.compact .character-stats-row {
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .user-character-select.compact .stat-item {
+    font-size: 12px;
+    gap: 2px;
+  }
+
+  .user-character-select.compact .selected-indicator {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    top: 8px;
+    right: 8px;
   }
 `;

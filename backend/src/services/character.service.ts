@@ -14,6 +14,7 @@ import {
   CharacterClass,
   type AxialCoordinates,
 } from '../../../shared/types/entities';
+import { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
 import type { PrismaClient } from '@prisma/client';
 
 /**
@@ -33,9 +34,12 @@ export interface PersistedCharacterData {
   equippedItemIds: string[];
 }
 
+// Re-export for backward compatibility
+export { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
+
 export class CharacterService {
   private characters: Map<string, Character> = new Map(); // characterId -> Character
-  private playerCharacters: Map<string, string> = new Map(); // playerId -> characterId
+  private playerCharacters: Map<string, string[]> = new Map(); // playerId -> characterId[]
 
   // New: Track persistent character data for inventory lookups (Issue #205)
   private persistedData: Map<string, PersistedCharacterData> = new Map(); // characterId -> persisted data
@@ -49,17 +53,19 @@ export class CharacterService {
   }
 
   /**
-   * Create a new character for a player
+   * Add a new character for a player (multi-character support)
    */
-  createCharacter(
+  addCharacterForPlayer(
     playerId: string,
     characterClass: CharacterClass,
     startingPosition: AxialCoordinates,
   ): Character {
-    // Check if player already has a character
-    const existingCharacterId = this.playerCharacters.get(playerId);
-    if (existingCharacterId) {
-      throw new ConflictError('Player already has a character');
+    // Check character limit
+    const existingCharacterIds = this.playerCharacters.get(playerId) || [];
+    if (existingCharacterIds.length >= MAX_CHARACTERS_PER_PLAYER) {
+      throw new ConflictError(
+        `Player cannot have more than ${MAX_CHARACTERS_PER_PLAYER} characters`,
+      );
     }
 
     // Create character
@@ -71,39 +77,51 @@ export class CharacterService {
 
     // Store character
     this.characters.set(character.id, character);
-    this.playerCharacters.set(playerId, character.id);
+    existingCharacterIds.push(character.id);
+    this.playerCharacters.set(playerId, existingCharacterIds);
 
     return character;
   }
 
   /**
+   * Create a new character for a player (backward compatibility)
+   * Replaces any existing character
+   */
+  createCharacter(
+    playerId: string,
+    characterClass: CharacterClass,
+    startingPosition: AxialCoordinates,
+  ): Character {
+    // Remove all existing characters for this player
+    this.removeAllCharactersForPlayer(playerId);
+
+    // Add new character
+    return this.addCharacterForPlayer(
+      playerId,
+      characterClass,
+      startingPosition,
+    );
+  }
+
+  /**
    * Select or update character class for a player
    * If character doesn't exist, create it; if it exists, update the class
+   * For backward compatibility - replaces all existing characters with single new one
    */
   selectCharacter(
     playerId: string,
     characterClass: CharacterClass,
     startingPosition: AxialCoordinates,
   ): Character {
-    // Get existing character or create new one
-    const existingCharacterId = this.playerCharacters.get(playerId);
+    // Remove all existing characters for this player
+    this.removeAllCharactersForPlayer(playerId);
 
-    if (existingCharacterId) {
-      // Remove old character and create new one with updated class
-      this.characters.delete(existingCharacterId);
-    }
-
-    // Create new character with selected class
-    const character = Character.create(
+    // Add new character
+    return this.addCharacterForPlayer(
       playerId,
       characterClass,
       startingPosition,
     );
-
-    this.characters.set(character.id, character);
-    this.playerCharacters.set(playerId, character.id);
-
-    return character;
   }
 
   /**
@@ -114,13 +132,33 @@ export class CharacterService {
   }
 
   /**
-   * Get character by player ID
+   * Get all characters for a player
+   */
+  getCharactersByPlayerId(playerId: string): Character[] {
+    const characterIds = this.playerCharacters.get(playerId) || [];
+    return characterIds
+      .map((id) => this.characters.get(id))
+      .filter((char): char is Character => char !== null);
+  }
+
+  /**
+   * Get character by player ID (backward compatibility)
+   * Returns first character or null
    */
   getCharacterByPlayerId(playerId: string): Character | null {
-    const characterId = this.playerCharacters.get(playerId);
-    if (!characterId) {
+    const characters = this.getCharactersByPlayerId(playerId);
+    return characters[0] || null;
+  }
+
+  /**
+   * Get active character for a player by index
+   */
+  getActiveCharacter(playerId: string, activeIndex: number): Character | null {
+    const characterIds = this.playerCharacters.get(playerId) || [];
+    if (activeIndex < 0 || activeIndex >= characterIds.length) {
       return null;
     }
+    const characterId = characterIds[activeIndex];
     return this.characters.get(characterId) || null;
   }
 
@@ -179,17 +217,54 @@ export class CharacterService {
   }
 
   /**
-   * Remove character (when player leaves)
+   * Remove specific character by ID for a player
    */
-  removeCharacter(playerId: string): boolean {
-    const characterId = this.playerCharacters.get(playerId);
-    if (!characterId) {
+  removeCharacterForPlayer(playerId: string, characterId: string): boolean {
+    const characterIds = this.playerCharacters.get(playerId);
+    if (!characterIds) {
       return false;
     }
 
+    const index = characterIds.indexOf(characterId);
+    if (index === -1) {
+      return false;
+    }
+
+    // Remove from player's character list
+    characterIds.splice(index, 1);
+    if (characterIds.length === 0) {
+      this.playerCharacters.delete(playerId);
+    } else {
+      this.playerCharacters.set(playerId, characterIds);
+    }
+
+    // Remove from characters map
     this.characters.delete(characterId);
+    return true;
+  }
+
+  /**
+   * Remove all characters for a player
+   */
+  removeAllCharactersForPlayer(playerId: string): boolean {
+    const characterIds = this.playerCharacters.get(playerId);
+    if (!characterIds || characterIds.length === 0) {
+      return false;
+    }
+
+    // Remove all characters from characters map
+    characterIds.forEach((id) => this.characters.delete(id));
+
+    // Remove player entry
     this.playerCharacters.delete(playerId);
     return true;
+  }
+
+  /**
+   * Remove character (when player leaves) - backward compatibility
+   */
+  removeCharacter(playerId: string): boolean {
+    return this.removeAllCharactersForPlayer(playerId);
   }
 
   /**
@@ -275,12 +350,8 @@ export class CharacterService {
     // Map database class name to CharacterClass enum
     const characterClass = this.mapClassNameToEnum(dbCharacter.class.name);
 
-    // Remove any existing character for this player
-    const existingCharacterId = this.playerCharacters.get(playerId);
-    if (existingCharacterId) {
-      this.characters.delete(existingCharacterId);
-      this.persistedData.delete(existingCharacterId);
-    }
+    // Remove all existing characters for this player (for backward compat, single char mode)
+    this.removeAllCharactersForPlayer(playerId);
 
     // Create session character with persistent ID (so we can save back later)
     const character = Character.createWithId(
@@ -293,7 +364,9 @@ export class CharacterService {
 
     // Store session character
     this.characters.set(character.id, character);
-    this.playerCharacters.set(playerId, character.id);
+    const existingIds = this.playerCharacters.get(playerId) || [];
+    existingIds.push(character.id);
+    this.playerCharacters.set(playerId, existingIds);
 
     // Store persistent data for inventory lookups
     this.persistedData.set(character.id, {

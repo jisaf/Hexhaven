@@ -36,6 +36,8 @@ import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
+import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
+import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
 import { useHexGrid } from '../hooks/useHexGrid';
 import { useGameState } from '../hooks/useGameState';
@@ -63,6 +65,9 @@ export function GameBoard() {
   // Inventory / BottomSheet state (Issue #205)
   const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
   const [showInventory, setShowInventory] = useState(false);
+
+  // Monster ability overlay state
+  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
 
   // Use inventory hook to manage inventory state
   const {
@@ -415,10 +420,44 @@ export function GameBoard() {
     };
   });
 
+  // Get my characters from game data
+  const myCharacters = gameState.gameData?.characters.filter(
+    c => gameState.myCharacterIds.includes(c.id)
+  ) || [];
+
+  const handleSwitchCharacter = (index: number) => {
+    gameStateManager.switchActiveCharacter(index);
+  };
+
+  const handleMonsterClick = (monster: Monster) => {
+    // Toggle - if clicking same monster, close overlay
+    setSelectedMonster(prev => prev?.id === monster.id ? null : monster);
+  };
+
   return (
     <div className={styles.gameBoardPage}>
       {/* Game Panel - Left/Top: Hex Map */}
       <GamePanel ref={containerRef} />
+
+      {/* Entity Chips Panel - Floating on left side */}
+      {gameState.gameData && (
+        <EntityChipsPanel
+          myCharacters={myCharacters as Character[]}
+          activeCharacterIndex={gameState.activeCharacterIndex}
+          monsters={(gameState.gameData.monsters || []) as Monster[]}
+          currentTurnEntityId={gameState.currentTurnEntityId}
+          onSwitchCharacter={handleSwitchCharacter}
+          onMonsterClick={handleMonsterClick}
+        />
+      )}
+
+      {/* Monster Ability Overlay */}
+      {selectedMonster && (
+        <MonsterAbilityOverlay
+          monster={selectedMonster}
+          onClose={() => setSelectedMonster(null)}
+        />
+      )}
 
       {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
       <InfoPanel
@@ -505,6 +544,14 @@ export function GameBoard() {
                   ? (gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length
                   : 0
               }
+              // Multi-character support
+              activeCharacterName={
+                gameState.myCharacterId
+                  ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.classType
+                  : undefined
+              }
+              totalCharacters={gameState.myCharacterIds.length}
+              charactersWithSelections={gameStateManager.getCharactersWithSelectionsCount()}
             />
           ) : showPileView ? (
             <CardSelectionPanel

@@ -17,7 +17,8 @@ export interface Player {
   nickname: string;
   isHost: boolean;
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
-  characterClass?: string;
+  characterClass?: string; // First character for backward compatibility
+  characterClasses?: string[]; // Multi-character support
   isReady: boolean;
 }
 
