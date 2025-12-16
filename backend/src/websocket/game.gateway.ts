@@ -2747,9 +2747,13 @@ export class GameGateway
       );
 
       // Check if round is complete (wrapped back to start)
-      // Fix for single-entity games: also complete if only 1 entity in turn order
+      // Fix for single-entity games: also complete if only 1 LIVING entity in turn order
+      // This handles cases where character is at index 0 and all monsters are dead
+      const livingEntities = turnOrder.filter(
+        (e) => !e.isDead && !e.isExhausted,
+      ).length;
       const roundComplete =
-        nextIndex === 0 && (currentIndex !== 0 || turnOrder.length === 1);
+        nextIndex === 0 && (currentIndex !== 0 || livingEntities === 1);
 
       if (roundComplete) {
         // Use shared round completion logic
@@ -3572,9 +3576,12 @@ export class GameGateway
     );
 
     // Check if round is complete (wrapped back to start)
-    // Fix for single-entity games: also complete if only 1 entity in turn order
+    // Fix: count LIVING entities, not total entities (dead entities remain in turn order)
+    const livingEntities = turnOrder.filter(
+      (e) => !e.isDead && !e.isExhausted,
+    ).length;
     const roundComplete =
-      nextIndex === 0 && (currentIndex !== 0 || turnOrder.length === 1);
+      nextIndex === 0 && (currentIndex !== 0 || livingEntities === 1);
 
     if (roundComplete) {
       // Use shared round completion logic
