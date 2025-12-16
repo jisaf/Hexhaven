@@ -2747,7 +2747,9 @@ export class GameGateway
       );
 
       // Check if round is complete (wrapped back to start)
-      const roundComplete = nextIndex === 0 && currentIndex !== 0;
+      // Fix for single-entity games: also complete if only 1 entity in turn order
+      const roundComplete =
+        nextIndex === 0 && (currentIndex !== 0 || turnOrder.length === 1);
 
       if (roundComplete) {
         // Use shared round completion logic
@@ -3570,7 +3572,9 @@ export class GameGateway
     );
 
     // Check if round is complete (wrapped back to start)
-    const roundComplete = nextIndex === 0 && currentIndex !== 0;
+    // Fix for single-entity games: also complete if only 1 entity in turn order
+    const roundComplete =
+      nextIndex === 0 && (currentIndex !== 0 || turnOrder.length === 1);
 
     if (roundComplete) {
       // Use shared round completion logic
