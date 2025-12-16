@@ -387,10 +387,10 @@ export class GameGateway
     room: any,
     roomCode: string,
   ): GameStartedPayload {
-    // Get current scenario and game state
+    // Get current scenario and game state (including all characters for multi-character players)
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
-      .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
       .filter((c: any) => c !== null);
 
     // Get map from room state
@@ -1242,6 +1242,13 @@ export class GameGateway
         );
       });
 
+      // Clear all existing characters for players in this room (prevent duplicates from previous games)
+      const playerIds = (room.players as Player[]).map(p => p.uuid);
+      const removedCount = characterService.prepareForNewGame(playerIds);
+      if (removedCount > 0) {
+        this.logger.log(`🧹 Cleared ${removedCount} old characters for ${room.players.length} players`);
+      }
+
       // Flatten all characters across all players
       let positionIndex = 0;
       const characters: Character[] = [];
@@ -1266,6 +1273,14 @@ export class GameGateway
             characterClass,
             startingPosition,
           );
+
+          // Update character's hand with correct card IDs from ability card service
+          // (Character.create uses deprecated getStarterDeck with random IDs)
+          const classCards = this.abilityCardService.getCardsByClass(characterClass);
+          const starterCardIds = classCards
+            .filter(card => card.level === 1)
+            .map(card => card.id);
+          character.hand = starterCardIds;
 
           // Store persistent character ID if available
           if (characterId) {
@@ -1509,10 +1524,25 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Verify this character belongs to the player
+      if (character.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
+      }
+
+      // Verify it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      if (turnOrder && turnOrder.length > 0) {
+        const currentEntity = turnOrder[currentIndex];
+        if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
+          throw new Error('It is not this character\'s turn');
+        }
       }
 
       // Check if character is immobilized
@@ -1592,9 +1622,9 @@ export class GameGateway
         throw new Error('Target hex is occupied by a monster');
       }
 
-      // Check if target hex is occupied by another character
+      // Check if target hex is occupied by another character (including all multi-character players' characters)
       const allCharacters = room.players
-        .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+        .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
         .filter((c: any) => c !== null && c.id !== character.id && !c.isDead);
 
       const isOccupiedByCharacter = allCharacters.some(
@@ -1671,10 +1701,17 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get player's character by ID from payload (multi-character support - characterId required)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
+      }
+      // Verify this character belongs to the player
+      if (character.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
       }
 
       // Validate cards are in player's hand (belong to character class)
@@ -1785,9 +1822,9 @@ export class GameGateway
         `Player ${playerUUID} selected cards (initiative: ${initiative})`,
       );
 
-      // Check if all players have selected cards
+      // Check if all characters have selected cards (including all multi-character players' characters)
       const allCharacters = room.players
-        .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+        .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
         .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
       const allSelected = allCharacters.every((c: any): c is any =>
@@ -1819,9 +1856,9 @@ export class GameGateway
       return;
     }
 
-    // Get all characters and monsters
+    // Get all characters and monsters (including all characters for multi-character players)
     const characters = room.players
-      .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
       .filter((c: any) => c && !c.exhausted && c.selectedCards);
 
     // Get monsters from room state
@@ -1938,10 +1975,28 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get attacker's character
-      const attacker = characterService.getCharacterByPlayerId(playerUUID);
+      // Get attacker's character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const attacker = characterService.getCharacterById(payload.characterId);
       if (!attacker) {
         throw new Error('Character not found');
+      }
+
+      // Verify attacker belongs to this player
+      if (attacker.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
+      }
+
+      // Verify it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      if (turnOrder && turnOrder.length > 0) {
+        const currentEntity = turnOrder[currentIndex];
+        if (currentEntity.entityType === 'character' && currentEntity.entityId !== attacker.id) {
+          throw new Error('It is not this character\'s turn');
+        }
       }
 
       // Check if attacker is disarmed
@@ -1962,14 +2017,8 @@ export class GameGateway
       const isMonsterTarget = !!target;
 
       if (!target) {
-        // Try to find as character
-        const targetPlayer = room.players.find((p: any) => {
-          const char = characterService.getCharacterByPlayerId(p.uuid);
-          return char && char.id === payload.targetId;
-        });
-        if (targetPlayer) {
-          target = characterService.getCharacterByPlayerId(targetPlayer.uuid);
-        }
+        // Try to find as character (direct lookup by ID)
+        target = characterService.getCharacterById(payload.targetId);
       }
 
       if (!target) {
@@ -2408,10 +2457,28 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
+      }
+
+      // Verify it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      if (turnOrder && turnOrder.length > 0) {
+        const currentEntity = turnOrder[currentIndex];
+        if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
+          throw new Error('It is not this character\'s turn');
+        }
       }
 
       // Get loot tokens from room state
@@ -2520,12 +2587,6 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
-      if (!character) {
-        throw new Error('Character not found');
-      }
-
       // Get turn order for this room
       const turnOrder = this.roomTurnOrder.get(room.roomCode);
       if (!turnOrder || turnOrder.length === 0) {
@@ -2535,11 +2596,19 @@ export class GameGateway
       const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
       const currentEntity = turnOrder[currentIndex];
 
-      // Verify it's this player's turn
-      if (
-        currentEntity.entityType === 'character' &&
-        currentEntity.entityId !== character.id
-      ) {
+      // If it's not a character's turn, can't end turn this way
+      if (currentEntity.entityType !== 'character') {
+        throw new Error('It is not a character turn');
+      }
+
+      // Get the character whose turn it is
+      const character = characterService.getCharacterById(currentEntity.entityId);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Verify this character belongs to the player requesting end turn
+      if (character.playerId !== playerUUID) {
         throw new Error('It is not your turn');
       }
 
@@ -2757,10 +2826,18 @@ export class GameGateway
         throw new Error('Game is not active');
       }
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
       }
 
       // Validate can rest
@@ -2856,9 +2933,9 @@ export class GameGateway
             initiative: 99,
           });
 
-          // Check if all players have selected cards (or rested), then start round
+          // Check if all characters have selected cards (or rested), then start round
           const allCharacters = room.players
-            .map((p: Player) => characterService.getCharacterByPlayerId(p.uuid))
+            .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
             .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
           const allSelected = allCharacters.every((c: any): c is any =>
@@ -2912,10 +2989,18 @@ export class GameGateway
 
       const { room: _room, roomCode } = roomData;
 
-      // Get player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        throw new Error('Character does not belong to this player');
       }
 
       if (payload.action === 'reroll') {
@@ -3083,9 +3168,9 @@ export class GameGateway
         'MonsterAI',
       );
 
-      // Get all characters in room and map to expected format
+      // Get all characters in room and map to expected format (including all multi-character players' characters)
       const characterModels = room.players
-        .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
         .filter((c: any) => c !== null);
 
       this.emitDebugLog(
@@ -3562,13 +3647,15 @@ export class GameGateway
       return;
     }
 
-    // Clear selected cards and reset action flags for all characters for new round
+    // Clear selected cards and reset action flags for all characters for new round (including multi-character)
     room.players.forEach((p: any) => {
-      const char = characterService.getCharacterByPlayerId(p.uuid);
-      if (char) {
-        char.selectedCards = undefined;
-        char.resetActionFlags();
-      }
+      const playerChars = characterService.getCharactersByPlayerId(p.uuid);
+      playerChars.forEach((char) => {
+        if (char) {
+          char.selectedCards = undefined;
+          char.resetActionFlags();
+        }
+      });
     });
 
     // TODO (Enhancement): Draw monster ABILITY CARDS (not just initiatives)
@@ -3858,18 +3945,16 @@ export class GameGateway
     reason: 'health' | 'cards' | 'manual',
   ): void {
     try {
-      // Mark character as exhausted in the database
-      const characterModel = characterService.getCharacterByPlayerId(
-        character.playerId,
-      );
+      // Mark character as exhausted by ID (multi-character support)
+      const characterModel = characterService.getCharacterById(character.id);
       if (characterModel) {
         characterModel.exhaust();
         this.logger.log(
-          `Character ${character.id} marked as exhausted in database`,
+          `Character ${character.id} marked as exhausted`,
         );
       } else {
         this.logger.error(
-          `Could not find character model for player ${character.playerId}`,
+          `Could not find character model for ${character.id}`,
         );
       }
 
@@ -3917,9 +4002,9 @@ export class GameGateway
         return;
       }
 
-      // Get all characters in room
+      // Get all characters in room (including all multi-character players' characters)
       const characters = room.players
-        .map((p: any) => characterService.getCharacterByPlayerId(p.uuid))
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
         .filter((c) => c !== null);
 
       // Get all monsters in room
@@ -4144,13 +4229,13 @@ export class GameGateway
           0,
         );
 
-        // Build player results for database
-        const playerResults = room.players.map((p: any) => {
+        // Build player results for database (including all characters for multi-character players)
+        const playerResults = room.players.flatMap((p: any) => {
           const stats = playerStatsMap?.get(p.uuid);
           const loot = lootByPlayer.get(p.uuid);
-          const character = characterService.getCharacterByPlayerId(p.uuid);
+          const playerCharacters = characterService.getCharactersByPlayerId(p.uuid);
 
-          // Calculate experience for this player
+          // Calculate experience for this player (shared across all their characters)
           let playerExperience = isVictory ? 10 : 0;
           if (isVictory && objectives?.secondary) {
             for (const secondary of objectives.secondary) {
@@ -4162,10 +4247,11 @@ export class GameGateway
             }
           }
 
-          return {
+          // Return results for each character the player controls
+          return playerCharacters.map((character) => ({
             userId: p.uuid,
             characterId: character?.id || p.uuid,
-            characterClass: p.characterClass || 'Unknown',
+            characterClass: character?.characterClass || 'Unknown',
             characterName: p.nickname,
             survived: !character?.exhausted,
             wasExhausted: character?.exhausted || false,
@@ -4176,9 +4262,9 @@ export class GameGateway
               ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
               : 0,
             cardsLost: stats?.cardsLost || 0,
-            experienceGained: Math.floor(playerExperience),
-            goldGained: loot?.gold || 0,
-          };
+            experienceGained: Math.floor(playerExperience / playerCharacters.length), // Split XP across characters
+            goldGained: Math.floor((loot?.gold || 0) / playerCharacters.length), // Split gold across characters
+          }));
         });
 
         // Save to database
@@ -4214,33 +4300,35 @@ export class GameGateway
         // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
         // This resets consumed items and refreshes spent items for the next scenario
         for (const player of room.players) {
-          const character = characterService.getCharacterByPlayerId(
+          const playerCharacters = characterService.getCharactersByPlayerId(
             player.uuid,
           );
-          if (
-            character &&
-            characterService.isPersistentCharacter(character.id)
-          ) {
-            try {
-              const refreshResult = await this.inventoryService.refreshAllItems(
-                character.id,
-              );
-              if (refreshResult.refreshedItems.length > 0) {
-                const payload: ItemsRefreshedPayload = {
-                  characterId: character.id,
-                  refreshedItems: refreshResult.refreshedItems,
-                  trigger: 'scenario_end',
-                };
-                this.server.to(roomCode).emit('items_refreshed', payload);
-                this.logger.log(
-                  `Refreshed ${refreshResult.refreshedItems.length} items for character ${character.id} after scenario`,
+          for (const character of playerCharacters) {
+            if (
+              character &&
+              characterService.isPersistentCharacter(character.id)
+            ) {
+              try {
+                const refreshResult = await this.inventoryService.refreshAllItems(
+                  character.id,
                 );
+                if (refreshResult.refreshedItems.length > 0) {
+                  const payload: ItemsRefreshedPayload = {
+                    characterId: character.id,
+                    refreshedItems: refreshResult.refreshedItems,
+                    trigger: 'scenario_end',
+                  };
+                  this.server.to(roomCode).emit('items_refreshed', payload);
+                  this.logger.log(
+                    `Refreshed ${refreshResult.refreshedItems.length} items for character ${character.id} after scenario`,
+                  );
+                }
+              } catch (refreshError) {
+                this.logger.warn(
+                  `Failed to refresh items for character ${character.id}: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+                );
+                // Continue with other characters
               }
-            } catch (refreshError) {
-              this.logger.warn(
-                `Failed to refresh items for character ${character.id}: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
-              );
-              // Continue with other characters
             }
           }
         }
@@ -4288,13 +4376,29 @@ export class GameGateway
         return;
       }
 
-      // Find player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        client.emit('error', {
+          code: 'MISSING_CHARACTER_ID',
+          message: 'characterId is required',
+        } as ErrorPayload);
+        return;
+      }
 
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         client.emit('error', {
           code: 'NO_CHARACTER',
-          message: 'You do not have a character',
+          message: 'Character not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Character does not belong to this player',
         } as ErrorPayload);
         return;
       }
@@ -4362,13 +4466,29 @@ export class GameGateway
         return;
       }
 
-      // Find player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        client.emit('error', {
+          code: 'MISSING_CHARACTER_ID',
+          message: 'characterId is required',
+        } as ErrorPayload);
+        return;
+      }
 
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         client.emit('error', {
           code: 'NO_CHARACTER',
-          message: 'You do not have a character',
+          message: 'Character not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Character does not belong to this player',
         } as ErrorPayload);
         return;
       }
@@ -4448,13 +4568,29 @@ export class GameGateway
         return;
       }
 
-      // Find player's character
-      const character = characterService.getCharacterByPlayerId(playerUUID);
+      // Get character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        client.emit('error', {
+          code: 'MISSING_CHARACTER_ID',
+          message: 'characterId is required',
+        } as ErrorPayload);
+        return;
+      }
 
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         client.emit('error', {
           code: 'NO_CHARACTER',
-          message: 'You do not have a character',
+          message: 'Character not found',
+        } as ErrorPayload);
+        return;
+      }
+
+      // Verify character belongs to this player
+      if (character.playerId !== playerUUID) {
+        client.emit('error', {
+          code: 'UNAUTHORIZED',
+          message: 'Character does not belong to this player',
         } as ErrorPayload);
         return;
       }

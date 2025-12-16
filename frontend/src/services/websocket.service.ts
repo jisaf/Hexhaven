@@ -418,16 +418,20 @@ class WebSocketService {
 
   /**
    * Move character
+   * @param characterId - Which character is moving (required for multi-character support)
+   * @param targetHex - Target hex coordinates
    */
-  moveCharacter(targetHex: { q: number; r: number }): void {
-    this.emit('move_character', { targetHex });
+  moveCharacter(characterId: string, targetHex: { q: number; r: number }): void {
+    this.emit('move_character', { characterId, targetHex });
   }
 
   /**
    * Attack target
+   * @param characterId - Which character is attacking (required for multi-character support)
+   * @param targetId - Monster or character UUID to attack
    */
-  attackTarget(targetId: string): void {
-    this.emit('attack_target', { targetId });
+  attackTarget(characterId: string, targetId: string): void {
+    this.emit('attack_target', { characterId, targetId });
   }
 
   /**
@@ -449,9 +453,11 @@ class WebSocketService {
 
   /**
    * Collect loot token
+   * @param characterId - Which character is collecting (required for multi-character support)
+   * @param hexCoordinates - Hex coordinates of the loot token
    */
-  collectLoot(hexCoordinates: { q: number; r: number }): void {
-    this.emit('collect_loot', { hexCoordinates });
+  collectLoot(characterId: string, hexCoordinates: { q: number; r: number }): void {
+    this.emit('collect_loot', { characterId, hexCoordinates });
   }
 
   /**

@@ -324,6 +324,13 @@ class GameStateManager {
       // Store ability deck for this character
       if (characterWithDeck.abilityDeck && Array.isArray(characterWithDeck.abilityDeck)) {
         this.state.abilityDecks.set(char.id, characterWithDeck.abilityDeck);
+
+        // Initialize hand for this character if empty (new game)
+        if (!char.hand || char.hand.length === 0) {
+          char.hand = characterWithDeck.abilityDeck.map(card => card.id);
+          char.discardPile = [];
+          char.lostPile = [];
+        }
       }
     });
 
@@ -515,15 +522,25 @@ class GameStateManager {
   }
 
   private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
-    const myTurn = data.entityType === 'character' && data.entityId === this.state.myCharacterId;
-    this.state.isMyTurn = myTurn;
+    // Check if this turn belongs to ANY of the player's characters (multi-character support)
+    const isMyCharacter = data.entityType === 'character' && this.state.myCharacterIds.includes(data.entityId);
+    this.state.isMyTurn = isMyCharacter;
     this.state.currentTurnEntityId = data.entityId;
+
+    // If it's one of our characters' turns, switch to that character
+    if (isMyCharacter) {
+      const charIndex = this.state.myCharacterIds.indexOf(data.entityId);
+      if (charIndex !== -1 && charIndex !== this.state.activeCharacterIndex) {
+        console.log(`[GameStateManager] Auto-switching to character ${charIndex} for their turn`);
+        this.switchActiveCharacter(charIndex);
+      }
+    }
 
     const turnOrderEntry = this.state.turnOrder.find(t => t.entityId === data.entityId);
     const entityName = turnOrderEntry ? turnOrderEntry.name : (data.entityType === 'monster' ? 'Monster' : 'Character');
 
-    if (myTurn) {
-      this.addLog([{ text: 'Your turn has started.', color: 'gold' }]);
+    if (isMyCharacter) {
+      this.addLog([{ text: `${entityName}'s turn has started.`, color: 'gold' }]);
     } else {
       this.addLog([{ text: `${entityName}'s turn.` }]);
     }
@@ -862,6 +879,11 @@ class GameStateManager {
 
       // ATTACK MODE: Check if clicking on a valid attack target
       if (this.state.attackMode) {
+        if (!this.state.myCharacterId) {
+          console.error('[GameStateManager] Cannot attack: no active character');
+          return;
+        }
+
         // Find monster at this hex
         const monster = this.state.gameData?.monsters.find(m =>
           m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0
@@ -869,7 +891,7 @@ class GameStateManager {
 
         if (monster) {
           // Execute attack on monster
-          websocketService.attackTarget(monster.id);
+          websocketService.attackTarget(this.state.myCharacterId, monster.id);
           this.exitAttackMode();
           return;
         }
@@ -883,7 +905,11 @@ class GameStateManager {
 
       if (this.state.selectedHex && this.state.selectedHex.q === hex.q && this.state.selectedHex.r === hex.r) {
           // double-click to confirm move
-          websocketService.moveCharacter(hex);
+          if (!this.state.myCharacterId) {
+            console.error('[GameStateManager] Cannot move: no active character');
+            return;
+          }
+          websocketService.moveCharacter(this.state.myCharacterId, hex);
           this.state.selectedHex = null;
           this.state.validMovementHexes = [];
       } else {
