@@ -76,6 +76,7 @@ import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
 import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
+import { CampaignService } from '../services/campaign.service';
 import {
   getPush,
   getPull,
@@ -115,6 +116,7 @@ export class GameGateway
     private readonly conditionService: ConditionService,
     private readonly forcedMovementService: ForcedMovementService,
     private readonly elementalStateService: ElementalStateService,
+    private readonly campaignService: CampaignService, // Issue #244 - Campaign Mode
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -1073,20 +1075,28 @@ export class GameGateway
           throw new Error('Must provide either characterId or characterClass');
         }
 
-        // Check if character class is already taken by ANY player (including self)
-        const characterTakenByOther = room.players.some(
-          (p: Player) =>
-            p.characterClasses.includes(characterClass) &&
-            p.uuid !== playerUUID,
-        );
-
-        if (characterTakenByOther) {
-          throw new Error('Character class already selected by another player');
+        // Check if campaign requires unique character classes
+        let requireUniqueClasses = true; // Default: require unique for non-campaign games
+        if (room.campaignId) {
+          requireUniqueClasses = await this.campaignService.getRequireUniqueClasses(room.campaignId);
         }
 
-        // Check if player already has this character class
-        if (player.characterClasses.includes(characterClass)) {
-          throw new Error('You have already selected this character class');
+        if (requireUniqueClasses) {
+          // Check if character class is already taken by another player
+          const characterTakenByOther = room.players.some(
+            (p: Player) =>
+              p.characterClasses.includes(characterClass) &&
+              p.uuid !== playerUUID,
+          );
+
+          if (characterTakenByOther) {
+            throw new Error('Character class already selected by another player');
+          }
+
+          // Check if player already has this character class
+          if (player.characterClasses.includes(characterClass)) {
+            throw new Error('You have already selected this character class');
+          }
         }
 
         // Add character (will validate max limit)
@@ -1206,8 +1216,8 @@ export class GameGateway
         throw new Error(`Invalid scenario: ${validation.errors.join(', ')}`);
       }
 
-      // Start the game
-      roomService.startGame(room.roomCode, payload.scenarioId, playerUUID);
+      // Start the game (Issue #244 - Campaign Mode support)
+      roomService.startGame(room.roomCode, payload.scenarioId, playerUUID, payload.campaignId);
 
       // TODO: Simplify playerStartPositions structure and allow player selection
       // Current implementation uses Record<number, AxialCoordinates[]> keyed by player count,
@@ -1568,11 +1578,22 @@ export class GameGateway
         throw new Error('Map not initialized for this room');
       }
 
-      // Calculate path using pathfinding service
+      // Build set of occupied hexes (monsters block player movement)
+      const monsters = this.roomMonsters.get(room.roomCode) || [];
+      const occupiedHexes = new Set<string>();
+      for (const monster of monsters) {
+        if (!monster.isDead && monster.currentHex) {
+          occupiedHexes.add(`${monster.currentHex.q},${monster.currentHex.r}`);
+        }
+      }
+
+      // Calculate path using pathfinding service (monsters block movement)
       const path = this.pathfindingService.findPath(
         fromHex,
         payload.targetHex,
         hexMap,
+        false, // canFly
+        occupiedHexes,
       );
 
       if (!path) {
@@ -1590,11 +1611,13 @@ export class GameGateway
         );
       }
 
-      // Get reachable hexes within remaining movement range
+      // Get reachable hexes within remaining movement range (monsters block movement)
       const reachableHexes = this.pathfindingService.getReachableHexes(
         fromHex,
         remainingMovement,
         hexMap,
+        false, // canFly
+        occupiedHexes,
       );
 
       // Check if target is within remaining movement range
@@ -1609,8 +1632,7 @@ export class GameGateway
         );
       }
 
-      // Check if target hex is occupied by a monster
-      const monsters = this.roomMonsters.get(room.roomCode) || [];
+      // Check if target hex is occupied by a monster (destination check - monsters already block path)
       const isOccupiedByMonster = monsters.some(
         (m: any) =>
           m.currentHex.q === payload.targetHex.q &&
@@ -3268,16 +3290,25 @@ export class GameGateway
         'MonsterAI',
       );
 
-      // Get hex map and obstacles for movement calculation
+      // Get hex map for movement calculation - REQUIRED for off-map prevention
       const hexMap = this.roomMaps.get(roomCode);
-      const obstacles: any[] = [];
-      if (hexMap) {
-        hexMap.forEach((tile: any) => {
-          if (tile.terrain === 'obstacle') {
-            obstacles.push(tile.coordinates);
-          }
-        });
+      if (!hexMap) {
+        this.emitDebugLog(
+          roomCode,
+          'error',
+          `Cannot activate monster: hexMap not found for room ${roomCode}`,
+          'MonsterAI',
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
       }
+
+      const obstacles: any[] = [];
+      hexMap.forEach((tile: any) => {
+        if (tile.terrain === 'obstacle') {
+          obstacles.push(tile.coordinates);
+        }
+      });
 
       this.emitDebugLog(
         roomCode,
@@ -3314,20 +3345,29 @@ export class GameGateway
       const originalHex = { ...monster.currentHex };
 
       // Determine movement (use mapped target for MonsterAI service)
+      // hexMap is required to prevent off-map movement
       const movementHex = this.monsterAIService.determineMovement(
         monster,
         focusTargetMapped as any,
         obstacles,
         occupiedHexes,
+        hexMap,
       );
 
       let movementDistance = 0;
       // Apply movement if determined
-      if (movementHex && hexMap) {
+      if (movementHex) {
+        // Convert occupiedHexes array to Set for pathfinding (characters block monster movement)
+        const occupiedHexSet = new Set<string>();
+        for (const hex of occupiedHexes) {
+          occupiedHexSet.add(`${hex.q},${hex.r}`);
+        }
         const path = this.pathfindingService.findPath(
           originalHex,
           movementHex,
           hexMap,
+          false, // canFly
+          occupiedHexSet,
         );
         movementDistance = path && path.length > 0 ? path.length - 1 : 0;
         monster.currentHex = movementHex;
@@ -4296,6 +4336,69 @@ export class GameGateway
         });
 
         this.logger.log(`Game result saved to database for room ${roomCode}`);
+
+        // Issue #244 - Campaign Mode: Record scenario completion in campaign
+        if (room.campaignId) {
+          try {
+            // Get exhausted character IDs for permadeath handling
+            const exhaustedCharacterIds = room.players.flatMap((p: any) => {
+              const playerChars = characterService.getCharactersByPlayerId(p.uuid);
+              return playerChars
+                .filter((c: any) => c?.exhausted)
+                .map((c: any) => c?.userCharacterId)
+                .filter((id: string | undefined): id is string => !!id);
+            });
+
+            // Build character results for campaign tracking
+            const characterResults = playerResults.map((pr: any) => ({
+              characterId: pr.characterId,
+              experienceGained: pr.experienceGained || 0,
+              goldGained: pr.goldGained || 0,
+            }));
+
+            // Record in campaign service
+            const campaignResult = await this.campaignService.recordScenarioCompletion(
+              room.campaignId,
+              room.scenarioId || '',
+              isVictory,
+              exhaustedCharacterIds,
+              characterResults,
+            );
+
+            // Emit campaign completion events
+            this.server.to(roomCode).emit('campaign_scenario_completed', {
+              campaignId: room.campaignId,
+              scenarioId: room.scenarioId,
+              victory: isVictory,
+              newlyUnlockedScenarios: campaignResult.newlyUnlockedScenarios,
+              healedCharacters: campaignResult.healedCharacters,
+              retiredCharacters: campaignResult.retiredCharacters,
+              campaignCompleted: campaignResult.campaignCompleted,
+              experienceGained: campaignResult.experienceGained,
+              goldGained: campaignResult.goldGained,
+            });
+
+            this.logger.log(
+              `Campaign scenario completed: campaignId=${room.campaignId}, victory=${isVictory}, ` +
+              `unlocked=${campaignResult.newlyUnlockedScenarios.length}, ` +
+              `retired=${campaignResult.retiredCharacters.length}, ` +
+              `campaignCompleted=${campaignResult.campaignCompleted}`,
+            );
+
+            // If campaign is completed, emit campaign completed event
+            if (campaignResult.campaignCompleted) {
+              this.server.to(roomCode).emit('campaign_completed', {
+                campaignId: room.campaignId,
+                victory: isVictory && campaignResult.retiredCharacters.length === 0,
+              });
+            }
+          } catch (campaignError) {
+            this.logger.error(
+              `Failed to record campaign scenario completion: ${campaignError instanceof Error ? campaignError.message : String(campaignError)}`,
+            );
+            // Don't throw - game completion should still succeed
+          }
+        }
 
         // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
         // This resets consumed items and refreshes spent items for the next scenario
