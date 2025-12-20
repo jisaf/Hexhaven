@@ -10,6 +10,11 @@ import { Player } from '../models/player.model';
 import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
 import { RoomStatus } from '../../../shared/types/entities';
 
+interface CreateRoomOptions {
+  campaignId?: string;
+  scenarioId?: string;
+}
+
 export class RoomService {
   private rooms: Map<string, GameRoom> = new Map();
   private roomCodeIndex: Map<string, string> = new Map(); // roomCode -> roomId
@@ -17,7 +22,7 @@ export class RoomService {
   /**
    * Create a new game room with a host player
    */
-  createRoom(hostPlayer: Player): GameRoom {
+  createRoom(hostPlayer: Player, options?: CreateRoomOptions): GameRoom {
     // Generate unique room code
     let roomCode: string;
     let attempts = 0;
@@ -32,8 +37,8 @@ export class RoomService {
       }
     } while (this.roomCodeIndex.has(roomCode));
 
-    // Create room with host
-    const room = GameRoom.create(hostPlayer);
+    // Create room with host (with optional campaign context)
+    const room = GameRoom.create(hostPlayer, options);
 
     // Store room
     this.rooms.set(room.id, room);
@@ -162,6 +167,7 @@ export class RoomService {
     roomCode: string,
     scenarioId: string,
     requestingPlayerUuid: string,
+    campaignId?: string, // Issue #244 - Campaign Mode
   ): GameRoom {
     const room = this.getRoom(roomCode);
 
@@ -182,7 +188,7 @@ export class RoomService {
       );
     }
 
-    room.startGame(scenarioId);
+    room.startGame(scenarioId, campaignId);
 
     return room;
   }

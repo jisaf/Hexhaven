@@ -144,6 +144,19 @@ export class GameGateway
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
+  private readonly roomGamePhase = new Map<
+    string,
+    'card_selection' | 'active_turn'
+  >(); // roomCode -> game phase
+  private readonly monstersActedThisTurn = new Map<string, Set<string>>(); // roomCode -> Set of monster IDs that have acted
+  private readonly roomGameLogs = new Map<
+    string,
+    Array<{
+      id: string;
+      parts: Array<{ text: string; color?: string; isBold?: boolean }>;
+      timestamp: number;
+    }>
+  >(); // roomCode -> game log entries
   private readonly roomMaps = new Map<string, Map<string, any>>(); // roomCode -> hex map
   private readonly roomScenarios = new Map<string, any>(); // roomCode -> scenario data (Issue #191)
   private readonly roomLootTokens = new Map<string, any[]>(); // roomCode -> loot tokens
@@ -382,6 +395,30 @@ export class GameGateway
   }
 
   /**
+   * Add a log entry to the game log for a room
+   * Used to persist game log for rejoin
+   */
+  private addGameLogEntry(
+    roomCode: string,
+    parts: Array<{ text: string; color?: string; isBold?: boolean }>,
+  ): void {
+    let logs = this.roomGameLogs.get(roomCode);
+    if (!logs) {
+      logs = [];
+      this.roomGameLogs.set(roomCode, logs);
+    }
+    logs.push({
+      id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      parts,
+      timestamp: Date.now(),
+    });
+    // Keep only last 100 log entries to prevent memory bloat
+    if (logs.length > 100) {
+      logs.shift();
+    }
+  }
+
+  /**
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
@@ -414,11 +451,16 @@ export class GameGateway
       );
       const abilityDeckIds = classCards.map((card) => card.id);
 
-      // Initialize deck piles (all cards start in hand at game start)
-      // TODO: Load from database when persistence is implemented
-      const hand = abilityDeckIds; // All cards start in hand
-      const discardPile: string[] = [];
-      const lostPile: string[] = [];
+      // Use current card pile state from character (for rejoin), or initialize if new game
+      // charData contains the actual current state of hand/discard/lost piles
+      // Only fallback to full deck if this is a NEW game (no cards in any pile)
+      const discardPile = charData.discardPile || [];
+      const lostPile = charData.lostPile || [];
+      const isNewGame =
+        discardPile.length === 0 &&
+        lostPile.length === 0 &&
+        (!charData.hand || charData.hand.length === 0);
+      const hand = isNewGame ? abilityDeckIds : charData.hand || [];
 
       // Get database character ID from player (Issue #205)
       const player = room.players.find(
@@ -470,15 +512,18 @@ export class GameGateway
       scenarioId: room.scenarioId || 'scenario-1',
       scenarioName: scenario?.name || 'Black Barrow',
       mapLayout,
-      monsters: monsters.map((m: any) => ({
-        id: m.id,
-        monsterType: m.monsterType,
-        isElite: m.isElite,
-        currentHex: m.currentHex,
-        health: m.health,
-        maxHealth: m.maxHealth,
-        conditions: m.conditions,
-      })),
+      // Filter out dead monsters before sending to client (they're kept for objective tracking)
+      monsters: monsters
+        .filter((m: any) => !m.isDead)
+        .map((m: any) => ({
+          id: m.id,
+          monsterType: m.monsterType,
+          isElite: m.isElite,
+          currentHex: m.currentHex,
+          health: m.health,
+          maxHealth: m.maxHealth,
+          conditions: m.conditions,
+        })),
       characters: charactersWithDecks,
       objectives: objectives
         ? {
@@ -507,6 +552,19 @@ export class GameGateway
       backgroundOffsetX: scenario?.backgroundOffsetX,
       backgroundOffsetY: scenario?.backgroundOffsetY,
       backgroundScale: scenario?.backgroundScale,
+      // Current game state for rejoin
+      currentRound: this.currentRound.get(roomCode) || 1,
+      // Game log for rejoin
+      gameLog: this.roomGameLogs.get(roomCode) || [],
+      // Loot tokens for rejoin (filter to uncollected only)
+      lootTokens: (this.roomLootTokens.get(roomCode) || [])
+        .filter((t: any) => !t.isCollected)
+        .map((t: any) => ({
+          id: t.id,
+          coordinates: t.coordinates,
+          value: t.value,
+          isCollected: t.isCollected,
+        })),
     };
 
     // Debug logging for background issue
@@ -722,32 +780,65 @@ export class GameGateway
             },
           );
 
-          // Also send current turn info if turn order exists
-          const turnOrder = this.roomTurnOrder.get(roomCode);
-          const currentTurnIdx = this.currentTurnIndex.get(roomCode) || 0;
-          if (turnOrder && turnOrder.length > 0) {
-            const roundNumber = this.currentRound.get(roomCode) || 1;
-            const roundStartedPayload: any = {
-              roundNumber,
-              turnOrder: turnOrder.map(
-                ({ entityId, name, entityType, initiative }) => ({
-                  entityId,
-                  name,
-                  entityType,
-                  initiative,
-                }),
-              ),
-            };
-            client.emit('round_started', roundStartedPayload);
+          // Send current game phase and turn state based on game phase
+          const gamePhase =
+            this.roomGamePhase.get(roomCode) || 'card_selection';
+          const roundNumber = this.currentRound.get(roomCode) || 1;
 
-            const currentEntity = turnOrder[currentTurnIdx];
-            const turnStartedPayload: TurnStartedPayload = {
-              entityId: currentEntity.entityId,
-              entityType: currentEntity.entityType,
-              turnIndex: currentTurnIdx,
-            };
-            client.emit('turn_started', turnStartedPayload);
-            this.logger.log(`Sent current turn info to ${nickname}`);
+          this.logger.log(
+            `🔄 Rejoin state for ${nickname}: phase=${gamePhase}, round=${roundNumber}, hasPhaseEntry=${this.roomGamePhase.has(roomCode)}, hasRoundEntry=${this.currentRound.has(roomCode)}`,
+          );
+
+          if (gamePhase === 'card_selection') {
+            // Game is in card selection phase - send round_ended to show card selection UI
+            this.logger.log(
+              `📋 Sending round_ended to ${nickname} for card selection (round ${roundNumber})`,
+            );
+            client.emit('round_ended', {
+              roundNumber: roundNumber,
+            });
+            this.logger.log(`✅ round_ended event emitted to ${nickname}`);
+          } else if (gamePhase === 'active_turn') {
+            // Game is in active turn phase - send turn order and current turn
+            const turnOrder = this.roomTurnOrder.get(roomCode);
+            const currentTurnIdx = this.currentTurnIndex.get(roomCode) || 0;
+
+            if (turnOrder && turnOrder.length > 0) {
+              const roundStartedPayload: any = {
+                roundNumber,
+                turnOrder: turnOrder.map(
+                  ({ entityId, name, entityType, initiative }) => ({
+                    entityId,
+                    name,
+                    entityType,
+                    initiative,
+                  }),
+                ),
+              };
+              client.emit('round_started', roundStartedPayload);
+
+              const currentEntity = turnOrder[currentTurnIdx];
+              const turnStartedPayload: TurnStartedPayload = {
+                entityId: currentEntity.entityId,
+                entityType: currentEntity.entityType,
+                turnIndex: currentTurnIdx,
+              };
+              client.emit('turn_started', turnStartedPayload);
+              this.logger.log(
+                `Sent current turn info to ${nickname} (round ${roundNumber}, turn ${currentTurnIdx})`,
+              );
+
+              // If it's a monster's turn, re-trigger monster activation
+              // The monster may have already acted, but activateMonster handles dead/acted monsters gracefully
+              if (currentEntity.entityType === 'monster') {
+                this.logger.log(
+                  `Current turn is monster (${currentEntity.entityId}), re-triggering activation after rejoin`,
+                );
+                setTimeout(() => {
+                  this.activateMonster(currentEntity.entityId, roomCode);
+                }, 200);
+              }
+            }
           }
 
           // Objectives are now sent as part of game_started payload in buildGameStatePayload
@@ -879,6 +970,9 @@ export class GameGateway
         this.roomTurnOrder.delete(roomCode);
         this.currentTurnIndex.delete(roomCode);
         this.currentRound.delete(roomCode);
+        this.roomGamePhase.delete(roomCode);
+        this.monstersActedThisTurn.delete(roomCode);
+        this.roomGameLogs.delete(roomCode);
         this.roomLootTokens.delete(roomCode);
         this.modifierDecks.delete(roomCode);
         this.roomMonsterInitiatives.delete(roomCode);
@@ -1078,7 +1172,8 @@ export class GameGateway
         // Check if campaign requires unique character classes
         let requireUniqueClasses = true; // Default: require unique for non-campaign games
         if (room.campaignId) {
-          requireUniqueClasses = await this.campaignService.getRequireUniqueClasses(room.campaignId);
+          requireUniqueClasses =
+            await this.campaignService.getRequireUniqueClasses(room.campaignId);
         }
 
         if (requireUniqueClasses) {
@@ -1090,7 +1185,9 @@ export class GameGateway
           );
 
           if (characterTakenByOther) {
-            throw new Error('Character class already selected by another player');
+            throw new Error(
+              'Character class already selected by another player',
+            );
           }
 
           // Check if player already has this character class
@@ -1217,7 +1314,12 @@ export class GameGateway
       }
 
       // Start the game (Issue #244 - Campaign Mode support)
-      roomService.startGame(room.roomCode, payload.scenarioId, playerUUID, payload.campaignId);
+      roomService.startGame(
+        room.roomCode,
+        payload.scenarioId,
+        playerUUID,
+        payload.campaignId,
+      );
 
       // TODO: Simplify playerStartPositions structure and allow player selection
       // Current implementation uses Record<number, AxialCoordinates[]> keyed by player count,
@@ -1253,10 +1355,12 @@ export class GameGateway
       });
 
       // Clear all existing characters for players in this room (prevent duplicates from previous games)
-      const playerIds = (room.players as Player[]).map(p => p.uuid);
+      const playerIds = (room.players as Player[]).map((p) => p.uuid);
       const removedCount = characterService.prepareForNewGame(playerIds);
       if (removedCount > 0) {
-        this.logger.log(`🧹 Cleared ${removedCount} old characters for ${room.players.length} players`);
+        this.logger.log(
+          `🧹 Cleared ${removedCount} old characters for ${room.players.length} players`,
+        );
       }
 
       // Flatten all characters across all players
@@ -1286,10 +1390,11 @@ export class GameGateway
 
           // Update character's hand with correct card IDs from ability card service
           // (Character.create uses deprecated getStarterDeck with random IDs)
-          const classCards = this.abilityCardService.getCardsByClass(characterClass);
+          const classCards =
+            this.abilityCardService.getCardsByClass(characterClass);
           const starterCardIds = classCards
-            .filter(card => card.level === 1)
-            .map(card => card.id);
+            .filter((card) => card.level === 1)
+            .map((card) => card.id);
           character.hand = starterCardIds;
 
           // Store persistent character ID if available
@@ -1335,8 +1440,9 @@ export class GameGateway
       // Initialize empty loot tokens array for this room
       this.roomLootTokens.set(room.roomCode, []);
 
-      // Initialize round counter
+      // Initialize round counter and game phase
       this.currentRound.set(room.roomCode, 0);
+      this.roomGamePhase.set(room.roomCode, 'card_selection'); // Game starts with card selection
 
       // Issue #220: Initialize elemental state for this room
       this.roomElementalState.set(
@@ -1462,6 +1568,12 @@ export class GameGateway
         `🖼️ Background for game_started: scenarioId=${scenario.id}, backgroundImageUrl=${scenario.backgroundImageUrl || 'NONE'}, opacity=${scenario.backgroundOpacity}, scale=${scenario.backgroundScale}`,
       );
 
+      // Initialize game log with scenario start entry
+      this.roomGameLogs.set(room.roomCode, []);
+      this.addGameLogEntry(room.roomCode, [
+        { text: `Scenario started: ${scenario.name}` },
+      ]);
+
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();
@@ -1550,8 +1662,11 @@ export class GameGateway
       const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
       if (turnOrder && turnOrder.length > 0) {
         const currentEntity = turnOrder[currentIndex];
-        if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
-          throw new Error('It is not this character\'s turn');
+        if (
+          currentEntity.entityType === 'character' &&
+          currentEntity.entityId !== character.id
+        ) {
+          throw new Error("It is not this character's turn");
         }
       }
 
@@ -1646,7 +1761,9 @@ export class GameGateway
 
       // Check if target hex is occupied by another character (including all multi-character players' characters)
       const allCharacters = room.players
-        .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
+        .flatMap((p: Player) =>
+          characterService.getCharactersByPlayerId(p.uuid),
+        )
         .filter((c: any) => c !== null && c.id !== character.id && !c.isDead);
 
       const isOccupiedByCharacter = allCharacters.some(
@@ -1678,6 +1795,14 @@ export class GameGateway
       this.server
         .to(room.roomCode)
         .emit('character_moved', characterMovedPayload);
+
+      // Add log entry for character movement
+      this.addGameLogEntry(room.roomCode, [
+        { text: character.characterClass, color: 'lightblue' },
+        { text: ` moved ` },
+        { text: `${moveDistance}`, color: 'cyan' },
+        { text: ` hexes.` },
+      ]);
 
       this.logger.log(
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
@@ -1846,7 +1971,9 @@ export class GameGateway
 
       // Check if all characters have selected cards (including all multi-character players' characters)
       const allCharacters = room.players
-        .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
+        .flatMap((p: Player) =>
+          characterService.getCharactersByPlayerId(p.uuid),
+        )
         .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
       const allSelected = allCharacters.every((c: any): c is any =>
@@ -1919,10 +2046,12 @@ export class GameGateway
     // Store turn order and reset turn index
     this.roomTurnOrder.set(roomCode, turnOrder);
     this.currentTurnIndex.set(roomCode, 0);
+    this.monstersActedThisTurn.set(roomCode, new Set()); // Reset monster action tracking for new round
 
-    // Increment round number
+    // Increment round number and set phase to active
     const roundNumber = (this.currentRound.get(roomCode) || 0) + 1;
     this.currentRound.set(roomCode, roundNumber);
+    this.roomGamePhase.set(roomCode, 'active_turn');
 
     // Broadcast round started with turn order
     if (turnOrder.length > 0) {
@@ -1940,6 +2069,11 @@ export class GameGateway
 
       this.server.to(roomCode).emit('round_started', roundStartedPayload);
 
+      // Add log entry for round start
+      this.addGameLogEntry(roomCode, [
+        { text: `Round ${roundNumber} has started.` },
+      ]);
+
       // Also send turn_started for the first entity
       const firstEntity = turnOrder[0];
       const turnStartedPayload: TurnStartedPayload = {
@@ -1948,6 +2082,9 @@ export class GameGateway
         turnIndex: 0,
       };
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
+
+      // Add log entry for turn start
+      this.addGameLogEntry(roomCode, [{ text: `${firstEntity.name}'s turn.` }]);
 
       this.logger.log(
         `Round ${roundNumber} started in room ${roomCode}, first turn: ${turnOrder[0].entityId} (initiative: ${turnOrder[0].initiative})`,
@@ -2016,8 +2153,11 @@ export class GameGateway
       const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
       if (turnOrder && turnOrder.length > 0) {
         const currentEntity = turnOrder[currentIndex];
-        if (currentEntity.entityType === 'character' && currentEntity.entityId !== attacker.id) {
-          throw new Error('It is not this character\'s turn');
+        if (
+          currentEntity.entityType === 'character' &&
+          currentEntity.entityId !== attacker.id
+        ) {
+          throw new Error("It is not this character's turn");
         }
       }
 
@@ -2293,6 +2433,27 @@ export class GameGateway
         .to(room.roomCode)
         .emit('attack_resolved', attackResolvedPayload);
 
+      // Add log entry for attack
+      const modifierText =
+        typeof modifierCard.modifier === 'number'
+          ? modifierCard.modifier >= 0
+            ? `+${modifierCard.modifier}`
+            : `${modifierCard.modifier}`
+          : modifierCard.modifier === 'x2'
+            ? 'x2'
+            : 'miss';
+      this.addGameLogEntry(room.roomCode, [
+        { text: attacker.characterClass, color: 'lightblue' },
+        { text: ` attacks ` },
+        { text: targetName, color: 'orange' },
+        { text: ` for ` },
+        { text: `${damage}`, color: 'red' },
+        { text: ` damage (${modifierText})` },
+        ...(targetDead
+          ? [{ text: ` - KILLED!`, color: 'red', isBold: true }]
+          : []),
+      ]);
+
       this.logger.log(
         `Attack resolved: ${attacker.id} -> ${payload.targetId}, damage: ${damage}, modifier: ${modifierCard.modifier}`,
       );
@@ -2498,8 +2659,11 @@ export class GameGateway
       const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
       if (turnOrder && turnOrder.length > 0) {
         const currentEntity = turnOrder[currentIndex];
-        if (currentEntity.entityType === 'character' && currentEntity.entityId !== character.id) {
-          throw new Error('It is not this character\'s turn');
+        if (
+          currentEntity.entityType === 'character' &&
+          currentEntity.entityId !== character.id
+        ) {
+          throw new Error("It is not this character's turn");
         }
       }
 
@@ -2624,7 +2788,9 @@ export class GameGateway
       }
 
       // Get the character whose turn it is
-      const character = characterService.getCharacterById(currentEntity.entityId);
+      const character = characterService.getCharacterById(
+        currentEntity.entityId,
+      );
       if (!character) {
         throw new Error('Character not found');
       }
@@ -2787,6 +2953,11 @@ export class GameGateway
         };
 
         this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
+
+        // Add log entry for turn start
+        this.addGameLogEntry(room.roomCode, [
+          { text: `${nextEntity.name}'s turn.` },
+        ]);
 
         this.logger.log(
           `Turn advanced in room ${room.roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
@@ -2957,7 +3128,9 @@ export class GameGateway
 
           // Check if all characters have selected cards (or rested), then start round
           const allCharacters = room.players
-            .flatMap((p: Player) => characterService.getCharactersByPlayerId(p.uuid))
+            .flatMap((p: Player) =>
+              characterService.getCharactersByPlayerId(p.uuid),
+            )
             .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
           const allSelected = allCharacters.every((c: any): c is any =>
@@ -3119,6 +3292,16 @@ export class GameGateway
       this.logger.log(
         `🤖 [MonsterAI] Activating monster ${monsterId} in room ${roomCode}`,
       );
+
+      // Check if monster has already acted this turn (prevents duplicate actions on rejoin)
+      const actedSet = this.monstersActedThisTurn.get(roomCode);
+      if (actedSet && actedSet.has(monsterId)) {
+        this.logger.log(
+          `🤖 [MonsterAI] Monster ${monsterId} has already acted this turn, advancing turn`,
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
 
       // Get monster from room state
       const monsters = this.roomMonsters.get(roomCode) || [];
@@ -3549,6 +3732,42 @@ export class GameGateway
         .to(roomCode)
         .emit('monster_activated', monsterActivatedPayload);
 
+      // Add log entries for monster actions
+      if (movementDistance > 0) {
+        this.addGameLogEntry(roomCode, [
+          { text: monsterName, color: 'orange' },
+          { text: ` moved ` },
+          { text: `${movementDistance}`, color: 'cyan' },
+          { text: ` hexes.` },
+        ]);
+      }
+
+      if (attackResult) {
+        const modifierText =
+          typeof attackResult.modifier === 'number'
+            ? attackResult.modifier >= 0
+              ? `+${attackResult.modifier}`
+              : `${attackResult.modifier}`
+            : attackResult.modifier === 'x2'
+              ? 'x2'
+              : 'miss';
+        const targetDead = focusTarget.isDead;
+        this.addGameLogEntry(roomCode, [
+          { text: monsterName, color: 'orange' },
+          { text: ` attacks ` },
+          { text: focusTarget.characterClass, color: 'lightblue' },
+          { text: ` for ` },
+          { text: `${attackResult.damage}`, color: 'red' },
+          { text: ` damage (${modifierText})` },
+          ...(targetDead
+            ? [{ text: ` - Player down!`, color: 'red', isBold: true }]
+            : []),
+        ]);
+      }
+
+      // Mark monster as having acted this turn (for rejoin handling)
+      this.monstersActedThisTurn.get(roomCode)?.add(monsterId);
+
       // Automatically advance to next turn
       this.emitDebugLog(
         roomCode,
@@ -3630,6 +3849,9 @@ export class GameGateway
       };
 
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
+
+      // Add log entry for turn start
+      this.addGameLogEntry(roomCode, [{ text: `${nextEntity.name}'s turn.` }]);
 
       this.logger.log(
         `Advanced to next turn in room ${roomCode}: ${nextEntity.entityId} (${nextEntity.entityType})`,
@@ -3717,6 +3939,16 @@ export class GameGateway
 
     // Issue #220: Decay elements at end of round (strong -> waning -> inert)
     this.decayRoomElements(roomCode);
+
+    // Set phase to card_selection for the next round
+    this.roomGamePhase.set(roomCode, 'card_selection');
+
+    // Add log entry for round end
+    this.addGameLogEntry(roomCode, [
+      {
+        text: `Round ${currentRoundNumber} has ended. Select cards for next round.`,
+      },
+    ]);
 
     // Notify all players that round ended and to select new cards
     // The next round will start automatically when all players have selected cards (in handleSelectCards)
@@ -3989,13 +4221,9 @@ export class GameGateway
       const characterModel = characterService.getCharacterById(character.id);
       if (characterModel) {
         characterModel.exhaust();
-        this.logger.log(
-          `Character ${character.id} marked as exhausted`,
-        );
+        this.logger.log(`Character ${character.id} marked as exhausted`);
       } else {
-        this.logger.error(
-          `Could not find character model for ${character.id}`,
-        );
+        this.logger.error(`Could not find character model for ${character.id}`);
       }
 
       // Emit character exhausted event
@@ -4273,7 +4501,9 @@ export class GameGateway
         const playerResults = room.players.flatMap((p: any) => {
           const stats = playerStatsMap?.get(p.uuid);
           const loot = lootByPlayer.get(p.uuid);
-          const playerCharacters = characterService.getCharactersByPlayerId(p.uuid);
+          const playerCharacters = characterService.getCharactersByPlayerId(
+            p.uuid,
+          );
 
           // Calculate experience for this player (shared across all their characters)
           let playerExperience = isVictory ? 10 : 0;
@@ -4302,7 +4532,9 @@ export class GameGateway
               ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
               : 0,
             cardsLost: stats?.cardsLost || 0,
-            experienceGained: Math.floor(playerExperience / playerCharacters.length), // Split XP across characters
+            experienceGained: Math.floor(
+              playerExperience / playerCharacters.length,
+            ), // Split XP across characters
             goldGained: Math.floor((loot?.gold || 0) / playerCharacters.length), // Split gold across characters
           }));
         });
@@ -4342,7 +4574,9 @@ export class GameGateway
           try {
             // Get exhausted character IDs for permadeath handling
             const exhaustedCharacterIds = room.players.flatMap((p: any) => {
-              const playerChars = characterService.getCharactersByPlayerId(p.uuid);
+              const playerChars = characterService.getCharactersByPlayerId(
+                p.uuid,
+              );
               return playerChars
                 .filter((c: any) => c?.exhausted)
                 .map((c: any) => c?.userCharacterId)
@@ -4357,13 +4591,14 @@ export class GameGateway
             }));
 
             // Record in campaign service
-            const campaignResult = await this.campaignService.recordScenarioCompletion(
-              room.campaignId,
-              room.scenarioId || '',
-              isVictory,
-              exhaustedCharacterIds,
-              characterResults,
-            );
+            const campaignResult =
+              await this.campaignService.recordScenarioCompletion(
+                room.campaignId,
+                room.scenarioId || '',
+                isVictory,
+                exhaustedCharacterIds,
+                characterResults,
+              );
 
             // Emit campaign completion events
             this.server.to(roomCode).emit('campaign_scenario_completed', {
@@ -4380,16 +4615,17 @@ export class GameGateway
 
             this.logger.log(
               `Campaign scenario completed: campaignId=${room.campaignId}, victory=${isVictory}, ` +
-              `unlocked=${campaignResult.newlyUnlockedScenarios.length}, ` +
-              `retired=${campaignResult.retiredCharacters.length}, ` +
-              `campaignCompleted=${campaignResult.campaignCompleted}`,
+                `unlocked=${campaignResult.newlyUnlockedScenarios.length}, ` +
+                `retired=${campaignResult.retiredCharacters.length}, ` +
+                `campaignCompleted=${campaignResult.campaignCompleted}`,
             );
 
             // If campaign is completed, emit campaign completed event
             if (campaignResult.campaignCompleted) {
               this.server.to(roomCode).emit('campaign_completed', {
                 campaignId: room.campaignId,
-                victory: isVictory && campaignResult.retiredCharacters.length === 0,
+                victory:
+                  isVictory && campaignResult.retiredCharacters.length === 0,
               });
             }
           } catch (campaignError) {
@@ -4412,9 +4648,8 @@ export class GameGateway
               characterService.isPersistentCharacter(character.id)
             ) {
               try {
-                const refreshResult = await this.inventoryService.refreshAllItems(
-                  character.id,
-                );
+                const refreshResult =
+                  await this.inventoryService.refreshAllItems(character.id);
                 if (refreshResult.refreshedItems.length > 0) {
                   const payload: ItemsRefreshedPayload = {
                     characterId: character.id,

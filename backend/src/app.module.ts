@@ -15,7 +15,9 @@ import { AbilityCardsController } from './api/ability-cards.controller';
 import { GameHistoryController } from './api/game-history.controller';
 import { ItemsController } from './api/items.controller';
 import { InventoryController } from './api/inventory.controller';
+import { CampaignsController } from './api/campaigns.controller';
 import { ScenarioService } from './services/scenario.service';
+import { CampaignService } from './services/campaign.service';
 import { InventoryService } from './services/inventory.service';
 import { ItemService } from './services/item.service';
 import { MonsterService } from './services/monster.service';
@@ -53,6 +55,7 @@ import { ElementalStateService } from './services/elemental-state.service';
     GameHistoryController, // Phase 9: Match history and game statistics (186)
     ItemsController, // Issue #205: Items and inventory system
     InventoryController, // Issue #205 Sprint 2: Character inventory management
+    CampaignsController, // Issue #244: Campaign mode management
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -78,6 +81,7 @@ import { ElementalStateService } from './services/elemental-state.service';
     ForcedMovementService, // Issue #220: Push/pull mechanics
     ValidationService, // Issue #220: Action validation
     ElementalStateService, // Issue #220: Element infusion/consumption
+    CampaignService, // Issue #244: Campaign mode business logic
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

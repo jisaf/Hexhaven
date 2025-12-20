@@ -94,10 +94,7 @@ export class PathfindingService {
           continue;
         }
 
-        const movementCost = this.calculateMovementCost(
-          tile.terrain,
-          canFly,
-        );
+        const movementCost = this.calculateMovementCost(tile.terrain, canFly);
 
         // Can't pass through obstacles
         if (movementCost === Infinity) {
@@ -106,8 +103,10 @@ export class PathfindingService {
 
         // Can't pass through occupied hexes (enemies block movement)
         // Exception: allow moving TO the goal hex even if occupied (for attack positioning checks)
-        if (occupiedHexes?.has(neighborKey) &&
-            !(neighborHex.q === goal.q && neighborHex.r === goal.r)) {
+        if (
+          occupiedHexes?.has(neighborKey) &&
+          !(neighborHex.q === goal.q && neighborHex.r === goal.r)
+        ) {
           continue;
         }
 
@@ -177,10 +176,7 @@ export class PathfindingService {
           continue;
         }
 
-        const movementCost = this.calculateMovementCost(
-          tile.terrain,
-          canFly,
-        );
+        const movementCost = this.calculateMovementCost(tile.terrain, canFly);
 
         if (movementCost === Infinity) {
           continue;
