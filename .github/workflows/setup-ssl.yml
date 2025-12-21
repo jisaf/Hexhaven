@@ -1,0 +1,122 @@
+name: Setup SSL Certificates
+
+on:
+  workflow_dispatch:
+    inputs:
+      server:
+        description: 'Server to setup SSL for'
+        required: true
+        type: choice
+        options:
+          - prod
+          - dev
+      email:
+        description: 'Email for SSL certificate notifications (optional)'
+        required: false
+        type: string
+        default: ''
+
+env:
+  PROD_HOST: ${{ secrets.PRODUCTION_HOST || '150.136.69.114' }}
+  DEV_HOST: ${{ secrets.DEV_HOST || '150.136.173.159' }}
+  DEPLOY_USER: 'ubuntu'
+
+jobs:
+  setup-ssl:
+    name: Setup SSL on ${{ inputs.server }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          if [ "${{ inputs.server }}" = "prod" ]; then
+            printf '%s\n' "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/deploy_key
+            ssh-keyscan -H ${{ env.PROD_HOST }} >> ~/.ssh/known_hosts
+            echo "TARGET_HOST=${{ env.PROD_HOST }}" >> $GITHUB_ENV
+            echo "DOMAIN=hexhaven.net" >> $GITHUB_ENV
+            echo "EXTRA_DOMAINS=-d www.hexhaven.net" >> $GITHUB_ENV
+          else
+            printf '%s\n' "${{ secrets.DEV_SSH_KEY }}" > ~/.ssh/deploy_key
+            ssh-keyscan -H ${{ env.DEV_HOST }} >> ~/.ssh/known_hosts
+            echo "TARGET_HOST=${{ env.DEV_HOST }}" >> $GITHUB_ENV
+            echo "DOMAIN=dev.hexhaven.net" >> $GITHUB_ENV
+            echo "EXTRA_DOMAINS=" >> $GITHUB_ENV
+          fi
+          chmod 600 ~/.ssh/deploy_key
+
+      - name: Install certbot on server
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ env.TARGET_HOST }} << 'ENDSSH'
+            set -e
+            echo "Installing certbot..."
+            sudo apt update
+            sudo apt install -y certbot python3-certbot-nginx
+            echo "Certbot installed successfully"
+          ENDSSH
+
+      - name: Configure nginx for ACME challenge
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ env.TARGET_HOST }} << 'ENDSSH'
+            set -e
+            echo "Creating ACME challenge directory..."
+            sudo mkdir -p /var/www/html/.well-known/acme-challenge
+
+            echo "Checking nginx configuration..."
+            sudo nginx -t
+
+            echo "Creating test file..."
+            echo "test" | sudo tee /var/www/html/.well-known/acme-challenge/test.txt > /dev/null
+          ENDSSH
+
+      - name: Obtain SSL certificate
+        run: |
+          EMAIL_FLAG=""
+          if [ -n "${{ inputs.email }}" ]; then
+            EMAIL_FLAG="--email ${{ inputs.email }}"
+          else
+            EMAIL_FLAG="--register-unsafely-without-email"
+          fi
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ env.TARGET_HOST }} << ENDSSH
+            set -e
+            echo "Obtaining SSL certificate for ${{ env.DOMAIN }}..."
+            sudo certbot --nginx -d ${{ env.DOMAIN }} ${{ env.EXTRA_DOMAINS }} \
+              --non-interactive \
+              --agree-tos \
+              ${EMAIL_FLAG} \
+              --redirect
+
+            echo "SSL certificate obtained successfully"
+
+            echo "Testing SSL configuration..."
+            sudo nginx -t
+
+            echo "Testing SSL renewal (dry-run)..."
+            sudo certbot renew --dry-run
+
+            echo "SSL setup completed successfully!"
+          ENDSSH
+
+      - name: Verify SSL
+        run: |
+          echo "Waiting 10 seconds for SSL to be fully configured..."
+          sleep 10
+
+          echo "Testing HTTPS connection..."
+          curl -I https://${{ env.DOMAIN }} || echo "Note: HTTPS verification may take a few moments to propagate"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ SSL certificate successfully installed for ${{ env.DOMAIN }}"
+          echo "Certificate will auto-renew before expiration"
+          echo "Test your site at: https://${{ env.DOMAIN }}"

@@ -189,5 +189,457 @@
       { "x": 9, "y": 0, "id": "treasure-5b" }
     ],
     "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
+  },
+  {
+    "name": "Forest Trail",
+    "difficulty": 1,
+    "backgroundImageUrl": "/backgrounds/background-7547390d-8039-414c-bb21-0231f562b981-1766023600417.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "FT1", "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "FT2", "coordinates": { "q": 0, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "FT3", "coordinates": { "q": 0, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "FT4", "coordinates": { "q": 0, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT5", "coordinates": { "q": 0, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT6", "coordinates": { "q": 0, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT7", "coordinates": { "q": 0, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT8", "coordinates": { "q": 1, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "FT9", "coordinates": { "q": 1, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "FT10", "coordinates": { "q": 1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT11", "coordinates": { "q": 1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT12", "coordinates": { "q": 1, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT13", "coordinates": { "q": 1, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT14", "coordinates": { "q": 1, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT15", "coordinates": { "q": 1, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "FT16", "coordinates": { "q": 1, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT17", "coordinates": { "q": 1, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT18", "coordinates": { "q": 1, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT19", "coordinates": { "q": 1, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT20", "coordinates": { "q": 2, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "FT21", "coordinates": { "q": 2, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "FT22", "coordinates": { "q": 2, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT23", "coordinates": { "q": 2, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT24", "coordinates": { "q": 2, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT25", "coordinates": { "q": 2, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT26", "coordinates": { "q": 2, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT27", "coordinates": { "q": 2, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "FT28", "coordinates": { "q": 2, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT29", "coordinates": { "q": 2, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT30", "coordinates": { "q": 2, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT31", "coordinates": { "q": 2, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT32", "coordinates": { "q": 3, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "FT33", "coordinates": { "q": 3, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "FT34", "coordinates": { "q": 3, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT35", "coordinates": { "q": 3, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT36", "coordinates": { "q": 3, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT37", "coordinates": { "q": 3, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT38", "coordinates": { "q": 3, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT39", "coordinates": { "q": 3, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "FT40", "coordinates": { "q": 3, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT41", "coordinates": { "q": 3, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT42", "coordinates": { "q": 3, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT43", "coordinates": { "q": 3, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT44", "coordinates": { "q": 3, "r": 13 }, "terrain": "normal", "features": [] },
+      { "id": "FT45", "coordinates": { "q": 4, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT46", "coordinates": { "q": 4, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT47", "coordinates": { "q": 4, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT48", "coordinates": { "q": 4, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT49", "coordinates": { "q": 4, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT50", "coordinates": { "q": 4, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "FT51", "coordinates": { "q": 4, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT52", "coordinates": { "q": 4, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT53", "coordinates": { "q": 4, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT54", "coordinates": { "q": 4, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT55", "coordinates": { "q": 4, "r": 13 }, "terrain": "normal", "features": [] },
+      { "id": "FT56", "coordinates": { "q": 5, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT57", "coordinates": { "q": 5, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT58", "coordinates": { "q": 5, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT59", "coordinates": { "q": 5, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT60", "coordinates": { "q": 5, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT61", "coordinates": { "q": 5, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "FT62", "coordinates": { "q": 5, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT63", "coordinates": { "q": 6, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT64", "coordinates": { "q": 6, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT65", "coordinates": { "q": 6, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT66", "coordinates": { "q": 6, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT67", "coordinates": { "q": 6, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "FT68", "coordinates": { "q": 7, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "FT69", "coordinates": { "q": 7, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "FT70", "coordinates": { "q": 7, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT71", "coordinates": { "q": 7, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT72", "coordinates": { "q": 0, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT73", "coordinates": { "q": 0, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT74", "coordinates": { "q": 0, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT75", "coordinates": { "q": -1, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "FT76", "coordinates": { "q": -1, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "FT77", "coordinates": { "q": -1, "r": 7 }, "terrain": "difficult", "features": [] },
+      { "id": "FT78", "coordinates": { "q": -1, "r": 8 }, "terrain": "difficult", "features": [] },
+      { "id": "FT79", "coordinates": { "q": -1, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT80", "coordinates": { "q": -1, "r": 12 }, "terrain": "normal", "features": [] },
+      { "id": "FT81", "coordinates": { "q": -2, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT82", "coordinates": { "q": -2, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT83", "coordinates": { "q": -3, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "FT84", "coordinates": { "q": -3, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT85", "coordinates": { "q": -3, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "FT86", "coordinates": { "q": -4, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "FT87", "coordinates": { "q": -4, "r": 11 }, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "bandit-guard",
+        "positions": [{ "q": -4, "r": 11 }],
+        "level": "normal"
+      },
+      {
+        "type": "vermling-shaman",
+        "positions": [{ "q": -4, "r": 10 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Kill all enemies",
+      "secondary": "Reach the end of the trail"
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 0, "r": 0 },
+      { "q": 0, "r": 1 },
+      { "q": 0, "r": 2 },
+      { "q": 1, "r": 1 }
+    ]
+  },
+  {
+    "name": "Forest Road",
+    "difficulty": 1,
+    "backgroundImageUrl": "/scenarios/forest-road.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "FR1", "x": 2, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "FR2", "x": 3, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "FR3", "x": 4, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "FR4", "x": 5, "y": 0, "terrain": "difficult", "features": [] },
+      { "id": "FR5", "x": 6, "y": 0, "terrain": "normal", "features": [] },
+
+      { "id": "FR6", "x": 1, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "FR7", "x": 2, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "FR8", "x": 3, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "FR9", "x": 4, "y": 1, "terrain": "difficult", "features": [] },
+      { "id": "FR10", "x": 5, "y": 1, "terrain": "difficult", "features": [] },
+      { "id": "FR11", "x": 6, "y": 1, "terrain": "normal", "features": [] },
+
+      { "id": "FR12", "x": 0, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "FR13", "x": 1, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "FR14", "x": 2, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "FR15", "x": 3, "y": 2, "terrain": "difficult", "features": [] },
+      { "id": "FR16", "x": 4, "y": 2, "terrain": "difficult", "features": [] },
+      { "id": "FR17", "x": 5, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "FR18", "x": 6, "y": 2, "terrain": "normal", "features": [] },
+
+      { "id": "FR19", "x": 0, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "FR20", "x": 1, "y": 3, "terrain": "difficult", "features": [] },
+      { "id": "FR21", "x": 2, "y": 3, "terrain": "difficult", "features": [] },
+      { "id": "FR22", "x": 3, "y": 3, "terrain": "difficult", "features": ["loot"] },
+      { "id": "FR23", "x": 4, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "FR24", "x": 5, "y": 3, "terrain": "normal", "features": [] },
+
+      { "id": "FR25", "x": 0, "y": 4, "terrain": "difficult", "features": [] },
+      { "id": "FR26", "x": 1, "y": 4, "terrain": "difficult", "features": [] },
+      { "id": "FR27", "x": 2, "y": 4, "terrain": "normal", "features": [] },
+      { "id": "FR28", "x": 3, "y": 4, "terrain": "normal", "features": [] },
+      { "id": "FR29", "x": 4, "y": 4, "terrain": "normal", "features": ["treasure"] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "bandit-guard",
+        "positions": [{ "x": 3, "y": 2 }, { "x": 4, "y": 2 }],
+        "level": "normal"
+      },
+      {
+        "type": "bandit-archer",
+        "positions": [{ "x": 5, "y": 1 }, { "x": 4, "y": 3 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Clear the forest road of bandits",
+      "secondary": "Collect the hidden treasure"
+    },
+    "treasures": [{ "x": 4, "y": 4, "id": "treasure-fr-1" }],
+    "playerStartPositions": [{ "x": 0, "y": 3 }, { "x": 0, "y": 4 }, { "x": 1, "y": 3 }, { "x": 0, "y": 2 }]
+  },
+  {
+    "name": "Big Magma Pit",
+    "difficulty": 2,
+    "backgroundImageUrl": "/scenarios/small-magma-pit.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "BMP1", "x": 0, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "BMP2", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "BMP3", "x": 2, "y": 0, "terrain": "normal", "features": [] },
+
+      { "id": "BMP4", "x": 0, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "BMP5", "x": 1, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "BMP6", "x": 2, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "BMP7", "x": 3, "y": 1, "terrain": "normal", "features": [] },
+
+      { "id": "BMP8", "x": 0, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "BMP9", "x": 1, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "BMP10", "x": 2, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "BMP11", "x": 3, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "BMP12", "x": 4, "y": 2, "terrain": "hazardous", "features": [] },
+
+      { "id": "BMP13", "x": 1, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "BMP14", "x": 2, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "BMP15", "x": 3, "y": 3, "terrain": "normal", "features": ["loot"] },
+      { "id": "BMP16", "x": 4, "y": 3, "terrain": "hazardous", "features": [] },
+
+      { "id": "BMP17", "x": 2, "y": 4, "terrain": "normal", "features": [] },
+      { "id": "BMP18", "x": 3, "y": 4, "terrain": "hazardous", "features": [] },
+      { "id": "BMP19", "x": 4, "y": 4, "terrain": "hazardous", "features": [] },
+
+      { "id": "BMP20", "x": 3, "y": 5, "terrain": "hazardous", "features": [] },
+      { "id": "BMP21", "x": 4, "y": 5, "terrain": "hazardous", "features": ["treasure"] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "flame-demon",
+        "positions": [{ "x": 3, "y": 3 }, { "x": 4, "y": 4 }],
+        "level": "normal"
+      },
+      {
+        "type": "fire-imp",
+        "positions": [{ "x": 2, "y": 2 }, { "x": 3, "y": 4 }],
+        "level": "normal"
+      },
+      {
+        "type": "flame-demon",
+        "positions": [{ "x": 4, "y": 5 }],
+        "level": "elite"
+      }
+    ],
+    "objectives": {
+      "primary": "Navigate the cave and defeat the Flame Demon at the lava pit",
+      "secondary": "Collect the treasure from the magma depths"
+    },
+    "treasures": [{ "x": 4, "y": 5, "id": "treasure-bmp-1" }],
+    "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }, { "x": 0, "y": 1 }, { "x": 1, "y": 1 }]
+  },
+  {
+    "name": "Small Magma Pit",
+    "difficulty": 3,
+    "backgroundImageUrl": "/scenarios/big-magma-pit.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "SMP1", "x": 1, "y": 0, "terrain": "normal", "features": [] },
+      { "id": "SMP2", "x": 2, "y": 0, "terrain": "normal", "features": [] },
+
+      { "id": "SMP3", "x": 0, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "SMP4", "x": 1, "y": 1, "terrain": "normal", "features": [] },
+      { "id": "SMP5", "x": 2, "y": 1, "terrain": "normal", "features": [] },
+
+      { "id": "SMP6", "x": 0, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP7", "x": 1, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP8", "x": 2, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP9", "x": 3, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP10", "x": 4, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP11", "x": 5, "y": 2, "terrain": "normal", "features": [] },
+      { "id": "SMP12", "x": 6, "y": 2, "terrain": "hazardous", "features": [] },
+      { "id": "SMP13", "x": 7, "y": 2, "terrain": "hazardous", "features": [] },
+
+      { "id": "SMP14", "x": 0, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "SMP15", "x": 1, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "SMP16", "x": 2, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "SMP17", "x": 5, "y": 3, "terrain": "normal", "features": [] },
+      { "id": "SMP18", "x": 6, "y": 3, "terrain": "hazardous", "features": [] },
+      { "id": "SMP19", "x": 7, "y": 3, "terrain": "hazardous", "features": [] },
+      { "id": "SMP20", "x": 8, "y": 3, "terrain": "hazardous", "features": [] },
+
+      { "id": "SMP21", "x": 1, "y": 4, "terrain": "normal", "features": [] },
+      { "id": "SMP22", "x": 2, "y": 4, "terrain": "normal", "features": [] },
+      { "id": "SMP23", "x": 6, "y": 4, "terrain": "hazardous", "features": ["loot"] },
+      { "id": "SMP24", "x": 7, "y": 4, "terrain": "hazardous", "features": [] },
+      { "id": "SMP25", "x": 8, "y": 4, "terrain": "hazardous", "features": [] },
+
+      { "id": "SMP26", "x": 7, "y": 5, "terrain": "hazardous", "features": ["treasure"] },
+      { "id": "SMP27", "x": 8, "y": 5, "terrain": "hazardous", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "flame-demon",
+        "positions": [{ "x": 6, "y": 3 }, { "x": 7, "y": 4 }],
+        "level": "normal"
+      },
+      {
+        "type": "fire-imp",
+        "positions": [{ "x": 4, "y": 2 }, { "x": 5, "y": 3 }],
+        "level": "normal"
+      },
+      {
+        "type": "magma-golem",
+        "positions": [{ "x": 7, "y": 5 }],
+        "level": "elite"
+      }
+    ],
+    "objectives": {
+      "primary": "Cross to the lava pit and defeat the Magma Golem",
+      "secondary": "Complete within 8 rounds"
+    },
+    "treasures": [{ "x": 7, "y": 5, "id": "treasure-smp-1" }],
+    "playerStartPositions": [{ "x": 0, "y": 2 }, { "x": 0, "y": 3 }, { "x": 1, "y": 1 }, { "x": 1, "y": 4 }]
+  },
+  {
+    "name": "Magma Pit",
+    "difficulty": 2,
+    "backgroundImageUrl": "/backgrounds/background-d5c5fca2-d58e-4d11-a5f4-3248a2b8c579-1766025242429.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "MP1", "coordinates": { "q": 0, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "MP2", "coordinates": { "q": 1, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "MP3", "coordinates": { "q": -1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "MP4", "coordinates": { "q": 0, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "MP5", "coordinates": { "q": 1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "MP6", "coordinates": { "q": -2, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "MP7", "coordinates": { "q": -1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "MP8", "coordinates": { "q": 0, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "MP9", "coordinates": { "q": 1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "MP10", "coordinates": { "q": -2, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "MP11", "coordinates": { "q": -1, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "MP12", "coordinates": { "q": 0, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "MP13", "coordinates": { "q": 0, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "MP14", "coordinates": { "q": 1, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "MP15", "coordinates": { "q": 2, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "MP16", "coordinates": { "q": 3, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "MP17", "coordinates": { "q": 0, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP18", "coordinates": { "q": 1, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP19", "coordinates": { "q": 2, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP20", "coordinates": { "q": 3, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP21", "coordinates": { "q": 3, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "MP22", "coordinates": { "q": 4, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "MP23", "coordinates": { "q": 5, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP24", "coordinates": { "q": 6, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "MP25", "coordinates": { "q": 3, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "MP26", "coordinates": { "q": 5, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "MP27", "coordinates": { "q": 6, "r": 9 }, "terrain": "normal", "features": [] },
+      { "id": "MP28", "coordinates": { "q": 5, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "MP29", "coordinates": { "q": 6, "r": 10 }, "terrain": "normal", "features": [] },
+      { "id": "MP30", "coordinates": { "q": 5, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "MP31", "coordinates": { "q": 6, "r": 11 }, "terrain": "normal", "features": [] },
+      { "id": "MP32", "coordinates": { "q": 5, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP33", "coordinates": { "q": 6, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP34", "coordinates": { "q": 4, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP35", "coordinates": { "q": 2, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP36", "coordinates": { "q": 3, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP37", "coordinates": { "q": 4, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP38", "coordinates": { "q": 1, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP39", "coordinates": { "q": 2, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP40", "coordinates": { "q": 3, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP41", "coordinates": { "q": 4, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP42", "coordinates": { "q": 0, "r": 12 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP43", "coordinates": { "q": 0, "r": 13 }, "terrain": "hazardous", "features": [] },
+      { "id": "MP44", "coordinates": { "q": -1, "r": 13 }, "terrain": "hazardous", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "flame-demon",
+        "positions": [{ "q": 5, "r": 9 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": "Reach the exit on the far side of the pit",
+      "secondary": "Avoid the lava"
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 0, "r": 2 },
+      { "q": 1, "r": 2 },
+      { "q": -1, "r": 3 },
+      { "q": 0, "r": 3 }
+    ]
+  },
+  {
+    "name": "Deep Pit",
+    "difficulty": 3,
+    "backgroundImageUrl": "/backgrounds/background-a13713f9-6ba7-4570-aec5-028ebbe6a76f-1766024024890.png",
+    "backgroundOpacity": 1.0,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1.0,
+    "mapLayout": [
+      { "id": "DP1", "coordinates": { "q": 1, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "DP2", "coordinates": { "q": 2, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "DP3", "coordinates": { "q": 3, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "DP4", "coordinates": { "q": 0, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "DP5", "coordinates": { "q": 1, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "DP6", "coordinates": { "q": 2, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "DP7", "coordinates": { "q": 3, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "DP8", "coordinates": { "q": -1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "DP9", "coordinates": { "q": 0, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "DP10", "coordinates": { "q": 1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "DP11", "coordinates": { "q": 2, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "DP12", "coordinates": { "q": -1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "DP13", "coordinates": { "q": 0, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "DP14", "coordinates": { "q": 1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "DP15", "coordinates": { "q": -1, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "DP16", "coordinates": { "q": 0, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "DP17", "coordinates": { "q": 1, "r": 5 }, "terrain": "normal", "features": [] },
+      { "id": "DP18", "coordinates": { "q": 0, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "DP19", "coordinates": { "q": 1, "r": 6 }, "terrain": "normal", "features": [] },
+      { "id": "DP20", "coordinates": { "q": 0, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "DP21", "coordinates": { "q": 1, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "DP22", "coordinates": { "q": 2, "r": 7 }, "terrain": "normal", "features": [] },
+      { "id": "DP23", "coordinates": { "q": 2, "r": 8 }, "terrain": "normal", "features": [] },
+      { "id": "DP24", "coordinates": { "q": 3, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP25", "coordinates": { "q": 2, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP26", "coordinates": { "q": 3, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP27", "coordinates": { "q": 4, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP28", "coordinates": { "q": 5, "r": 7 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP29", "coordinates": { "q": 5, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP30", "coordinates": { "q": 6, "r": 8 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP31", "coordinates": { "q": 6, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP32", "coordinates": { "q": 4, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP33", "coordinates": { "q": 5, "r": 9 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP34", "coordinates": { "q": 2, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP35", "coordinates": { "q": 3, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP36", "coordinates": { "q": 4, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP37", "coordinates": { "q": 5, "r": 10 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP38", "coordinates": { "q": 1, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP39", "coordinates": { "q": 2, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP40", "coordinates": { "q": 3, "r": 11 }, "terrain": "hazardous", "features": [] },
+      { "id": "DP41", "coordinates": { "q": 4, "r": 11 }, "terrain": "hazardous", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "flame-demon",
+        "positions": [{ "q": 4, "r": 9 }],
+        "level": "elite"
+      }
+    ],
+    "objectives": {
+      "primary": "Defeat the Flame Demon and claim the treasure",
+      "secondary": "Survive the deep pit"
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 1, "r": 1 },
+      { "q": 2, "r": 1 },
+      { "q": 0, "r": 2 },
+      { "q": 1, "r": 2 }
+    ]
   }
 ]

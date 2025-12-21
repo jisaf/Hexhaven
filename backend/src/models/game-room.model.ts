@@ -13,6 +13,7 @@ export interface GameRoomData {
   roomCode: string;
   status: RoomStatus;
   scenarioId: string | null;
+  campaignId: string | null; // Issue #244 - Campaign Mode
   maxPlayers: number;
   currentRound: number | null;
   currentTurnIndex: number | null;
@@ -26,6 +27,7 @@ export class GameRoom {
   public readonly roomCode: string;
   private _status: RoomStatus;
   private _scenarioId: string | null;
+  private _campaignId: string | null; // Issue #244 - Campaign Mode
   private readonly _maxPlayers: number;
   private _currentRound: number | null;
   private _currentTurnIndex: number | null;
@@ -39,6 +41,7 @@ export class GameRoom {
     this.roomCode = data.roomCode;
     this._status = data.status;
     this._scenarioId = data.scenarioId;
+    this._campaignId = data.campaignId;
     this._maxPlayers = data.maxPlayers;
     this._currentRound = data.currentRound;
     this._currentTurnIndex = data.currentTurnIndex;
@@ -55,6 +58,10 @@ export class GameRoom {
 
   get scenarioId(): string | null {
     return this._scenarioId;
+  }
+
+  get campaignId(): string | null {
+    return this._campaignId;
   }
 
   get maxPlayers(): number {
@@ -149,7 +156,7 @@ export class GameRoom {
     return this._players.get(playerUuid) || null;
   }
 
-  startGame(scenarioId: string): void {
+  startGame(scenarioId: string, campaignId?: string): void {
     if (this._status !== RoomStatus.LOBBY) {
       throw new Error('Game has already started');
     }
@@ -160,6 +167,7 @@ export class GameRoom {
 
     this._status = RoomStatus.ACTIVE;
     this._scenarioId = scenarioId;
+    this._campaignId = campaignId || null; // Issue #244 - Campaign Mode
     this._currentRound = 1;
     this._currentTurnIndex = 0;
     this._updatedAt = new Date();
@@ -200,6 +208,7 @@ export class GameRoom {
       roomCode: this.roomCode,
       status: this._status,
       scenarioId: this._scenarioId,
+      campaignId: this._campaignId, // Issue #244 - Campaign Mode
       maxPlayers: this._maxPlayers,
       currentRound: this._currentRound,
       currentTurnIndex: this._currentTurnIndex,
@@ -212,8 +221,13 @@ export class GameRoom {
 
   /**
    * Create a new GameRoom instance with generated room code
+   * @param hostPlayer The player creating the room (becomes host)
+   * @param options Optional campaign context (campaignId, scenarioId)
    */
-  static create(hostPlayer: Player): GameRoom {
+  static create(
+    hostPlayer: Player,
+    options?: { campaignId?: string; scenarioId?: string },
+  ): GameRoom {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
     const roomCode = GameRoom.generateRoomCode();
@@ -222,7 +236,8 @@ export class GameRoom {
       id: `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       roomCode,
       status: RoomStatus.LOBBY,
-      scenarioId: null,
+      scenarioId: options?.scenarioId || null,
+      campaignId: options?.campaignId || null, // Issue #244 - Campaign Mode
       maxPlayers: 4,
       currentRound: null,
       currentTurnIndex: null,

@@ -374,13 +374,21 @@ class RoomSessionManager {
     this.emitStateUpdate();
   }
 
-  public async createRoom(nickname: string): Promise<void> {
+  public async createRoom(
+    nickname: string,
+    options?: { campaignId?: string; scenarioId?: string }
+  ): Promise<void> {
     const uuid = getOrCreatePlayerUUID();
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/rooms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, nickname }),
+      body: JSON.stringify({
+        uuid,
+        nickname,
+        campaignId: options?.campaignId,
+        scenarioId: options?.scenarioId,
+      }),
     });
 
     if (!response.ok) {

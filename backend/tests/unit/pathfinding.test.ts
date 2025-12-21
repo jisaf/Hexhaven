@@ -24,9 +24,20 @@ describe('PathfindingService', () => {
     pathfindingService = new PathfindingService();
   });
 
-  // Helper to create hex map
-  function createHexMap(terrainData: Array<[string, TerrainType]>): Map<string, HexTile> {
+  // Helper to create hex map with a full grid of tiles
+  // Creates a grid of normal tiles, then overlays specific terrain types
+  function createHexMap(terrainData: Array<[string, TerrainType]>, gridRange: number = 10): Map<string, HexTile> {
     const map = new Map<string, HexTile>();
+
+    // Create full grid of normal tiles
+    for (let q = -gridRange; q <= gridRange; q++) {
+      for (let r = -gridRange; r <= gridRange; r++) {
+        const key = `${q},${r}`;
+        map.set(key, { terrain: TerrainType.NORMAL } as HexTile);
+      }
+    }
+
+    // Overlay specific terrain types
     terrainData.forEach(([key, terrain]) => {
       map.set(key, { terrain } as HexTile);
     });

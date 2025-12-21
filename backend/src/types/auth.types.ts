@@ -3,6 +3,16 @@
  * Type definitions for user authentication, JWT tokens, and auth requests/responses
  */
 
+import type { Request } from 'express';
+
+/**
+ * Express Request with authenticated user payload
+ * Use this instead of `any` for @Request() in controllers
+ */
+export interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
+
 /**
  * User registration data transfer object
  */

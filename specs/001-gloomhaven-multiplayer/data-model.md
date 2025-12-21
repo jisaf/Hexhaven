@@ -14,8 +14,8 @@ This document defines all entities, their attributes, relationships, validation 
 ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
 │   Player     │───┬──>│  GameRoom    │───┬──>│  Scenario    │
 └──────────────┘   │   └──────────────┘   │   └──────────────┘
-                   │                      │
-                   │                      │
+                   │          │           │          ▲
+                   │          │           │          │
                    │   ┌──────────────┐   │   ┌──────────────┐
                    └──>│  Character   │<──┘   │   Monster    │
                        └──────────────┘       └──────────────┘
@@ -29,6 +29,22 @@ This document defines all entities, their attributes, relationships, validation 
                        ┌──────────────┐
                        │  Condition   │
                        └──────────────┘
+
+Campaign Mode Entities (Issue #244):
+
+┌──────────────────┐       ┌──────────────┐       ┌──────────────┐
+│CampaignTemplate  │<──────│   Campaign   │───────│  GameRoom    │
+└──────────────────┘       └──────────────┘       └──────────────┘
+         │                        │
+         ▼                        ▼
+┌──────────────────┐       ┌──────────────┐
+│TemplateScenario  │       │  Character   │
+└──────────────────┘       └──────────────┘
+         │
+         ▼
+┌──────────────────┐
+│    Scenario      │
+└──────────────────┘
 ```
 
 ---
@@ -422,6 +438,85 @@ monsterGroups: [
 - Elements are global to the game room (shared across all players/monsters)
 - Consuming an element immediately sets it to 'inert'
 - At end of each round: 'strong' → 'waning', 'waning' → 'inert'
+
+---
+
+### 11. Campaign (Issue #244)
+
+**Description**: A persistent game progression container that tracks scenario completion, character progress, and unlock state across multiple game sessions.
+
+**Attributes**:
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `id` | UUID | Yes | Valid UUID v4 | Unique identifier |
+| `templateId` | UUID | No | FK to CampaignTemplate | Template used to create this campaign |
+| `name` | String | Yes | 1-100 chars | Campaign display name |
+| `description` | String | No | Up to 500 chars | Campaign description |
+| `prosperityLevel` | Integer | Yes | 1-9 | Current prosperity level |
+| `reputation` | Integer | Yes | -20 to 20 | Party reputation |
+| `completedScenarios` | Array<UUID> | Yes | Scenario IDs | Completed scenario list |
+| `unlockedScenarios` | Array<UUID> | Yes | Scenario IDs | Currently unlocked scenarios |
+| `retiredCharacterIds` | Array<UUID> | Yes | Character IDs | Retired (permadeath) characters |
+| `deathMode` | Enum | Yes | 'healing', 'permadeath' | Death handling mode |
+| `requireUniqueClasses` | Boolean | Yes | true/false | Enforce unique character classes |
+| `isCompleted` | Boolean | Yes | true/false | Campaign completion status |
+| `completedAt` | Timestamp | No | ISO 8601 | Completion timestamp |
+| `createdAt` | Timestamp | Yes | ISO 8601 | Creation timestamp |
+| `updatedAt` | Timestamp | Yes | ISO 8601 | Last update timestamp |
+
+**Relationships**:
+- Has one `CampaignTemplate` (many-to-one, optional)
+- Has many `Characters` (one-to-many)
+- Has many `GameRooms` (one-to-many)
+
+**State Transitions**:
+```
+[Created] ──scenario completed──> [In Progress] ──final scenario completed──> [Completed]
+                │                       │
+                └──all chars retired───>│──> [Failed]
+```
+
+**Validation Rules**:
+- `unlockedScenarios` must include starting scenarios on creation
+- `completedScenarios` must be subset of `unlockedScenarios`
+- Characters can only join if `requireUniqueClasses` allows their class
+
+---
+
+### 12. CampaignTemplate (Issue #244)
+
+**Description**: A predefined campaign blueprint that defines scenario progression, unlock conditions, and campaign rules.
+
+**Attributes**:
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `id` | UUID | Yes | Valid UUID v4 | Unique identifier |
+| `name` | String | Yes | 1-100 chars | Template name |
+| `description` | String | No | Up to 500 chars | Template description |
+| `deathMode` | Enum | Yes | 'healing', 'permadeath', 'configurable' | Default or configurable death mode |
+| `minPlayers` | Integer | Yes | 1-4 | Minimum required players |
+| `maxPlayers` | Integer | Yes | 1-4 | Maximum allowed players |
+| `requireUniqueClasses` | Boolean | Yes | true/false | Enforce unique character classes |
+| `isActive` | Boolean | Yes | true/false | Template availability |
+| `scenarios` | Array<CampaignScenarioTemplate> | Yes | Non-empty | Scenario progression definition |
+
+**Relationships**:
+- Has many `CampaignScenarioTemplates` (one-to-many)
+- Has many `Campaigns` (one-to-many)
+
+**CampaignScenarioTemplate Structure**:
+```typescript
+{
+  scenarioId: UUID;           // Reference to Scenario
+  name?: string;              // Optional name override
+  description?: string;       // Optional description
+  unlocksScenarios: UUID[];   // Scenarios unlocked on completion
+  isStarting: boolean;        // Available at campaign start
+  sequence: number;           // Display order
+}
+```
 
 ---
 

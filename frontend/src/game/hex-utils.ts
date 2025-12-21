@@ -141,11 +141,18 @@ export function hexRange(center: Axial, range: number): Axial[] {
 /**
  * Get all hexes within a given range, excluding obstacles
  * Uses breadth-first search to respect obstacle blocking
+ *
+ * @param center - Starting hex
+ * @param range - Movement range
+ * @param isBlocked - Returns true for hexes that block movement (terrain obstacles)
+ * @param canStopOn - Optional callback to filter final results (e.g., can't stop on occupied hexes)
+ *                    If not provided, all reachable hexes are returned
  */
 export function hexRangeReachable(
   center: Axial,
   range: number,
-  isBlocked: (hex: Axial) => boolean
+  isBlocked: (hex: Axial) => boolean,
+  canStopOn?: (hex: Axial) => boolean
 ): Axial[] {
   const visited = new Set<string>();
   const reachable: Axial[] = [center];
@@ -164,7 +171,11 @@ export function hexRangeReachable(
 
         if (!visited.has(key) && !isBlocked(neighbor)) {
           visited.add(key);
-          reachable.push(neighbor);
+          // Only add to reachable if we can stop on this hex (or no filter provided)
+          if (!canStopOn || canStopOn(neighbor)) {
+            reachable.push(neighbor);
+          }
+          // Always add to fringes so we can continue pathfinding through this hex
           fringes[k].push(neighbor);
         }
       }

@@ -65,6 +65,19 @@ describe('MonsterAIService', () => {
     } as Character;
   }
 
+  // Helper to create a hex map with valid tiles for testing
+  // Creates a grid of hexes around the origin
+  function createTestHexMap(range: number = 10): Map<string, { terrain: string; coordinates: AxialCoordinates }> {
+    const hexMap = new Map<string, { terrain: string; coordinates: AxialCoordinates }>();
+    for (let q = -range; q <= range; q++) {
+      for (let r = -range; r <= range; r++) {
+        const key = `${q},${r}`;
+        hexMap.set(key, { terrain: 'normal', coordinates: { q, r } });
+      }
+    }
+    return hexMap;
+  }
+
   describe('selectFocusTarget', () => {
     it('should focus on closest character by hex distance', () => {
       const monster = createTestMonster({ q: 0, r: 0 });
@@ -262,11 +275,14 @@ describe('MonsterAIService', () => {
     it('should move toward focus target', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 0); // Melee
       const focusTarget = createTestCharacter('char1', { q: 5, r: 0 });
+      const hexMap = createTestHexMap();
 
       const newHex = monsterAIService.determineMovement(
         monster,
         focusTarget,
         [],
+        [],
+        hexMap,
       );
 
       // Should move 1 hex closer (only gets adjacent hexes, picks best one)
@@ -287,11 +303,14 @@ describe('MonsterAIService', () => {
     it('should return null if already in attack range', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 0); // Melee (range 0)
       const focusTarget = createTestCharacter('char1', { q: 1, r: 0 }); // Adjacent
+      const hexMap = createTestHexMap();
 
       const newHex = monsterAIService.determineMovement(
         monster,
         focusTarget,
         [],
+        [],
+        hexMap,
       );
 
       expect(newHex).toBeNull(); // Already in range
@@ -300,11 +319,14 @@ describe('MonsterAIService', () => {
     it('should return null if already in ranged attack range', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 3); // Range 3
       const focusTarget = createTestCharacter('char1', { q: 2, r: 0 }); // Distance 2
+      const hexMap = createTestHexMap();
 
       const newHex = monsterAIService.determineMovement(
         monster,
         focusTarget,
         [],
+        [],
+        hexMap,
       );
 
       expect(newHex).toBeNull(); // Already in range
@@ -313,6 +335,7 @@ describe('MonsterAIService', () => {
     it('should not move through obstacles', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 0, [], []); // Not flying
       const focusTarget = createTestCharacter('char1', { q: 2, r: 0 });
+      const hexMap = createTestHexMap();
 
       const obstacles: AxialCoordinates[] = [{ q: 1, r: 0 }]; // Obstacle in straight path
 
@@ -320,6 +343,8 @@ describe('MonsterAIService', () => {
         monster,
         focusTarget,
         obstacles,
+        [],
+        hexMap,
       );
 
       // Should not move to obstacle
@@ -331,6 +356,7 @@ describe('MonsterAIService', () => {
     it('should ignore obstacles if monster has flying', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 0, [], ['Flying']);
       const focusTarget = createTestCharacter('char1', { q: 3, r: 0 });
+      const hexMap = createTestHexMap();
 
       const obstacles: AxialCoordinates[] = [
         { q: 1, r: 0 },
@@ -341,6 +367,8 @@ describe('MonsterAIService', () => {
         monster,
         focusTarget,
         obstacles,
+        [],
+        hexMap,
       );
 
       // Flying can move toward target despite obstacles
@@ -357,11 +385,14 @@ describe('MonsterAIService', () => {
     it('should return null if focus target has no currentHex', () => {
       const monster = createTestMonster({ q: 0, r: 0 });
       const focusTarget = createTestCharacter('char1', null);
+      const hexMap = createTestHexMap();
 
       const newHex = monsterAIService.determineMovement(
         monster,
         focusTarget,
         [],
+        [],
+        hexMap,
       );
 
       expect(newHex).toBeNull();
@@ -370,11 +401,14 @@ describe('MonsterAIService', () => {
     it('should move to hex that gets closest to target', () => {
       const monster = createTestMonster({ q: 0, r: 0 }, 0);
       const focusTarget = createTestCharacter('char1', { q: 3, r: 0 });
+      const hexMap = createTestHexMap();
 
       const newHex = monsterAIService.determineMovement(
         monster,
         focusTarget,
         [],
+        [],
+        hexMap,
       );
 
       // Should choose hex that minimizes distance
@@ -394,6 +428,50 @@ describe('MonsterAIService', () => {
         );
         expect(newDistance).toBeLessThan(3);
       }
+    });
+
+    it('should not move to hexes that do not exist on the map', () => {
+      const monster = createTestMonster({ q: 0, r: 0 }, 0);
+      const focusTarget = createTestCharacter('char1', { q: 3, r: 0 });
+
+      // Create a limited hex map that doesn't include some adjacent hexes
+      const hexMap = new Map<string, { terrain: string; coordinates: AxialCoordinates }>();
+      hexMap.set('0,0', { terrain: 'normal', coordinates: { q: 0, r: 0 } });
+      hexMap.set('1,0', { terrain: 'normal', coordinates: { q: 1, r: 0 } });
+      hexMap.set('2,0', { terrain: 'normal', coordinates: { q: 2, r: 0 } });
+      hexMap.set('3,0', { terrain: 'normal', coordinates: { q: 3, r: 0 } });
+      // Note: Other adjacent hexes like (0,1), (0,-1), etc. are NOT in the map
+
+      const newHex = monsterAIService.determineMovement(
+        monster,
+        focusTarget,
+        [],
+        [],
+        hexMap,
+      );
+
+      // Should only move to (1,0) since it's the only valid adjacent hex
+      expect(newHex).toEqual({ q: 1, r: 0 });
+    });
+
+    it('should return null if all adjacent hexes are off-map', () => {
+      const monster = createTestMonster({ q: 0, r: 0 }, 0);
+      const focusTarget = createTestCharacter('char1', { q: 3, r: 0 });
+
+      // Create a hex map that only contains the monster's current hex
+      const hexMap = new Map<string, { terrain: string; coordinates: AxialCoordinates }>();
+      hexMap.set('0,0', { terrain: 'normal', coordinates: { q: 0, r: 0 } });
+
+      const newHex = monsterAIService.determineMovement(
+        monster,
+        focusTarget,
+        [],
+        [],
+        hexMap,
+      );
+
+      // Should return null since no valid movement options exist
+      expect(newHex).toBeNull();
     });
   });
 
