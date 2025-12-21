@@ -15,6 +15,7 @@ import {
   Monster,
   Character,
   AxialCoordinates,
+  TerrainType,
 } from '../../../shared/types/entities';
 import { LootToken } from '../models/loot-token.model';
 import { PrismaService } from './prisma.service';
@@ -165,7 +166,7 @@ export class ScenarioService {
     });
 
     for (const dbScenario of dbScenarios) {
-      const scenario = await this.transformDbScenario(dbScenario);
+      const scenario = this.transformDbScenario(dbScenario);
       if (scenario) {
         scenarioMap.set(dbScenario.id, scenario);
       }
@@ -177,7 +178,7 @@ export class ScenarioService {
   /**
    * Transform database scenario to Scenario type (shared logic)
    */
-  private async transformDbScenario(dbScenario: any): Promise<Scenario | null> {
+  private transformDbScenario(dbScenario: any): Scenario | null {
     if (!dbScenario) return null;
 
     const objectives = dbScenario.objectives;
@@ -486,7 +487,7 @@ export class ScenarioService {
           errors.push(
             `Spawn point (${spawnPoint.q},${spawnPoint.r}) not found in map layout`,
           );
-        } else if (tile.terrain === 'obstacle') {
+        } else if (tile.terrain === TerrainType.OBSTACLE) {
           errors.push(
             `Spawn point (${spawnPoint.q},${spawnPoint.r}) is on obstacle terrain`,
           );

@@ -4579,7 +4579,10 @@ export class GameGateway
               );
               return playerChars
                 .filter((c: any) => c?.exhausted)
-                .map((c: any) => c?.userCharacterId)
+                .map(
+                  (c: any): string | undefined =>
+                    c?.userCharacterId as string | undefined,
+                )
                 .filter((id: string | undefined): id is string => !!id);
             });
 
