@@ -119,6 +119,7 @@ model Character {
   perks         Json     @default("[]") // Array of unlocked perk names
   currentGameId String?  @db.Uuid // NULL if not in game, gameId if in active game
   campaignId    String?  @db.Uuid // NULL or campaignId (features deferred)
+  retired       Boolean  @default(false) // Character retired in campaign (permadeath mode)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -245,6 +246,7 @@ model Game {
   id          String      @id @default(uuid()) @db.Uuid
   roomCode    String      @unique @db.VarChar(6)
   scenarioId  String?     @db.Uuid
+  campaignId  String?     @db.Uuid // Campaign this game belongs to (Issue #244)
   difficulty  Int         @default(1) @db.SmallInt
   status      GameStatus  @default(LOBBY)
   createdAt   DateTime    @default(now())
@@ -254,6 +256,7 @@ model Game {
 
   // Relations
   scenario         Scenario?   @relation(fields: [scenarioId], references: [id])
+  campaign         Campaign?   @relation(fields: [campaignId], references: [id])
   gameState        GameState?
   events           GameEvent[]
   activeCharacters Character[] @relation("CharacterCurrentGame")
@@ -262,6 +265,7 @@ model Game {
   @@index([roomCode])
   @@index([status])
   @@index([createdAt])
+  @@index([campaignId])
   @@map("games")
 }
 
@@ -369,20 +373,71 @@ model PlayerGameResult {
   @@map("player_game_results")
 }
 
-// ========== CAMPAIGNS (002 - Schema only, features deferred) ==========
+// ========== CAMPAIGN TEMPLATES (Issue #244 - DB-driven campaigns) ==========
 
-model Campaign {
-  id                 String   @id @default(uuid()) @db.Uuid
-  name               String   @db.VarChar(100)
-  prosperityLevel    Int      @default(1) @db.SmallInt
-  reputation         Int      @default(0) @db.SmallInt
-  completedScenarios Json     @default("[]") // Array of scenario IDs
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model CampaignTemplate {
+  id                    String  @id @default(uuid()) @db.Uuid
+  name                  String  @unique @db.VarChar(100)
+  description           String? @db.VarChar(500)
+  deathMode             String  @default("configurable") @db.VarChar(20) // "healing" | "permadeath" | "configurable"
+  minPlayers            Int     @default(1) @db.SmallInt
+  maxPlayers            Int     @default(4) @db.SmallInt
+  requireUniqueClasses  Boolean @default(false) // Require each player to have unique character classes
+  isActive              Boolean @default(true) // Can be used to create new campaigns
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   // Relations
-  characters Character[]
+  scenarios CampaignTemplateScenario[]
+  campaigns Campaign[]
 
+  @@map("campaign_templates")
+}
+
+model CampaignTemplateScenario {
+  id               String  @id @default(uuid()) @db.Uuid
+  templateId       String  @db.Uuid
+  scenarioId       String  @db.VarChar(100) // References game scenario ID for both progression and gameplay loading
+  name             String? @db.VarChar(100) // Optional override display name (uses scenario name if null)
+  description      String? @db.VarChar(500) // Optional override description
+  unlocksScenarios Json    @default("[]") // Array of game scenario IDs this unlocks on victory
+  isStarting       Boolean @default(false) // Is this scenario unlocked at campaign start?
+  sequence         Int     @db.SmallInt // Order in the campaign (for display)
+  createdAt        DateTime @default(now())
+
+  // Relations
+  template CampaignTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, scenarioId]) // Same scenario can't appear twice in same campaign
+  @@index([templateId])
+  @@map("campaign_template_scenarios")
+}
+
+// ========== CAMPAIGNS (Issue #244 - Campaign instances) ==========
+
+model Campaign {
+  id                    String   @id @default(uuid()) @db.Uuid
+  templateId            String?  @db.Uuid // Reference to the template this campaign was created from
+  name                  String   @db.VarChar(100)
+  description           String?  @db.VarChar(500)
+  prosperityLevel       Int      @default(1) @db.SmallInt
+  reputation            Int      @default(0) @db.SmallInt
+  completedScenarios    Json     @default("[]") // Array of scenario IDs
+  deathMode             String   @default("healing") @db.VarChar(20) // "healing" | "permadeath"
+  requireUniqueClasses  Boolean  @default(false) // Require each player to have unique character classes
+  retiredCharacterIds   Json     @default("[]") // Array of retired character IDs (permadeath mode)
+  unlockedScenarios     Json     @default("[]") // Array of unlocked scenario IDs available next
+  isCompleted           Boolean  @default(false)
+  completedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  template   CampaignTemplate? @relation(fields: [templateId], references: [id])
+  characters Character[]
+  games      Game[]      // Games played in this campaign (Issue #244)
+
+  @@index([templateId])
   @@map("campaigns")
 }
 

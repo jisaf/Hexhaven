@@ -51,6 +51,54 @@ export class GameStateService {
       throw new ConflictError('Character is already in an active game');
     }
 
+    // Check if character is retired (Issue #244 - Campaign Mode)
+    if (character.retired) {
+      throw new ConflictError('Cannot use a retired character');
+    }
+
+    // Campaign validation (Issue #244)
+    if (dto.campaignId) {
+      // Verify campaign exists
+      const campaign = await this.prisma.campaign.findUnique({
+        where: { id: dto.campaignId },
+      });
+
+      if (!campaign) {
+        throw new NotFoundError('Campaign not found');
+      }
+
+      if (campaign.isCompleted) {
+        throw new ConflictError('Cannot start a game in a completed campaign');
+      }
+
+      // Verify character belongs to this campaign
+      if (character.campaignId !== dto.campaignId) {
+        throw new ConflictError('Character does not belong to this campaign');
+      }
+
+      // Verify scenario is unlocked in campaign
+      const unlockedScenarios = campaign.unlockedScenarios as string[];
+      const completedScenarios = campaign.completedScenarios as string[];
+
+      // Find scenario by name (since scenario IDs and campaign scenario IDs might differ)
+      const scenario = await this.prisma.scenario.findUnique({
+        where: { id: dto.scenarioId },
+      });
+
+      if (!scenario) {
+        throw new NotFoundError('Scenario not found');
+      }
+
+      // Check if scenario is unlocked or completed using direct ID matching
+      // Campaign stores scenario IDs, so we match against the requested scenarioId
+      const isUnlocked = unlockedScenarios.includes(dto.scenarioId);
+      const isCompleted = completedScenarios.includes(dto.scenarioId);
+
+      if (!isUnlocked && !isCompleted) {
+        throw new ConflictError('Scenario is not unlocked in this campaign');
+      }
+    }
+
     // Verify scenario exists
     const scenario = await this.prisma.scenario.findUnique({
       where: { id: dto.scenarioId },
@@ -60,11 +108,12 @@ export class GameStateService {
       throw new NotFoundError('Scenario not found');
     }
 
-    // Create game
+    // Create game with optional campaignId
     const game = await this.prisma.game.create({
       data: {
         roomCode: dto.roomCode,
         scenarioId: dto.scenarioId,
+        campaignId: dto.campaignId || null,
         difficulty: dto.difficulty,
         status: 'LOBBY',
       },
@@ -80,6 +129,7 @@ export class GameStateService {
     await this.recordEvent(game.id, 'GAME_STARTED', {
       roomCode: dto.roomCode,
       scenarioId: dto.scenarioId,
+      campaignId: dto.campaignId || null,
       difficulty: dto.difficulty,
       hostCharacterId: dto.hostCharacterId,
     });
@@ -119,6 +169,19 @@ export class GameStateService {
 
     if (character.currentGameId) {
       throw new ConflictError('Character is already in an active game');
+    }
+
+    // Check if character is retired (Issue #244 - Campaign Mode)
+    if (character.retired) {
+      throw new ConflictError('Cannot use a retired character');
+    }
+
+    // Campaign validation (Issue #244)
+    if (game.campaignId) {
+      // Verify character belongs to this campaign
+      if (character.campaignId !== game.campaignId) {
+        throw new ConflictError('Character does not belong to this campaign');
+      }
     }
 
     // Assign character to game
@@ -338,6 +401,7 @@ export class GameStateService {
       id: game.id,
       roomCode: game.roomCode,
       scenarioId: game.scenarioId,
+      campaignId: game.campaignId, // Issue #244 - Campaign Mode
       difficulty: game.difficulty,
       status: game.status as GameStatus,
       createdAt: game.createdAt,

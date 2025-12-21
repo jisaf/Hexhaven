@@ -26,6 +26,8 @@ import { NicknameInput } from '../components/NicknameInput';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { MyRoomsList } from '../components/lobby/MyRoomsList';
+import { CampaignsList } from '../components/lobby/CampaignsList';
+import { CampaignView } from '../components/lobby/CampaignView';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useCharacterSelection } from '../hooks/useCharacterSelection';
@@ -38,7 +40,7 @@ import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTr
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 
-type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room';
+type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room' | 'campaign-view';
 
 export function Lobby() {
   const navigate = useNavigate();
@@ -49,6 +51,9 @@ export function Lobby() {
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null); // Campaign for current room
+  const [pendingCampaignCharacters, setPendingCampaignCharacters] = useState<string[]>([]); // Characters to auto-select after room creation
 
   // Use custom hooks
   const sessionState = useRoomSession();
@@ -130,6 +135,20 @@ export function Lobby() {
       setMode('in-room');
     }
   }, [sessionState.status, sessionState.roomCode, navigate]);
+
+  // Auto-select campaign characters after room creation
+  useEffect(() => {
+    if (mode === 'in-room' && pendingCampaignCharacters.length > 0) {
+      console.log('[Lobby] Auto-selecting campaign characters:', pendingCampaignCharacters);
+      // Add each character to the selection
+      pendingCampaignCharacters.forEach((characterId) => {
+        addCharacter(characterId);
+      });
+      // Clear pending characters
+      setPendingCampaignCharacters([]);
+      setIsLoading(false);
+    }
+  }, [mode, pendingCampaignCharacters, addCharacter]);
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
@@ -216,6 +235,46 @@ export function Lobby() {
     websocketService.startGame(selectedScenario);
   };
 
+  // Campaign handlers (Issue #244)
+  const handleSelectCampaign = (campaignId: string) => {
+    setSelectedCampaignId(campaignId);
+    setMode('campaign-view');
+  };
+
+  const handleBackFromCampaign = () => {
+    setSelectedCampaignId(null);
+    setMode('initial');
+  };
+
+  const handleStartCampaignGame = async (scenarioId: string, campaignId: string, characterIds: string[]) => {
+    // Create a room with campaign context - scenario will be pre-selected
+    const displayName = getDisplayName();
+    if (!displayName) {
+      setError('Please set a nickname first');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Store characters to auto-select after room creation
+      setPendingCampaignCharacters(characterIds);
+
+      // Create room for campaign game with pre-selected scenario
+      await roomSessionManager.createRoom(displayName, {
+        campaignId,
+        scenarioId,
+      });
+      // Set the selected scenario and campaign context
+      setSelectedScenario(scenarioId);
+      setActiveCampaignId(campaignId);
+      // The room creation will trigger mode change via useEffect
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start campaign game');
+      setIsLoading(false);
+      setPendingCampaignCharacters([]); // Clear on error
+    }
+  };
+
   // Get current player info
   const currentPlayerId = websocketService.getPlayerUUID();
   const currentPlayer = findPlayerById(players, currentPlayerId || '');
@@ -237,6 +296,10 @@ export function Lobby() {
                 content: <MyRoomsList rooms={myRooms} />,
               },
               {
+                label: t('campaigns', { ns: 'lobby', defaultValue: 'Campaigns' }),
+                content: <CampaignsList onSelectCampaign={handleSelectCampaign} />,
+              },
+              {
                 label: t('activeGames', { ns: 'lobby' }),
                 content: (
                   <LobbyWelcome
@@ -250,6 +313,14 @@ export function Lobby() {
               },
             ]}
             defaultTab={defaultTab}
+          />
+        )}
+
+        {mode === 'campaign-view' && selectedCampaignId && (
+          <CampaignView
+            campaignId={selectedCampaignId}
+            onBack={handleBackFromCampaign}
+            onStartGame={handleStartCampaignGame}
           />
         )}
 
@@ -325,6 +396,7 @@ export function Lobby() {
             canStartGame={canStartGame}
             allPlayersReady={playersReady}
             error={error}
+            campaignId={activeCampaignId}
             onAddCharacter={addCharacter}
             onRemoveCharacter={(index: number) => {
               // Convert index-based to ID-based removal

@@ -36,6 +36,7 @@ export interface CreateGameDto {
   scenarioId: string;
   difficulty: number;
   hostCharacterId: string;
+  campaignId?: string; // Optional: Campaign this game belongs to (Issue #244)
 }
 
 export interface JoinGameDto {
@@ -46,6 +47,7 @@ export interface GameWithCharacters {
   id: string;
   roomCode: string;
   scenarioId: string | null;
+  campaignId: string | null; // Campaign this game belongs to (Issue #244)
   difficulty: number;
   status: GameStatus;
   createdAt: Date;

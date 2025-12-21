@@ -24,6 +24,8 @@ import { RoomStatus } from '../../../shared/types/entities';
 interface CreateRoomRequest {
   uuid: string;
   nickname: string;
+  campaignId?: string;
+  scenarioId?: string;
 }
 
 interface CreateRoomResponse {
@@ -31,6 +33,8 @@ interface CreateRoomResponse {
     id: string;
     roomCode: string;
     status: string;
+    campaignId?: string;
+    scenarioId?: string;
     createdAt: string;
     expiresAt: string;
   };
@@ -85,7 +89,7 @@ export class RoomsController {
   @HttpCode(HttpStatus.CREATED)
   createRoom(@Body() body: CreateRoomRequest): CreateRoomResponse {
     try {
-      const { uuid, nickname } = body;
+      const { uuid, nickname, campaignId, scenarioId } = body;
 
       // Validate input
       if (!uuid || !nickname) {
@@ -113,14 +117,19 @@ export class RoomsController {
       // Use Player.create() directly to avoid global registry conflicts
       const roomPlayer = Player.create(uuid, trimmedNickname);
 
-      // Create room with player as host
-      const room = roomService.createRoom(roomPlayer);
+      // Create room with player as host (with optional campaign context)
+      const room = roomService.createRoom(roomPlayer, {
+        campaignId,
+        scenarioId,
+      });
 
       return {
         room: {
           id: room.id,
           roomCode: room.roomCode,
           status: room.status,
+          campaignId: room.campaignId || undefined,
+          scenarioId: room.scenarioId || undefined,
           createdAt: room.createdAt.toISOString(),
           expiresAt: room.expiresAt.toISOString(),
         },

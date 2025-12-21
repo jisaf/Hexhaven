@@ -46,6 +46,12 @@ interface ScenarioSeed {
   objectives: any;
   treasures?: any[];
   playerStartPositions?: any[];
+  // Background image configuration (Issue #191)
+  backgroundImageUrl?: string;
+  backgroundOpacity?: number;
+  backgroundOffsetX?: number;
+  backgroundOffsetY?: number;
+  backgroundScale?: number;
 }
 
 interface CardLayoutTemplateSeed {
@@ -200,6 +206,12 @@ async function seedScenarios() {
         objectives: scenarioData.objectives,
         treasures: scenarioData.treasures,
         playerStartPositions: scenarioData.playerStartPositions,
+        // Background image configuration (Issue #191)
+        backgroundImageUrl: scenarioData.backgroundImageUrl,
+        backgroundOpacity: scenarioData.backgroundOpacity,
+        backgroundOffsetX: scenarioData.backgroundOffsetX,
+        backgroundOffsetY: scenarioData.backgroundOffsetY,
+        backgroundScale: scenarioData.backgroundScale,
       },
       create: {
         name: scenarioData.name,
@@ -209,6 +221,12 @@ async function seedScenarios() {
         objectives: scenarioData.objectives,
         treasures: scenarioData.treasures,
         playerStartPositions: scenarioData.playerStartPositions,
+        // Background image configuration (Issue #191)
+        backgroundImageUrl: scenarioData.backgroundImageUrl,
+        backgroundOpacity: scenarioData.backgroundOpacity,
+        backgroundOffsetX: scenarioData.backgroundOffsetX,
+        backgroundOffsetY: scenarioData.backgroundOffsetY,
+        backgroundScale: scenarioData.backgroundScale,
       },
     });
   }
@@ -236,6 +254,120 @@ async function seedCardLayoutTemplates() {
   }
 
   console.log(`✓ Seeded ${templates.length} card layout templates`);
+}
+
+async function seedCampaignTemplates() {
+  console.log('Seeding campaign templates...');
+
+  // Look up scenarios by name to get their UUIDs
+  const forestTrail = await prisma.scenario.findUnique({ where: { name: 'Forest Trail' } });
+  const magmaPit = await prisma.scenario.findUnique({ where: { name: 'Magma Pit' } });
+  const deepPit = await prisma.scenario.findUnique({ where: { name: 'Deep Pit' } });
+
+  if (!forestTrail || !magmaPit || !deepPit) {
+    console.warn('⚠ Campaign scenarios not found in database. Skipping campaign template seeding.');
+    console.warn('  Missing:', {
+      forestTrail: !forestTrail,
+      magmaPit: !magmaPit,
+      deepPit: !deepPit,
+    });
+    return;
+  }
+
+  // Flame Vale campaign template with 3 scenarios
+  // Uses database scenario UUIDs for proper linking
+  const flameValeTemplate = {
+    name: 'Flame Vale',
+    description: 'A 3-scenario campaign through forest and fiery pits.',
+    deathMode: 'configurable', // Users can choose healing or permadeath
+    minPlayers: 1,
+    maxPlayers: 4,
+    isActive: true,
+    scenarios: [
+      {
+        scenarioId: forestTrail.id, // Game scenario: "Forest Trail"
+        name: null, // Uses scenario's own name
+        description: 'Begin your journey through the forest trail.',
+        unlocksScenarios: [magmaPit.id],
+        isStarting: true,
+        sequence: 1,
+      },
+      {
+        scenarioId: magmaPit.id, // Game scenario: "Magma Pit"
+        name: null, // Uses scenario's own name
+        description: 'Navigate the treacherous magma pit.',
+        unlocksScenarios: [deepPit.id],
+        isStarting: false,
+        sequence: 2,
+      },
+      {
+        scenarioId: deepPit.id, // Game scenario: "Deep Pit"
+        name: null, // Uses scenario's own name
+        description: 'The final challenge - descend into the deep pit and defeat the Flame Demon!',
+        unlocksScenarios: [], // Final scenario - unlocks nothing
+        isStarting: false,
+        sequence: 3,
+      },
+    ],
+  };
+
+  // Delete old Gloomhaven Vale template if it exists
+  const oldTemplate = await prisma.campaignTemplate.findUnique({
+    where: { name: 'Gloomhaven Vale' },
+  });
+  if (oldTemplate) {
+    await prisma.campaignTemplateScenario.deleteMany({
+      where: { templateId: oldTemplate.id },
+    });
+    await prisma.campaignTemplate.delete({
+      where: { id: oldTemplate.id },
+    });
+    console.log('✓ Deleted old "Gloomhaven Vale" campaign template');
+  }
+
+  // Check if template already exists
+  const existingTemplate = await prisma.campaignTemplate.findUnique({
+    where: { name: flameValeTemplate.name },
+    include: { scenarios: true },
+  });
+
+  if (!existingTemplate) {
+    // Create template with scenarios
+    await prisma.campaignTemplate.create({
+      data: {
+        name: flameValeTemplate.name,
+        description: flameValeTemplate.description,
+        deathMode: flameValeTemplate.deathMode,
+        minPlayers: flameValeTemplate.minPlayers,
+        maxPlayers: flameValeTemplate.maxPlayers,
+        isActive: flameValeTemplate.isActive,
+        scenarios: {
+          create: flameValeTemplate.scenarios,
+        },
+      },
+    });
+    console.log(`✓ Created campaign template: "${flameValeTemplate.name}"`);
+  } else {
+    // Update existing template - delete old scenarios and create new ones
+    await prisma.campaignTemplateScenario.deleteMany({
+      where: { templateId: existingTemplate.id },
+    });
+
+    await prisma.campaignTemplate.update({
+      where: { id: existingTemplate.id },
+      data: {
+        description: flameValeTemplate.description,
+        deathMode: flameValeTemplate.deathMode,
+        minPlayers: flameValeTemplate.minPlayers,
+        maxPlayers: flameValeTemplate.maxPlayers,
+        isActive: flameValeTemplate.isActive,
+        scenarios: {
+          create: flameValeTemplate.scenarios,
+        },
+      },
+    });
+    console.log(`✓ Updated campaign template: "${flameValeTemplate.name}" with new scenarios`);
+  }
 }
 
 async function seedTestUsers() {
@@ -309,6 +441,7 @@ async function main() {
     await seedTestUsers();
     await seedItems();
     await seedScenarios();
+    await seedCampaignTemplates(); // Issue #244 - Campaign Mode (DB-driven templates)
 
     console.log('\n✅ Database seed completed successfully!');
   } catch (error) {

@@ -27,12 +27,14 @@ interface PathNode {
 export class PathfindingService {
   /**
    * Find shortest path between two hexes using A* algorithm
+   * @param occupiedHexes - Set of hex keys that are occupied by entities that block movement (enemies)
    */
   findPath(
     start: AxialCoordinates,
     goal: AxialCoordinates,
     hexMap: Map<string, HexTile>,
     canFly = false,
+    occupiedHexes?: Set<string>,
   ): AxialCoordinates[] | null {
     // Already at goal
     if (start.q === goal.q && start.r === goal.r) {
@@ -86,13 +88,25 @@ export class PathfindingService {
         }
 
         const tile = hexMap.get(neighborKey);
-        const movementCost = this.calculateMovementCost(
-          tile?.terrain || TerrainType.NORMAL,
-          canFly,
-        );
+
+        // CRITICAL: Non-existent tiles are impassable (prevents off-map movement)
+        if (!tile) {
+          continue;
+        }
+
+        const movementCost = this.calculateMovementCost(tile.terrain, canFly);
 
         // Can't pass through obstacles
         if (movementCost === Infinity) {
+          continue;
+        }
+
+        // Can't pass through occupied hexes (enemies block movement)
+        // Exception: allow moving TO the goal hex even if occupied (for attack positioning checks)
+        if (
+          occupiedHexes?.has(neighborKey) &&
+          !(neighborHex.q === goal.q && neighborHex.r === goal.r)
+        ) {
           continue;
         }
 
@@ -121,12 +135,14 @@ export class PathfindingService {
 
   /**
    * Get all hexes reachable within movement range
+   * @param occupiedHexes - Set of hex keys that are occupied by entities that block movement (enemies)
    */
   getReachableHexes(
     start: AxialCoordinates,
     movementRange: number,
     hexMap: Map<string, HexTile>,
     canFly = false,
+    occupiedHexes?: Set<string>,
   ): AxialCoordinates[] {
     const reachable: AxialCoordinates[] = [];
     const visited = new Set<string>();
@@ -154,12 +170,20 @@ export class PathfindingService {
         }
 
         const tile = hexMap.get(neighborKey);
-        const movementCost = this.calculateMovementCost(
-          tile?.terrain || TerrainType.NORMAL,
-          canFly,
-        );
+
+        // CRITICAL: Non-existent tiles are impassable (prevents off-map movement)
+        if (!tile) {
+          continue;
+        }
+
+        const movementCost = this.calculateMovementCost(tile.terrain, canFly);
 
         if (movementCost === Infinity) {
+          continue;
+        }
+
+        // Can't pass through occupied hexes (enemies block movement)
+        if (occupiedHexes?.has(neighborKey)) {
           continue;
         }
 

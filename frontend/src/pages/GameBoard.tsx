@@ -300,6 +300,18 @@ export function GameBoard() {
     initializeBoard(boardData);
     boardInitializedRef.current = true;
 
+    // Spawn any existing loot tokens (for rejoin)
+    if (gameState.gameData.lootTokens && gameState.gameData.lootTokens.length > 0) {
+      for (const token of gameState.gameData.lootTokens) {
+        spawnLootToken({
+          id: token.id,
+          coordinates: token.coordinates,
+          value: token.value,
+        });
+      }
+      console.log(`[GameBoard] Spawned ${gameState.gameData.lootTokens.length} loot tokens on rejoin`);
+    }
+
     // Load background image immediately after board initialization
     const { backgroundImageUrl, backgroundOpacity = 1 } = gameState.gameData;
 
@@ -309,7 +321,7 @@ export function GameBoard() {
           console.error('[GameBoard] Failed to load background image:', error);
         });
     }
-  }, [hexGridReady, gameState.gameData, initializeBoard, setBackgroundImage]);
+  }, [hexGridReady, gameState.gameData, initializeBoard, setBackgroundImage, spawnLootToken]);
 
   const handleBackToLobby = () => {
     // User clicked leave game button - exit and navigate

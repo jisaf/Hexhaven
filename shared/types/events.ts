@@ -32,6 +32,7 @@ export interface SelectCharacterPayload {
 
 export interface StartGamePayload {
   scenarioId: string;
+  campaignId?: string; // Issue #244 - Campaign Mode (optional)
 }
 
 export interface MoveCharacterPayload {
@@ -213,6 +214,21 @@ export interface GameStartedPayload {
   backgroundOffsetX?: number;
   backgroundOffsetY?: number;
   backgroundScale?: number;
+  // Current game state for rejoin
+  currentRound?: number;
+  // Game log for rejoin
+  gameLog?: Array<{
+    id: string;
+    parts: Array<{ text: string; color?: string; isBold?: boolean }>;
+    timestamp: number;
+  }>;
+  // Loot tokens for rejoin
+  lootTokens?: Array<{
+    id: string;
+    coordinates: AxialCoordinates;
+    value: number;
+    isCollected: boolean;
+  }>;
 }
 
 export interface CardsSelectedPayload {
@@ -485,6 +501,31 @@ export interface CharacterInventoryPayload {
   };
 }
 
+// ========== CAMPAIGN EVENTS (Issue #244) ==========
+
+/**
+ * Emitted when a scenario is completed within a campaign
+ */
+export interface CampaignScenarioCompletedPayload {
+  campaignId: string;
+  scenarioId: string;
+  victory: boolean;
+  newlyUnlockedScenarios: string[];
+  healedCharacters: string[];
+  retiredCharacters: string[];
+  campaignCompleted: boolean;
+  experienceGained: Record<string, number>;
+  goldGained: Record<string, number>;
+}
+
+/**
+ * Emitted when a campaign is completed (all scenarios done or all characters retired)
+ */
+export interface CampaignCompletedPayload {
+  campaignId: string;
+  victory: boolean; // True if final scenario won, false if all characters retired
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -554,4 +595,7 @@ export interface ServerEvents {
   item_equipped: ItemEquippedPayload;
   item_unequipped: ItemUnequippedPayload;
   character_inventory: CharacterInventoryPayload;
+  // Issue #244: Campaign events
+  campaign_scenario_completed: CampaignScenarioCompletedPayload;
+  campaign_completed: CampaignCompletedPayload;
 }

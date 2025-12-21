@@ -31,6 +31,7 @@ interface LobbyRoomViewProps {
   canStartGame: boolean;
   allPlayersReady: boolean;
   error: string | null;
+  campaignId?: string | null; // Issue #244 - Campaign Mode
   onAddCharacter: (characterIdOrClass: string) => void;
   onRemoveCharacter: (index: number) => void;
   onSetActiveCharacter: (index: number) => void;
@@ -50,6 +51,7 @@ export function LobbyRoomView({
   canStartGame,
   allPlayersReady,
   error,
+  campaignId,
   onAddCharacter,
   onRemoveCharacter,
   onSetActiveCharacter,
@@ -197,12 +199,26 @@ export function LobbyRoomView({
       )}
 
       {/* Scenario Selection (US5 - Host Only) */}
-      {isHost && (
+      {/* Hide scenario selection in campaign mode - scenario is pre-selected */}
+      {isHost && !campaignId && (
         <div className={styles.scenarioSection}>
           <ScenarioSelectionPanel
             selectedScenarioId={selectedScenario}
             onSelectScenario={onSelectScenario}
           />
+        </div>
+      )}
+
+      {/* Campaign Mode Indicator */}
+      {campaignId && (
+        <div className={styles.campaignModeIndicator}>
+          <div className={styles.campaignBadge}>
+            <span className={styles.campaignIcon}>⚔️</span>
+            <span>Campaign Game</span>
+          </div>
+          <p className={styles.campaignScenarioInfo}>
+            Scenario: <strong>{selectedScenario}</strong>
+          </p>
         </div>
       )}
     </div>

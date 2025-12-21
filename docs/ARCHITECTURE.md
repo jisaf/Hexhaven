@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.0
-**Last Updated**: 2025-12-15
-**Status**: Production-Ready (MVP)
+**Version**: 1.1
+**Last Updated**: 2025-12-20
+**Status**: Production-Ready (MVP + Campaign Mode)
 
 ---
 
@@ -33,6 +33,8 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 - Turn-based tactical combat with monster AI
 - Multi-lingual support (5 languages)
 - Optional account system with progression tracking
+- Campaign mode with scenario progression (Issue #244)
+- Items and inventory system (Issue #205)
 
 ---
 
@@ -145,6 +147,7 @@ shared/
 ├── types/               # Shared TypeScript types
 │   ├── entities.ts      # Item, ItemState, ItemSlot, ItemRarity enums
 │   ├── events.ts        # WebSocket event payloads
+│   ├── campaign.ts      # Issue #244: Campaign types (CampaignTemplate, CampaignWithDetails, etc.)
 │   └── ...
 └── utils/               # Shared utility functions
     ├── index.ts         # Barrel export
@@ -263,6 +266,7 @@ backend/src/
 │   ├── scenarios.controller.ts
 │   ├── items.controller.ts      # Issue #205: Item CRUD endpoints
 │   ├── inventory.controller.ts  # Issue #205: Character inventory endpoints
+│   ├── campaigns.controller.ts  # Issue #244: Campaign management endpoints
 │   └── accounts.controller.ts
 ├── websocket/           # Real-time communication
 │   └── game.gateway.ts  # Socket.io event handlers
@@ -277,6 +281,7 @@ backend/src/
 │   ├── scenario.service.ts
 │   ├── item.service.ts          # Issue #205: Item CRUD with role-based access
 │   ├── inventory.service.ts     # Issue #205: Character inventory management
+│   ├── campaign.service.ts      # Issue #244: Campaign management with caching
 │   └── background-upload.service.ts  # Issue #191: Background image uploads
 ├── models/              # Domain models
 │   ├── player.model.ts
@@ -555,6 +560,66 @@ The game implements a Gloomhaven-inspired item and inventory system with role-ba
 - Role-based access for item CRUD (creator/admin)
 - In-game equipment changes blocked (ConflictError)
 
+### Campaign Mode System (Issue #244)
+
+Campaign mode enables persistent progression across multiple game sessions, with scenario unlocking, character persistence, and death mode options.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Frontend UI        │────>│  Backend Services   │────>│  PostgreSQL      │
+│  (React + Campaigns)│     │  (NestJS + DI)      │     │  (Prisma ORM)    │
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │
+         │                           │
+         ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐
+│  Shared Types       │     │  WebSocket Gateway  │
+│  (campaign.ts)      │     │  (Campaign events)  │
+└─────────────────────┘     └─────────────────────┘
+```
+
+**Key Components**:
+
+1. **CampaignService** (`backend/src/services/campaign.service.ts`):
+   - Campaign CRUD with template-based creation
+   - Character management (join, leave, create in campaign)
+   - Scenario unlock progression
+   - Death mode handling (healing vs permadeath)
+   - Template caching for performance (5-minute TTL)
+   - Batch scenario loading to avoid N+1 queries
+   - Optimistic locking for race condition handling
+
+2. **CampaignsController** (`backend/src/api/campaigns.controller.ts`):
+   - REST API endpoints for campaign management
+   - DTO validation with class-validator decorators
+   - Authorization checks (user must have character in campaign)
+   - ParseUUIDPipe for parameter validation
+
+3. **Shared Types** (`shared/types/campaign.ts`):
+   - Type definitions shared between frontend and backend
+   - CampaignTemplate, CampaignWithDetails, CampaignCharacterSummary
+   - Ensures type consistency across the stack
+
+4. **Frontend Components**:
+   - CampaignView.tsx: Campaign detail view with scenario selection
+   - CampaignsList.tsx: User's campaigns list
+   - campaign.service.ts: API client for campaign operations
+
+**Death Modes**:
+- `healing`: Characters heal to full health after each scenario
+- `permadeath`: Exhausted characters are permanently retired
+
+**Campaign Templates**:
+- Database-driven template system for dynamic campaign creation
+- Templates define scenario progression, unlock conditions, player limits
+- Scenarios can unlock other scenarios upon completion
+
+**Security**:
+- JWT authentication via JwtAuthGuard
+- User must have character in campaign to view/access it
+- Validated DTOs with @IsUUID, @IsString, @IsIn decorators
+
 ### Multi-Character Control System
 
 Players can control multiple characters (up to 4) in a single game session, enabling solo play with multiple characters or controlling additional characters when fewer players are available.
@@ -761,6 +826,60 @@ CREATE TABLE character_item_state (
   uses_remaining INTEGER,
   PRIMARY KEY (character_id, item_id)
 );
+
+-- Campaign Templates (Issue #244)
+CREATE TABLE campaign_templates (
+  id UUID PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  death_mode VARCHAR(20),        -- healing, permadeath, or configurable
+  min_players INTEGER DEFAULT 1,
+  max_players INTEGER DEFAULT 4,
+  require_unique_classes BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Campaign Template Scenarios (Issue #244)
+CREATE TABLE campaign_template_scenarios (
+  id UUID PRIMARY KEY,
+  template_id UUID REFERENCES campaign_templates(id),
+  scenario_id UUID REFERENCES scenarios(id),
+  name VARCHAR(100),             -- Optional override of scenario name
+  description TEXT,
+  unlocks_scenarios JSONB,       -- Array of scenario IDs unlocked on completion
+  is_starting BOOLEAN DEFAULT false,
+  sequence INTEGER,
+  created_at TIMESTAMP
+);
+
+-- Campaigns (Issue #244)
+CREATE TABLE campaigns (
+  id UUID PRIMARY KEY,
+  template_id UUID REFERENCES campaign_templates(id),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  prosperity_level INTEGER DEFAULT 1,
+  reputation INTEGER DEFAULT 0,
+  completed_scenarios JSONB,     -- Array of completed scenario IDs
+  unlocked_scenarios JSONB,      -- Array of unlocked scenario IDs
+  retired_character_ids JSONB,   -- Array of retired character IDs
+  death_mode VARCHAR(20),        -- healing or permadeath
+  require_unique_classes BOOLEAN DEFAULT false,
+  is_completed BOOLEAN DEFAULT false,
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Characters (updated for campaigns - Issue #244)
+-- Added campaign_id foreign key to existing characters table
+ALTER TABLE characters ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
+
+-- Game Rooms (updated for campaigns - Issue #244)
+-- Added campaign_id foreign key to track campaign games
+ALTER TABLE game_rooms ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
 ```
 
 ### Game State JSONB Structure
@@ -845,6 +964,18 @@ DELETE /api/items/:id         # Delete item (admin role required)
 GET  /api/characters/:id/inventory  # Get character inventory (owner auth)
 POST /api/characters/:id/equip      # Equip item
 POST /api/characters/:id/unequip    # Unequip item
+
+# Campaigns (Issue #244)
+GET    /api/campaigns                          # List user's campaigns
+POST   /api/campaigns                          # Create campaign from template
+GET    /api/campaigns/templates                # List available campaign templates
+GET    /api/campaigns/templates/:id            # Get specific template
+GET    /api/campaigns/:id                      # Get campaign details (auth required)
+POST   /api/campaigns/:id/join                 # Join campaign with character
+POST   /api/campaigns/:id/characters           # Create new character in campaign
+DELETE /api/campaigns/:id/characters/:charId   # Remove character from campaign
+GET    /api/campaigns/:id/scenarios/available  # Get unlocked scenarios
+GET    /api/campaigns/:id/my-characters        # Get user's characters in campaign
 ```
 
 ### WebSocket Events
@@ -888,6 +1019,10 @@ item_used           { characterId, itemId, effects, newState }
 item_equipped       { characterId, itemId, slot, slotIndex }
 item_unequipped     { characterId, itemId }
 items_refreshed     { characterId, refreshedItems }
+
+# Campaigns (Issue #244)
+campaign_scenario_completed  { campaignId, scenarioId, victory, unlockedScenarios, healedCharacters, retiredCharacters }
+campaign_completed           { campaignId, completedAt }
 ```
 
 ---
@@ -1051,10 +1186,10 @@ VITE_WS_URL=ws://localhost:3000
 
 ### Features
 - Email authentication
-- Campaign mode
 - Item shop
 - Achievements
 - Spectator mode
+- Campaign mode enhancements (city/road events, prosperity system)
 
 ### Infrastructure
 - Docker containers

@@ -40,6 +40,7 @@ export interface GameResultData {
   roomCode: string;
   scenarioId?: string;
   scenarioName?: string;
+  campaignId?: string; // Issue #244 - Campaign this game belongs to
   victory: boolean;
   roundsCompleted: number;
   completionTimeMs?: number;

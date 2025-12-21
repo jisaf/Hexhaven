@@ -37,19 +37,56 @@ const getEffectColor = (effect: string) => {
   }
 };
 
-const isHexBlocked = (hex: Axial, state: GameState): boolean => {
+/**
+ * Check if a hex is blocked by terrain (cannot pass through)
+ * In Gloomhaven, obstacles block movement entirely
+ */
+const isHexBlockedByTerrain = (hex: Axial, state: GameState): boolean => {
     if (!state.gameData) return true;
     const tile = state.gameData.mapLayout.find(t => t.coordinates.q === hex.q && t.coordinates.r === hex.r);
     if (!tile) return true;
     if (tile.terrain === 'obstacle') return true;
+    return false;
+}
 
-    // check for characters
-    if (state.gameData.characters.some(c => c.currentHex?.q === hex.q && c.currentHex?.r === hex.r)) return true;
+/**
+ * Check if a hex is blocked for player movement (terrain + monsters)
+ * In Gloomhaven, monsters block player movement entirely (cannot pass through enemies)
+ */
+const isHexBlocked = (hex: Axial, state: GameState): boolean => {
+    // First check terrain
+    if (isHexBlockedByTerrain(hex, state)) return true;
 
-    // check for monsters
-    if (state.gameData.monsters.some(m => m.currentHex.q === hex.q && m.currentHex.r === hex.r)) return true;
+    // Monsters block player movement (cannot move through enemies)
+    if (!state.gameData) return true;
+    if (state.gameData.monsters.some(m =>
+      m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0
+    )) return true;
 
     return false;
+}
+
+/**
+ * Check if a hex is occupied by an entity (character or monster)
+ * In Gloomhaven, you can move through allies but cannot stop on occupied hexes
+ */
+const isHexOccupied = (hex: Axial, state: GameState): boolean => {
+    if (!state.gameData) return false;
+
+    // Check for characters
+    if (state.gameData.characters.some(c => c.currentHex?.q === hex.q && c.currentHex?.r === hex.r)) return true;
+
+    // Check for monsters (alive ones)
+    if (state.gameData.monsters.some(m => m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0)) return true;
+
+    return false;
+}
+
+/**
+ * Check if a character can stop on a hex (not blocked and not occupied)
+ */
+const canStopOnHex = (hex: Axial, state: GameState): boolean => {
+    return !isHexBlocked(hex, state) && !isHexOccupied(hex, state);
 }
 
 const hasAttackTarget = (hex: Axial, state: GameState, attackerId: string): boolean => {
@@ -405,8 +442,19 @@ class GameStateManager {
     }
 
     this.state.gameData = data;
-    this.state.currentRound = 1;
-    console.log(`[GameStateManager] Game started with ${myCharacters.length} characters for player`);
+    // Use currentRound from payload if available (for rejoin), otherwise default to 1
+    this.state.currentRound = data.currentRound || 1;
+
+    // Restore game log from payload if available (for rejoin)
+    if (data.gameLog && data.gameLog.length > 0) {
+      this.state.logs = data.gameLog.map(entry => ({
+        id: entry.id,
+        parts: entry.parts as LogMessagePart[],
+      }));
+      console.log(`[GameStateManager] Restored ${data.gameLog.length} log entries from server`);
+    }
+
+    console.log(`[GameStateManager] Game started with ${myCharacters.length} characters for player (round ${this.state.currentRound})`);
     this.emitStateUpdate();
   }
 
@@ -437,7 +485,8 @@ class GameStateManager {
         this.state.validMovementHexes = hexRangeReachable(
             data.toHex,
             remainingMoves,
-            (hex: Axial) => isHexBlocked(hex, this.state)
+            (hex: Axial) => isHexBlocked(hex, this.state),
+            (hex: Axial) => canStopOnHex(hex, this.state)
         );
     } else {
         this.state.validMovementHexes = [];
@@ -457,6 +506,9 @@ class GameStateManager {
   }
 
   private handleRoundEnded(data: { roundNumber: number }): void {
+    console.log(`[GameStateManager] 📋 handleRoundEnded received: round=${data.roundNumber}`);
+    // Update current round (important for rejoin to show correct round number)
+    this.state.currentRound = data.roundNumber;
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
 
     // Move played cards to discard pile for ALL controlled characters
@@ -518,6 +570,7 @@ class GameStateManager {
 
     this.state.showCardSelection = true;
     this.state.waitingForRoundStart = false;
+    console.log(`[GameStateManager] ✅ handleRoundEnded complete: showCardSelection=${this.state.showCardSelection}, currentRound=${this.state.currentRound}`);
     this.emitStateUpdate();
   }
 
@@ -865,7 +918,8 @@ class GameStateManager {
         this.state.validMovementHexes = hexRangeReachable(
           character.currentHex,
           moveValue,
-          (hex: Axial) => isHexBlocked(hex, this.state)
+          (hex: Axial) => isHexBlocked(hex, this.state),
+          (hex: Axial) => canStopOnHex(hex, this.state)
         );
       } else {
         this.state.validMovementHexes = [];

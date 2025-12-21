@@ -41,6 +41,7 @@ export interface CharacterResponse {
   inventory: string[];
   currentGameId: string | null;
   campaignId: string | null;
+  retired: boolean;
   createdAt: string;
   updatedAt: string;
 }
