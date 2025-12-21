@@ -2469,7 +2469,7 @@ export class GameGateway
       this.addGameLogEntry(room.roomCode, [
         { text: attacker.characterClass, color: 'lightblue' },
         { text: ` attacks ` },
-        { text: targetName, color: 'orange' },
+        { text: attackResolvedPayload.targetName, color: 'orange' },
         { text: ` for ` },
         { text: `${damage}`, color: 'red' },
         { text: ` damage (${modifierText})` },
@@ -2959,7 +2959,13 @@ export class GameGateway
       );
 
       // Check if round is complete (wrapped back to start)
-      const roundComplete = nextIndex === 0 && currentIndex !== 0;
+      // Fix for single-entity games: also complete if only 1 LIVING entity in turn order
+      // This handles cases where character is at index 0 and all monsters are dead
+      const livingEntities = turnOrder.filter(
+        (e) => !e.isDead && !e.isExhausted,
+      ).length;
+      const roundComplete =
+        nextIndex === 0 && (currentIndex !== 0 || livingEntities === 1);
 
       if (roundComplete) {
         // Use shared round completion logic
@@ -3857,7 +3863,12 @@ export class GameGateway
     );
 
     // Check if round is complete (wrapped back to start)
-    const roundComplete = nextIndex === 0 && currentIndex !== 0;
+    // Fix: count LIVING entities, not total entities (dead entities remain in turn order)
+    const livingEntities = turnOrder.filter(
+      (e) => !e.isDead && !e.isExhausted,
+    ).length;
+    const roundComplete =
+      nextIndex === 0 && (currentIndex !== 0 || livingEntities === 1);
 
     if (roundComplete) {
       // Use shared round completion logic
@@ -4302,6 +4313,11 @@ export class GameGateway
         return;
       }
 
+      // Early return if game is already completed (prevents duplicate processing)
+      if (room.status === RoomStatus.COMPLETED) {
+        return;
+      }
+
       // Get all characters in room (including all multi-character players' characters)
       const characters = room.players
         .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
@@ -4553,6 +4569,8 @@ export class GameGateway
           return playerCharacters.map((character) => ({
             userId: p.uuid,
             characterId: character?.id || p.uuid,
+            // Database character ID for persistent characters (Issue #204)
+            persistentCharacterId: character?.userCharacterId || undefined,
             characterClass: character?.characterClass || 'Unknown',
             characterName: p.nickname,
             survived: !character?.exhausted,
@@ -4601,8 +4619,11 @@ export class GameGateway
 
         this.logger.log(`Game result saved to database for room ${roomCode}`);
 
-        // Issue #244 - Campaign Mode: Record scenario completion in campaign
+        // Persist character gold/experience from scenario completion
+        // For campaign games: use campaign service (Issue #244)
+        // For non-campaign games: persist directly (Issue #204)
         if (room.campaignId) {
+          // Issue #244 - Campaign Mode: Record scenario completion in campaign
           try {
             // Get exhausted character IDs for permadeath handling
             const exhaustedCharacterIds = room.players.flatMap((p: any) => {
@@ -4618,12 +4639,14 @@ export class GameGateway
                 .filter((id: string | undefined): id is string => !!id);
             });
 
-            // Build character results for campaign tracking
-            const characterResults = playerResults.map((pr: any) => ({
-              characterId: pr.characterId,
-              experienceGained: pr.experienceGained || 0,
-              goldGained: pr.goldGained || 0,
-            }));
+            // Build character results for campaign tracking (use persistentCharacterId for DB updates)
+            const characterResults = playerResults
+              .filter((pr: any) => pr.persistentCharacterId)
+              .map((pr: any) => ({
+                characterId: pr.persistentCharacterId,
+                experienceGained: pr.experienceGained || 0,
+                goldGained: pr.goldGained || 0,
+              }));
 
             // Record in campaign service
             const campaignResult =
@@ -4668,6 +4691,33 @@ export class GameGateway
               `Failed to record campaign scenario completion: ${campaignError instanceof Error ? campaignError.message : String(campaignError)}`,
             );
             // Don't throw - game completion should still succeed
+          }
+        } else {
+          // Issue #204 - Non-campaign games: persist gold directly using atomic increment
+          for (const playerResult of playerResults) {
+            // Skip if no persistent character ID (anonymous/non-persistent characters)
+            if (!playerResult.persistentCharacterId) {
+              this.logger.log(
+                `Skipping gold persistence for non-persistent character ${playerResult.characterId}`,
+              );
+              continue;
+            }
+
+            try {
+              // Use atomic increment (same pattern as campaign service)
+              await this.prisma.character.update({
+                where: { id: playerResult.persistentCharacterId },
+                data: { gold: { increment: playerResult.goldGained } },
+              });
+
+              this.logger.log(
+                `Persisted gold for character ${playerResult.persistentCharacterId}: +${playerResult.goldGained}`,
+              );
+            } catch (error) {
+              this.logger.warn(
+                `Could not persist gold for character ${playerResult.persistentCharacterId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              );
+            }
           }
         }
 
