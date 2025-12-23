@@ -113,13 +113,13 @@ describe('PlayerService', () => {
       const player = playerService.createPlayer('player-uuid-123', 'TestPlayer');
 
       expect(player).toHaveProperty('id');
-      expect(player).toHaveProperty('uuid');
+      expect(player).toHaveProperty('userId');
       expect(player).toHaveProperty('nickname');
       expect(player).toHaveProperty('isHost');
       expect(player).toHaveProperty('characterClass');
       expect(player).toHaveProperty('isReady');
 
-      expect(player.uuid).toBe('player-uuid-123');
+      expect(player.userId).toBe('player-uuid-123');
       expect(player.nickname).toBe('TestPlayer');
       expect(player.isHost).toBe(false);
       expect(player.characterClass).toBeNull();
@@ -132,7 +132,7 @@ describe('PlayerService', () => {
 
       expect(() => {
         playerService.createPlayer('uuid1', 'DifferentName');
-      }).toThrow('Player with this UUID already exists');
+      }).toThrow('Player with this user ID already exists');
     });
 
     it('should generate unique player ID', () => {
@@ -173,7 +173,7 @@ describe('PlayerService', () => {
       const retrieved = playerService.getPlayerByUuid('uuid123');
 
       expect(retrieved).toBeDefined();
-      expect(retrieved?.uuid).toBe('uuid123');
+      expect(retrieved?.userId).toBe('uuid123');
       expect(retrieved?.nickname).toBe('Player');
     });
 
@@ -190,7 +190,7 @@ describe('PlayerService', () => {
 
       expect(retrieved).toBeDefined();
       expect(retrieved?.id).toBe(created.id);
-      expect(retrieved?.uuid).toBe('uuid');
+      expect(retrieved?.userId).toBe('uuid');
     });
 
     it('should return null for non-existent ID', () => {
@@ -206,7 +206,7 @@ describe('PlayerService', () => {
       // Try to get or create with same UUID but different nickname
       const retrieved = playerService.getOrCreatePlayer('uuid1', 'NewName');
 
-      expect(retrieved.uuid).toBe('uuid1');
+      expect(retrieved.userId).toBe('uuid1');
       expect(retrieved.nickname).toBe('OriginalName'); // Should keep original
       expect(retrieved.id).toBe(created.id);
     });
@@ -214,7 +214,7 @@ describe('PlayerService', () => {
     it('should create new player if UUID does not exist', () => {
       const player = playerService.getOrCreatePlayer('new-uuid', 'NewPlayer');
 
-      expect(player.uuid).toBe('new-uuid');
+      expect(player.userId).toBe('new-uuid');
       expect(player.nickname).toBe('NewPlayer');
     });
   });

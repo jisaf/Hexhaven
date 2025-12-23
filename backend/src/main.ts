@@ -140,17 +140,27 @@ async function bootstrap() {
         const payload = authService.verifyAccessToken(token);
         // Store database userId on socket for use in all handlers
         socket.data.userId = payload.userId;
-        logger.debug(`Socket ${socket.id} authenticated as user ${payload.userId}`);
+        logger.debug(
+          `Socket ${socket.id} authenticated as user ${payload.userId}`,
+        );
       } catch (error) {
-        logger.warn(`Socket ${socket.id} failed JWT verification: ${error}`);
-        socket.emit('error', { code: 'AUTH_INVALID', message: 'Invalid or expired token' });
+        logger.warn(
+          `Socket ${socket.id} failed JWT verification: ${String(error)}`,
+        );
+        socket.emit('error', {
+          code: 'AUTH_INVALID',
+          message: 'Invalid or expired token',
+        });
         socket.disconnect();
         return;
       }
     } else {
       // No token provided - reject connection for authenticated actions
       logger.warn(`Socket ${socket.id} connected without JWT token`);
-      socket.emit('error', { code: 'AUTH_REQUIRED', message: 'Authentication required' });
+      socket.emit('error', {
+        code: 'AUTH_REQUIRED',
+        message: 'Authentication required',
+      });
       socket.disconnect();
       return;
     }

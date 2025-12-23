@@ -97,7 +97,7 @@ describe('RoomService', () => {
       const hostPlayer = createTestPlayer('host-uuid', 'Host');
       const room = roomService.createRoom(hostPlayer);
 
-      expect(room.players[0].uuid).toBe(hostPlayer.uuid);
+      expect(room.players[0].userId).toBe(hostPlayer.userId);
       expect(room.players[0].nickname).toBe(hostPlayer.nickname);
       expect(room.players[0].isHost).toBe(true);
     });
@@ -181,7 +181,7 @@ describe('RoomService', () => {
       const updatedRoom = roomService.joinRoom(room.roomCode, joiningPlayer);
 
       expect(updatedRoom.players).toHaveLength(2);
-      expect(updatedRoom.players[1].uuid).toBe(joiningPlayer.uuid);
+      expect(updatedRoom.players[1].userId).toBe(joiningPlayer.userId);
       expect(updatedRoom.players[1].isHost).toBe(false);
     });
 
@@ -230,7 +230,7 @@ describe('RoomService', () => {
       roomService.joinRoom(room.roomCode, player2);
 
       // Start game
-      roomService.startGame(room.roomCode, 'scenario-id', hostPlayer.uuid);
+      roomService.startGame(room.roomCode, 'scenario-id', hostPlayer.userId);
 
       // Try to join
       expect(() => {
@@ -259,18 +259,18 @@ describe('RoomService', () => {
       const player = createTestPlayer('player2', 'Player 2');
       roomService.joinRoom(room.roomCode, player);
 
-      roomService.leaveRoom(room.roomCode, player.uuid);
+      roomService.leaveRoom(room.roomCode, player.userId);
 
       const updatedRoom = roomService.getRoom(room.roomCode);
       expect(updatedRoom?.players).toHaveLength(1);
-      expect(updatedRoom?.getPlayer(player.uuid)).toBeNull();
+      expect(updatedRoom?.getPlayer(player.userId)).toBeNull();
     });
 
     it('should delete room when last player leaves', () => {
       const hostPlayer = createTestPlayer('host', 'Host');
       const room = roomService.createRoom(hostPlayer);
 
-      const result = roomService.leaveRoom(room.roomCode, hostPlayer.uuid);
+      const result = roomService.leaveRoom(room.roomCode, hostPlayer.userId);
       expect(result).toBeNull();
 
       const deletedRoom = roomService.getRoom(room.roomCode);
@@ -284,10 +284,10 @@ describe('RoomService', () => {
       const player2 = createTestPlayer('player2', 'Player 2');
       roomService.joinRoom(room.roomCode, player2);
 
-      roomService.leaveRoom(room.roomCode, hostPlayer.uuid);
+      roomService.leaveRoom(room.roomCode, hostPlayer.userId);
 
       const updatedRoom = roomService.getRoom(room.roomCode);
-      expect(updatedRoom?.players[0].uuid).toBe(player2.uuid);
+      expect(updatedRoom?.players[0].userId).toBe(player2.userId);
       expect(updatedRoom?.players[0].isHost).toBe(true);
     });
 
@@ -307,7 +307,7 @@ describe('RoomService', () => {
       roomService.joinRoom(room.roomCode, player2);
       roomService.joinRoom(room.roomCode, player3);
 
-      const result = roomService.leaveRoom(room.roomCode, player2.uuid);
+      const result = roomService.leaveRoom(room.roomCode, player2.userId);
 
       expect(result).not.toBeNull();
       expect(result?.players).toHaveLength(2);
@@ -319,7 +319,7 @@ describe('RoomService', () => {
       const hostPlayer = createTestPlayer('host', 'Host');
       const room = roomService.createRoom(hostPlayer);
 
-      const foundRoom = roomService.getRoomByPlayerId(hostPlayer.uuid);
+      const foundRoom = roomService.getRoomByPlayerId(hostPlayer.userId);
 
       expect(foundRoom).toBeDefined();
       expect(foundRoom?.id).toBe(room.id);
@@ -340,7 +340,7 @@ describe('RoomService', () => {
 
       roomService.joinRoom(room1.roomCode, player3);
 
-      const foundRoom = roomService.getRoomByPlayerId(player3.uuid);
+      const foundRoom = roomService.getRoomByPlayerId(player3.userId);
       expect(foundRoom?.id).toBe(room1.id);
     });
   });
@@ -356,7 +356,7 @@ describe('RoomService', () => {
       player2.selectCharacter(CharacterClass.TINKERER);
       roomService.joinRoom(room.roomCode, player2);
 
-      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
 
       expect(updatedRoom.status).toBe(RoomStatus.ACTIVE);
       expect(updatedRoom.scenarioId).toBe('scenario-1');
@@ -374,7 +374,7 @@ describe('RoomService', () => {
       roomService.joinRoom(room.roomCode, player2);
 
       expect(() => {
-        roomService.startGame(room.roomCode, 'scenario-1', player2.uuid);
+        roomService.startGame(room.roomCode, 'scenario-1', player2.userId);
       }).toThrow('Only the host can start the game');
     });
 
@@ -389,7 +389,7 @@ describe('RoomService', () => {
       roomService.joinRoom(room.roomCode, player2);
 
       expect(() => {
-        roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+        roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
       }).toThrow('All players must select characters before starting');
     });
 
@@ -492,7 +492,7 @@ describe('RoomService', () => {
       const room = roomService.createRoom(hostPlayer, { campaignId });
 
       // Start game WITHOUT providing campaignId (simulates frontend start_game event)
-      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
 
       // campaignId should still be preserved from room creation
       expect(updatedRoom.campaignId).toBe(campaignId);
@@ -512,7 +512,7 @@ describe('RoomService', () => {
       const updatedRoom = roomService.startGame(
         room.roomCode,
         'scenario-1',
-        hostPlayer.uuid,
+        hostPlayer.userId,
         newCampaignId
       );
 
@@ -539,7 +539,7 @@ describe('RoomService', () => {
       expect(roomAfterJoin?.campaignId).toBe(campaignId);
 
       // 3. Start game (without explicit campaignId - simulates real flow)
-      roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
       const roomAfterStart = roomService.getRoom(room.roomCode);
       expect(roomAfterStart?.campaignId).toBe(campaignId);
       expect(roomAfterStart?.status).toBe(RoomStatus.ACTIVE);
@@ -554,7 +554,7 @@ describe('RoomService', () => {
       expect(room.campaignId).toBeNull();
 
       // Start game without campaign
-      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
       expect(updatedRoom.campaignId).toBeNull();
     });
 
@@ -579,7 +579,7 @@ describe('RoomService', () => {
       const room = roomService.createRoom(hostPlayer);
       const originalId = room.id;
 
-      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.userId);
 
       // room.id should remain the same UUID after starting
       expect(updatedRoom.id).toBe(originalId);
