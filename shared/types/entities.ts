@@ -5,6 +5,7 @@
 
 // Import action types from modifiers for local use
 import type { CardAction as _CardAction } from './modifiers';
+import type { ScenarioObjectives } from './objectives';
 
 // Re-export action types from modifiers
 export type {
@@ -290,6 +291,9 @@ export interface Scenario {
   // TODO: Simplify to AxialCoordinates[] and allow players to select their starting hex
   // See game.gateway.ts:538 for implementation details
   playerStartPositions: Record<number, AxialCoordinates[]>; // Keyed by player count (2, 3, 4)
+  // Full objectives structure (seeded scenarios have this)
+  objectives?: ScenarioObjectives;
+  // String descriptions for backward compatibility with Scenario Designer
   objectivePrimary: string;
   objectiveSecondary?: string;
   treasures?: TreasureLocation[];
