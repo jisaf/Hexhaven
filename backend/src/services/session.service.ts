@@ -45,7 +45,8 @@ class SessionService {
         currentTurnIndex: room.currentTurnIndex,
         players: room.players.map((p) => ({
           id: p.id,
-          uuid: p.userId, // Use userId as the identifier
+          uuid: p.userId, // Store userId in 'uuid' field for session lookup compatibility
+          userId: p.userId, // Also store as userId for clarity
           nickname: p.nickname,
           roomId: p.roomId,
           characterClass: p.characterClass,
@@ -92,12 +93,13 @@ class SessionService {
   }
 
   /**
-   * Find session by player UUID
+   * Find session by user ID (database user ID from JWT)
    * Used to restore player's active game on reconnection
+   * @param userId - Database user ID (from JWT authentication)
    */
-  findSessionByPlayerUuid(playerUuid: string): SerializedGameState | null {
+  findSessionByUserId(userId: string): SerializedGameState | null {
     for (const session of this.sessions.values()) {
-      const player = session.players.find((p) => p.uuid === playerUuid);
+      const player = session.players.find((p) => p.uuid === userId);
       if (player) {
         // Check expiration
         const age = Date.now() - session.lastUpdated.getTime();

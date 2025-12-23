@@ -49,7 +49,11 @@ export class PlayerService {
   }
 
   /**
-   * @deprecated Use getPlayerByUserId instead
+   * Get player by UUID (legacy method)
+   * @deprecated Since v1.0.0 - Use getPlayerByUserId() instead.
+   *             This method will be removed in v2.0.0.
+   *             The uuid parameter now accepts database user ID.
+   * @param uuid - Database user ID (formerly random UUID)
    */
   getPlayerByUuid(uuid: string): Player | null {
     return this.getPlayerByUserId(uuid);

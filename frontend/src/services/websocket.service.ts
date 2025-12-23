@@ -7,7 +7,8 @@
  */
 
 import { io, Socket } from 'socket.io-client';
-import { getOrCreatePlayerUUID, saveLastRoomCode } from '../utils/storage';
+import { saveLastRoomCode } from '../utils/storage';
+import { authService } from './auth.service';
 import type {
   RoomJoinedPayload,
   GameStartedPayload,
@@ -122,10 +123,10 @@ class WebSocketService {
   private registeredEvents: Set<string> = new Set(); // Track which events are registered with Socket.IO
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private playerUUID: string | null = null;
 
   /**
    * Connect to WebSocket server with enhanced reconnection (US4 - T157)
+   * Uses JWT authentication to link websocket to database user
    */
   connect(url: string = 'http://localhost:3000'): void {
     if (this.socket?.connected) {
@@ -133,8 +134,8 @@ class WebSocketService {
       return;
     }
 
-    // Get or create persistent UUID for session restoration
-    this.playerUUID = getOrCreatePlayerUUID();
+    // Get JWT token for authentication - links websocket to database user
+    const accessToken = authService.getAccessToken();
 
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
@@ -143,8 +144,8 @@ class WebSocketService {
       reconnectionDelayMax: 10000, // Max 10 seconds (exponential backoff)
       reconnectionAttempts: this.maxReconnectAttempts,
       timeout: 5000, // Connection timeout
-      query: {
-        playerUUID: this.playerUUID, // Send UUID for server-side session restoration
+      auth: {
+        token: accessToken, // JWT token for server-side user identification
       },
     });
 
@@ -337,19 +338,15 @@ class WebSocketService {
 
   /**
    * Join a game room (enhanced for reconnection - US4)
+   * User identity is established via JWT token on connection, not via UUID
    * @param intent - Why is this join happening? Used for backend logging and debugging
    */
-  joinRoom(roomCode: string, nickname: string, uuid?: string, intent?: string): void {
-    const playerUUID = uuid || this.playerUUID || getOrCreatePlayerUUID();
-
-    // Store for future reference
-    this.playerUUID = playerUUID;
-
+  joinRoom(roomCode: string, nickname: string, _uuid?: string, intent?: string): void {
     // Save to localStorage for page refresh recovery
     saveLastRoomCode(roomCode);
 
-    this.emit('join_room', { roomCode, nickname, playerUUID, intent });
-    // Verbose join logging removed - events handle this
+    // User identity comes from JWT token verified on connection
+    this.emit('join_room', { roomCode, nickname, intent });
   }
 
   /**
@@ -496,10 +493,20 @@ class WebSocketService {
   }
 
   /**
-   * Get player UUID
+   * Get current user's database ID
+   * @returns Database user ID from JWT, or null if not authenticated
+   */
+  getUserId(): string | null {
+    return authService.getUser()?.id ?? null;
+  }
+
+  /**
+   * Get player user ID (legacy method name)
+   * @deprecated Since v1.0.0 - Use getUserId() or authService.getUser()?.id instead.
+   *             This method will be removed in v2.0.0.
    */
   getPlayerUUID(): string | null {
-    return this.playerUUID;
+    return this.getUserId();
   }
 }
 

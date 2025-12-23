@@ -173,17 +173,17 @@ export class RoomsController {
   }
 
   /**
-   * GET /api/rooms/my-rooms/:playerUuid
-   * Get all rooms for a player by their user ID (multi-room support)
-   * Note: Parameter named 'playerUuid' for backwards compatibility, but accepts database user ID
+   * GET /api/rooms/my-rooms/:userId
+   * Get all rooms for a player by their database user ID (multi-room support)
+   * @param userId - Database user ID (from JWT authentication)
    */
-  @Get('my-rooms/:playerUuid')
-  getMyRooms(@Param('playerUuid') playerUuid: string): {
+  @Get('my-rooms/:userId')
+  getMyRooms(@Param('userId') userId: string): {
     rooms: GetRoomResponse[];
   } {
     try {
-      // Find all rooms by player UUID
-      const rooms = roomService.getRoomsByPlayerId(playerUuid);
+      // Find all rooms by user ID
+      const rooms = roomService.getRoomsByPlayerId(userId);
 
       return {
         rooms: rooms.map((room) => ({
@@ -219,17 +219,17 @@ export class RoomsController {
   }
 
   /**
-   * GET /api/rooms/my-room/:playerUuid
-   * Get the current room for a player by their UUID
-   * @deprecated Use my-rooms endpoint for multi-room support
+   * GET /api/rooms/my-room/:userId
+   * Get the current room for a player by their database user ID
+   * @deprecated Since v1.0.0 - Use /my-rooms/:userId endpoint for multi-room support.
+   *             This endpoint will be removed in v2.0.0.
+   * @param userId - Database user ID (from JWT authentication)
    */
-  @Get('my-room/:playerUuid')
-  getMyRoom(
-    @Param('playerUuid') playerUuid: string,
-  ): GetRoomResponse | { room: null } {
+  @Get('my-room/:userId')
+  getMyRoom(@Param('userId') userId: string): GetRoomResponse | { room: null } {
     try {
-      // Find room by player UUID
-      const room = roomService.getRoomByPlayerId(playerUuid);
+      // Find room by user ID
+      const room = roomService.getRoomByPlayerId(userId);
 
       if (!room) {
         return { room: null };
