@@ -21,10 +21,10 @@
  */
 
 import { websocketService } from './websocket.service';
+import { authService } from './auth.service';
 import {
   getLastRoomCode,
   getPlayerUUID,
-  getOrCreatePlayerUUID,
   saveLastRoomCode,
   savePlayerNickname,
   getDisplayName,
@@ -255,14 +255,14 @@ class RoomSessionManager {
         ? getLastRoomCode() || this.state.roomCode
         : this.state.roomCode || getLastRoomCode();
       const nickname = getDisplayName();
-      const uuid = getPlayerUUID();
+      const userId = getPlayerUUID(); // Returns database user ID for authenticated users
 
       // Validation
       if (!roomCode) {
         throw new Error('No room code available - cannot join room');
       }
-      if (!nickname || !uuid) {
-        throw new Error('Missing player credentials (nickname or UUID)');
+      if (!nickname || !userId) {
+        throw new Error('Missing player credentials (nickname or user ID)');
       }
 
       // Leave previous room if switching to a different room
@@ -283,7 +283,7 @@ class RoomSessionManager {
       await this.waitForConnection();
 
       // Call WebSocket service to emit join_room event
-      websocketService.joinRoom(roomCode, nickname, uuid, intent);
+      websocketService.joinRoom(roomCode, nickname, userId, intent);
 
       // Mark as joined to prevent duplicates
       this.hasJoinedInSession = true;
@@ -318,8 +318,8 @@ class RoomSessionManager {
       isReady: !!p.characterClass, // Derive isReady from characterClass presence
     }));
 
-    const playerUUID = getPlayerUUID();
-    const currentPlayer = data.players.find((p) => p.id === playerUUID);
+    const currentUserId = getPlayerUUID(); // Returns database user ID for authenticated users
+    const currentPlayer = data.players.find((p) => p.id === currentUserId);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
 
     console.log(
@@ -348,7 +348,7 @@ class RoomSessionManager {
     console.log('[RoomSessionManager] onCharacterSelected:', { playerId, characterClasses, characterIds, activeIndex });
     console.log('[RoomSessionManager] Current players:', this.state.players);
 
-    const currentPlayerId = getPlayerUUID();
+    const currentUserId = getPlayerUUID(); // Returns database user ID for authenticated users
 
     // Update players array (all players)
     this.state.players = this.state.players.map(p => {
@@ -361,7 +361,7 @@ class RoomSessionManager {
     });
 
     // If this is the current player, update their dedicated character selection state
-    if (playerId === currentPlayerId) {
+    if (playerId === currentUserId) {
       console.log('[RoomSessionManager] Updating current player character state');
       this.state.currentPlayerCharacters = {
         characterClasses: characterClasses as CharacterClass[],
@@ -378,13 +378,18 @@ class RoomSessionManager {
     nickname: string,
     options?: { campaignId?: string; scenarioId?: string }
   ): Promise<void> {
-    const uuid = getOrCreatePlayerUUID();
+    // Get database user ID from authenticated user
+    const user = authService.getUser();
+    if (!user?.id) {
+      throw new Error('User must be authenticated to create a room');
+    }
+
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/rooms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        uuid,
+        userId: user.id, // Use database user ID, not random UUID
         nickname,
         campaignId: options?.campaignId,
         scenarioId: options?.scenarioId,

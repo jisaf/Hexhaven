@@ -6,6 +6,7 @@
  * and can have conditions applied to them.
  */
 
+import { randomUUID } from 'crypto';
 import type { AxialCoordinates } from '../../../shared/types/entities';
 import { Condition } from '../../../shared/types/entities';
 
@@ -260,7 +261,7 @@ export class Monster {
     const now = new Date();
 
     return new Monster({
-      id: `monster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(), // Use UUID for consistency
       roomId,
       monsterType,
       isElite,
@@ -275,117 +276,6 @@ export class Monster {
     });
   }
 
-  /**
-   * Get stats for a monster type based on player count and difficulty
-   */
-  static getStatsForType(
-    monsterType: string,
-    isElite: boolean,
-    playerCount: number,
-    difficulty: number,
-  ): MonsterStats {
-    // Base stats vary by monster type
-    const baseStatsMap: Record<
-      string,
-      { normal: MonsterStats; elite: MonsterStats }
-    > = {
-      'Bandit Guard': {
-        normal: {
-          health: 3,
-          maxHealth: 3,
-          movement: 2,
-          attack: 2,
-          range: 0,
-        },
-        elite: {
-          health: 5,
-          maxHealth: 5,
-          movement: 2,
-          attack: 3,
-          range: 0,
-        },
-      },
-      'Living Bones': {
-        normal: {
-          health: 4,
-          maxHealth: 4,
-          movement: 1,
-          attack: 2,
-          range: 0,
-        },
-        elite: {
-          health: 6,
-          maxHealth: 6,
-          movement: 1,
-          attack: 3,
-          range: 0,
-        },
-      },
-      'Bandit Archer': {
-        normal: {
-          health: 2,
-          maxHealth: 2,
-          movement: 2,
-          attack: 2,
-          range: 3,
-        },
-        elite: {
-          health: 3,
-          maxHealth: 3,
-          movement: 2,
-          attack: 3,
-          range: 4,
-        },
-      },
-    };
-
-    const baseStats = baseStatsMap[monsterType]
-      ? baseStatsMap[monsterType][isElite ? 'elite' : 'normal']
-      : {
-          health: 5,
-          maxHealth: 5,
-          movement: 2,
-          attack: 2,
-          range: 0,
-        };
-
-    // Scale stats based on player count and difficulty
-    const healthMultiplier = 1 + (playerCount - 2) * 0.25 + difficulty * 0.1;
-    const attackBonus = Math.floor(difficulty / 2);
-
-    return {
-      health: Math.ceil(baseStats.health * healthMultiplier),
-      maxHealth: Math.ceil(baseStats.maxHealth * healthMultiplier),
-      movement: baseStats.movement,
-      attack: baseStats.attack + attackBonus,
-      range: baseStats.range,
-    };
-  }
-
-  /**
-   * Get special abilities for a monster type
-   */
-  static getSpecialAbilitiesForType(
-    monsterType: string,
-    isElite: boolean,
-  ): string[] {
-    const abilitiesMap: Record<string, { normal: string[]; elite: string[] }> =
-      {
-        'Bandit Guard': {
-          normal: [],
-          elite: ['Shield 1'],
-        },
-        'Living Bones': {
-          normal: [],
-          elite: ['Shield 1', 'Retaliate 1'],
-        },
-        'Bandit Archer': {
-          normal: [],
-          elite: ['Retaliate 1'],
-        },
-      };
-
-    const abilities = abilitiesMap[monsterType];
-    return abilities ? abilities[isElite ? 'elite' : 'normal'] : [];
-  }
+  // Note: Monster stats are defined in ScenarioService.getMonsterBaseStats()
+  // to avoid duplication. This class focuses on monster instance behavior.
 }

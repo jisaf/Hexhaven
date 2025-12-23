@@ -10,17 +10,19 @@ import { NotFoundError, ValidationError } from '../types/errors';
 import { ConnectionStatus } from '../../../shared/types/entities';
 
 export class PlayerService {
-  private players: Map<string, Player> = new Map(); // uuid -> Player
-  private playerIds: Map<string, string> = new Map(); // id -> uuid
+  private players: Map<string, Player> = new Map(); // userId (database) -> Player
+  private playerIds: Map<string, string> = new Map(); // room instance id -> userId
 
   /**
    * Create a new player with validated nickname
+   * @param userId - Database user ID (from JWT authentication)
+   * @param nickname - Display name for the player
    */
-  createPlayer(uuid: string, nickname: string): Player {
-    // Check if player already exists with this UUID
-    const existing = this.players.get(uuid);
+  createPlayer(userId: string, nickname: string): Player {
+    // Check if player already exists with this userId
+    const existing = this.players.get(userId);
     if (existing) {
-      throw new ValidationError('Player with this UUID already exists');
+      throw new ValidationError('Player with this user ID already exists');
     }
 
     // Validate nickname format
@@ -30,42 +32,55 @@ export class PlayerService {
     }
 
     // Create player
-    const player = Player.create(uuid, nickname);
+    const player = Player.create(userId, nickname);
 
     // Store player
-    this.players.set(uuid, player);
-    this.playerIds.set(player.id, uuid);
+    this.players.set(userId, player);
+    this.playerIds.set(player.id, userId);
 
     return player;
   }
 
   /**
-   * Get player by UUID
+   * Get player by user ID (database user ID)
    */
-  getPlayerByUuid(uuid: string): Player | null {
-    return this.players.get(uuid) || null;
+  getPlayerByUserId(userId: string): Player | null {
+    return this.players.get(userId) || null;
   }
 
   /**
-   * Get player by ID
+   * Get player by UUID (legacy method)
+   * @deprecated Since v1.0.0 - Use getPlayerByUserId() instead.
+   *             This method will be removed in v2.0.0.
+   *             The uuid parameter now accepts database user ID.
+   * @param uuid - Database user ID (formerly random UUID)
+   */
+  getPlayerByUuid(uuid: string): Player | null {
+    return this.getPlayerByUserId(uuid);
+  }
+
+  /**
+   * Get player by room instance ID
    */
   getPlayerById(id: string): Player | null {
-    const uuid = this.playerIds.get(id);
-    if (!uuid) {
+    const userId = this.playerIds.get(id);
+    if (!userId) {
       return null;
     }
-    return this.players.get(uuid) || null;
+    return this.players.get(userId) || null;
   }
 
   /**
    * Get or create player (for reconnection scenarios)
+   * @param userId - Database user ID (from JWT authentication)
+   * @param nickname - Display name for the player
    */
-  getOrCreatePlayer(uuid: string, nickname: string): Player {
-    const existing = this.players.get(uuid);
+  getOrCreatePlayer(userId: string, nickname: string): Player {
+    const existing = this.players.get(userId);
     if (existing) {
       return existing;
     }
-    return this.createPlayer(uuid, nickname);
+    return this.createPlayer(userId, nickname);
   }
 
   /**
@@ -80,9 +95,10 @@ export class PlayerService {
 
   /**
    * Update player connection status
+   * @param userId - Database user ID
    */
-  updateConnectionStatus(uuid: string, status: ConnectionStatus): Player {
-    const player = this.players.get(uuid);
+  updateConnectionStatus(userId: string, status: ConnectionStatus): Player {
+    const player = this.players.get(userId);
     if (!player) {
       throw new NotFoundError('Player not found');
     }
@@ -93,9 +109,10 @@ export class PlayerService {
 
   /**
    * Update player nickname
+   * @param userId - Database user ID
    */
-  updateNickname(uuid: string, nickname: string): Player {
-    const player = this.players.get(uuid);
+  updateNickname(userId: string, nickname: string): Player {
+    const player = this.players.get(userId);
     if (!player) {
       throw new NotFoundError('Player not found');
     }
@@ -112,15 +129,16 @@ export class PlayerService {
 
   /**
    * Remove player from registry
+   * @param userId - Database user ID
    */
-  removePlayer(uuid: string): boolean {
-    const player = this.players.get(uuid);
+  removePlayer(userId: string): boolean {
+    const player = this.players.get(userId);
     if (!player) {
       return false;
     }
 
     this.playerIds.delete(player.id);
-    this.players.delete(uuid);
+    this.players.delete(userId);
     return true;
   }
 

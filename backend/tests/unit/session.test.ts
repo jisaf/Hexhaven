@@ -111,29 +111,29 @@ describe('SessionService', () => {
     });
   });
 
-  describe('findSessionByPlayerUuid', () => {
-    it('should find session containing player UUID', () => {
+  describe('findSessionByUserId', () => {
+    it('should find session containing user ID', () => {
       const player = playerService.createPlayer(
-        'uuid-player1',
+        'user-id-1',
         'TestPlayer',
       );
       const room = roomService.createRoom(player);
 
       sessionService.saveSession(room);
 
-      const found = sessionService.findSessionByPlayerUuid('uuid-player1');
+      const found = sessionService.findSessionByUserId('user-id-1');
       expect(found).not.toBeNull();
       expect(found?.roomCode).toBe(room.roomCode);
     });
 
-    it('should return null if player not in any session', () => {
-      const found = sessionService.findSessionByPlayerUuid('non-existent-uuid');
+    it('should return null if user not in any session', () => {
+      const found = sessionService.findSessionByUserId('non-existent-user-id');
       expect(found).toBeNull();
     });
 
-    it('should return null if player session expired', () => {
+    it('should return null if user session expired', () => {
       const player = playerService.createPlayer(
-        'uuid-player1',
+        'user-id-1',
         'TestPlayer',
       );
       const room = roomService.createRoom(player);
@@ -146,7 +146,7 @@ describe('SessionService', () => {
         new Date(Date.now() - 25 * 60 * 60 * 1000),
       );
 
-      const found = sessionService.findSessionByPlayerUuid('uuid-player1');
+      const found = sessionService.findSessionByUserId('user-id-1');
       expect(found).toBeNull();
     });
   });
@@ -306,7 +306,7 @@ describe('SessionService', () => {
 
     it('should enable reconnection after player disconnect', () => {
       const player = playerService.createPlayer(
-        'uuid-player1',
+        'user-id-1',
         'TestPlayer',
       );
       const room = roomService.createRoom(player);
@@ -315,13 +315,11 @@ describe('SessionService', () => {
       sessionService.saveSession(room);
 
       // Simulate player disconnect (would happen in gateway)
-      playerService.updateConnectionStatus('uuid-player1', ConnectionStatus.DISCONNECTED);
+      playerService.updateConnectionStatus('user-id-1', ConnectionStatus.DISCONNECTED);
       sessionService.saveSession(room);
 
       // Restore session for reconnection
-      const restored = sessionService.findSessionByPlayerUuid(
-        'uuid-player1',
-      );
+      const restored = sessionService.findSessionByUserId('user-id-1');
       expect(restored).not.toBeNull();
       expect(restored?.players[0].connectionStatus).toBe('disconnected');
     });

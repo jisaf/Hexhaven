@@ -1,14 +1,25 @@
 /**
  * Browser Storage Utilities (US4 - T158)
  *
- * Handles localStorage operations for session restoration,
- * including player UUID persistence for reconnection.
+ * Handles localStorage operations for session restoration and user identity.
+ *
+ * Identity Model:
+ * - Authenticated users: Use database user ID from JWT (stored in hexhaven_user)
+ * - Anonymous users: Use generated UUID (stored in hexhaven_player_uuid)
+ *
+ * The getPlayerUUID() function abstracts this difference, returning the appropriate
+ * identifier based on authentication status.
  */
 
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * Storage keys for localStorage
+ * Note: PLAYER_UUID key is retained for anonymous user backwards compatibility,
+ * but authenticated users use their database ID from hexhaven_user instead.
+ */
 const STORAGE_KEYS = {
-  PLAYER_UUID: 'hexhaven_player_uuid',
+  PLAYER_UUID: 'hexhaven_player_uuid', // Used for anonymous users only
   PLAYER_NICKNAME: 'hexhaven_player_nickname',
   LAST_ROOM_CODE: 'hexhaven_last_room_code',
   GAME_PREFERENCES: 'hexhaven_preferences',
@@ -37,16 +48,42 @@ export function getOrCreatePlayerUUID(): string {
 }
 
 /**
- * Get stored player UUID without creating a new one
+ * Get user identifier for the current player
+ *
+ * Returns the appropriate identifier based on authentication status:
+ * - Authenticated users: Database user ID from JWT (e.g., "clx123abc...")
+ * - Anonymous users: Generated UUID from localStorage
+ *
+ * This is the single source of truth for user identity in the frontend.
+ * All services should use this function rather than accessing storage directly.
+ *
+ * @returns User identifier string, or null if not available
  */
 export function getPlayerUUID(): string | null {
   try {
+    // Check if user is authenticated - use their database ID
+    const userJson = localStorage.getItem('hexhaven_user');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      if (user && user.id) {
+        return user.id;
+      }
+    }
+
+    // Fall back to localStorage UUID for anonymous users
     return localStorage.getItem(STORAGE_KEYS.PLAYER_UUID);
   } catch (error) {
-    console.error('Failed to get player UUID:', error);
+    console.error('Failed to get user ID:', error);
     return null;
   }
 }
+
+/**
+ * Alias for getPlayerUUID() with clearer naming
+ * Prefer this function for new code.
+ * @returns User identifier string, or null if not available
+ */
+export const getUserId = getPlayerUUID;
 
 /**
  * Store player nickname for auto-fill on return

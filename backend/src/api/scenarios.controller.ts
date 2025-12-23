@@ -121,14 +121,25 @@ export class ScenariosController {
       );
     }
 
-    // Create objectives object
+    // Create objectives object with proper ObjectiveDefinition structure
     const objectives = {
       primary: {
-        type: 'custom',
-        description: dto.objectivePrimary || 'Complete the scenario',
+        id: 'primary-kill-all',
+        type: 'kill_all_monsters',
+        description: dto.objectivePrimary || 'Defeat all enemies',
+        trackProgress: true,
+        milestones: [25, 50, 75, 100],
       },
       secondary: dto.objectiveSecondary
-        ? [{ type: 'custom', description: dto.objectiveSecondary }]
+        ? [
+            {
+              id: 'secondary-bonus',
+              type: 'custom',
+              description: dto.objectiveSecondary,
+              trackProgress: false,
+              rewards: { experience: 5 },
+            },
+          ]
         : [],
     };
 
@@ -220,17 +231,30 @@ export class ScenariosController {
       dto.objectivePrimary !== undefined ||
       dto.objectiveSecondary !== undefined
     ) {
+      const existingPrimary = (
+        existing.objectives as { primary?: { description?: string } }
+      )?.primary;
       updateData.objectives = {
         primary: {
-          type: 'custom',
+          id: 'primary-kill-all',
+          type: 'kill_all_monsters',
           description:
             dto.objectivePrimary ||
-            (existing.objectives as { primary?: { description?: string } })
-              ?.primary?.description ||
-            'Complete the scenario',
+            existingPrimary?.description ||
+            'Defeat all enemies',
+          trackProgress: true,
+          milestones: [25, 50, 75, 100],
         },
         secondary: dto.objectiveSecondary
-          ? [{ type: 'custom', description: dto.objectiveSecondary }]
+          ? [
+              {
+                id: 'secondary-bonus',
+                type: 'custom',
+                description: dto.objectiveSecondary,
+                trackProgress: false,
+                rewards: { experience: 5 },
+              },
+            ]
           : (existing.objectives as { secondary?: unknown[] })?.secondary || [],
       };
     }

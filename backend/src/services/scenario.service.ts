@@ -47,89 +47,7 @@ export class ScenarioService {
       where: { id: scenarioId },
     });
 
-    if (!dbScenario) {
-      return null;
-    }
-
-    // Convert database scenario to Scenario type
-    const objectives = dbScenario.objectives as any;
-    const dbMonsterGroups = dbScenario.monsterGroups as any[];
-    const dbMapLayout = dbScenario.mapLayout as any[];
-    const dbPlayerStarts = dbScenario.playerStartPositions as any;
-
-    // Transform monsterGroups format (supports both old {level, positions} and new {isElite, spawnPoints})
-    const monsterGroups = dbMonsterGroups.map((group: any) => {
-      const isElite =
-        group.isElite !== undefined ? group.isElite : group.level === 'elite';
-      const rawPositions = group.spawnPoints || group.positions || [];
-      const spawnPoints = rawPositions.map((pos: any) => ({
-        q: pos.q !== undefined ? pos.q : pos.x,
-        r: pos.r !== undefined ? pos.r : pos.y,
-      }));
-      return {
-        type: group.type,
-        isElite,
-        count: group.count !== undefined ? group.count : spawnPoints.length,
-        spawnPoints,
-      };
-    });
-
-    // Transform mapLayout format (x,y -> coordinates: {q, r})
-    const mapLayout = dbMapLayout.map((tile: any) => ({
-      coordinates: {
-        q: tile.coordinates?.q !== undefined ? tile.coordinates.q : tile.x,
-        r: tile.coordinates?.r !== undefined ? tile.coordinates.r : tile.y,
-      },
-      terrain: tile.terrain,
-      features: tile.features || [],
-      occupiedBy: null,
-      hasLoot: false,
-      hasTreasure: false,
-    }));
-
-    // Transform playerStartPositions (array -> keyed by player count)
-    let playerStartPositions: Record<number, Array<{ q: number; r: number }>>;
-    if (Array.isArray(dbPlayerStarts)) {
-      const positions = dbPlayerStarts.map((pos: any) => ({
-        q: pos.q !== undefined ? pos.q : pos.x,
-        r: pos.r !== undefined ? pos.r : pos.y,
-      }));
-      playerStartPositions = {
-        1: positions.slice(0, 1),
-        2: positions,
-        3: positions,
-        4: positions,
-      };
-    } else if (dbPlayerStarts) {
-      playerStartPositions = {};
-      for (const [count, positions] of Object.entries(dbPlayerStarts)) {
-        playerStartPositions[parseInt(count)] = (positions as any[]).map(
-          (pos: any) => ({
-            q: pos.q !== undefined ? pos.q : pos.x,
-            r: pos.r !== undefined ? pos.r : pos.y,
-          }),
-        );
-      }
-    } else {
-      playerStartPositions = { 1: [], 2: [], 3: [], 4: [] };
-    }
-
-    return {
-      id: dbScenario.id,
-      name: dbScenario.name,
-      difficulty: dbScenario.difficulty,
-      mapLayout,
-      monsterGroups,
-      objectivePrimary: objectives?.primary || 'Complete the scenario',
-      objectiveSecondary: objectives?.secondary,
-      treasures: dbScenario.treasures as any,
-      playerStartPositions,
-      backgroundImageUrl: dbScenario.backgroundImageUrl ?? undefined,
-      backgroundOpacity: dbScenario.backgroundOpacity ?? undefined,
-      backgroundOffsetX: dbScenario.backgroundOffsetX ?? undefined,
-      backgroundOffsetY: dbScenario.backgroundOffsetY ?? undefined,
-      backgroundScale: dbScenario.backgroundScale ?? undefined,
-    };
+    return this.transformDbScenario(dbScenario);
   }
 
   /**
@@ -249,8 +167,11 @@ export class ScenarioService {
       difficulty: dbScenario.difficulty,
       mapLayout,
       monsterGroups,
-      objectivePrimary: objectives?.primary || 'Complete the scenario',
-      objectiveSecondary: objectives?.secondary,
+      // Full objectives structure for buildScenarioObjectives
+      objectives: objectives,
+      // String description for backward compatibility with Scenario Designer
+      objectivePrimary: objectives?.primary?.description || 'Complete the scenario',
+      objectiveSecondary: objectives?.secondary?.[0]?.description,
       treasures: dbScenario.treasures,
       playerStartPositions,
       backgroundImageUrl: dbScenario.backgroundImageUrl ?? undefined,
@@ -362,26 +283,43 @@ export class ScenarioService {
     monsterType: string,
     isElite: boolean,
   ): MonsterStats {
+    // Use kebab-case keys to match scenario data format
     const baseStats: Record<string, MonsterStats> = {
-      'Bandit Guard': { health: 5, movement: 2, attack: 2, range: 0 },
-      'Bandit Archer': { health: 4, movement: 2, attack: 2, range: 3 },
-      'Living Bones': { health: 4, movement: 2, attack: 1, range: 0 },
-      'Inox Guard': { health: 8, movement: 2, attack: 3, range: 0 },
-      'Inox Shaman': { health: 6, movement: 2, attack: 2, range: 3 },
-      'Vermling Scout': { health: 3, movement: 3, attack: 2, range: 0 },
-      'Vermling Shaman': { health: 4, movement: 2, attack: 1, range: 2 },
-      'Flame Demon': { health: 6, movement: 2, attack: 3, range: 0 },
-      'Frost Demon': { health: 6, movement: 2, attack: 2, range: 2 },
-      'Earth Demon': { health: 8, movement: 1, attack: 3, range: 0 },
-      'City Guard': { health: 6, movement: 2, attack: 3, range: 0 },
+      'bandit-guard': { health: 5, movement: 2, attack: 2, range: 0 },
+      'bandit-archer': { health: 4, movement: 2, attack: 2, range: 3 },
+      'living-bones': { health: 4, movement: 2, attack: 1, range: 0 },
+      'inox-guard': { health: 8, movement: 2, attack: 3, range: 0 },
+      'inox-shaman': { health: 6, movement: 2, attack: 2, range: 3 },
+      'vermling-scout': { health: 3, movement: 3, attack: 2, range: 0 },
+      'vermling-shaman': { health: 4, movement: 2, attack: 1, range: 2 },
+      'flame-demon': { health: 6, movement: 2, attack: 3, range: 0 },
+      'frost-demon': { health: 6, movement: 2, attack: 2, range: 2 },
+      'earth-demon': { health: 8, movement: 1, attack: 3, range: 0 },
+      'city-guard': { health: 6, movement: 2, attack: 3, range: 0 },
+      'fire-imp': { health: 3, movement: 3, attack: 2, range: 2 },
+      'magma-golem': { health: 10, movement: 1, attack: 4, range: 0 },
+      'living-corpse': { health: 5, movement: 1, attack: 2, range: 0 },
+      cultist: { health: 4, movement: 2, attack: 2, range: 0 },
+      'stone-golem': { health: 10, movement: 1, attack: 3, range: 0 },
+      // Training monsters
+      'training-dummy': { health: 1, movement: 0, attack: 0, range: 0 },
     };
 
-    const stats = baseStats[monsterType] || {
-      health: 5,
-      movement: 2,
-      attack: 2,
-      range: 0,
-    };
+    // Normalize monster type to kebab-case for lookup
+    const normalizedType = monsterType.toLowerCase().replace(/\s+/g, '-');
+    const stats = baseStats[normalizedType];
+
+    if (!stats) {
+      console.warn(
+        `Unknown monster type: ${monsterType} (normalized: ${normalizedType}), using default stats`,
+      );
+      return {
+        health: 5,
+        movement: 2,
+        attack: 2,
+        range: 0,
+      };
+    }
 
     if (isElite) {
       return {

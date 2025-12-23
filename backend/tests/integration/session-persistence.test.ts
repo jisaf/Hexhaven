@@ -31,9 +31,9 @@ describe('Session Persistence Integration (US4 - T146)', () => {
 
   it('should persist and restore full game session across disconnect/reconnect cycle', () => {
     // Create room with 2 players
-    const host = playerService.createPlayer('uuid-host', 'HostPlayer');
+    const host = playerService.createPlayer('user-id-host', 'HostPlayer');
     const room = roomService.createRoom(host);
-    const player2 = playerService.createPlayer('uuid-player2', 'Player2');
+    const player2 = playerService.createPlayer('user-id-2', 'Player2');
     roomService.joinRoom(room.roomCode, player2);
 
     // Initial state
@@ -50,25 +50,25 @@ describe('Session Persistence Integration (US4 - T146)', () => {
     expect(savedSession?.roomCode).toBe(room.roomCode);
 
     // Simulate player 2 disconnect
-    playerService.updateConnectionStatus('uuid-player2', ConnectionStatus.DISCONNECTED);
+    playerService.updateConnectionStatus('user-id-2', ConnectionStatus.DISCONNECTED);
     sessionService.saveSession(room);
 
-    // Verify disconnected player in session
+    // Verify disconnected player in session (uuid field stores userId for compatibility)
     savedSession = sessionService.restoreSession(room.id);
-    expect(savedSession?.players.find((p) => p.uuid === 'uuid-player2')?.connectionStatus).toBe(ConnectionStatus.DISCONNECTED);
+    expect(savedSession?.players.find((p) => p.uuid === 'user-id-2')?.connectionStatus).toBe(ConnectionStatus.DISCONNECTED);
 
-    // Should be able to find session by disconnected player's UUID
-    const foundSession = sessionService.findSessionByPlayerUuid('uuid-player2');
+    // Should be able to find session by disconnected player's user ID
+    const foundSession = sessionService.findSessionByUserId('user-id-2');
     expect(foundSession).not.toBeNull();
     expect(foundSession?.roomCode).toBe(room.roomCode);
 
     // Simulate player 2 reconnect
-    playerService.updateConnectionStatus('uuid-player2', ConnectionStatus.CONNECTED);
+    playerService.updateConnectionStatus('user-id-2', ConnectionStatus.CONNECTED);
     sessionService.saveSession(room);
 
     // Verify reconnected player in session
     savedSession = sessionService.restoreSession(room.id);
-    expect(savedSession?.players.find((p) => p.uuid === 'uuid-player2')?.connectionStatus).toBe(ConnectionStatus.CONNECTED);
+    expect(savedSession?.players.find((p) => p.uuid === 'user-id-2')?.connectionStatus).toBe(ConnectionStatus.CONNECTED);
   });
 
   it('should maintain session for 24 hours and clean up expired sessions', () => {

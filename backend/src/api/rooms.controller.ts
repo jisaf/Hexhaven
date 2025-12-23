@@ -22,7 +22,7 @@ import { NotFoundError, ValidationError, ConflictError } from '../types/errors';
 import { RoomStatus } from '../../../shared/types/entities';
 
 interface CreateRoomRequest {
-  uuid: string;
+  userId: string; // Database user ID from JWT
   nickname: string;
   campaignId?: string;
   scenarioId?: string;
@@ -40,7 +40,7 @@ interface CreateRoomResponse {
   };
   player: {
     id: string;
-    uuid: string;
+    userId: string; // Database user ID
     nickname: string;
     isHost: boolean;
     connectionStatus: string;
@@ -60,7 +60,7 @@ interface GetRoomResponse {
   };
   players: {
     id: string;
-    uuid: string;
+    userId: string; // Database user ID
     nickname: string;
     isHost: boolean;
     characterClass?: string;
@@ -89,11 +89,11 @@ export class RoomsController {
   @HttpCode(HttpStatus.CREATED)
   createRoom(@Body() body: CreateRoomRequest): CreateRoomResponse {
     try {
-      const { uuid, nickname, campaignId, scenarioId } = body;
+      const { userId, nickname, campaignId, scenarioId } = body;
 
       // Validate input
-      if (!uuid || !nickname) {
-        throw new ValidationError('UUID and nickname are required');
+      if (!userId || !nickname) {
+        throw new ValidationError('User ID and nickname are required');
       }
 
       // Validate nickname format
@@ -105,17 +105,17 @@ export class RoomsController {
       }
 
       // Check if player already exists in global registry
-      let player = playerService.getPlayerByUuid(uuid);
+      let player = playerService.getPlayerByUserId(userId);
 
       // Register player globally if not exists (for user management)
       if (!player) {
-        player = playerService.createPlayer(uuid, trimmedNickname);
+        player = playerService.createPlayer(userId, trimmedNickname);
       }
 
       // Create a new player instance for this room
       // Each room has its own Player instance to track room-specific state
       // Use Player.create() directly to avoid global registry conflicts
-      const roomPlayer = Player.create(uuid, trimmedNickname);
+      const roomPlayer = Player.create(userId, trimmedNickname);
 
       // Create room with player as host (with optional campaign context)
       const room = roomService.createRoom(roomPlayer, {
@@ -135,7 +135,7 @@ export class RoomsController {
         },
         player: {
           id: roomPlayer.id,
-          uuid: roomPlayer.uuid,
+          userId: roomPlayer.userId,
           nickname: roomPlayer.nickname,
           isHost: roomPlayer.isHost,
           connectionStatus: roomPlayer.connectionStatus,
@@ -173,16 +173,17 @@ export class RoomsController {
   }
 
   /**
-   * GET /api/rooms/my-rooms/:playerUuid
-   * Get all rooms for a player by their UUID (multi-room support)
+   * GET /api/rooms/my-rooms/:userId
+   * Get all rooms for a player by their database user ID (multi-room support)
+   * @param userId - Database user ID (from JWT authentication)
    */
-  @Get('my-rooms/:playerUuid')
-  getMyRooms(@Param('playerUuid') playerUuid: string): {
+  @Get('my-rooms/:userId')
+  getMyRooms(@Param('userId') userId: string): {
     rooms: GetRoomResponse[];
   } {
     try {
-      // Find all rooms by player UUID
-      const rooms = roomService.getRoomsByPlayerId(playerUuid);
+      // Find all rooms by user ID
+      const rooms = roomService.getRoomsByPlayerId(userId);
 
       return {
         rooms: rooms.map((room) => ({
@@ -198,7 +199,7 @@ export class RoomsController {
           },
           players: room.players.map((player) => ({
             id: player.id,
-            uuid: player.uuid,
+            userId: player.userId,
             nickname: player.nickname,
             isHost: player.isHost,
             characterClass: player.characterClass || undefined,
@@ -218,17 +219,17 @@ export class RoomsController {
   }
 
   /**
-   * GET /api/rooms/my-room/:playerUuid
-   * Get the current room for a player by their UUID
-   * @deprecated Use my-rooms endpoint for multi-room support
+   * GET /api/rooms/my-room/:userId
+   * Get the current room for a player by their database user ID
+   * @deprecated Since v1.0.0 - Use /my-rooms/:userId endpoint for multi-room support.
+   *             This endpoint will be removed in v2.0.0.
+   * @param userId - Database user ID (from JWT authentication)
    */
-  @Get('my-room/:playerUuid')
-  getMyRoom(
-    @Param('playerUuid') playerUuid: string,
-  ): GetRoomResponse | { room: null } {
+  @Get('my-room/:userId')
+  getMyRoom(@Param('userId') userId: string): GetRoomResponse | { room: null } {
     try {
-      // Find room by player UUID
-      const room = roomService.getRoomByPlayerId(playerUuid);
+      // Find room by user ID
+      const room = roomService.getRoomByPlayerId(userId);
 
       if (!room) {
         return { room: null };
@@ -247,7 +248,7 @@ export class RoomsController {
         },
         players: room.players.map((player) => ({
           id: player.id,
-          uuid: player.uuid,
+          userId: player.userId,
           nickname: player.nickname,
           isHost: player.isHost,
           characterClass: player.characterClass || undefined,
@@ -302,7 +303,7 @@ export class RoomsController {
         },
         players: room.players.map((player) => ({
           id: player.id,
-          uuid: player.uuid,
+          userId: player.userId,
           nickname: player.nickname,
           isHost: player.isHost,
           characterClass: player.characterClass || undefined,

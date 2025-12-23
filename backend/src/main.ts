@@ -9,6 +9,7 @@ import { validatePortConfiguration } from './config/validate-ports';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { CardTemplateCache } from './utils/card-template-cache';
 import { PrismaService } from './services/prisma.service';
+import { AuthService } from './services/auth.service';
 
 // Load environment variables from .env file
 // In production, this loads from /opt/hexhaven/.env
@@ -123,11 +124,47 @@ async function bootstrap() {
   const gameGateway = app.get(GameGateway);
   gameGateway.server = io;
 
+  // Get AuthService for JWT verification
+  const authService = app.get(AuthService);
+
   // Call afterInit manually since decorators aren't working
   gameGateway.afterInit(io);
 
-  // Wire up connection handlers
+  // Wire up connection handlers with JWT authentication
   io.on('connection', (socket) => {
+    // Verify JWT token from auth header
+    const token = socket.handshake.auth?.token;
+
+    if (token) {
+      try {
+        const payload = authService.verifyAccessToken(token);
+        // Store database userId on socket for use in all handlers
+        socket.data.userId = payload.userId;
+        logger.debug(
+          `Socket ${socket.id} authenticated as user ${payload.userId}`,
+        );
+      } catch (error) {
+        logger.warn(
+          `Socket ${socket.id} failed JWT verification: ${String(error)}`,
+        );
+        socket.emit('error', {
+          code: 'AUTH_INVALID',
+          message: 'Invalid or expired token',
+        });
+        socket.disconnect();
+        return;
+      }
+    } else {
+      // No token provided - reject connection for authenticated actions
+      logger.warn(`Socket ${socket.id} connected without JWT token`);
+      socket.emit('error', {
+        code: 'AUTH_REQUIRED',
+        message: 'Authentication required',
+      });
+      socket.disconnect();
+      return;
+    }
+
     gameGateway.handleConnection(socket);
 
     socket.on('disconnect', () => {
