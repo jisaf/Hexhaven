@@ -452,4 +452,140 @@ describe('RoomService', () => {
       expect(rooms).toHaveLength(0);
     });
   });
+
+  describe('Campaign Mode (Issue #244)', () => {
+    it('should create room with campaignId when provided', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      const campaignId = 'campaign-test-123';
+
+      const room = roomService.createRoom(hostPlayer, { campaignId });
+
+      expect(room.campaignId).toBe(campaignId);
+    });
+
+    it('should create room with null campaignId when not provided', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+
+      const room = roomService.createRoom(hostPlayer);
+
+      expect(room.campaignId).toBeNull();
+    });
+
+    it('should create room with both campaignId and scenarioId', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      const campaignId = 'campaign-test-123';
+      const scenarioId = 'scenario-test-456';
+
+      const room = roomService.createRoom(hostPlayer, { campaignId, scenarioId });
+
+      expect(room.campaignId).toBe(campaignId);
+      expect(room.scenarioId).toBe(scenarioId);
+    });
+
+    it('should preserve campaignId when startGame is called without campaignId', () => {
+      // This tests the bug fix: campaignId should not be overwritten to null
+      // when start_game event doesn't include campaignId
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      const campaignId = 'campaign-test-123';
+      const room = roomService.createRoom(hostPlayer, { campaignId });
+
+      // Start game WITHOUT providing campaignId (simulates frontend start_game event)
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+
+      // campaignId should still be preserved from room creation
+      expect(updatedRoom.campaignId).toBe(campaignId);
+      expect(updatedRoom.status).toBe(RoomStatus.ACTIVE);
+      expect(updatedRoom.scenarioId).toBe('scenario-1');
+    });
+
+    it('should allow explicit campaignId override in startGame', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      const originalCampaignId = 'campaign-original';
+      const newCampaignId = 'campaign-new';
+      const room = roomService.createRoom(hostPlayer, { campaignId: originalCampaignId });
+
+      // Start game WITH explicit new campaignId
+      const updatedRoom = roomService.startGame(
+        room.roomCode,
+        'scenario-1',
+        hostPlayer.uuid,
+        newCampaignId
+      );
+
+      // campaignId should be updated to the new value
+      expect(updatedRoom.campaignId).toBe(newCampaignId);
+    });
+
+    it('should preserve campaignId through entire game flow', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      const player2 = createTestPlayer('p2', 'Player2');
+      player2.selectCharacter(CharacterClass.TINKERER);
+
+      const campaignId = 'campaign-full-flow';
+
+      // 1. Create room with campaign
+      const room = roomService.createRoom(hostPlayer, { campaignId });
+      expect(room.campaignId).toBe(campaignId);
+
+      // 2. Player joins
+      roomService.joinRoom(room.roomCode, player2);
+      const roomAfterJoin = roomService.getRoom(room.roomCode);
+      expect(roomAfterJoin?.campaignId).toBe(campaignId);
+
+      // 3. Start game (without explicit campaignId - simulates real flow)
+      roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      const roomAfterStart = roomService.getRoom(room.roomCode);
+      expect(roomAfterStart?.campaignId).toBe(campaignId);
+      expect(roomAfterStart?.status).toBe(RoomStatus.ACTIVE);
+    });
+
+    it('should keep campaignId null when not provided in any step', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      // Create room without campaign
+      const room = roomService.createRoom(hostPlayer);
+      expect(room.campaignId).toBeNull();
+
+      // Start game without campaign
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+      expect(updatedRoom.campaignId).toBeNull();
+    });
+
+    it('should use UUID format for room.id (database compatible)', () => {
+      // room.id must be a proper UUID for database storage
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      const room = roomService.createRoom(hostPlayer);
+
+      // room.id should be a valid UUID from creation
+      // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+      expect(room.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+    });
+
+    it('should maintain same UUID after game starts', () => {
+      const hostPlayer = createTestPlayer('host', 'Host');
+      hostPlayer.selectCharacter(CharacterClass.BRUTE);
+
+      const room = roomService.createRoom(hostPlayer);
+      const originalId = room.id;
+
+      const updatedRoom = roomService.startGame(room.roomCode, 'scenario-1', hostPlayer.uuid);
+
+      // room.id should remain the same UUID after starting
+      expect(updatedRoom.id).toBe(originalId);
+      expect(updatedRoom.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+    });
+  });
 });

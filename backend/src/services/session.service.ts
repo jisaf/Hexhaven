@@ -45,7 +45,7 @@ class SessionService {
         currentTurnIndex: room.currentTurnIndex,
         players: room.players.map((p) => ({
           id: p.id,
-          uuid: p.uuid,
+          uuid: p.userId, // Use userId as the identifier
           nickname: p.nickname,
           roomId: p.roomId,
           characterClass: p.characterClass,

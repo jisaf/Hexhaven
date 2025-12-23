@@ -5,6 +5,7 @@
  * position, health, and conditions.
  */
 
+import { randomUUID } from 'crypto';
 import type {
   CharacterClass,
   AxialCoordinates,
@@ -468,7 +469,7 @@ export class Character {
     const cardIds = starterDeck.map((card) => card.id);
 
     return new Character({
-      id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(), // Use UUID for database compatibility
       playerId,
       characterClass,
       position: startingPosition,

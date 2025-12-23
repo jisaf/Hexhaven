@@ -5,6 +5,7 @@
  * starting a game session.
  */
 
+import { randomUUID } from 'crypto';
 import { RoomStatus } from '../../../shared/types/entities';
 import type { Player } from './player.model';
 
@@ -23,7 +24,7 @@ export interface GameRoomData {
 }
 
 export class GameRoom {
-  public readonly id: string;
+  public readonly id: string; // UUID for database compatibility
   public readonly roomCode: string;
   private _status: RoomStatus;
   private _scenarioId: string | null;
@@ -122,7 +123,7 @@ export class GameRoom {
       throw new Error('Cannot join room - game already started');
     }
 
-    if (this._players.has(player.uuid)) {
+    if (this._players.has(player.userId)) {
       throw new Error('Player already in room');
     }
 
@@ -132,15 +133,15 @@ export class GameRoom {
       throw new Error('Nickname already taken in this room');
     }
 
-    this._players.set(player.uuid, player);
+    this._players.set(player.userId, player);
     this._updatedAt = new Date();
   }
 
-  removePlayer(playerUuid: string): Player | null {
-    const player = this._players.get(playerUuid);
+  removePlayer(userId: string): Player | null {
+    const player = this._players.get(userId);
     if (!player) return null;
 
-    this._players.delete(playerUuid);
+    this._players.delete(userId);
 
     // If player was host, promote next player
     if (player.isHost && this._players.size > 0) {
@@ -152,8 +153,8 @@ export class GameRoom {
     return player;
   }
 
-  getPlayer(playerUuid: string): Player | null {
-    return this._players.get(playerUuid) || null;
+  getPlayer(userId: string): Player | null {
+    return this._players.get(userId) || null;
   }
 
   startGame(scenarioId: string, campaignId?: string): void {
@@ -167,7 +168,10 @@ export class GameRoom {
 
     this._status = RoomStatus.ACTIVE;
     this._scenarioId = scenarioId;
-    this._campaignId = campaignId || null; // Issue #244 - Campaign Mode
+    // Issue #244 - Campaign Mode: preserve existing campaignId if not explicitly provided
+    // This fixes bug where campaignId was overwritten to null when start_game event
+    // didn't include campaignId (the campaignId is set during room creation for campaign games)
+    this._campaignId = campaignId ?? this._campaignId;
     this._currentRound = 1;
     this._currentTurnIndex = 0;
     this._updatedAt = new Date();
@@ -233,7 +237,7 @@ export class GameRoom {
     const roomCode = GameRoom.generateRoomCode();
 
     const room = new GameRoom({
-      id: `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: randomUUID(), // Use proper UUID for database compatibility
       roomCode,
       status: RoomStatus.LOBBY,
       scenarioId: options?.scenarioId || null,
@@ -248,7 +252,7 @@ export class GameRoom {
 
     // Add host player
     hostPlayer.joinRoom(room.id, true);
-    room._players.set(hostPlayer.uuid, hostPlayer);
+    room._players.set(hostPlayer.userId, hostPlayer);
 
     return room;
   }

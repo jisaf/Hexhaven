@@ -149,8 +149,8 @@ export class GameGateway
   private readonly objectiveContextBuilderService =
     new ObjectiveContextBuilderService();
   private readonly gameResultService: GameResultService;
-  private readonly socketToPlayer = new Map<string, string>(); // socketId -> playerUUID
-  private readonly playerToSocket = new Map<string, string>(); // playerUUID -> socketId
+  private readonly socketToPlayer = new Map<string, string>(); // socketId -> userId (database)
+  private readonly playerToSocket = new Map<string, string>(); // userId (database) -> socketId
 
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
@@ -433,6 +433,35 @@ export class GameGateway
   }
 
   /**
+   * Sanitize objectives for client payload
+   * Strips internal fields (type, milestones) and returns only client-safe fields
+   * Single source of truth for objective sanitization - DRY principle
+   */
+  private sanitizeObjectivesForPayload(
+    objectives: ScenarioObjectives | undefined,
+  ): GameStartedPayload['objectives'] {
+    if (!objectives) return undefined;
+
+    return {
+      primary: {
+        id: objectives.primary.id,
+        description: objectives.primary.description,
+        trackProgress: objectives.primary.trackProgress ?? true,
+      },
+      secondary: (objectives.secondary || []).map((obj) => ({
+        id: obj.id,
+        description: obj.description,
+        trackProgress: obj.trackProgress ?? true,
+        optional: true,
+      })),
+      failureConditions: (objectives.failureConditions || []).map((fc) => ({
+        id: fc.id,
+        description: fc.description,
+      })),
+    };
+  }
+
+  /**
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
@@ -443,7 +472,7 @@ export class GameGateway
     // Get current scenario and game state (including all characters for multi-character players)
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
-      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
+      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
       .filter((c: any) => c !== null);
 
     // Get map from room state
@@ -478,7 +507,7 @@ export class GameGateway
 
       // Get database character ID from player (Issue #205)
       const player = room.players.find(
-        (p: any) => p.uuid === charData.playerId,
+        (p: any) => p.userId === charData.playerId,
       );
       const userCharacterId = player?.characterId || undefined;
 
@@ -539,27 +568,13 @@ export class GameGateway
           conditions: m.conditions,
         })),
       characters: charactersWithDecks,
-      objectives: objectives
-        ? {
-            primary: {
-              id: objectives.primary.id,
-              description: objectives.primary.description,
-              trackProgress: objectives.primary.trackProgress ?? true,
-            },
-            secondary: (objectives.secondary || []).map((obj) => ({
-              id: obj.id,
-              description: obj.description,
-              trackProgress: obj.trackProgress ?? true,
-              optional: true,
-            })),
-            failureConditions: (objectives.failureConditions || []).map(
-              (fc) => ({
-                id: fc.id,
-                description: fc.description,
-              }),
-            ),
-          }
-        : undefined,
+      objectives: this.sanitizeObjectivesForPayload(objectives),
+    };
+
+    // DEBUG: Log what objectives are being sent
+    this.logger.log(`[DEBUG-OBJECTIVES] Sanitized objectives being sent: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`);
+
+    Object.assign(gameStartedPayload, {
       // Background image configuration (Issue #191)
       backgroundImageUrl: scenario?.backgroundImageUrl,
       backgroundOpacity: scenario?.backgroundOpacity,
@@ -579,7 +594,7 @@ export class GameGateway
           value: t.value,
           isCollected: t.isCollected,
         })),
-    };
+    });
 
     // Debug logging for background issue
     if (scenario?.backgroundImageUrl) {
@@ -604,14 +619,14 @@ export class GameGateway
    * Handle client disconnection
    */
   handleDisconnect(client: Socket): void {
-    const playerUUID = this.socketToPlayer.get(client.id);
-    if (playerUUID) {
+    const userId = this.socketToPlayer.get(client.id);
+    if (userId) {
       // Player disconnect handled via events
 
       // Update player connection status
       try {
         playerService.updateConnectionStatus(
-          playerUUID,
+          userId,
           ConnectionStatus.DISCONNECTED,
         );
 
@@ -629,13 +644,13 @@ export class GameGateway
             sessionService.saveSession(room);
 
             this.server.to(room.roomCode).emit('player_disconnected', {
-              playerId: playerUUID,
-              nickname: room.getPlayer(playerUUID)?.nickname || 'Unknown',
+              playerId: userId,
+              nickname: room.getPlayer(userId)?.nickname || 'Unknown',
               willReconnect: true, // Player can reconnect within 10 minutes
             });
 
             this.logger.log(
-              `Session saved for disconnected player ${playerUUID} in room ${room.roomCode}`,
+              `Session saved for disconnected player ${userId} in room ${room.roomCode}`,
             );
           }
         }
@@ -647,7 +662,7 @@ export class GameGateway
 
       // Clean up mappings
       this.socketToPlayer.delete(client.id);
-      this.playerToSocket.delete(playerUUID);
+      this.playerToSocket.delete(userId);
     }
 
     // Verbose disconnection log removed
@@ -667,7 +682,17 @@ export class GameGateway
         `📍 Join intent: ${payload.intent || 'unknown'} | Room: ${payload.roomCode} | Player: ${payload.nickname}`,
       );
 
-      const { roomCode, playerUUID, nickname } = payload;
+      const { roomCode, nickname } = payload;
+      // Get userId from socket.data (set during JWT verification in main.ts)
+      const userId = client.data.userId as string;
+
+      if (!userId) {
+        this.server.to(client.id).emit('error', {
+          message: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+        } as ErrorPayload);
+        return;
+      }
 
       // Check if player is already in THIS SPECIFIC room
       // Note: Player may be in other rooms (multi-room support), so we check the target room
@@ -680,11 +705,11 @@ export class GameGateway
         return;
       }
 
-      const isAlreadyInRoom = targetRoom.getPlayer(playerUUID) !== null;
+      const isAlreadyInRoom = targetRoom.getPlayer(userId) !== null;
       let room = targetRoom;
 
       // Check reconnection status
-      const roomPlayer = isAlreadyInRoom ? room.getPlayer(playerUUID) : null;
+      const roomPlayer = isAlreadyInRoom ? room.getPlayer(userId) : null;
       const isReconnecting =
         roomPlayer &&
         roomPlayer.connectionStatus === ConnectionStatus.DISCONNECTED &&
@@ -692,14 +717,14 @@ export class GameGateway
 
       if (!isAlreadyInRoom) {
         // Register player globally if not exists (for user management)
-        let globalPlayer = playerService.getPlayerByUuid(playerUUID);
+        let globalPlayer = playerService.getPlayerByUserId(userId);
         if (!globalPlayer) {
-          globalPlayer = playerService.createPlayer(playerUUID, nickname);
+          globalPlayer = playerService.createPlayer(userId, nickname);
         }
 
         // Create a new player instance for this room
         // Each room has its own Player instance to track room-specific state
-        const newRoomPlayer = Player.create(playerUUID, nickname);
+        const newRoomPlayer = Player.create(userId, nickname);
 
         // Join room (adds player to room state)
         room = roomService.joinRoom(roomCode, newRoomPlayer);
@@ -715,9 +740,9 @@ export class GameGateway
         roomPlayer.updateConnectionStatus(ConnectionStatus.CONNECTED);
       }
 
-      // Associate socket with player
-      this.socketToPlayer.set(client.id, playerUUID);
-      this.playerToSocket.set(playerUUID, client.id);
+      // Associate socket with player (using database userId)
+      this.socketToPlayer.set(client.id, userId);
+      this.playerToSocket.set(userId, client.id);
 
       // IMPORTANT: Leave all other game rooms before joining the new one
       // This ensures getRoomFromSocket() always returns the correct current room
@@ -742,7 +767,7 @@ export class GameGateway
         roomCode: room.roomCode,
         roomStatus: room.status,
         players: room.players.map((p) => ({
-          id: p.uuid,
+          id: p.userId,
           nickname: p.nickname,
           isHost: p.isHost,
           characterClass: p.characterClass || undefined, // Backward compatibility
@@ -758,7 +783,7 @@ export class GameGateway
       if (isReconnecting && roomPlayer) {
         // Broadcast reconnection to other players
         client.to(roomCode).emit('player_reconnected', {
-          playerId: roomPlayer.uuid,
+          playerId: roomPlayer.userId,
           nickname: roomPlayer.nickname,
         });
         this.logger.log(`Player ${nickname} reconnected to room ${roomCode}`);
@@ -877,11 +902,11 @@ export class GameGateway
 
       if (!isAlreadyInRoom) {
         // Get the newly joined player from the room
-        const newlyJoinedPlayer = room.getPlayer(playerUUID);
+        const newlyJoinedPlayer = room.getPlayer(userId);
         if (newlyJoinedPlayer) {
           // Only broadcast new join to other players
           const playerJoinedPayload: PlayerJoinedPayload = {
-            playerId: newlyJoinedPlayer.uuid,
+            playerId: newlyJoinedPlayer.userId,
             nickname: newlyJoinedPlayer.nickname,
             isHost: newlyJoinedPlayer.isHost,
           };
@@ -916,8 +941,8 @@ export class GameGateway
     @MessageBody() payload?: { roomCode?: string },
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         this.logger.warn('Leave room request from unknown player');
         return;
       }
@@ -932,7 +957,7 @@ export class GameGateway
         room = roomService.getRoom(roomCode);
         if (!room) {
           this.logger.warn(
-            `Player ${playerUUID} tried to leave room ${roomCode} but room not found`,
+            `Player ${userId} tried to leave room ${roomCode} but room not found`,
           );
           return;
         }
@@ -940,7 +965,7 @@ export class GameGateway
         const roomData = this.getRoomFromSocket(client);
         if (!roomData) {
           this.logger.warn(
-            `Player ${playerUUID} tried to leave but is not in any room`,
+            `Player ${userId} tried to leave but is not in any room`,
           );
           return;
         }
@@ -951,10 +976,10 @@ export class GameGateway
       // Verbose leaving log removed
 
       // Remove player from room
-      const player = room.players.find((p: Player) => p.uuid === playerUUID);
+      const player = room.players.find((p: Player) => p.userId === userId);
       const playerName = player?.nickname || 'Unknown';
 
-      roomService.leaveRoom(roomCode, playerUUID);
+      roomService.leaveRoom(roomCode, userId);
 
       // Leave socket room
       client.leave(roomCode);
@@ -969,7 +994,7 @@ export class GameGateway
       // Notify other players in the room (Phase 5: Enhanced with playersRemaining)
       if (player) {
         client.to(roomCode).emit('player_left', {
-          playerId: playerUUID,
+          playerId: userId,
           nickname: playerName,
           playersRemaining,
         });
@@ -1029,8 +1054,8 @@ export class GameGateway
     @MessageBody() payload: SelectCharacterPayload,
   ): Promise<void> {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -1042,7 +1067,7 @@ export class GameGateway
       );
       if (clientRooms.length > 1) {
         this.logger.warn(
-          `⚠️ Client ${client.id} (player ${playerUUID}) is in multiple rooms: ${clientRooms.join(', ')}. This may cause character selection issues.`,
+          `⚠️ Client ${client.id} (player ${userId}) is in multiple rooms: ${clientRooms.join(', ')}. This may cause character selection issues.`,
         );
       }
 
@@ -1055,7 +1080,7 @@ export class GameGateway
       const { room } = roomData;
 
       // Get player from room (not global registry)
-      const player = room.getPlayer(playerUUID);
+      const player = room.getPlayer(userId);
       if (!player) {
         throw new Error('Player not found in room');
       }
@@ -1195,7 +1220,7 @@ export class GameGateway
           const characterTakenByOther = room.players.some(
             (p: Player) =>
               p.characterClasses.includes(characterClass) &&
-              p.uuid !== playerUUID,
+              p.userId !== userId,
           );
 
           if (characterTakenByOther) {
@@ -1255,7 +1280,7 @@ export class GameGateway
 
       // Broadcast updated character list to all players in room
       const characterSelectedPayload: CharacterSelectedPayload = {
-        playerId: player.uuid,
+        playerId: player.userId,
         characterClass: player.characterClass || undefined, // Backward compatibility
         characterClasses: player.characterClasses,
         characterIds: player.characterIds.filter((id: string) => id !== ''),
@@ -1286,8 +1311,8 @@ export class GameGateway
     @MessageBody() payload: StartGamePayload,
   ): Promise<void> {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -1303,7 +1328,7 @@ export class GameGateway
       // Game start event sufficient
 
       // Get player from room (not global registry)
-      const player = room.getPlayer(playerUUID);
+      const player = room.getPlayer(userId);
       if (!player) {
         throw new Error('Player not found in room');
       }
@@ -1328,12 +1353,42 @@ export class GameGateway
       }
 
       // Start the game (Issue #244 - Campaign Mode support)
+      // Use room.campaignId (set during room creation) as the server authority
+      // instead of relying on frontend to pass it back
+      this.logger.log(
+        `[Campaign Debug] Before startGame: room.campaignId=${room.campaignId}, payload.scenarioId=${payload.scenarioId}`,
+      );
       roomService.startGame(
         room.roomCode,
         payload.scenarioId,
-        playerUUID,
-        payload.campaignId,
+        userId,
+        room.campaignId || undefined,
       );
+      this.logger.log(
+        `[Campaign Debug] After startGame: room.campaignId=${room.campaignId}, room.scenarioId=${room.scenarioId}`,
+      );
+
+      // Create Game record in database (required for GameResult foreign key)
+      // Uses room.id (UUID) to ensure consistency between in-memory and database
+      try {
+        await this.prisma.game.create({
+          data: {
+            id: room.id,
+            roomCode: room.roomCode,
+            scenarioId: payload.scenarioId,
+            campaignId: room.campaignId || null,
+            difficulty: 1,
+            status: 'ACTIVE',
+            startedAt: new Date(),
+          },
+        });
+        this.logger.log(
+          `[Campaign Debug] Created Game record in DB with id=${room.id}`,
+        );
+      } catch (dbError: any) {
+        // Log but don't fail - game can still proceed, just won't persist results
+        this.logger.error(`Failed to create Game record: ${dbError.message}`);
+      }
 
       // TODO: Simplify playerStartPositions structure and allow player selection
       // Current implementation uses Record<number, AxialCoordinates[]> keyed by player count,
@@ -1369,7 +1424,7 @@ export class GameGateway
       });
 
       // Clear all existing characters for players in this room (prevent duplicates from previous games)
-      const playerIds = (room.players as Player[]).map((p) => p.uuid);
+      const playerIds = (room.players as Player[]).map((p) => p.userId);
       const removedCount = characterService.prepareForNewGame(playerIds);
       if (removedCount > 0) {
         this.logger.log(
@@ -1388,7 +1443,7 @@ export class GameGateway
           const startingPosition = startingPositions[positionIndex];
 
           this.logger.log(`🎭 Creating character for player ${p.nickname}:`, {
-            uuid: p.uuid,
+            uuid: p.userId,
             characterClass,
             characterId: characterId || 'none',
             startingPosition,
@@ -1397,7 +1452,7 @@ export class GameGateway
 
           // Use addCharacterForPlayer to support multiple characters per player
           const character = characterService.addCharacterForPlayer(
-            p.uuid,
+            p.userId,
             characterClass,
             startingPosition,
           );
@@ -1479,7 +1534,7 @@ export class GameGateway
         }
       >();
       room.players.forEach((p: Player) => {
-        playerStatsMap.set(p.uuid, {
+        playerStatsMap.set(p.userId, {
           damageDealt: 0,
           damageTaken: 0,
           monstersKilled: 0,
@@ -1548,34 +1603,20 @@ export class GameGateway
           conditions: m.conditions,
         })),
         characters: charactersWithDecks,
-        objectives: objectives
-          ? {
-              primary: {
-                id: objectives.primary.id,
-                description: objectives.primary.description,
-                trackProgress: objectives.primary.trackProgress ?? true,
-              },
-              secondary: (objectives.secondary || []).map((obj) => ({
-                id: obj.id,
-                description: obj.description,
-                trackProgress: obj.trackProgress ?? true,
-                optional: true,
-              })),
-              failureConditions: (objectives.failureConditions || []).map(
-                (fc) => ({
-                  id: fc.id,
-                  description: fc.description,
-                }),
-              ),
-            }
-          : undefined,
+        objectives: this.sanitizeObjectivesForPayload(objectives),
+      };
+
+      // DEBUG: Log what objectives are being sent (handleStartGame path)
+      this.logger.log(`[DEBUG-OBJECTIVES-START] Sanitized objectives: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`);
+
+      Object.assign(gameStartedPayload, {
         // Background image configuration (Issue #191)
         backgroundImageUrl: scenario.backgroundImageUrl,
         backgroundOpacity: scenario.backgroundOpacity,
         backgroundOffsetX: scenario.backgroundOffsetX,
         backgroundOffsetY: scenario.backgroundOffsetY,
         backgroundScale: scenario.backgroundScale,
-      };
+      });
 
       // Debug: Log background URL being sent
       this.logger.log(
@@ -1596,8 +1637,8 @@ export class GameGateway
       );
 
       for (const roomSocket of roomSockets) {
-        const playerUUID = this.socketToPlayer.get(roomSocket.id);
-        const player = room.players.find((p: Player) => p.uuid === playerUUID);
+        const userId = this.socketToPlayer.get(roomSocket.id);
+        const player = room.players.find((p: Player) => p.userId === userId);
         const nickname = player?.nickname || 'Unknown';
 
         roomSocket.emit(
@@ -1640,8 +1681,8 @@ export class GameGateway
     @MessageBody() payload: MoveCharacterPayload,
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -1667,7 +1708,7 @@ export class GameGateway
       }
 
       // Verify this character belongs to the player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -1776,7 +1817,7 @@ export class GameGateway
       // Check if target hex is occupied by another character (including all multi-character players' characters)
       const allCharacters = room.players
         .flatMap((p: Player) =>
-          characterService.getCharactersByPlayerId(p.uuid),
+          characterService.getCharactersByPlayerId(p.userId),
         )
         .filter((c: any) => c !== null && c.id !== character.id && !c.isDead);
 
@@ -1846,8 +1887,8 @@ export class GameGateway
     @MessageBody() payload: SelectCardsPayload,
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -1875,7 +1916,7 @@ export class GameGateway
         throw new Error('Character not found');
       }
       // Verify this character belongs to the player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -1969,12 +2010,12 @@ export class GameGateway
       character.setEffectiveAttack(attackValue, attackRange);
 
       this.logger.log(
-        `Player ${playerUUID} effective stats for this turn - Movement: ${movementValue}, Attack: ${attackValue}, Range: ${attackRange}`,
+        `Player ${userId} effective stats for this turn - Movement: ${movementValue}, Attack: ${attackValue}, Range: ${attackRange}`,
       );
 
       // Broadcast cards selected (hide actual card IDs, only show initiative)
       const cardsSelectedPayload: CardsSelectedPayload = {
-        playerId: playerUUID,
+        playerId: userId,
         topCardInitiative,
         bottomCardInitiative,
       };
@@ -1984,13 +2025,13 @@ export class GameGateway
         .emit('cards_selected', cardsSelectedPayload);
 
       this.logger.log(
-        `Player ${playerUUID} selected cards (initiative: ${initiative})`,
+        `Player ${userId} selected cards (initiative: ${initiative})`,
       );
 
       // Check if all characters have selected cards (including all multi-character players' characters)
       const allCharacters = room.players
         .flatMap((p: Player) =>
-          characterService.getCharactersByPlayerId(p.uuid),
+          characterService.getCharactersByPlayerId(p.userId),
         )
         .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
@@ -2025,7 +2066,7 @@ export class GameGateway
 
     // Get all characters and monsters (including all characters for multi-character players)
     const characters = room.players
-      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
+      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
       .filter((c: any) => c && !c.exhausted && c.selectedCards);
 
     // Get monsters from room state
@@ -2130,13 +2171,13 @@ export class GameGateway
     @MessageBody() payload: AttackTargetPayload,
   ): Promise<void> {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
       this.logger.log(
-        `Attack target request from ${playerUUID} -> ${payload.targetId}`,
+        `Attack target request from ${userId} -> ${payload.targetId}`,
       );
 
       // Get room from client's current Socket.IO room (multi-room support)
@@ -2162,7 +2203,7 @@ export class GameGateway
       }
 
       // Verify attacker belongs to this player
-      if (attacker.playerId !== playerUUID) {
+      if (attacker.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -2340,7 +2381,7 @@ export class GameGateway
         // Phase 3: Track player damage dealt and accumulated stats
         const playerStats = this.roomPlayerStats.get(room.roomCode);
         if (playerStats) {
-          const stats = playerStats.get(playerUUID);
+          const stats = playerStats.get(userId);
           if (stats) {
             stats.damageDealt += damage;
           }
@@ -2355,7 +2396,7 @@ export class GameGateway
 
           // Phase 3: Track monster kills
           if (playerStats) {
-            const stats = playerStats.get(playerUUID);
+            const stats = playerStats.get(userId);
             if (stats) {
               stats.monstersKilled++;
             }
@@ -2642,13 +2683,13 @@ export class GameGateway
     @MessageBody() payload: CollectLootPayload,
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
       this.logger.log(
-        `Collect loot request from ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
+        `Collect loot request from ${userId} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r})`,
       );
 
       // Get room from client's current Socket.IO room (multi-room support)
@@ -2674,7 +2715,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -2730,7 +2771,7 @@ export class GameGateway
       // Calculate total gold from all stacked loot tokens and mark as collected
       let totalGold = 0;
       lootAtPosition.forEach((token: LootToken) => {
-        token.collect(playerUUID);
+        token.collect(userId);
         totalGold += token.value;
       });
 
@@ -2743,7 +2784,7 @@ export class GameGateway
 
       // Broadcast loot collected to all players
       const lootCollectedPayload: LootCollectedPayload = {
-        playerId: playerUUID,
+        playerId: userId,
         lootTokenId: lootAtPosition[0].id, // Frontend expects single ID
         hexCoordinates: payload.hexCoordinates,
         goldValue: totalGold,
@@ -2754,7 +2795,7 @@ export class GameGateway
         .emit('loot_collected', lootCollectedPayload);
 
       this.logger.log(
-        `Manual collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
+        `Manual collected ${lootAtPosition.length} loot token(s) by ${userId} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
       );
     } catch (error) {
       const errorMessage =
@@ -2777,12 +2818,12 @@ export class GameGateway
     @MessageBody() _payload: EndTurnPayload,
   ): Promise<void> {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
-      this.logger.log(`End turn request from ${playerUUID}`);
+      this.logger.log(`End turn request from ${userId}`);
 
       // Get room from client's current Socket.IO room (multi-room support)
       const roomData = this.getRoomFromSocket(client);
@@ -2820,7 +2861,7 @@ export class GameGateway
       }
 
       // Verify this character belongs to the player requesting end turn
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('It is not your turn');
       }
 
@@ -2878,7 +2919,7 @@ export class GameGateway
 
         // Mark all loot tokens at this position as collected
         lootAtPosition.forEach((token: LootToken) => {
-          token.collect(playerUUID);
+          token.collect(userId);
           totalGold += token.value;
           collectedTokenIds.push(token.id);
         });
@@ -2892,7 +2933,7 @@ export class GameGateway
 
         // Broadcast loot collected to all players
         const lootCollectedPayload: LootCollectedPayload = {
-          playerId: playerUUID,
+          playerId: userId,
           lootTokenId: collectedTokenIds[0], // Frontend expects single ID, use first
           hexCoordinates: characterPos,
           goldValue: totalGold,
@@ -2903,7 +2944,7 @@ export class GameGateway
           .emit('loot_collected', lootCollectedPayload);
 
         this.logger.log(
-          `Auto-collected ${lootAtPosition.length} loot token(s) by ${playerUUID} at end of turn (${characterPos.q}, ${characterPos.r}), total value: ${totalGold} gold`,
+          `Auto-collected ${lootAtPosition.length} loot token(s) by ${userId} at end of turn (${characterPos.q}, ${characterPos.r}), total value: ${totalGold} gold`,
         );
       }
 
@@ -3031,8 +3072,8 @@ export class GameGateway
     },
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -3059,7 +3100,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -3159,7 +3200,7 @@ export class GameGateway
           // Check if all characters have selected cards (or rested), then start round
           const allCharacters = room.players
             .flatMap((p: Player) =>
-              characterService.getCharactersByPlayerId(p.uuid),
+              characterService.getCharactersByPlayerId(p.userId),
             )
             .filter((c: any): c is any => Boolean(c && !c.exhausted));
 
@@ -3201,8 +3242,8 @@ export class GameGateway
     },
   ): void {
     try {
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         throw new Error('Player not authenticated');
       }
 
@@ -3224,7 +3265,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         throw new Error('Character does not belong to this player');
       }
 
@@ -3405,7 +3446,7 @@ export class GameGateway
 
       // Get all characters in room and map to expected format (including all multi-character players' characters)
       const characterModels = room.players
-        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
         .filter((c: any) => c !== null);
 
       this.emitDebugLog(
@@ -3950,7 +3991,7 @@ export class GameGateway
 
     // Clear selected cards and reset action flags for all characters for new round (including multi-character)
     room.players.forEach((p: any) => {
-      const playerChars = characterService.getCharactersByPlayerId(p.uuid);
+      const playerChars = characterService.getCharactersByPlayerId(p.userId);
       playerChars.forEach((char) => {
         if (char) {
           char.selectedCards = undefined;
@@ -4105,22 +4146,31 @@ export class GameGateway
    * Extracts or generates objectives based on scenario configuration
    */
   private buildScenarioObjectives(scenario: any): ScenarioObjectives {
-    // Check if scenario has objectives defined
-    if (scenario.objectives && scenario.objectives.primary) {
+    // Check if scenario has properly structured objectives (ObjectiveDefinition with 'type' property)
+    // Seeded scenarios and properly configured scenarios have this format
+    if (
+      scenario.objectives &&
+      scenario.objectives.primary &&
+      typeof scenario.objectives.primary === 'object' &&
+      scenario.objectives.primary.type
+    ) {
       return scenario.objectives as ScenarioObjectives;
     }
 
-    // Default objectives based on scenario data
-    // Primary: Kill all monsters (standard Gloomhaven objective)
+    // Fallback for scenarios created via Scenario Designer (uses objectivePrimary string)
+    // Build a default kill_all_monsters objective
+    const primaryDescription =
+      scenario.objectivePrimary || 'Defeat all enemies';
+
     const primaryObjective = {
       id: 'primary-kill-all',
       type: 'kill_all_monsters' as const,
-      description: scenario.objectivePrimary || 'Defeat all enemies',
+      description: primaryDescription,
       trackProgress: true,
       milestones: [25, 50, 75, 100],
     };
 
-    // Check for secondary objectives from scenario data
+    // Check for secondary objective from Scenario Designer
     const secondaryObjectives: any[] = [];
     if (scenario.objectiveSecondary) {
       secondaryObjectives.push({
@@ -4320,7 +4370,7 @@ export class GameGateway
 
       // Get all characters in room (including all multi-character players' characters)
       const characters = room.players
-        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.uuid))
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
         .filter((c) => c !== null);
 
       // Get all monsters in room
@@ -4383,27 +4433,37 @@ export class GameGateway
       let primaryComplete = false;
       let primaryResult: any = { complete: false, progress: null };
 
-      if (objectives?.primary) {
-        primaryResult = this.objectiveEvaluatorService.evaluateObjective(
-          objectives.primary,
-          context,
+      if (!objectives?.primary) {
+        this.logger.error(
+          `[checkScenarioCompletion] No primary objective defined for room ${roomCode}. ` +
+            `This indicates a scenario configuration error.`,
         );
-        primaryComplete = primaryResult.complete;
+        return;
+      }
 
-        // Update objective progress
-        if (primaryResult.progress) {
-          this.updateObjectiveProgress(
-            roomCode,
-            objectives.primary.id,
-            primaryResult.progress.current,
-            primaryResult.progress.target,
-            objectives.primary.description,
-          );
-        }
-      } else {
-        // Fallback: no objectives defined, use legacy check (all monsters dead)
-        const allMonstersDead = monsters.every((m: any) => m.isDead);
-        primaryComplete = allMonstersDead && monsters.length > 0;
+      primaryResult = this.objectiveEvaluatorService.evaluateObjective(
+        objectives.primary,
+        context,
+      );
+
+      // Log if evaluation returned an error (indicates malformed objective)
+      if (primaryResult.error) {
+        this.logger.error(
+          `[checkScenarioCompletion] Objective evaluation error for room ${roomCode}: ${primaryResult.error}`,
+        );
+      }
+
+      primaryComplete = primaryResult.complete;
+
+      // Update objective progress
+      if (primaryResult.progress) {
+        this.updateObjectiveProgress(
+          roomCode,
+          objectives.primary.id,
+          primaryResult.progress.current,
+          primaryResult.progress.target,
+          objectives.primary.description,
+        );
       }
 
       // Evaluate secondary objectives
@@ -4491,9 +4551,9 @@ export class GameGateway
       // Build player stats
       const playerStatsMap = this.roomPlayerStats.get(roomCode);
       const playerStats = room.players.map((p: any) => {
-        const stats = playerStatsMap?.get(p.uuid);
+        const stats = playerStatsMap?.get(p.userId);
         return {
-          playerId: p.uuid,
+          playerId: p.userId,
           damageDealt: stats?.damageDealt || 0,
           damageTaken: stats?.damageTaken || 0,
           monstersKilled: stats?.monstersKilled || 0,
@@ -4534,23 +4594,23 @@ export class GameGateway
         `Scenario completed in room ${roomCode}: victory=${isVictory}, reason="${reason}"`,
       );
 
-      // Phase 4-5: Save game result to database
-      try {
-        // Calculate total loot and gold
-        const totalLootCollected = lootTokens.filter(
-          (t: any) => t.isCollected,
-        ).length;
-        const totalGold = Array.from(lootByPlayer.values()).reduce(
-          (sum, data) => sum + data.gold,
-          0,
-        );
+      // Phase 4-5: Save game result and record campaign progression
+      // Calculate total loot and gold (needed by both game result and campaign recording)
+      const totalLootCollected = lootTokens.filter(
+        (t: any) => t.isCollected,
+      ).length;
+      const totalGold = Array.from(lootByPlayer.values()).reduce(
+        (sum, data) => sum + data.gold,
+        0,
+      );
 
-        // Build player results for database (including all characters for multi-character players)
-        const playerResults = room.players.flatMap((p: any) => {
-          const stats = playerStatsMap?.get(p.uuid);
-          const loot = lootByPlayer.get(p.uuid);
+      // Build player results for database (including all characters for multi-character players)
+      // Calculated outside try block so it's available for campaign recording even if game result save fails
+      const playerResults = room.players.flatMap((p: any) => {
+          const stats = playerStatsMap?.get(p.userId);
+          const loot = lootByPlayer.get(p.userId);
           const playerCharacters = characterService.getCharactersByPlayerId(
-            p.uuid,
+            p.userId,
           );
 
           // Calculate experience for this player (shared across all their characters)
@@ -4567,9 +4627,11 @@ export class GameGateway
 
           // Return results for each character the player controls
           return playerCharacters.map((character) => ({
-            userId: p.uuid,
-            characterId: character?.id || p.uuid,
-            // Database character ID for persistent characters (Issue #204)
+            userId: p.userId,
+            // Use database character UUID for GameResult (required UUID format)
+            // Falls back to player UUID for anonymous/guest players
+            characterId: character?.userCharacterId || p.userId,
+            // Keep persistentCharacterId for campaign tracking (same value)
             persistentCharacterId: character?.userCharacterId || undefined,
             characterClass: character?.characterClass || 'Unknown',
             characterName: p.nickname,
@@ -4579,7 +4641,7 @@ export class GameGateway
             damageTaken: stats?.damageTaken || 0,
             monstersKilled: stats?.monstersKilled || 0,
             lootCollected: loot
-              ? lootTokens.filter((t: any) => t.collectedBy === p.uuid).length
+              ? lootTokens.filter((t: any) => t.collectedBy === p.userId).length
               : 0,
             cardsLost: stats?.cardsLost || 0,
             experienceGained: Math.floor(
@@ -4589,7 +4651,8 @@ export class GameGateway
           }));
         });
 
-        // Save to database
+      // Save game result to database (can fail gracefully)
+      try {
         await this.gameResultService.saveGameResult({
           gameId: room.id,
           roomCode: room.roomCode,
@@ -4616,19 +4679,28 @@ export class GameGateway
           totalGold,
           playerResults,
         });
-
         this.logger.log(`Game result saved to database for room ${roomCode}`);
+      } catch (dbError) {
+        this.logger.error(
+          `Failed to save game result to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
+        );
+        // Continue - campaign recording should still work even if game result save fails
+      }
 
-        // Persist character gold/experience from scenario completion
-        // For campaign games: use campaign service (Issue #244)
-        // For non-campaign games: persist directly (Issue #204)
-        if (room.campaignId) {
+      // Campaign recording (separate from game result, always runs)
+      // Persist character gold/experience from scenario completion
+      // For campaign games: use campaign service (Issue #244)
+      // For non-campaign games: persist directly (Issue #204)
+      this.logger.log(
+        `[Campaign Debug] room.campaignId=${room.campaignId}, room.scenarioId=${room.scenarioId}, isVictory=${isVictory}`,
+      );
+      if (room.campaignId) {
           // Issue #244 - Campaign Mode: Record scenario completion in campaign
           try {
             // Get exhausted character IDs for permadeath handling
             const exhaustedCharacterIds = room.players.flatMap((p: any) => {
               const playerChars = characterService.getCharactersByPlayerId(
-                p.uuid,
+                p.userId,
               );
               return playerChars
                 .filter((c: any) => c?.exhausted)
@@ -4725,7 +4797,7 @@ export class GameGateway
         // This resets consumed items and refreshes spent items for the next scenario
         for (const player of room.players) {
           const playerCharacters = characterService.getCharactersByPlayerId(
-            player.uuid,
+            player.userId,
           );
           for (const character of playerCharacters) {
             if (
@@ -4755,12 +4827,6 @@ export class GameGateway
             }
           }
         }
-      } catch (dbError) {
-        this.logger.error(
-          `Failed to save game result to database: ${dbError instanceof Error ? dbError.message : String(dbError)}`,
-        );
-        // Don't throw - game completion should still succeed even if DB save fails
-      }
     } catch (error) {
       this.logger.error(
         `Check scenario completion error: ${error instanceof Error ? error.message : String(error)}`,
@@ -4790,8 +4856,8 @@ export class GameGateway
       }
 
       const { roomCode } = roomData;
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         client.emit('error', {
           code: 'PLAYER_NOT_FOUND',
           message: 'Player not found',
@@ -4818,7 +4884,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         client.emit('error', {
           code: 'UNAUTHORIZED',
           message: 'Character does not belong to this player',
@@ -4880,8 +4946,8 @@ export class GameGateway
       }
 
       const { roomCode } = roomData;
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         client.emit('error', {
           code: 'PLAYER_NOT_FOUND',
           message: 'Player not found',
@@ -4908,7 +4974,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         client.emit('error', {
           code: 'UNAUTHORIZED',
           message: 'Character does not belong to this player',
@@ -4919,7 +4985,7 @@ export class GameGateway
       // Equip the item through inventory service
       const result = await this.inventoryService.equipItem(
         character.id,
-        playerUUID, // userId = playerUUID
+        userId, // userId = userId
         payload.itemId,
       );
 
@@ -4982,8 +5048,8 @@ export class GameGateway
       }
 
       const { roomCode } = roomData;
-      const playerUUID = this.socketToPlayer.get(client.id);
-      if (!playerUUID) {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
         client.emit('error', {
           code: 'PLAYER_NOT_FOUND',
           message: 'Player not found',
@@ -5010,7 +5076,7 @@ export class GameGateway
       }
 
       // Verify character belongs to this player
-      if (character.playerId !== playerUUID) {
+      if (character.playerId !== userId) {
         client.emit('error', {
           code: 'UNAUTHORIZED',
           message: 'Character does not belong to this player',
@@ -5021,7 +5087,7 @@ export class GameGateway
       // Unequip the item through inventory service
       const result = await this.inventoryService.unequipItemById(
         character.id,
-        playerUUID, // userId = playerUUID
+        userId, // userId = userId
         payload.itemId,
       );
 

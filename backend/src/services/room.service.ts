@@ -106,15 +106,17 @@ export class RoomService {
 
   /**
    * Remove player from room
+   * @param roomCode - Room code
+   * @param userId - Database user ID
    */
-  leaveRoom(roomCode: string, playerUuid: string): GameRoom | null {
+  leaveRoom(roomCode: string, userId: string): GameRoom | null {
     const room = this.getRoom(roomCode);
 
     if (!room) {
       throw new NotFoundError('Room not found');
     }
 
-    const removedPlayer = room.removePlayer(playerUuid);
+    const removedPlayer = room.removePlayer(userId);
 
     if (removedPlayer) {
       removedPlayer.leaveRoom();
@@ -137,10 +139,11 @@ export class RoomService {
   /**
    * Find room containing a specific player
    * @deprecated Use getRoomsByPlayerId for multi-room support
+   * @param userId - Database user ID
    */
-  getRoomByPlayerId(playerUuid: string): GameRoom | null {
+  getRoomByPlayerId(userId: string): GameRoom | null {
     for (const room of this.rooms.values()) {
-      if (room.getPlayer(playerUuid)) {
+      if (room.getPlayer(userId)) {
         return room;
       }
     }
@@ -149,11 +152,12 @@ export class RoomService {
 
   /**
    * Find all rooms containing a specific player (multi-room support)
+   * @param userId - Database user ID
    */
-  getRoomsByPlayerId(playerUuid: string): GameRoom[] {
+  getRoomsByPlayerId(userId: string): GameRoom[] {
     const playerRooms: GameRoom[] = [];
     for (const room of this.rooms.values()) {
-      if (room.getPlayer(playerUuid)) {
+      if (room.getPlayer(userId)) {
         playerRooms.push(room);
       }
     }

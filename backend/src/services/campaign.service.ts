@@ -749,20 +749,31 @@ export class CampaignService {
   }
 
   /**
-   * Check if a user has access to a campaign (has a character in it)
-   * Used for authorization checks in controller
+   * Check if a user has access to a campaign
+   * Access is granted if:
+   * 1. User has a character in the campaign, OR
+   * 2. Campaign has no characters yet (newly created - anyone can join)
    */
   async userHasAccessToCampaign(
     userId: string,
     campaignId: string,
   ): Promise<boolean> {
-    const count = await this.prisma.character.count({
+    // Check if user has a character in this campaign
+    const userCharCount = await this.prisma.character.count({
       where: {
         campaignId,
         userId,
       },
     });
-    return count > 0;
+    if (userCharCount > 0) {
+      return true;
+    }
+
+    // Allow access to campaigns with no characters (newly created)
+    const totalCharCount = await this.prisma.character.count({
+      where: { campaignId },
+    });
+    return totalCharCount === 0;
   }
 
   /**

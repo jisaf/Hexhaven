@@ -370,6 +370,99 @@ async function seedCampaignTemplates() {
   }
 }
 
+async function seedTrivialCampaignTemplate() {
+  console.log('Seeding trivial training campaign template...');
+
+  // Look up training scenarios by name
+  const scenario1 = await prisma.scenario.findUnique({ where: { name: 'Training Dummy - Part 1' } });
+  const scenario2 = await prisma.scenario.findUnique({ where: { name: 'Training Dummy - Part 2' } });
+
+  if (!scenario1 || !scenario2) {
+    console.warn('⚠ Training scenarios not found. Skipping Trivial Training template.');
+    console.warn('  Missing:', { scenario1: !scenario1, scenario2: !scenario2 });
+    return;
+  }
+
+  // Check if template already exists
+  const existingTemplate = await prisma.campaignTemplate.findUnique({
+    where: { name: 'Trivial Training' },
+    include: { scenarios: true },
+  });
+
+  if (!existingTemplate) {
+    await prisma.campaignTemplate.create({
+      data: {
+        name: 'Trivial Training',
+        description: 'A simple 2-scenario training campaign. Perfect for learning or quick demos.',
+        deathMode: 'healing',
+        minPlayers: 1,
+        maxPlayers: 4,
+        requireUniqueClasses: false,
+        isActive: true,
+        scenarios: {
+          create: [
+            {
+              scenarioId: scenario1.id,
+              name: 'Training Dummy - Part 1',
+              description: 'Defeat a single training dummy. Very easy.',
+              sequence: 1,
+              isStarting: true,
+              unlocksScenarios: [scenario2.id],
+            },
+            {
+              scenarioId: scenario2.id,
+              name: 'Training Dummy - Part 2',
+              description: 'Defeat another training dummy. Complete the campaign!',
+              sequence: 2,
+              isStarting: false,
+              unlocksScenarios: [],
+            },
+          ],
+        },
+      },
+    });
+    console.log('✓ Created campaign template: "Trivial Training"');
+  } else {
+    // Update existing template
+    await prisma.campaignTemplateScenario.deleteMany({
+      where: { templateId: existingTemplate.id },
+    });
+
+    await prisma.campaignTemplate.update({
+      where: { id: existingTemplate.id },
+      data: {
+        description: 'A simple 2-scenario training campaign. Perfect for learning or quick demos.',
+        deathMode: 'healing',
+        minPlayers: 1,
+        maxPlayers: 4,
+        requireUniqueClasses: false,
+        isActive: true,
+        scenarios: {
+          create: [
+            {
+              scenarioId: scenario1.id,
+              name: 'Training Dummy - Part 1',
+              description: 'Defeat a single training dummy. Very easy.',
+              sequence: 1,
+              isStarting: true,
+              unlocksScenarios: [scenario2.id],
+            },
+            {
+              scenarioId: scenario2.id,
+              name: 'Training Dummy - Part 2',
+              description: 'Defeat another training dummy. Complete the campaign!',
+              sequence: 2,
+              isStarting: false,
+              unlocksScenarios: [],
+            },
+          ],
+        },
+      },
+    });
+    console.log('✓ Updated campaign template: "Trivial Training"');
+  }
+}
+
 async function seedTestUsers() {
   console.log('Seeding test users...');
 
@@ -442,6 +535,7 @@ async function main() {
     await seedItems();
     await seedScenarios();
     await seedCampaignTemplates(); // Issue #244 - Campaign Mode (DB-driven templates)
+    await seedTrivialCampaignTemplate(); // Trivial 2-scenario campaign for demos
 
     console.log('\n✅ Database seed completed successfully!');
   } catch (error) {

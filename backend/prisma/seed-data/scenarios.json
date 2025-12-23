@@ -23,8 +23,22 @@
       }
     ],
     "objectives": {
-      "primary": "Kill all enemies",
-      "secondary": "Loot the treasure"
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Kill all enemies",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-loot",
+          "type": "collect_treasure",
+          "description": "Loot the treasure",
+          "trackProgress": true,
+          "rewards": { "experience": 5 }
+        }
+      ]
     },
     "treasures": [{ "x": 5, "y": 0, "id": "treasure-1" }],
     "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
@@ -59,8 +73,24 @@
       }
     ],
     "objectives": {
-      "primary": "Defeat the Bandit Commander",
-      "secondary": "Complete within 8 rounds"
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat the Bandit Commander",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-time",
+          "type": "time_limit",
+          "description": "Complete within 8 rounds",
+          "params": { "rounds": 8 },
+          "trackProgress": true,
+          "rewards": { "experience": 10 }
+        }
+      ],
+      "globalTimeLimit": 8
     },
     "treasures": [{ "x": 6, "y": 0, "id": "treasure-2" }],
     "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
@@ -96,8 +126,23 @@
       }
     ],
     "objectives": {
-      "primary": "Kill all enemies and open both doors",
-      "secondary": "No player exhausted"
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Kill all enemies and open both doors",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-no-exhaust",
+          "type": "minimum_health",
+          "description": "No player exhausted",
+          "params": { "healthPercent": 1 },
+          "trackProgress": false,
+          "rewards": { "experience": 10 }
+        }
+      ]
     },
     "treasures": [{ "x": 7, "y": 0, "id": "treasure-3" }],
     "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }]
@@ -134,8 +179,24 @@
       }
     ],
     "objectives": {
-      "primary": "Defeat the Crypt Boss",
-      "secondary": "Collect all treasures"
+      "primary": {
+        "id": "primary-kill-boss",
+        "type": "kill_boss",
+        "description": "Defeat the Crypt Boss",
+        "params": { "monsterType": "cultist" },
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-treasure",
+          "type": "collect_treasure",
+          "description": "Collect all treasures",
+          "params": { "target": 2 },
+          "trackProgress": true,
+          "rewards": { "gold": 20 }
+        }
+      ]
     },
     "treasures": [
       { "x": 5, "y": 0, "id": "treasure-4a" },
@@ -181,8 +242,24 @@
       }
     ],
     "objectives": {
-      "primary": "Defeat all enemies and escape through the final door",
-      "secondary": "Complete within 10 rounds without using healing items"
+      "primary": {
+        "id": "primary-kill-escape",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies and escape through the final door",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-speed",
+          "type": "time_limit",
+          "description": "Complete within 10 rounds without using healing items",
+          "params": { "rounds": 10 },
+          "trackProgress": true,
+          "rewards": { "experience": 15 }
+        }
+      ],
+      "globalTimeLimit": 10
     },
     "treasures": [
       { "x": 6, "y": 0, "id": "treasure-5a" },
@@ -300,8 +377,23 @@
       }
     ],
     "objectives": {
-      "primary": "Kill all enemies",
-      "secondary": "Reach the end of the trail"
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Kill all enemies",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-reach",
+          "type": "reach_location",
+          "description": "Reach the end of the trail",
+          "params": { "location": { "q": -4, "r": 11 } },
+          "trackProgress": true,
+          "rewards": { "experience": 5 }
+        }
+      ]
     },
     "treasures": [],
     "playerStartPositions": [
@@ -325,14 +417,12 @@
       { "id": "FR3", "x": 4, "y": 0, "terrain": "normal", "features": [] },
       { "id": "FR4", "x": 5, "y": 0, "terrain": "difficult", "features": [] },
       { "id": "FR5", "x": 6, "y": 0, "terrain": "normal", "features": [] },
-
       { "id": "FR6", "x": 1, "y": 1, "terrain": "normal", "features": [] },
       { "id": "FR7", "x": 2, "y": 1, "terrain": "normal", "features": [] },
       { "id": "FR8", "x": 3, "y": 1, "terrain": "normal", "features": [] },
       { "id": "FR9", "x": 4, "y": 1, "terrain": "difficult", "features": [] },
       { "id": "FR10", "x": 5, "y": 1, "terrain": "difficult", "features": [] },
       { "id": "FR11", "x": 6, "y": 1, "terrain": "normal", "features": [] },
-
       { "id": "FR12", "x": 0, "y": 2, "terrain": "normal", "features": [] },
       { "id": "FR13", "x": 1, "y": 2, "terrain": "normal", "features": [] },
       { "id": "FR14", "x": 2, "y": 2, "terrain": "normal", "features": [] },
@@ -340,14 +430,12 @@
       { "id": "FR16", "x": 4, "y": 2, "terrain": "difficult", "features": [] },
       { "id": "FR17", "x": 5, "y": 2, "terrain": "normal", "features": [] },
       { "id": "FR18", "x": 6, "y": 2, "terrain": "normal", "features": [] },
-
       { "id": "FR19", "x": 0, "y": 3, "terrain": "normal", "features": [] },
       { "id": "FR20", "x": 1, "y": 3, "terrain": "difficult", "features": [] },
       { "id": "FR21", "x": 2, "y": 3, "terrain": "difficult", "features": [] },
       { "id": "FR22", "x": 3, "y": 3, "terrain": "difficult", "features": ["loot"] },
       { "id": "FR23", "x": 4, "y": 3, "terrain": "normal", "features": [] },
       { "id": "FR24", "x": 5, "y": 3, "terrain": "normal", "features": [] },
-
       { "id": "FR25", "x": 0, "y": 4, "terrain": "difficult", "features": [] },
       { "id": "FR26", "x": 1, "y": 4, "terrain": "difficult", "features": [] },
       { "id": "FR27", "x": 2, "y": 4, "terrain": "normal", "features": [] },
@@ -367,8 +455,22 @@
       }
     ],
     "objectives": {
-      "primary": "Clear the forest road of bandits",
-      "secondary": "Collect the hidden treasure"
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Clear the forest road of bandits",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-treasure",
+          "type": "collect_treasure",
+          "description": "Collect the hidden treasure",
+          "trackProgress": true,
+          "rewards": { "gold": 10 }
+        }
+      ]
     },
     "treasures": [{ "x": 4, "y": 4, "id": "treasure-fr-1" }],
     "playerStartPositions": [{ "x": 0, "y": 3 }, { "x": 0, "y": 4 }, { "x": 1, "y": 3 }, { "x": 0, "y": 2 }]
@@ -385,27 +487,22 @@
       { "id": "BMP1", "x": 0, "y": 0, "terrain": "normal", "features": [] },
       { "id": "BMP2", "x": 1, "y": 0, "terrain": "normal", "features": [] },
       { "id": "BMP3", "x": 2, "y": 0, "terrain": "normal", "features": [] },
-
       { "id": "BMP4", "x": 0, "y": 1, "terrain": "normal", "features": [] },
       { "id": "BMP5", "x": 1, "y": 1, "terrain": "normal", "features": [] },
       { "id": "BMP6", "x": 2, "y": 1, "terrain": "normal", "features": [] },
       { "id": "BMP7", "x": 3, "y": 1, "terrain": "normal", "features": [] },
-
       { "id": "BMP8", "x": 0, "y": 2, "terrain": "normal", "features": [] },
       { "id": "BMP9", "x": 1, "y": 2, "terrain": "normal", "features": [] },
       { "id": "BMP10", "x": 2, "y": 2, "terrain": "normal", "features": [] },
       { "id": "BMP11", "x": 3, "y": 2, "terrain": "normal", "features": [] },
       { "id": "BMP12", "x": 4, "y": 2, "terrain": "hazardous", "features": [] },
-
       { "id": "BMP13", "x": 1, "y": 3, "terrain": "normal", "features": [] },
       { "id": "BMP14", "x": 2, "y": 3, "terrain": "normal", "features": [] },
       { "id": "BMP15", "x": 3, "y": 3, "terrain": "normal", "features": ["loot"] },
       { "id": "BMP16", "x": 4, "y": 3, "terrain": "hazardous", "features": [] },
-
       { "id": "BMP17", "x": 2, "y": 4, "terrain": "normal", "features": [] },
       { "id": "BMP18", "x": 3, "y": 4, "terrain": "hazardous", "features": [] },
       { "id": "BMP19", "x": 4, "y": 4, "terrain": "hazardous", "features": [] },
-
       { "id": "BMP20", "x": 3, "y": 5, "terrain": "hazardous", "features": [] },
       { "id": "BMP21", "x": 4, "y": 5, "terrain": "hazardous", "features": ["treasure"] }
     ],
@@ -427,8 +524,23 @@
       }
     ],
     "objectives": {
-      "primary": "Navigate the cave and defeat the Flame Demon at the lava pit",
-      "secondary": "Collect the treasure from the magma depths"
+      "primary": {
+        "id": "primary-kill-boss",
+        "type": "kill_boss",
+        "description": "Navigate the cave and defeat the Flame Demon at the lava pit",
+        "params": { "monsterType": "flame-demon" },
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-treasure",
+          "type": "collect_treasure",
+          "description": "Collect the treasure from the magma depths",
+          "trackProgress": true,
+          "rewards": { "gold": 15 }
+        }
+      ]
     },
     "treasures": [{ "x": 4, "y": 5, "id": "treasure-bmp-1" }],
     "playerStartPositions": [{ "x": 0, "y": 0 }, { "x": 1, "y": 0 }, { "x": 0, "y": 1 }, { "x": 1, "y": 1 }]
@@ -444,11 +556,9 @@
     "mapLayout": [
       { "id": "SMP1", "x": 1, "y": 0, "terrain": "normal", "features": [] },
       { "id": "SMP2", "x": 2, "y": 0, "terrain": "normal", "features": [] },
-
       { "id": "SMP3", "x": 0, "y": 1, "terrain": "normal", "features": [] },
       { "id": "SMP4", "x": 1, "y": 1, "terrain": "normal", "features": [] },
       { "id": "SMP5", "x": 2, "y": 1, "terrain": "normal", "features": [] },
-
       { "id": "SMP6", "x": 0, "y": 2, "terrain": "normal", "features": [] },
       { "id": "SMP7", "x": 1, "y": 2, "terrain": "normal", "features": [] },
       { "id": "SMP8", "x": 2, "y": 2, "terrain": "normal", "features": [] },
@@ -457,7 +567,6 @@
       { "id": "SMP11", "x": 5, "y": 2, "terrain": "normal", "features": [] },
       { "id": "SMP12", "x": 6, "y": 2, "terrain": "hazardous", "features": [] },
       { "id": "SMP13", "x": 7, "y": 2, "terrain": "hazardous", "features": [] },
-
       { "id": "SMP14", "x": 0, "y": 3, "terrain": "normal", "features": [] },
       { "id": "SMP15", "x": 1, "y": 3, "terrain": "normal", "features": [] },
       { "id": "SMP16", "x": 2, "y": 3, "terrain": "normal", "features": [] },
@@ -465,13 +574,11 @@
       { "id": "SMP18", "x": 6, "y": 3, "terrain": "hazardous", "features": [] },
       { "id": "SMP19", "x": 7, "y": 3, "terrain": "hazardous", "features": [] },
       { "id": "SMP20", "x": 8, "y": 3, "terrain": "hazardous", "features": [] },
-
       { "id": "SMP21", "x": 1, "y": 4, "terrain": "normal", "features": [] },
       { "id": "SMP22", "x": 2, "y": 4, "terrain": "normal", "features": [] },
       { "id": "SMP23", "x": 6, "y": 4, "terrain": "hazardous", "features": ["loot"] },
       { "id": "SMP24", "x": 7, "y": 4, "terrain": "hazardous", "features": [] },
       { "id": "SMP25", "x": 8, "y": 4, "terrain": "hazardous", "features": [] },
-
       { "id": "SMP26", "x": 7, "y": 5, "terrain": "hazardous", "features": ["treasure"] },
       { "id": "SMP27", "x": 8, "y": 5, "terrain": "hazardous", "features": [] }
     ],
@@ -493,8 +600,25 @@
       }
     ],
     "objectives": {
-      "primary": "Cross to the lava pit and defeat the Magma Golem",
-      "secondary": "Complete within 8 rounds"
+      "primary": {
+        "id": "primary-kill-boss",
+        "type": "kill_boss",
+        "description": "Cross to the lava pit and defeat the Magma Golem",
+        "params": { "monsterType": "magma-golem" },
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-time",
+          "type": "time_limit",
+          "description": "Complete within 8 rounds",
+          "params": { "rounds": 8 },
+          "trackProgress": true,
+          "rewards": { "experience": 10 }
+        }
+      ],
+      "globalTimeLimit": 8
     },
     "treasures": [{ "x": 7, "y": 5, "id": "treasure-smp-1" }],
     "playerStartPositions": [{ "x": 0, "y": 2 }, { "x": 0, "y": 3 }, { "x": 1, "y": 1 }, { "x": 1, "y": 4 }]
@@ -561,8 +685,23 @@
       }
     ],
     "objectives": {
-      "primary": "Reach the exit on the far side of the pit",
-      "secondary": "Avoid the lava"
+      "primary": {
+        "id": "primary-escape",
+        "type": "escape",
+        "description": "Reach the exit on the far side of the pit",
+        "params": { "locations": [{ "q": 5, "r": 11 }, { "q": 6, "r": 11 }] },
+        "trackProgress": true,
+        "milestones": [50, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-no-damage",
+          "type": "no_damage",
+          "description": "Avoid the lava",
+          "trackProgress": false,
+          "rewards": { "experience": 10 }
+        }
+      ]
     },
     "treasures": [],
     "playerStartPositions": [
@@ -631,8 +770,24 @@
       }
     ],
     "objectives": {
-      "primary": "Defeat the Flame Demon and claim the treasure",
-      "secondary": "Survive the deep pit"
+      "primary": {
+        "id": "primary-kill-boss",
+        "type": "kill_boss",
+        "description": "Defeat the Flame Demon and claim the treasure",
+        "params": { "monsterType": "flame-demon" },
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      },
+      "secondary": [
+        {
+          "id": "secondary-survive",
+          "type": "survive_rounds",
+          "description": "Survive the deep pit",
+          "params": { "rounds": 5 },
+          "trackProgress": true,
+          "rewards": { "experience": 10 }
+        }
+      ]
     },
     "treasures": [],
     "playerStartPositions": [
@@ -640,6 +795,70 @@
       { "q": 2, "r": 1 },
       { "q": 0, "r": 2 },
       { "q": 1, "r": 2 }
+    ]
+  },
+  {
+    "name": "Training Dummy - Part 1",
+    "difficulty": 1,
+    "mapLayout": [
+      { "id": "TD1a", "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD1b", "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD1c", "coordinates": { "q": 2, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD1d", "coordinates": { "q": 3, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD1e", "coordinates": { "q": 4, "r": 0 }, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "training-dummy",
+        "positions": [{ "q": 2, "r": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat the training dummy",
+        "trackProgress": true,
+        "milestones": [100]
+      }
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 0, "r": 0 },
+      { "q": 1, "r": 0 }
+    ]
+  },
+  {
+    "name": "Training Dummy - Part 2",
+    "difficulty": 1,
+    "mapLayout": [
+      { "id": "TD2a", "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD2b", "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD2c", "coordinates": { "q": 2, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD2d", "coordinates": { "q": 3, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "TD2e", "coordinates": { "q": 4, "r": 0 }, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "training-dummy",
+        "positions": [{ "q": 3, "r": 0 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat the training dummy",
+        "trackProgress": true,
+        "milestones": [100]
+      }
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 0, "r": 0 },
+      { "q": 1, "r": 0 }
     ]
   }
 ]

@@ -5,13 +5,14 @@
  * character selection, and room association.
  */
 
+import { randomUUID } from 'crypto';
 import type { CharacterClass } from '../../../shared/types/entities';
 import { ConnectionStatus } from '../../../shared/types/entities';
 import { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
 
 export interface PlayerData {
   id: string;
-  uuid: string;
+  userId: string; // Database user ID (from JWT authentication)
   nickname: string;
   roomId: string | null; // Room this player instance belongs to
   characterClasses: CharacterClass[]; // Support multi-character control
@@ -30,7 +31,7 @@ export { MAX_CHARACTERS_PER_PLAYER } from '../../../shared/constants/game';
 
 export class Player {
   public readonly id: string;
-  public readonly uuid: string;
+  public readonly userId: string; // Database user ID (from JWT authentication)
   private _nickname: string;
   private _roomId: string | null;
   private _characterClasses: CharacterClass[]; // Support multi-character control
@@ -45,7 +46,7 @@ export class Player {
 
   constructor(data: PlayerData) {
     this.id = data.id;
-    this.uuid = data.uuid;
+    this.userId = data.userId;
     this._nickname = data.nickname;
     this._roomId = data.roomId;
     this._characterClasses = data.characterClasses || [];
@@ -217,7 +218,7 @@ export class Player {
   toJSON(): PlayerData {
     return {
       id: this.id,
-      uuid: this.uuid,
+      userId: this.userId,
       nickname: this._nickname,
       roomId: this._roomId,
       characterClasses: this._characterClasses,
@@ -234,12 +235,14 @@ export class Player {
 
   /**
    * Create a new Player instance
+   * @param userId - Database user ID (from JWT authentication)
+   * @param nickname - Display name for the player
    */
-  static create(uuid: string, nickname: string): Player {
+  static create(userId: string, nickname: string): Player {
     const now = new Date();
     return new Player({
-      id: `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      uuid,
+      id: randomUUID(), // Room instance ID
+      userId,           // Database user ID (from JWT)
       nickname: nickname.trim(),
       roomId: null,
       characterClasses: [],
