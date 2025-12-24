@@ -88,16 +88,20 @@ export type RefreshTokenDto = z.infer<typeof refreshTokenSchema>;
 
 /**
  * Character name validation
- * - Length: 1-30 characters
+ * - Length: 1-30 characters (after trimming)
  * - No HTML tags (XSS prevention)
- * - Whitespace trimmed
+ * - Whitespace trimmed before validation
  */
 export const characterNameSchema = z
   .string()
-  .min(1, 'Character name is required')
-  .max(30, 'Character name must not exceed 30 characters')
-  .regex(/^[^<>]+$/, 'Character name cannot contain HTML tags')
-  .transform((val) => val.trim());
+  .transform((val) => val.trim())
+  .refine((val) => val.length >= 1, { message: 'Character name is required' })
+  .refine((val) => val.length <= 30, {
+    message: 'Character name must not exceed 30 characters',
+  })
+  .refine((val) => !/[<>]/.test(val), {
+    message: 'Character name cannot contain HTML tags',
+  });
 
 /**
  * Character creation request

@@ -3,7 +3,7 @@
  * Form to create a new character with class selection
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { characterService } from '../services/character.service';
 import { getApiUrl } from '../config/api';
@@ -46,13 +46,24 @@ export function CreateCharacter() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
+    // Trim whitespace from name for validation
+    const trimmedName = formData.name.trim();
+
+    // Validate name is not empty (after trimming)
+    if (!trimmedName) {
       setError('Character name is required');
       return;
     }
 
-    if (formData.name.length < 1 || formData.name.length > 30) {
+    // Validate name length (1-30 characters after trimming)
+    if (trimmedName.length < 1 || trimmedName.length > 30) {
       setError('Character name must be 1-30 characters');
+      return;
+    }
+
+    // Validate name does not contain HTML tags (XSS prevention)
+    if (/<|>/.test(trimmedName)) {
+      setError('Character name cannot contain < or > characters');
       return;
     }
 
@@ -66,7 +77,7 @@ export function CreateCharacter() {
       setError(null);
 
       await characterService.createCharacter({
-        name: formData.name.trim(),
+        name: trimmedName,
         classId: formData.classId,
       });
 
