@@ -46,7 +46,7 @@
     bottom: 44px; /* Leave space for card pile bar */
     width: 100%;
     height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
-    z-index: 30; /* Above turn status and game log */
+    z-index: var(--z-index-card-selection-overlay); /* Above turn status and game log */
     animation: slideUpIn 300ms ease-out forwards;
     /* Prevent click-through to underlying elements */
     background-color: transparent;
@@ -100,7 +100,7 @@
     bottom: 44px; /* Leave space for card pile bar */
     width: 100%;
     height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
-    z-index: 30; /* Above turn status and game log */
+    z-index: var(--z-index-card-selection-overlay); /* Above turn status and game log */
     animation: slideLeftIn 300ms ease-out forwards;
     /* Prevent click-through to underlying elements */
     background-color: transparent;
