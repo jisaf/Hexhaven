@@ -15,6 +15,7 @@ import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner'
 import { DebugConsole } from './components/DebugConsole';
 import Header from './components/Header';
 import Menu from './components/Menu';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css';
 
 // Lazy load route components
@@ -154,9 +155,9 @@ function Layout() {
         <Route path="/" element={<Lobby />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/characters" element={<Characters />} />
-        <Route path="/characters/new" element={<CreateCharacter />} />
-        <Route path="/history" element={<MatchHistory />} />
+        <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
+        <Route path="/characters/new" element={<ProtectedRoute><CreateCharacter /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><MatchHistory /></ProtectedRoute>} />
         <Route path="/creator/items" element={<ItemCreatorTool />} />
         <Route path="/game/:roomCode" element={<GameBoard />} />
         <Route path="/demo" element={<HexMapDemo />} />
