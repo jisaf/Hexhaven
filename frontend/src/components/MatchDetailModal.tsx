@@ -10,6 +10,7 @@ import type { GameResultDetail } from '../services/game-history.service';
 interface MatchDetailModalProps {
   game: GameResultDetail;
   onClose: () => void;
+  onReturnToLobby?: () => void;
 }
 
 /**
@@ -47,7 +48,7 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export const MatchDetailModal: React.FC<MatchDetailModalProps> = ({ game, onClose }) => {
+export const MatchDetailModal: React.FC<MatchDetailModalProps> = ({ game, onClose, onReturnToLobby }) => {
   return (
     <div className="match-detail-overlay" onClick={onClose}>
       <div className="match-detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -222,8 +223,13 @@ export const MatchDetailModal: React.FC<MatchDetailModalProps> = ({ game, onClos
           </div>
         </div>
 
-        {/* Close Button */}
+        {/* Action Buttons */}
         <div className="match-detail-actions">
+          {onReturnToLobby && (
+            <button className="btn-lobby" onClick={onReturnToLobby}>
+              Back to Lobby
+            </button>
+          )}
           <button className="btn-close" onClick={onClose}>
             Close
           </button>
