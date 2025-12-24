@@ -153,14 +153,14 @@ export function CharacterDetail() {
     loadCharacter();
   }, [loadCharacter]);
 
-  // Define tabs
+  // Define tabs with loading indicators where applicable
   const tabs = [
     {
       label: 'Overview',
       content: <OverviewTab character={character} />,
     },
     {
-      label: 'Inventory',
+      label: inventoryLoading ? 'Inventory...' : 'Inventory',
       content: (
         <InventoryTabContent
           ownedItems={ownedItems}

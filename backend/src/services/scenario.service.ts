@@ -170,7 +170,8 @@ export class ScenarioService {
       // Full objectives structure for buildScenarioObjectives
       objectives: objectives,
       // String description for backward compatibility with Scenario Designer
-      objectivePrimary: objectives?.primary?.description || 'Complete the scenario',
+      objectivePrimary:
+        objectives?.primary?.description || 'Complete the scenario',
       objectiveSecondary: objectives?.secondary?.[0]?.description,
       treasures: dbScenario.treasures,
       playerStartPositions,

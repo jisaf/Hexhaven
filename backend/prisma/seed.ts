@@ -625,8 +625,12 @@ async function seedCharacterInventory() {
             if (item.slot !== 'SMALL') {
               equippedSlots.add(item.slot);
             }
-          } catch {
-            // Slot already taken, skip silently
+          } catch (err) {
+            // Expected: unique constraint violations for slot conflicts
+            // Log at debug level for troubleshooting seed issues
+            if (process.env.DEBUG_SEED) {
+              console.debug(`Skipped equipping ${item.name} to ${character.name}: ${err instanceof Error ? err.message : err}`);
+            }
           }
         }
       }

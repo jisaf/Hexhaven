@@ -572,7 +572,9 @@ export class GameGateway
     };
 
     // DEBUG: Log what objectives are being sent
-    this.logger.log(`[DEBUG-OBJECTIVES] Sanitized objectives being sent: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`);
+    this.logger.log(
+      `[DEBUG-OBJECTIVES] Sanitized objectives being sent: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`,
+    );
 
     Object.assign(gameStartedPayload, {
       // Background image configuration (Issue #191)
@@ -1607,7 +1609,9 @@ export class GameGateway
       };
 
       // DEBUG: Log what objectives are being sent (handleStartGame path)
-      this.logger.log(`[DEBUG-OBJECTIVES-START] Sanitized objectives: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`);
+      this.logger.log(
+        `[DEBUG-OBJECTIVES-START] Sanitized objectives: ${JSON.stringify(gameStartedPayload.objectives?.primary)}`,
+      );
 
       Object.assign(gameStartedPayload, {
         // Background image configuration (Issue #191)
@@ -4607,49 +4611,49 @@ export class GameGateway
       // Build player results for database (including all characters for multi-character players)
       // Calculated outside try block so it's available for campaign recording even if game result save fails
       const playerResults = room.players.flatMap((p: any) => {
-          const stats = playerStatsMap?.get(p.userId);
-          const loot = lootByPlayer.get(p.userId);
-          const playerCharacters = characterService.getCharactersByPlayerId(
-            p.userId,
-          );
+        const stats = playerStatsMap?.get(p.userId);
+        const loot = lootByPlayer.get(p.userId);
+        const playerCharacters = characterService.getCharactersByPlayerId(
+          p.userId,
+        );
 
-          // Calculate experience for this player (shared across all their characters)
-          let playerExperience = isVictory ? 10 : 0;
-          if (isVictory && objectives?.secondary) {
-            for (const secondary of objectives.secondary) {
-              const result = secondaryResults.get(secondary.id);
-              if (result?.complete && secondary.rewards?.experience) {
-                playerExperience +=
-                  secondary.rewards.experience / room.players.length; // Distribute evenly
-              }
+        // Calculate experience for this player (shared across all their characters)
+        let playerExperience = isVictory ? 10 : 0;
+        if (isVictory && objectives?.secondary) {
+          for (const secondary of objectives.secondary) {
+            const result = secondaryResults.get(secondary.id);
+            if (result?.complete && secondary.rewards?.experience) {
+              playerExperience +=
+                secondary.rewards.experience / room.players.length; // Distribute evenly
             }
           }
+        }
 
-          // Return results for each character the player controls
-          return playerCharacters.map((character) => ({
-            userId: p.userId,
-            // Use database character UUID for GameResult (required UUID format)
-            // Falls back to player UUID for anonymous/guest players
-            characterId: character?.userCharacterId || p.userId,
-            // Keep persistentCharacterId for campaign tracking (same value)
-            persistentCharacterId: character?.userCharacterId || undefined,
-            characterClass: character?.characterClass || 'Unknown',
-            characterName: p.nickname,
-            survived: !character?.exhausted,
-            wasExhausted: character?.exhausted || false,
-            damageDealt: stats?.damageDealt || 0,
-            damageTaken: stats?.damageTaken || 0,
-            monstersKilled: stats?.monstersKilled || 0,
-            lootCollected: loot
-              ? lootTokens.filter((t: any) => t.collectedBy === p.userId).length
-              : 0,
-            cardsLost: stats?.cardsLost || 0,
-            experienceGained: Math.floor(
-              playerExperience / playerCharacters.length,
-            ), // Split XP across characters
-            goldGained: Math.floor((loot?.gold || 0) / playerCharacters.length), // Split gold across characters
-          }));
-        });
+        // Return results for each character the player controls
+        return playerCharacters.map((character) => ({
+          userId: p.userId,
+          // Use database character UUID for GameResult (required UUID format)
+          // Falls back to player UUID for anonymous/guest players
+          characterId: character?.userCharacterId || p.userId,
+          // Keep persistentCharacterId for campaign tracking (same value)
+          persistentCharacterId: character?.userCharacterId || undefined,
+          characterClass: character?.characterClass || 'Unknown',
+          characterName: p.nickname,
+          survived: !character?.exhausted,
+          wasExhausted: character?.exhausted || false,
+          damageDealt: stats?.damageDealt || 0,
+          damageTaken: stats?.damageTaken || 0,
+          monstersKilled: stats?.monstersKilled || 0,
+          lootCollected: loot
+            ? lootTokens.filter((t: any) => t.collectedBy === p.userId).length
+            : 0,
+          cardsLost: stats?.cardsLost || 0,
+          experienceGained: Math.floor(
+            playerExperience / playerCharacters.length,
+          ), // Split XP across characters
+          goldGained: Math.floor((loot?.gold || 0) / playerCharacters.length), // Split gold across characters
+        }));
+      });
 
       // Save game result to database (can fail gracefully)
       try {
@@ -4695,138 +4699,139 @@ export class GameGateway
         `[Campaign Debug] room.campaignId=${room.campaignId}, room.scenarioId=${room.scenarioId}, isVictory=${isVictory}`,
       );
       if (room.campaignId) {
-          // Issue #244 - Campaign Mode: Record scenario completion in campaign
-          try {
-            // Get exhausted character IDs for permadeath handling
-            const exhaustedCharacterIds = room.players.flatMap((p: any) => {
-              const playerChars = characterService.getCharactersByPlayerId(
-                p.userId,
-              );
-              return playerChars
-                .filter((c: any) => c?.exhausted)
-                .map(
-                  (c: any): string | undefined =>
-                    c?.userCharacterId as string | undefined,
-                )
-                .filter((id: string | undefined): id is string => !!id);
-            });
+        // Issue #244 - Campaign Mode: Record scenario completion in campaign
+        try {
+          // Get exhausted character IDs for permadeath handling
+          const exhaustedCharacterIds = room.players.flatMap((p: any) => {
+            const playerChars = characterService.getCharactersByPlayerId(
+              p.userId,
+            );
+            return playerChars
+              .filter((c: any) => c?.exhausted)
+              .map(
+                (c: any): string | undefined =>
+                  c?.userCharacterId as string | undefined,
+              )
+              .filter((id: string | undefined): id is string => !!id);
+          });
 
-            // Build character results for campaign tracking (use persistentCharacterId for DB updates)
-            const characterResults = playerResults
-              .filter((pr: any) => pr.persistentCharacterId)
-              .map((pr: any) => ({
-                characterId: pr.persistentCharacterId,
-                experienceGained: pr.experienceGained || 0,
-                goldGained: pr.goldGained || 0,
-              }));
+          // Build character results for campaign tracking (use persistentCharacterId for DB updates)
+          const characterResults = playerResults
+            .filter((pr: any) => pr.persistentCharacterId)
+            .map((pr: any) => ({
+              characterId: pr.persistentCharacterId,
+              experienceGained: pr.experienceGained || 0,
+              goldGained: pr.goldGained || 0,
+            }));
 
-            // Record in campaign service
-            const campaignResult =
-              await this.campaignService.recordScenarioCompletion(
-                room.campaignId,
-                room.scenarioId || '',
-                isVictory,
-                exhaustedCharacterIds,
-                characterResults,
-              );
+          // Record in campaign service
+          const campaignResult =
+            await this.campaignService.recordScenarioCompletion(
+              room.campaignId,
+              room.scenarioId || '',
+              isVictory,
+              exhaustedCharacterIds,
+              characterResults,
+            );
 
-            // Emit campaign completion events
-            this.server.to(roomCode).emit('campaign_scenario_completed', {
+          // Emit campaign completion events
+          this.server.to(roomCode).emit('campaign_scenario_completed', {
+            campaignId: room.campaignId,
+            scenarioId: room.scenarioId,
+            victory: isVictory,
+            newlyUnlockedScenarios: campaignResult.newlyUnlockedScenarios,
+            healedCharacters: campaignResult.healedCharacters,
+            retiredCharacters: campaignResult.retiredCharacters,
+            campaignCompleted: campaignResult.campaignCompleted,
+            experienceGained: campaignResult.experienceGained,
+            goldGained: campaignResult.goldGained,
+          });
+
+          this.logger.log(
+            `Campaign scenario completed: campaignId=${room.campaignId}, victory=${isVictory}, ` +
+              `unlocked=${campaignResult.newlyUnlockedScenarios.length}, ` +
+              `retired=${campaignResult.retiredCharacters.length}, ` +
+              `campaignCompleted=${campaignResult.campaignCompleted}`,
+          );
+
+          // If campaign is completed, emit campaign completed event
+          if (campaignResult.campaignCompleted) {
+            this.server.to(roomCode).emit('campaign_completed', {
               campaignId: room.campaignId,
-              scenarioId: room.scenarioId,
-              victory: isVictory,
-              newlyUnlockedScenarios: campaignResult.newlyUnlockedScenarios,
-              healedCharacters: campaignResult.healedCharacters,
-              retiredCharacters: campaignResult.retiredCharacters,
-              campaignCompleted: campaignResult.campaignCompleted,
-              experienceGained: campaignResult.experienceGained,
-              goldGained: campaignResult.goldGained,
+              victory:
+                isVictory && campaignResult.retiredCharacters.length === 0,
+            });
+          }
+        } catch (campaignError) {
+          this.logger.error(
+            `Failed to record campaign scenario completion: ${campaignError instanceof Error ? campaignError.message : String(campaignError)}`,
+          );
+          // Don't throw - game completion should still succeed
+        }
+      } else {
+        // Issue #204 - Non-campaign games: persist gold directly using atomic increment
+        for (const playerResult of playerResults) {
+          // Skip if no persistent character ID (anonymous/non-persistent characters)
+          if (!playerResult.persistentCharacterId) {
+            this.logger.log(
+              `Skipping gold persistence for non-persistent character ${playerResult.characterId}`,
+            );
+            continue;
+          }
+
+          try {
+            // Use atomic increment (same pattern as campaign service)
+            await this.prisma.character.update({
+              where: { id: playerResult.persistentCharacterId },
+              data: { gold: { increment: playerResult.goldGained } },
             });
 
             this.logger.log(
-              `Campaign scenario completed: campaignId=${room.campaignId}, victory=${isVictory}, ` +
-                `unlocked=${campaignResult.newlyUnlockedScenarios.length}, ` +
-                `retired=${campaignResult.retiredCharacters.length}, ` +
-                `campaignCompleted=${campaignResult.campaignCompleted}`,
+              `Persisted gold for character ${playerResult.persistentCharacterId}: +${playerResult.goldGained}`,
             );
-
-            // If campaign is completed, emit campaign completed event
-            if (campaignResult.campaignCompleted) {
-              this.server.to(roomCode).emit('campaign_completed', {
-                campaignId: room.campaignId,
-                victory:
-                  isVictory && campaignResult.retiredCharacters.length === 0,
-              });
-            }
-          } catch (campaignError) {
-            this.logger.error(
-              `Failed to record campaign scenario completion: ${campaignError instanceof Error ? campaignError.message : String(campaignError)}`,
+          } catch (error) {
+            this.logger.warn(
+              `Could not persist gold for character ${playerResult.persistentCharacterId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
-            // Don't throw - game completion should still succeed
           }
-        } else {
-          // Issue #204 - Non-campaign games: persist gold directly using atomic increment
-          for (const playerResult of playerResults) {
-            // Skip if no persistent character ID (anonymous/non-persistent characters)
-            if (!playerResult.persistentCharacterId) {
-              this.logger.log(
-                `Skipping gold persistence for non-persistent character ${playerResult.characterId}`,
-              );
-              continue;
-            }
+        }
+      }
 
+      // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
+      // This resets consumed items and refreshes spent items for the next scenario
+      for (const player of room.players) {
+        const playerCharacters = characterService.getCharactersByPlayerId(
+          player.userId,
+        );
+        for (const character of playerCharacters) {
+          if (
+            character &&
+            characterService.isPersistentCharacter(character.id)
+          ) {
             try {
-              // Use atomic increment (same pattern as campaign service)
-              await this.prisma.character.update({
-                where: { id: playerResult.persistentCharacterId },
-                data: { gold: { increment: playerResult.goldGained } },
-              });
-
-              this.logger.log(
-                `Persisted gold for character ${playerResult.persistentCharacterId}: +${playerResult.goldGained}`,
+              const refreshResult = await this.inventoryService.refreshAllItems(
+                character.id,
               );
-            } catch (error) {
-              this.logger.warn(
-                `Could not persist gold for character ${playerResult.persistentCharacterId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              );
-            }
-          }
-        }
-
-        // Refresh all items for characters after scenario completion (Issue #205 - Phase 4.4)
-        // This resets consumed items and refreshes spent items for the next scenario
-        for (const player of room.players) {
-          const playerCharacters = characterService.getCharactersByPlayerId(
-            player.userId,
-          );
-          for (const character of playerCharacters) {
-            if (
-              character &&
-              characterService.isPersistentCharacter(character.id)
-            ) {
-              try {
-                const refreshResult =
-                  await this.inventoryService.refreshAllItems(character.id);
-                if (refreshResult.refreshedItems.length > 0) {
-                  const payload: ItemsRefreshedPayload = {
-                    characterId: character.id,
-                    refreshedItems: refreshResult.refreshedItems,
-                    trigger: 'scenario_end',
-                  };
-                  this.server.to(roomCode).emit('items_refreshed', payload);
-                  this.logger.log(
-                    `Refreshed ${refreshResult.refreshedItems.length} items for character ${character.id} after scenario`,
-                  );
-                }
-              } catch (refreshError) {
-                this.logger.warn(
-                  `Failed to refresh items for character ${character.id}: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+              if (refreshResult.refreshedItems.length > 0) {
+                const payload: ItemsRefreshedPayload = {
+                  characterId: character.id,
+                  refreshedItems: refreshResult.refreshedItems,
+                  trigger: 'scenario_end',
+                };
+                this.server.to(roomCode).emit('items_refreshed', payload);
+                this.logger.log(
+                  `Refreshed ${refreshResult.refreshedItems.length} items for character ${character.id} after scenario`,
                 );
-                // Continue with other characters
               }
+            } catch (refreshError) {
+              this.logger.warn(
+                `Failed to refresh items for character ${character.id}: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`,
+              );
+              // Continue with other characters
             }
           }
         }
+      }
     } catch (error) {
       this.logger.error(
         `Check scenario completion error: ${error instanceof Error ? error.message : String(error)}`,

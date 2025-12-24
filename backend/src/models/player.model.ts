@@ -242,7 +242,7 @@ export class Player {
     const now = new Date();
     return new Player({
       id: randomUUID(), // Room instance ID
-      userId,           // Database user ID (from JWT)
+      userId, // Database user ID (from JWT)
       nickname: nickname.trim(),
       roomId: null,
       characterClasses: [],
