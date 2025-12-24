@@ -524,6 +524,118 @@ async function seedTestUsers() {
   console.log(`✓ Seeded ${userCount} test users with ${characterCount} new characters`);
 }
 
+/**
+ * Seed random items to all characters for testing inventory display
+ */
+async function seedCharacterInventory() {
+  console.log('Seeding character inventory...');
+
+  // Get all characters and items
+  const characters = await prisma.character.findMany();
+  const items = await prisma.item.findMany();
+
+  if (characters.length === 0) {
+    console.log('  No characters found, skipping inventory seeding');
+    return;
+  }
+
+  if (items.length === 0) {
+    console.log('  No items found, skipping inventory seeding');
+    return;
+  }
+
+  let inventoryCount = 0;
+  let equipmentCount = 0;
+
+  // Group items by slot for better distribution
+  const itemsBySlot: Record<string, typeof items> = {};
+  for (const item of items) {
+    if (!itemsBySlot[item.slot]) {
+      itemsBySlot[item.slot] = [];
+    }
+    itemsBySlot[item.slot].push(item);
+  }
+
+  for (const character of characters) {
+    // Randomly select 3-8 items for each character
+    const numItems = Math.floor(Math.random() * 6) + 3;
+    const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+    const selectedItems = shuffledItems.slice(0, Math.min(numItems, items.length));
+
+    // Track which slots we've equipped to avoid duplicates
+    const equippedSlots: Set<string> = new Set();
+
+    for (const item of selectedItems) {
+      // Add to inventory (skip if already owned)
+      const existingInventory = await prisma.characterInventory.findUnique({
+        where: {
+          characterId_itemId: {
+            characterId: character.id,
+            itemId: item.id,
+          },
+        },
+      });
+
+      if (!existingInventory) {
+        await prisma.characterInventory.create({
+          data: {
+            characterId: character.id,
+            itemId: item.id,
+          },
+        });
+        inventoryCount++;
+      }
+
+      // Equip items to appropriate slots (one per slot, or multiple for SMALL)
+      const canEquip = item.slot === 'SMALL' || !equippedSlots.has(item.slot);
+
+      if (canEquip && Math.random() > 0.3) { // 70% chance to equip owned items
+        // Check if already equipped
+        const existingEquipment = await prisma.characterEquipment.findFirst({
+          where: {
+            characterId: character.id,
+            itemId: item.id,
+          },
+        });
+
+        if (!existingEquipment) {
+          // For SMALL items, find next available slot index
+          let slotIndex = 0;
+          if (item.slot === 'SMALL') {
+            const existingSmallItems = await prisma.characterEquipment.count({
+              where: {
+                characterId: character.id,
+                slot: 'SMALL',
+              },
+            });
+            slotIndex = existingSmallItems;
+            if (slotIndex >= 3) continue; // Max 3 small items
+          }
+
+          try {
+            await prisma.characterEquipment.create({
+              data: {
+                characterId: character.id,
+                itemId: item.id,
+                slot: item.slot as any, // ItemSlot enum
+                slotIndex,
+              },
+            });
+            equipmentCount++;
+            if (item.slot !== 'SMALL') {
+              equippedSlots.add(item.slot);
+            }
+          } catch {
+            // Slot already taken, skip silently
+          }
+        }
+      }
+    }
+  }
+
+  console.log(`✓ Seeded inventory: ${inventoryCount} items owned, ${equipmentCount} items equipped`);
+}
+
 async function main() {
   console.log('Starting database seed...\n');
 
@@ -536,6 +648,7 @@ async function main() {
     await seedScenarios();
     await seedCampaignTemplates(); // Issue #244 - Campaign Mode (DB-driven templates)
     await seedTrivialCampaignTemplate(); // Trivial 2-scenario campaign for demos
+    await seedCharacterInventory(); // Seed random items to characters for testing
 
     console.log('\n✅ Database seed completed successfully!');
   } catch (error) {

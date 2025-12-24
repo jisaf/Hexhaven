@@ -4,15 +4,18 @@
  * Allows players to select multiple characters (up to 4) in the lobby.
  * Features:
  * - Inline character selection (no modals)
- * - Shows selected characters as removable chips
+ * - Shows selected characters as removable chips with equipment summary
  * - "Add Character" button that expands inline selection
  * - Supports both authenticated (persistent) and anonymous (session) users
  */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
 import { UserCharacterSelect } from '../UserCharacterSelect';
+import { EquipmentSummary } from '../character/EquipmentSummary';
+import { useInventory } from '../../hooks/useInventory';
 import { authService } from '../../services/auth.service';
 import { MAX_CHARACTERS_PER_PLAYER } from '../../../../shared/constants/game';
 import { getCharacterColor } from '../../../../shared/utils/character-colors';
@@ -36,6 +39,50 @@ export interface MultiCharacterPanelProps {
   onRemoveCharacter: (index: number) => void;
   onSetActiveCharacter?: (index: number) => void;
   activeCharacterIndex?: number;
+}
+
+/**
+ * CharacterChipEquipment - Displays equipment summary for a single character
+ * Fetches inventory data independently for each character
+ */
+function CharacterChipEquipment({
+  characterId,
+  characterLevel,
+}: {
+  characterId: string;
+  characterLevel: number;
+}) {
+  const { equippedItems, loading } = useInventory({
+    characterId,
+    enabled: true,
+  });
+
+  if (loading) {
+    return (
+      <div className={styles.equipmentLoading}>
+        Loading...
+      </div>
+    );
+  }
+
+  // Show "no items" state when character has no equipment
+  if (!equippedItems || equippedItems.length === 0) {
+    return (
+      <div className={styles.noEquipment}>
+        No items equipped
+      </div>
+    );
+  }
+
+  return (
+    <EquipmentSummary
+      equippedItems={equippedItems}
+      characterId={characterId}
+      characterLevel={characterLevel}
+      showManageLink={false}
+      compact
+    />
+  );
 }
 
 export function MultiCharacterPanel({
@@ -95,30 +142,50 @@ export function MultiCharacterPanel({
               onClick={() => onSetActiveCharacter?.(index)}
               data-testid={`character-chip-${index}`}
             >
-              <div
-                className={styles.chipIcon}
-                style={{ backgroundColor: getCharacterColor(char.classType) }}
-              >
-                {char.classType.charAt(0)}
-              </div>
-              <div className={styles.chipInfo}>
-                <span className={styles.chipName}>
-                  {char.name || char.classType}
-                </span>
-                {char.level && (
-                  <span className={styles.chipLevel}>Lv.{char.level}</span>
+              {/* Character info row */}
+              <div className={styles.chipRow}>
+                <div
+                  className={styles.chipIcon}
+                  style={{ backgroundColor: getCharacterColor(char.classType) }}
+                >
+                  {char.classType.charAt(0)}
+                </div>
+                <div className={styles.chipInfo}>
+                  <span className={styles.chipName}>
+                    {char.name || char.classType}
+                  </span>
+                  {char.level && (
+                    <span className={styles.chipLevel}>Lv.{char.level}</span>
+                  )}
+                </div>
+                {/* Manage button for persistent characters */}
+                {isAuthenticated && char.id && (
+                  <Link
+                    to={`/characters/${char.id}?from=lobby`}
+                    className={styles.manageButton}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Manage
+                  </Link>
                 )}
+                <button
+                  className={styles.removeButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveCharacter(index);
+                  }}
+                  aria-label={t('removeCharacter', 'Remove character')}
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className={styles.removeButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveCharacter(index);
-                }}
-                aria-label={t('removeCharacter', 'Remove character')}
-              >
-                ×
-              </button>
+              {/* Equipment summary for authenticated users */}
+              {isAuthenticated && char.id && (
+                <CharacterChipEquipment
+                  characterId={char.id}
+                  characterLevel={char.level || 1}
+                />
+              )}
             </div>
           ))
         )}
