@@ -16,6 +16,7 @@ import type {
 } from '../types/user-character.types';
 import { ValidationError, NotFoundError, ConflictError } from '../types/errors';
 import { prisma as defaultPrisma } from '../db/client';
+import { characterNameSchema } from '../validation/schemas';
 
 @Injectable()
 export class UserCharacterService {
@@ -29,9 +30,15 @@ export class UserCharacterService {
     userId: string,
     dto: CreateCharacterDto,
   ): Promise<CharacterResponse> {
-    if (dto.name.length < 1 || dto.name.length > 30) {
-      throw new ValidationError('Character name must be 1-30 characters');
+    // Validate and sanitize character name using Zod schema
+    const nameValidation = characterNameSchema.safeParse(dto.name);
+    if (!nameValidation.success) {
+      const firstError = nameValidation.error.issues[0];
+      throw new ValidationError(
+        firstError?.message || 'Invalid character name',
+      );
     }
+    const validatedName = nameValidation.data;
 
     const characterClass = await this.prisma.characterClass.findUnique({
       where: { id: dto.classId },
@@ -43,7 +50,7 @@ export class UserCharacterService {
 
     const character = await this.prisma.character.create({
       data: {
-        name: dto.name,
+        name: validatedName,
         userId,
         classId: dto.classId,
         level: 1,
@@ -159,14 +166,23 @@ export class UserCharacterService {
       throw new ConflictError('Cannot modify character while in active game');
     }
 
-    if (dto.name && (dto.name.length < 1 || dto.name.length > 30)) {
-      throw new ValidationError('Character name must be 1-30 characters');
+    // Validate name if provided
+    let validatedName: string | undefined;
+    if (dto.name !== undefined) {
+      const nameValidation = characterNameSchema.safeParse(dto.name);
+      if (!nameValidation.success) {
+        const firstError = nameValidation.error.issues[0];
+        throw new ValidationError(
+          firstError?.message || 'Invalid character name',
+        );
+      }
+      validatedName = nameValidation.data;
     }
 
     const character = await this.prisma.character.update({
       where: { id: characterId },
       data: {
-        ...(dto.name && { name: dto.name }),
+        ...(validatedName && { name: validatedName }),
         ...(dto.experience !== undefined && { experience: dto.experience }),
         ...(dto.gold !== undefined && { gold: dto.gold }),
         ...(dto.health !== undefined && { health: dto.health }),

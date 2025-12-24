@@ -111,6 +111,105 @@ describe('UserCharacterService', () => {
         .toThrow(ValidationError);
     });
 
+    it('should reject name containing HTML script tags', async () => {
+      const dto = {
+        name: '<script>alert("xss")</script>',
+        classId: 'class-123',
+      };
+
+      await expect(service.createCharacter('user-123', dto))
+        .rejects
+        .toThrow(ValidationError);
+    });
+
+    it('should reject name containing HTML tags', async () => {
+      const dto = {
+        name: '<b>Bold Name</b>',
+        classId: 'class-123',
+      };
+
+      await expect(service.createCharacter('user-123', dto))
+        .rejects
+        .toThrow(ValidationError);
+    });
+
+    it('should reject name with only opening angle bracket', async () => {
+      const dto = {
+        name: 'Test < Name',
+        classId: 'class-123',
+      };
+
+      await expect(service.createCharacter('user-123', dto))
+        .rejects
+        .toThrow(ValidationError);
+    });
+
+    it('should reject name with only closing angle bracket', async () => {
+      const dto = {
+        name: 'Test > Name',
+        classId: 'class-123',
+      };
+
+      await expect(service.createCharacter('user-123', dto))
+        .rejects
+        .toThrow(ValidationError);
+    });
+
+    it('should trim whitespace from name', async () => {
+      const userId = 'user-123';
+      const dto = { name: '  Thorgar  ', classId: 'class-brute' };
+
+      mockPrisma.characterClass.findUnique.mockResolvedValue({
+        id: 'class-brute',
+        name: 'Brute',
+        startingHealth: 10,
+        handSize: 10,
+      });
+
+      mockPrisma.character.create.mockResolvedValue({
+        id: 'char-123',
+        name: 'Thorgar',
+        userId: 'user-123',
+        classId: 'class-brute',
+        level: 1,
+        experience: 0,
+        gold: 0,
+        health: 10,
+        perks: [],
+        inventory: [],
+        currentGameId: null,
+        campaignId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        class: {
+          id: 'class-brute',
+          name: 'Brute',
+        },
+      });
+
+      const result = await service.createCharacter(userId, dto);
+
+      expect(result.name).toBe('Thorgar');
+      expect(mockPrisma.character.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: 'Thorgar', // Should be trimmed
+          }),
+        })
+      );
+    });
+
+    it('should reject name that is only whitespace', async () => {
+      const dto = {
+        name: '   ',
+        classId: 'class-123',
+      };
+
+      await expect(service.createCharacter('user-123', dto))
+        .rejects
+        .toThrow(ValidationError);
+    });
+
     it('should reject non-existent character class', async () => {
       const dto = { name: 'Test', classId: 'invalid-class' };
 

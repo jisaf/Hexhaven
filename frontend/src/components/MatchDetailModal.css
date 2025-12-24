@@ -395,9 +395,12 @@
 .match-detail-actions {
   padding: 24px;
   display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
   justify-content: center;
 }
 
+.btn-lobby,
 .btn-close {
   min-width: 160px;
   min-height: 44px;
@@ -410,8 +413,21 @@
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
-  background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
   color: white;
+}
+
+.btn-lobby {
+  background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+}
+
+.btn-lobby:hover {
+  background: linear-gradient(135deg, #21618c 0%, #2980b9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-close {
+  background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
 }
 
 .btn-close:hover {
@@ -420,6 +436,7 @@
   box-shadow: 0 4px 12px rgba(127, 140, 141, 0.3);
 }
 
+.btn-lobby:active,
 .btn-close:active {
   transform: translateY(0);
 }
@@ -478,6 +495,7 @@
     grid-template-columns: 1fr;
   }
 
+  .btn-lobby,
   .btn-close {
     width: 100%;
   }
@@ -493,6 +511,7 @@
   .summary-item:hover,
   .loot-item:hover,
   .player-stats-card:hover,
+  .btn-lobby:hover,
   .btn-close:hover {
     transform: none;
   }

@@ -287,7 +287,11 @@ export const MatchHistory: React.FC = () => {
 
       {/* Detail Modal */}
       {selectedGame && (
-        <MatchDetailModal game={selectedGame} onClose={() => setSelectedGame(null)} />
+        <MatchDetailModal
+          game={selectedGame}
+          onClose={() => setSelectedGame(null)}
+          onReturnToLobby={() => navigate('/')}
+        />
       )}
     </div>
   );
