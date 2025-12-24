@@ -1,12 +1,12 @@
 ---
-description: Load context, create feature branch, plan with Opus, execute with Sonnet
-model: opusplan
+description: Load context, create feature branch, plan and implement with Opus
+model: opus
 thinking: true
 ---
 
 ## Goal
 
-Start a new feature with fresh context by clearing previous conversation history, loading project context, creating a feature branch from main, planning the implementation with Opus, and executing with Sonnet.
+Start a new feature with fresh context by clearing previous conversation history, loading project context, creating a feature branch from main, planning the implementation with Opus, and implementing with Opus.
 
 ## Execution Steps
 
@@ -19,7 +19,7 @@ Start a new feature with fresh context by clearing previous conversation history
    - Create descriptive branch name from the task (e.g., "add-user-auth" or "fix-login-bug")
    - Create and checkout new branch: `git checkout -b <branch-name>`
 5. **Plan with Opus**: Use Opus model to create a detailed implementation plan by entering plan mode and analyzing the codebase to design the implementation approach
-6. **Execute with Sonnet**: Switch to Sonnet model and implement the planned changes
+6. **Implement with Opus**: Continue with Opus to implement the planned changes
 
 ## Branch Naming Convention
 
