@@ -4,15 +4,18 @@
  * Allows players to select multiple characters (up to 4) in the lobby.
  * Features:
  * - Inline character selection (no modals)
- * - Shows selected characters as removable chips
+ * - Shows selected characters as removable chips with equipment summary
  * - "Add Character" button that expands inline selection
  * - Supports both authenticated (persistent) and anonymous (session) users
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
 import { UserCharacterSelect } from '../UserCharacterSelect';
+import { EquipmentSummary } from '../character/EquipmentSummary';
+import { useBatchInventory } from '../../hooks/useBatchInventory';
 import { authService } from '../../services/auth.service';
 import { MAX_CHARACTERS_PER_PLAYER } from '../../../../shared/constants/game';
 import { getCharacterColor } from '../../../../shared/utils/character-colors';
@@ -38,6 +41,59 @@ export interface MultiCharacterPanelProps {
   activeCharacterIndex?: number;
 }
 
+/**
+ * CharacterChipEquipment - Displays equipment summary for a single character
+ * Uses pre-fetched inventory data passed from parent to avoid N+1 API calls
+ */
+function CharacterChipEquipment({
+  characterId,
+  characterLevel,
+  equippedItems,
+  loading,
+  error,
+}: {
+  characterId: string;
+  characterLevel: number;
+  equippedItems: import('../../../../shared/types/entities').EquippedItems | null;
+  loading: boolean;
+  error: string | null;
+}) {
+  if (loading) {
+    return (
+      <div className={styles.equipmentLoading}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.equipmentError}>
+        Failed to load
+      </div>
+    );
+  }
+
+  // EquipmentSummary handles empty state internally
+  if (!equippedItems) {
+    return (
+      <div className={styles.noEquipment}>
+        No items equipped
+      </div>
+    );
+  }
+
+  return (
+    <EquipmentSummary
+      equippedItems={equippedItems}
+      characterId={characterId}
+      characterLevel={characterLevel}
+      showManageLink={false}
+      compact
+    />
+  );
+}
+
 export function MultiCharacterPanel({
   selectedCharacters,
   disabledCharacterIds,
@@ -49,6 +105,15 @@ export function MultiCharacterPanel({
   const { t } = useTranslation('lobby');
   const isAuthenticated = authService.isAuthenticated();
   const [showSelection, setShowSelection] = useState(false);
+
+  // Batch fetch inventories for all authenticated characters to avoid N+1 API calls
+  const characterIds = useMemo(
+    () => isAuthenticated
+      ? selectedCharacters.map(c => c.id).filter(Boolean)
+      : [],
+    [isAuthenticated, selectedCharacters]
+  );
+  const { getInventory } = useBatchInventory(characterIds);
 
   const canAddMore = selectedCharacters.length < MAX_CHARACTERS_PER_PLAYER;
 
@@ -95,30 +160,56 @@ export function MultiCharacterPanel({
               onClick={() => onSetActiveCharacter?.(index)}
               data-testid={`character-chip-${index}`}
             >
-              <div
-                className={styles.chipIcon}
-                style={{ backgroundColor: getCharacterColor(char.classType) }}
-              >
-                {char.classType.charAt(0)}
-              </div>
-              <div className={styles.chipInfo}>
-                <span className={styles.chipName}>
-                  {char.name || char.classType}
-                </span>
-                {char.level && (
-                  <span className={styles.chipLevel}>Lv.{char.level}</span>
+              {/* Character info row */}
+              <div className={styles.chipRow}>
+                <div
+                  className={styles.chipIcon}
+                  style={{ backgroundColor: getCharacterColor(char.classType) }}
+                >
+                  {char.classType.charAt(0)}
+                </div>
+                <div className={styles.chipInfo}>
+                  <span className={styles.chipName}>
+                    {char.name || char.classType}
+                  </span>
+                  {char.level && (
+                    <span className={styles.chipLevel}>Lv.{char.level}</span>
+                  )}
+                </div>
+                {/* Manage button for persistent characters (authenticated users with UUID-based IDs) */}
+                {isAuthenticated && char.id && (
+                  <Link
+                    to={`/characters/${char.id}?from=lobby`}
+                    className={styles.manageButton}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Manage
+                  </Link>
                 )}
+                <button
+                  className={styles.removeButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveCharacter(index);
+                  }}
+                  aria-label={t('removeCharacter', 'Remove character')}
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className={styles.removeButton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveCharacter(index);
-                }}
-                aria-label={t('removeCharacter', 'Remove character')}
-              >
-                ×
-              </button>
+              {/* Equipment summary for authenticated users with persistent characters */}
+              {isAuthenticated && char.id && (() => {
+                const inventory = getInventory(char.id);
+                return (
+                  <CharacterChipEquipment
+                    characterId={char.id}
+                    characterLevel={char.level || 1}
+                    equippedItems={inventory.equippedItems}
+                    loading={inventory.loading}
+                    error={inventory.error}
+                  />
+                );
+              })()}
             </div>
           ))
         )}

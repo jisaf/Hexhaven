@@ -27,6 +27,7 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
 const Characters = lazy(() => import('./pages/Characters').then(m => ({ default: m.Characters })));
 const CreateCharacter = lazy(() => import('./pages/CreateCharacter').then(m => ({ default: m.CreateCharacter })));
+const CharacterDetail = lazy(() => import('./pages/CharacterDetail').then(m => ({ default: m.CharacterDetail })));
 const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ default: m.MatchHistory })));
 const ItemCreatorTool = lazy(() => import('./pages/ItemCreatorTool').then(m => ({ default: m.ItemCreatorTool })));
 const CardDemo = lazy(() => import('./pages/CardDemo').then(m => ({ default: m.CardDemo })));
@@ -156,6 +157,7 @@ function Layout() {
         <Route path="/register" element={<Register />} />
         <Route path="/characters" element={<Characters />} />
         <Route path="/characters/new" element={<CreateCharacter />} />
+        <Route path="/characters/:characterId" element={<CharacterDetail />} />
         <Route path="/history" element={<MatchHistory />} />
         <Route path="/creator/items" element={<ItemCreatorTool />} />
         <Route path="/game/:roomCode" element={<GameBoard />} />
