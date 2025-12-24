@@ -182,10 +182,32 @@ export function GameBoard() {
   }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken, collectLootToken]);
 
   // Extract objectives from game state when it loads (Primary method)
+  // Sanitize to ensure we only have id, description, trackProgress (not type, milestones)
   useEffect(() => {
     if (gameState.gameData?.objectives) {
+      const raw = gameState.gameData.objectives;
+      // DEBUG: Log what we received from backend
+      console.log('[DEBUG-OBJECTIVES] Raw from backend:', JSON.stringify(raw.primary));
+      const sanitized = {
+        primary: {
+          id: raw.primary.id,
+          description: raw.primary.description,
+          trackProgress: raw.primary.trackProgress ?? true,
+        },
+        secondary: (raw.secondary || []).map((obj) => ({
+          id: obj.id,
+          description: obj.description,
+          trackProgress: obj.trackProgress ?? true,
+          optional: true,
+        })),
+        failureConditions: (raw.failureConditions || []).map((fc) => ({
+          id: fc.id,
+          description: fc.description,
+        })),
+      };
+      console.log('[DEBUG-OBJECTIVES] Sanitized (should NOT have type/milestones):', JSON.stringify(sanitized.primary));
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setObjectives(gameState.gameData.objectives);
+      setObjectives(sanitized);
     }
   }, [gameState.gameData]);
 
@@ -216,6 +238,23 @@ export function GameBoard() {
         };
       });
 
+      // DEBUG: Log objectives state when scenario completes
+      console.log('[DEBUG-SCENARIO-COMPLETE] objectives state:', JSON.stringify(objectives?.primary));
+      console.log('[DEBUG-SCENARIO-COMPLETE] objectives.primary.description:', objectives?.primary?.description);
+      console.log('[DEBUG-SCENARIO-COMPLETE] typeof description:', typeof objectives?.primary?.description);
+
+      const objectivesCompletedArr = [
+        ...(payload.primaryObjectiveCompleted && objectives?.primary?.description
+          ? [objectives.primary.description]
+          : []),
+        ...(payload.secondaryObjectivesCompleted?.map(id => {
+          const secondaryObj = objectives?.secondary?.find(obj => obj.id === id);
+          return secondaryObj?.description || id;
+        }) || []),
+      ];
+
+      console.log('[DEBUG-SCENARIO-COMPLETE] objectivesCompleted array:', JSON.stringify(objectivesCompletedArr));
+
       const result: ScenarioResult = {
         victory: payload.victory,
         scenarioName: gameState.gameData?.scenarioName || 'Unknown Scenario',
@@ -223,15 +262,7 @@ export function GameBoard() {
         lootCollected: payload.loot.reduce((sum, p) => sum + p.gold, 0),
         experienceGained: payload.experience,
         goldEarned: payload.loot.reduce((sum, p) => sum + p.gold, 0),
-        objectivesCompleted: [
-          ...(payload.primaryObjectiveCompleted && objectives?.primary?.description
-            ? [objectives.primary.description]
-            : []),
-          ...(payload.secondaryObjectivesCompleted?.map(id => {
-            const secondaryObj = objectives?.secondary?.find(obj => obj.id === id);
-            return secondaryObj?.description || id;
-          }) || []),
-        ],
+        objectivesCompleted: objectivesCompletedArr,
         playerStats,
       };
 
