@@ -12,6 +12,16 @@ import type {
 } from '../types/auth.types';
 import { getApiUrl } from '../config/api';
 
+// Lazy import to avoid circular dependency
+let websocketServiceInstance: { resetAuthState: () => void } | null = null;
+const getWebsocketService = async () => {
+  if (!websocketServiceInstance) {
+    const module = await import('./websocket.service');
+    websocketServiceInstance = module.websocketService;
+  }
+  return websocketServiceInstance;
+};
+
 /**
  * Storage keys for tokens
  */
@@ -46,6 +56,11 @@ class AuthService {
     this.setTokens(data.tokens);
     this.setUser(data.user);
 
+    // Reset WebSocket auth state to allow connection after registration
+    getWebsocketService().then(ws => ws.resetAuthState()).catch(() => {
+      // Ignore errors - WebSocket integration is optional
+    });
+
     return data;
   }
 
@@ -72,6 +87,12 @@ class AuthService {
     // Store tokens and user data
     this.setTokens(data.tokens);
     this.setUser(data.user);
+
+    // Reset WebSocket auth state to allow reconnection after login
+    // Issue #290: Prevents WebSocket from being blocked after auth failure
+    getWebsocketService().then(ws => ws.resetAuthState()).catch(() => {
+      // Ignore errors - WebSocket integration is optional
+    });
 
     return data;
   }

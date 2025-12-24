@@ -55,14 +55,14 @@ export function CreateCharacter() {
       return;
     }
 
-    // Validate name length (1-30 characters after trimming)
-    if (trimmedName.length < 1 || trimmedName.length > 30) {
-      setError('Character name must be 1-30 characters');
+    // Validate name length (max 30 characters after trimming)
+    if (trimmedName.length > 30) {
+      setError('Character name must not exceed 30 characters');
       return;
     }
 
-    // Validate name does not contain HTML tags (XSS prevention)
-    if (/<|>/.test(trimmedName)) {
+    // Validate name does not contain < or > (XSS prevention)
+    if (/[<>]/.test(trimmedName)) {
       setError('Character name cannot contain < or > characters');
       return;
     }
