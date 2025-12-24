@@ -936,10 +936,11 @@ GET  /api/health              # Health check
 GET  /api                     # API info
 
 # Rooms
-POST /api/rooms               # Create new room
+POST /api/rooms               # Create new room (requires userId from auth)
 GET  /api/rooms               # List active rooms
 GET  /api/rooms/:code         # Get room details
-GET  /api/rooms/my-room/:uuid # Get player's room
+GET  /api/rooms/my-rooms/:userId  # Get player's rooms (multi-room support)
+GET  /api/rooms/my-room/:userId   # Get player's current room (deprecated)
 
 # Scenarios
 GET  /api/scenarios           # List scenarios
@@ -1077,12 +1078,18 @@ const socket = io(serverUrl, {
 
 ### Authentication
 
-**MVP**: UUID-based anonymous authentication
-- UUID stored in localStorage
-- No sensitive data in MVP
-- Ready for production email auth
+**Current**: JWT-based authentication
+- Users register/login with username and password
+- JWT access tokens (15min expiry) and refresh tokens (7 day expiry)
+- Access token sent in WebSocket auth header for real-time connections
+- Database user ID (`userId`) used as player identifier (replaces anonymous UUID)
+- Player model uses `userId` field linked to authenticated user's database ID
 
-**Production**: Email + magic link authentication (planned)
+**WebSocket Authentication Flow**:
+1. Frontend sends JWT token in `socket.handshake.auth.token`
+2. Backend verifies token in `main.ts` connection handler
+3. User's database ID stored in `socket.data.userId`
+4. All game operations use this authenticated `userId`
 
 ### CORS
 
