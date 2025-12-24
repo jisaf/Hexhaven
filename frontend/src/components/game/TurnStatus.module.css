@@ -17,9 +17,9 @@
   border-bottom: 1px solid #c9a444;
   gap: 8px;
   /* Issue #294: Ensure control bar (with Back to Lobby button) is above
-     the card selection overlay (z-index: 30) so buttons remain clickable */
+     the card selection overlay so buttons remain clickable */
   position: relative;
-  z-index: 40;
+  z-index: var(--z-index-control-bar);
 }
 
 .backButton {

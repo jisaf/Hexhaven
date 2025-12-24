@@ -80,6 +80,16 @@
   /* Animations */
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s ease;
+
+  /* ========== Z-INDEX SCALE ========== */
+  /* Defines stacking order for layered UI elements */
+  --z-index-base: 0;
+  --z-index-info-panel: 10;
+  --z-index-game-log: 20;
+  --z-index-card-selection-overlay: 30;
+  --z-index-control-bar: 40;       /* Must be above overlay for Back to Lobby button (Issue #294) */
+  --z-index-modal: 100;
+  --z-index-toast: 200;
 }
 
 /* Future theme support - themes can be applied by setting data-theme attribute on body or html */

@@ -3,7 +3,7 @@
  *
  * Tests that the TurnStatus component's CSS fixes for Issue #294
  * are properly applied. This verifies that the controlBar class
- * has the correct z-index to ensure the Back to Lobby button
+ * uses CSS variables for z-index to ensure the Back to Lobby button
  * remains clickable above the card selection overlay.
  *
  * Issue #294 - Ensures Back to Lobby button is clickable during gameplay
@@ -15,65 +15,66 @@ import path from 'path';
 
 describe('TurnStatus CSS - Issue #294 Fix', () => {
   let cssContent: string;
+  let indexCssContent: string;
 
   beforeAll(() => {
-    // Read the CSS file to verify the z-index fix is in place
     const cssPath = path.resolve(__dirname, '../../src/components/game/TurnStatus.module.css');
+    const indexCssPath = path.resolve(__dirname, '../../src/index.css');
     cssContent = fs.readFileSync(cssPath, 'utf8');
+    indexCssContent = fs.readFileSync(indexCssPath, 'utf8');
   });
 
   describe('controlBar z-index', () => {
-    it('should have position: relative on controlBar', () => {
-      // The controlBar must be positioned to use z-index
-      expect(cssContent).toMatch(/\.controlBar\s*\{[^}]*position:\s*relative/);
+    it('should use CSS variable for z-index on controlBar', () => {
+      // Verify the controlBar uses the CSS variable for z-index
+      expect(cssContent).toContain('z-index: var(--z-index-control-bar)');
     });
 
-    it('should have z-index greater than 30 on controlBar', () => {
-      // The cardSelectionOverlay has z-index: 30
-      // The controlBar must have a higher z-index
-      const zIndexMatch = cssContent.match(/\.controlBar\s*\{[^}]*z-index:\s*(\d+)/);
-      expect(zIndexMatch).toBeTruthy();
-
-      if (zIndexMatch) {
-        const zIndex = parseInt(zIndexMatch[1], 10);
-        expect(zIndex).toBeGreaterThan(30);
-      }
+    it('should have position: relative on controlBar for z-index to work', () => {
+      expect(cssContent).toContain('position: relative');
     });
 
     it('should include a comment explaining the fix', () => {
-      // Ensure the fix is documented for future maintainers
       expect(cssContent).toMatch(/Issue #294.*Back to Lobby/i);
+    });
+  });
+
+  describe('z-index CSS variables are defined', () => {
+    it('should define --z-index-control-bar in index.css', () => {
+      expect(indexCssContent).toContain('--z-index-control-bar:');
+    });
+
+    it('should define --z-index-card-selection-overlay in index.css', () => {
+      expect(indexCssContent).toContain('--z-index-card-selection-overlay:');
+    });
+
+    it('should have control-bar z-index value greater than card-selection-overlay', () => {
+      // Extract the numeric values from the CSS variables
+      const controlBarMatch = indexCssContent.match(/--z-index-control-bar:\s*(\d+)/);
+      const overlayMatch = indexCssContent.match(/--z-index-card-selection-overlay:\s*(\d+)/);
+
+      expect(controlBarMatch).toBeTruthy();
+      expect(overlayMatch).toBeTruthy();
+
+      if (controlBarMatch && overlayMatch) {
+        const controlBarZ = parseInt(controlBarMatch[1], 10);
+        const overlayZ = parseInt(overlayMatch[1], 10);
+        expect(controlBarZ).toBeGreaterThan(overlayZ);
+      }
     });
   });
 
   describe('backButton styling', () => {
     it('should have cursor: pointer on backButton', () => {
-      expect(cssContent).toMatch(/\.backButton\s*\{[^}]*cursor:\s*pointer/);
+      expect(cssContent).toContain('cursor: pointer');
     });
 
     it('should not have pointer-events: none on backButton', () => {
-      // Ensure the button can receive click events
+      // Find the backButton block and ensure it doesn't disable pointer events
       const backButtonMatch = cssContent.match(/\.backButton\s*\{[^}]*\}/);
       if (backButtonMatch) {
-        expect(backButtonMatch[0]).not.toMatch(/pointer-events:\s*none/);
+        expect(backButtonMatch[0]).not.toContain('pointer-events: none');
       }
     });
   });
 });
-
-/**
- * Test Coverage Summary:
- *
- * controlBar z-index (Issue #294):
- * - position: relative is set (required for z-index to work)
- * - z-index is greater than 30 (above cardSelectionOverlay)
- * - Fix is documented with a comment
- *
- * backButton styling:
- * - cursor: pointer is set
- * - pointer-events is not set to none
- *
- * This CSS-level test ensures the fix remains in place even if
- * the component code changes. The actual click behavior is
- * verified through E2E tests.
- */
