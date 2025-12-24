@@ -16,6 +16,10 @@
   background: rgba(201, 164, 68, 0.1);
   border-bottom: 1px solid #c9a444;
   gap: 8px;
+  /* Issue #294: Ensure control bar (with Back to Lobby button) is above
+     the card selection overlay (z-index: 30) so buttons remain clickable */
+  position: relative;
+  z-index: 40;
 }
 
 .backButton {
