@@ -26,19 +26,28 @@ export class UserCharacterService {
     this.prisma = prismaClient || defaultPrisma;
   }
 
-  async createCharacter(
-    userId: string,
-    dto: CreateCharacterDto,
-  ): Promise<CharacterResponse> {
-    // Validate and sanitize character name using Zod schema
-    const nameValidation = characterNameSchema.safeParse(dto.name);
+  /**
+   * Validate and sanitize a character name using the Zod schema.
+   * Throws ValidationError if the name is invalid.
+   * @returns The validated and trimmed name
+   */
+  private validateCharacterName(name: string): string {
+    const nameValidation = characterNameSchema.safeParse(name);
     if (!nameValidation.success) {
       const firstError = nameValidation.error.issues[0];
       throw new ValidationError(
         firstError?.message || 'Invalid character name',
       );
     }
-    const validatedName = nameValidation.data;
+    return nameValidation.data;
+  }
+
+  async createCharacter(
+    userId: string,
+    dto: CreateCharacterDto,
+  ): Promise<CharacterResponse> {
+    // Validate and sanitize character name
+    const validatedName = this.validateCharacterName(dto.name);
 
     const characterClass = await this.prisma.characterClass.findUnique({
       where: { id: dto.classId },
@@ -167,17 +176,8 @@ export class UserCharacterService {
     }
 
     // Validate name if provided
-    let validatedName: string | undefined;
-    if (dto.name !== undefined) {
-      const nameValidation = characterNameSchema.safeParse(dto.name);
-      if (!nameValidation.success) {
-        const firstError = nameValidation.error.issues[0];
-        throw new ValidationError(
-          firstError?.message || 'Invalid character name',
-        );
-      }
-      validatedName = nameValidation.data;
-    }
+    const validatedName =
+      dto.name !== undefined ? this.validateCharacterName(dto.name) : undefined;
 
     const character = await this.prisma.character.update({
       where: { id: characterId },
