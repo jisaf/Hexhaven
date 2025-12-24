@@ -31,6 +31,17 @@ const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ defa
 const ItemCreatorTool = lazy(() => import('./pages/ItemCreatorTool').then(m => ({ default: m.ItemCreatorTool })));
 const CardDemo = lazy(() => import('./pages/CardDemo').then(m => ({ default: m.CardDemo })));
 
+// New multi-page game flow routes
+const GamesHubPage = lazy(() => import('./pages/GamesHubPage').then(m => ({ default: m.GamesHubPage })));
+const CreateGamePage = lazy(() => import('./pages/CreateGamePage').then(m => ({ default: m.CreateGamePage })));
+const JoinGamePage = lazy(() => import('./pages/JoinGamePage').then(m => ({ default: m.JoinGamePage })));
+const RoomLobbyPage = lazy(() => import('./pages/RoomLobbyPage').then(m => ({ default: m.RoomLobbyPage })));
+const GameRoomPage = lazy(() => import('./pages/GameRoomPage').then(m => ({ default: m.GameRoomPage })));
+const CampaignsHubPage = lazy(() => import('./pages/CampaignsHubPage').then(m => ({ default: m.CampaignsHubPage })));
+const CreateCampaignPage = lazy(() => import('./pages/CreateCampaignPage').then(m => ({ default: m.CreateCampaignPage })));
+const CampaignDashboardPage = lazy(() => import('./pages/CampaignDashboardPage').then(m => ({ default: m.CampaignDashboardPage })));
+const CampaignScenarioLobbyPage = lazy(() => import('./pages/CampaignScenarioLobbyPage').then(m => ({ default: m.CampaignScenarioLobbyPage })));
+
 /**
  * Loading Component
  * Shows while lazy-loaded routes are being fetched
@@ -159,6 +170,20 @@ function Layout() {
         <Route path="/history" element={<MatchHistory />} />
         <Route path="/creator/items" element={<ItemCreatorTool />} />
         <Route path="/game/:roomCode" element={<GameBoard />} />
+
+        {/* New multi-page game flow routes */}
+        <Route path="/games" element={<GamesHubPage />} />
+        <Route path="/games/create" element={<CreateGamePage />} />
+        <Route path="/games/join" element={<JoinGamePage />} />
+        <Route path="/games/join/:roomCode" element={<JoinGamePage />} />
+        <Route path="/rooms/:roomCode" element={<RoomLobbyPage />} />
+        <Route path="/rooms/:roomCode/play" element={<GameRoomPage />} />
+        <Route path="/campaigns" element={<CampaignsHubPage />} />
+        <Route path="/campaigns/create" element={<CreateCampaignPage />} />
+        <Route path="/campaigns/:campaignId" element={<CampaignDashboardPage />} />
+        <Route path="/campaigns/:campaignId/scenario/:scenarioId" element={<CampaignScenarioLobbyPage />} />
+
+        {/* Debug/demo routes */}
         <Route path="/demo" element={<HexMapDemo />} />
         <Route path="/design" element={<ScenarioDesigner />} />
         <Route path="/test-videos" element={<TestVideos />} />
