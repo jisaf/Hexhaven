@@ -123,6 +123,7 @@ class WebSocketService {
   private registeredEvents: Set<string> = new Set(); // Track which events are registered with Socket.IO
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private authFailed = false; // Flag to prevent reconnection after auth failure
 
   /**
    * Connect to WebSocket server with enhanced reconnection (US4 - T157)
@@ -134,8 +135,24 @@ class WebSocketService {
       return;
     }
 
+    // Don't attempt to connect if auth has previously failed
+    // User must authenticate first before WebSocket can be used
+    if (this.authFailed) {
+      console.warn('WebSocket connection blocked: Authentication required. Please login first.');
+      return;
+    }
+
     // Get JWT token for authentication - links websocket to database user
     const accessToken = authService.getAccessToken();
+
+    // If no access token is available, don't even attempt to connect
+    // This prevents the retry loop when user is not authenticated
+    if (!accessToken) {
+      console.warn('WebSocket connection blocked: No authentication token available');
+      this.connectionStatus = 'failed';
+      this.authFailed = true;
+      return;
+    }
 
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
@@ -183,6 +200,11 @@ class WebSocketService {
       // Clear registered events so they can be re-registered on reconnect
       this.registeredEvents.clear();
 
+      // Don't reconnect if auth has failed - user needs to authenticate first
+      if (this.authFailed) {
+        return;
+      }
+
       // Don't reconnect if disconnected by server or client intentionally
       if (reason === 'io server disconnect' || reason === 'io client disconnect') {
         this.socket?.connect(); // Force reconnect
@@ -211,9 +233,52 @@ class WebSocketService {
       });
     });
 
-    this.socket.on('error', (error: Error) => {
-      this.emit('error', { message: error.message || 'WebSocket error' });
+    this.socket.on('error', (error: Error & { code?: string }) => {
+      const errorData = {
+        message: error.message || 'WebSocket error',
+        code: error.code,
+      };
+
+      // Check for authentication errors - these are terminal and should stop reconnection
+      if (this.isAuthError(error.code)) {
+        this.handleAuthError(errorData);
+        return;
+      }
+
+      this.emit('error', errorData);
       console.error('WebSocket error:', error);
+    });
+  }
+
+  /**
+   * Check if error code indicates an authentication failure
+   * These errors should stop reconnection attempts as retrying won't help
+   */
+  private isAuthError(code?: string): boolean {
+    return code === 'AUTH_REQUIRED' || code === 'AUTH_INVALID';
+  }
+
+  /**
+   * Handle authentication errors by stopping reconnection and cleaning up
+   * Issue #290: Prevents infinite retry loop when unauthenticated
+   */
+  private handleAuthError(error: { message: string; code?: string }): void {
+    console.warn(`WebSocket authentication failed: ${error.message} (${error.code})`);
+
+    // Set flag to prevent future reconnection attempts
+    this.authFailed = true;
+    this.connectionStatus = 'failed';
+
+    // Disable Socket.IO's automatic reconnection
+    if (this.socket) {
+      this.socket.io.opts.reconnection = false;
+      this.socket.disconnect();
+    }
+
+    // Emit error to application layer for UI handling
+    this.emit('error', {
+      message: error.message,
+      code: error.code,
     });
   }
 
@@ -490,6 +555,24 @@ class WebSocketService {
    */
   isReconnecting(): boolean {
     return this.connectionStatus === 'reconnecting';
+  }
+
+  /**
+   * Check if authentication has failed
+   * Returns true if WebSocket was rejected due to missing or invalid auth
+   */
+  hasAuthFailed(): boolean {
+    return this.authFailed;
+  }
+
+  /**
+   * Reset authentication failure state
+   * Call this after user successfully logs in to allow WebSocket connection
+   * Issue #290: Allows reconnection after user authenticates
+   */
+  resetAuthState(): void {
+    this.authFailed = false;
+    this.connectionStatus = 'disconnected';
   }
 
   /**
