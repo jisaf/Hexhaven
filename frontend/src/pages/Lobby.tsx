@@ -130,7 +130,7 @@ export function Lobby() {
   // Navigate to game when room status becomes active
   useEffect(() => {
     if (sessionState.status === 'active' && sessionState.roomCode) {
-      navigate(`/game/${sessionState.roomCode}`);
+      navigate(`/rooms/${sessionState.roomCode}/play`);
     } else if (sessionState.status === 'lobby' && sessionState.roomCode) {
       setMode('in-room');
     }

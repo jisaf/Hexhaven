@@ -1,14 +1,26 @@
-import { useParams, useLocation } from 'react-router-dom';
+/**
+ * Game Room Page Component (Issue #314)
+ *
+ * Wrapper for GameBoard at the new URL structure:
+ * /rooms/:roomCode/play
+ *
+ * This page:
+ * - Validates room code from URL
+ * - Renders GameBoard component
+ * - Uses URL as source of truth (no navigation interception)
+ */
+
+import { useParams, Navigate } from 'react-router-dom';
+import { GameBoard } from './GameBoard';
 
 export const GameRoomPage: React.FC = () => {
-  const params = useParams();
-  const location = useLocation();
+  const { roomCode } = useParams<{ roomCode: string }>();
 
-  return (
-    <div style={{ padding: '20px' }}>
-      <h1>Game Room - Placeholder</h1>
-      <pre>{JSON.stringify({ params, pathname: location.pathname }, null, 2)}</pre>
-      <p>This page is under development. Route params and location shown above.</p>
-    </div>
-  );
+  // No room code - redirect to games hub
+  if (!roomCode) {
+    return <Navigate to="/games" replace />;
+  }
+
+  // Render GameBoard - it handles the rest
+  return <GameBoard />;
 };

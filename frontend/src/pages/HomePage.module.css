@@ -1,0 +1,189 @@
+/**
+ * Home Page Styles (Issue #309)
+ *
+ * Landing page with HexHaven branding and quick action cards
+ */
+
+.homeContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 64px; /* Account for fixed header */
+  min-height: 100vh;
+}
+
+.homeContent {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.title {
+  font-family: 'MedievalSharp', serif;
+  font-size: 3.5rem;
+  color: #c9a444;
+  text-shadow: 0 0 20px rgba(201, 164, 68, 0.5);
+  margin: 0;
+  letter-spacing: 4px;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #8a9db8;
+  margin: 0.5rem 0 0;
+  letter-spacing: 2px;
+}
+
+/* Continue Last Game Section */
+.continueSection {
+  display: flex;
+  justify-content: center;
+}
+
+.continueButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  color: #4caf50;
+  font-family: 'MedievalSharp', serif;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 400px;
+}
+
+.continueButton:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.2));
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.roomCode {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #8a9db8;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
+/* Action Cards Grid */
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.actionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+  background: rgba(58, 80, 107, 0.3);
+  border: 2px solid #3a506b;
+  border-radius: 12px;
+  color: #e0e6ed;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.actionCard:hover {
+  background: rgba(58, 80, 107, 0.5);
+  border-color: #c9a444;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.actionCard.primary {
+  border-color: #c9a444;
+  background: linear-gradient(135deg, rgba(201, 164, 68, 0.15), rgba(201, 164, 68, 0.05));
+}
+
+.actionCard.primary:hover {
+  background: linear-gradient(135deg, rgba(201, 164, 68, 0.25), rgba(201, 164, 68, 0.15));
+  box-shadow: 0 8px 24px rgba(201, 164, 68, 0.2);
+}
+
+.actionIcon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.actionLabel {
+  font-family: 'MedievalSharp', serif;
+  font-size: 1.3rem;
+  color: #c9a444;
+}
+
+.actionDescription {
+  font-size: 0.85rem;
+  color: #8a9db8;
+}
+
+/* Quick Links */
+.quickLinks {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #3a506b;
+}
+
+.linkButton {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #3a506b;
+  border-radius: 8px;
+  color: #8a9db8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.linkButton:hover {
+  border-color: #c9a444;
+  color: #c9a444;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .homeContent {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .actionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickLinks {
+    flex-direction: column;
+  }
+
+  .linkButton {
+    width: 100%;
+    text-align: center;
+  }
+}

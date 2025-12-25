@@ -38,8 +38,12 @@ export function MyRoomsList({ rooms }: MyRoomsListProps) {
   const { t } = useTranslation('lobby');
   const navigate = useNavigate();
 
-  const handleJoinGame = (roomCode: string) => {
-    navigate(`/game/${roomCode}`);
+  const handleJoinGame = (roomCode: string, isActive: boolean) => {
+    if (isActive) {
+      navigate(`/rooms/${roomCode}/play`);
+    } else {
+      navigate(`/rooms/${roomCode}`);
+    }
   };
 
   return (
@@ -73,7 +77,7 @@ export function MyRoomsList({ rooms }: MyRoomsListProps) {
                 </div>
                 <button
                   className={styles.joinButton}
-                  onClick={() => handleJoinGame(room.roomCode)}
+                  onClick={() => handleJoinGame(room.roomCode, room.status === 'active')}
                 >
                   {room.status === 'active' ? t('resume', 'Resume Game') : t('viewLobby', 'View Lobby')}
                 </button>

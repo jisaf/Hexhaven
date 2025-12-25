@@ -1,14 +1,264 @@
-import { useParams, useLocation } from 'react-router-dom';
+/**
+ * Campaign Scenario Lobby Page Component (Issue #317)
+ *
+ * Pre-game lobby for campaign scenarios:
+ * - Shows campaign context (gold, reputation, prosperity)
+ * - Shows selected scenario details
+ * - Shows selected characters
+ * - Creates room with campaign context and navigates to room lobby
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { campaignService } from '../services/campaign.service';
+import { roomSessionManager } from '../services/room-session.service';
+import { useRoomSession } from '../hooks/useRoomSession';
+import { getDisplayName } from '../utils/storage';
+import type { CampaignWithDetails, CampaignScenario } from '../services/campaign.service';
+import styles from './CampaignScenarioLobbyPage.module.css';
 
 export const CampaignScenarioLobbyPage: React.FC = () => {
-  const params = useParams();
-  const location = useLocation();
+  const { campaignId, scenarioId } = useParams<{ campaignId: string; scenarioId: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation(['common', 'lobby']);
+  const sessionState = useRoomSession();
+
+  // State
+  const [campaign, setCampaign] = useState<CampaignWithDetails | null>(null);
+  const [scenario, setScenario] = useState<CampaignScenario | null>(null);
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+
+  // Fetch campaign and scenario data
+  const fetchData = useCallback(async () => {
+    if (!campaignId || !scenarioId) return;
+
+    try {
+      setLoading(true);
+      const [campaignData, scenariosData] = await Promise.all([
+        campaignService.getCampaignDetails(campaignId),
+        campaignService.getAvailableScenarios(campaignId),
+      ]);
+      setCampaign(campaignData);
+
+      // Find the selected scenario
+      const selectedScenario = scenariosData.find(s => s.scenarioId === scenarioId);
+      if (selectedScenario) {
+        setScenario(selectedScenario);
+      } else {
+        setError('Scenario not found');
+      }
+
+      // Load selected characters from session storage (set by CampaignDashboardPage)
+      const storedCharacters = sessionStorage.getItem(`campaign-${campaignId}-characters`);
+      if (storedCharacters) {
+        setSelectedCharacterIds(JSON.parse(storedCharacters));
+      } else {
+        // Default to all non-retired characters
+        const activeChars = campaignData.characters.filter(c => !c.retired);
+        setSelectedCharacterIds(activeChars.map(c => c.id));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load campaign data');
+    } finally {
+      setLoading(false);
+    }
+  }, [campaignId, scenarioId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Navigate to room lobby when room is created
+  useEffect(() => {
+    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode) {
+      navigate(`/rooms/${sessionState.roomCode}`);
+    }
+  }, [sessionState.connectionStatus, sessionState.roomCode, navigate]);
+
+  // Handle session errors
+  useEffect(() => {
+    if (sessionState.error) {
+      setError(sessionState.error.message);
+      setIsCreatingRoom(false);
+    }
+  }, [sessionState.error]);
+
+  // Start game - create room with campaign context
+  const handleStartGame = async () => {
+    if (!campaign || !scenario || selectedCharacterIds.length === 0) return;
+
+    const displayName = getDisplayName();
+    if (!displayName) {
+      setError('Please set a nickname first');
+      return;
+    }
+
+    setIsCreatingRoom(true);
+    setError(null);
+
+    try {
+      await roomSessionManager.createRoom(displayName, {
+        campaignId: campaign.id,
+        scenarioId: scenario.scenarioId,
+      });
+      // Navigation happens via useEffect when room is connected
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create room');
+      setIsCreatingRoom(false);
+    }
+  };
+
+  // Toggle character selection
+  const handleToggleCharacter = (characterId: string) => {
+    setSelectedCharacterIds(prev =>
+      prev.includes(characterId)
+        ? prev.filter(id => id !== characterId)
+        : [...prev, characterId]
+    );
+  };
+
+  // Navigate back
+  const handleBack = () => {
+    navigate(`/campaigns/${campaignId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.scenarioLobbyContainer}>
+        <div className={styles.scenarioLobbyContent}>
+          <div className={styles.loadingState}>
+            <p>{t('common:loading', 'Loading...')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!campaign || !scenario) {
+    return (
+      <div className={styles.scenarioLobbyContainer}>
+        <div className={styles.scenarioLobbyContent}>
+          <div className={styles.errorState}>
+            <h2>{t('lobby:notFound', 'Not Found')}</h2>
+            <p>{error || 'Campaign or scenario not found'}</p>
+            <button className={styles.backButton} onClick={() => navigate('/campaigns')}>
+              {t('lobby:backToCampaigns', 'Back to Campaigns')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeCharacters = campaign.characters.filter(c => !c.retired);
+  const canStartGame = selectedCharacterIds.length > 0;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Campaign Scenario Lobby - Placeholder</h1>
-      <pre>{JSON.stringify({ params, pathname: location.pathname }, null, 2)}</pre>
-      <p>This page is under development. Route params and location shown above.</p>
+    <div className={styles.scenarioLobbyContainer}>
+      <div className={styles.scenarioLobbyContent}>
+        {/* Header */}
+        <div className={styles.header}>
+          <button className={styles.backButton} onClick={handleBack}>
+            ← {t('lobby:backToCampaign', 'Back to Campaign')}
+          </button>
+          <h1 className={styles.title}>{scenario.name}</h1>
+        </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className={styles.errorBanner}>
+            {error}
+            <button onClick={() => setError(null)}>✕</button>
+          </div>
+        )}
+
+        {/* Campaign Context */}
+        <div className={styles.campaignContext}>
+          <h2 className={styles.sectionTitle}>{campaign.name}</h2>
+          <div className={styles.stats}>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Prosperity</span>
+              <span className={styles.statValue}>{campaign.prosperityLevel}</span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Reputation</span>
+              <span className={styles.statValue}>{campaign.reputation}</span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Party Gold</span>
+              <span className={styles.statValue}>
+                {campaign.characters.reduce((sum, c) => sum + c.gold, 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Scenario Info */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t('lobby:scenario', 'Scenario')}</h2>
+          <div className={styles.scenarioInfo}>
+            {scenario.description && (
+              <p className={styles.scenarioDescription}>{scenario.description}</p>
+            )}
+            {scenario.unlocksScenarios && scenario.unlocksScenarios.length > 0 && (
+              <p className={styles.unlockInfo}>
+                Completing this scenario unlocks {scenario.unlocksScenarios.length} new scenario(s)
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Character Selection */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            {t('lobby:selectCharacters', 'Select Characters')}
+            <span className={styles.selectionCount}>
+              {selectedCharacterIds.length} / {activeCharacters.length} selected
+            </span>
+          </h2>
+          <div className={styles.charactersGrid}>
+            {activeCharacters.map(character => (
+              <div
+                key={character.id}
+                className={`${styles.characterCard} ${
+                  selectedCharacterIds.includes(character.id) ? styles.selected : ''
+                }`}
+                onClick={() => handleToggleCharacter(character.id)}
+              >
+                <div className={styles.characterHeader}>
+                  <span className={styles.characterName}>{character.name}</span>
+                  <span className={styles.characterLevel}>Lv. {character.level}</span>
+                </div>
+                <div className={styles.characterClass}>{character.className}</div>
+                <div className={styles.characterStats}>
+                  <span>XP: {character.experience}</span>
+                  <span>Gold: {character.gold}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Start Button */}
+        <div className={styles.actionSection}>
+          <button
+            className={styles.startButton}
+            onClick={handleStartGame}
+            disabled={!canStartGame || isCreatingRoom}
+          >
+            {isCreatingRoom
+              ? t('lobby:creating', 'Creating...')
+              : selectedCharacterIds.length === 0
+                ? t('lobby:selectCharactersToStart', 'Select characters to start')
+                : t('lobby:startScenario', 'Start Scenario')
+            }
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

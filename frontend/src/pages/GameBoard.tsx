@@ -84,41 +84,27 @@ export function GameBoard() {
     enabled: !!gameState.myUserCharacterId,
   });
 
-  // Handle navigation back (exit fullscreen and go to lobby)
+  // Handle navigation back (exit fullscreen and go to games hub)
   // Memoized to prevent useFullscreen effect from re-running on every render
-  const navigateToLobby = useCallback(async () => {
+  const navigateToGamesHub = useCallback(async () => {
     // Exit fullscreen if active
     await exitFullscreen();
     // Clean up game state
     gameSessionCoordinator.switchGame();
-    // Navigate to lobby
-    navigate('/');
+    // Navigate to games hub
+    navigate('/games');
   }, [navigate]);
 
   // Enable fullscreen for game page with ESC key handler
-  useFullscreen(true, navigateToLobby);
+  useFullscreen(true, navigateToGamesHub);
 
-  // Handle browser back button
-  useEffect(() => {
-    // Add a history entry when game loads
-    window.history.pushState({ gamePage: true }, '');
+  // Note: Browser back button now works naturally via URL routing (Issue #314)
+  // No synthetic history state manipulation needed
 
-    const handlePopState = () => {
-      // User pressed back button - exit and navigate
-      navigateToLobby();
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigateToLobby]);
-
-  // Redirect to lobby if no roomCode provided
+  // Redirect to games hub if no roomCode provided
   useEffect(() => {
     if (!roomCode) {
-      navigate('/');
+      navigate('/games');
     }
   }, [roomCode, navigate]);
 
@@ -356,7 +342,7 @@ export function GameBoard() {
 
   const handleBackToLobby = () => {
     // User clicked leave game button - exit and navigate
-    navigateToLobby();
+    navigateToGamesHub();
   };
 
   const handleReturnToLobby = useCallback(async () => {
@@ -368,8 +354,8 @@ export function GameBoard() {
     // Clean up game state
     gameSessionCoordinator.switchGame();
 
-    // Navigate to lobby
-    navigate('/');
+    // Navigate to games hub
+    navigate('/games');
   }, [roomCode, navigate]);
 
   const handlePlayAgain = useCallback(() => {
