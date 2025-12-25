@@ -37,6 +37,8 @@ import { ActionDispatcherService } from './services/action-dispatcher.service';
 import { ForcedMovementService } from './services/forced-movement.service';
 import { ValidationService } from './services/validation.service';
 import { ElementalStateService } from './services/elemental-state.service';
+import { ShopService } from './services/shop.service';
+import { ShopController } from './api/shop.controller';
 
 @Module({
   imports: [],
@@ -56,6 +58,7 @@ import { ElementalStateService } from './services/elemental-state.service';
     ItemsController, // Issue #205: Items and inventory system
     InventoryController, // Issue #205 Sprint 2: Character inventory management
     CampaignsController, // Issue #244: Campaign mode management
+    ShopController, // Issue #328: Campaign shop system
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -82,6 +85,7 @@ import { ElementalStateService } from './services/elemental-state.service';
     ValidationService, // Issue #220: Action validation
     ElementalStateService, // Issue #220: Element infusion/consumption
     CampaignService, // Issue #244: Campaign mode business logic
+    ShopService, // Issue #328: Campaign shop system
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

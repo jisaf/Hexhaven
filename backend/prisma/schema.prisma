@@ -124,14 +124,15 @@ model Character {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class           CharacterClass       @relation(fields: [classId], references: [id])
-  currentGame     Game?                @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
-  campaign        Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  enhancements    CardEnhancement[]
-  ownedItems      CharacterInventory[] // Items owned by this character (Issue #205)
-  equippedItems   CharacterEquipment[] // Currently equipped items (Issue #205)
-  itemStates      CharacterItemState[] // Runtime state of items during gameplay (Issue #205)
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class             CharacterClass       @relation(fields: [classId], references: [id])
+  currentGame       Game?                @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  campaign          Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  enhancements      CardEnhancement[]
+  ownedItems        CharacterInventory[] // Items owned by this character (Issue #205)
+  equippedItems     CharacterEquipment[] // Currently equipped items (Issue #205)
+  itemStates        CharacterItemState[] // Runtime state of items during gameplay (Issue #205)
+  shopTransactions  ShopTransaction[]    // Shop purchase/sell history (Issue #328)
 
   @@index([userId])
   @@index([classId])
@@ -231,9 +232,12 @@ model Item {
   createdAt           DateTime      @default(now())
 
   // Relations (Issue #205)
-  ownedBy    CharacterInventory[]
-  equippedBy CharacterEquipment[]
-  states     CharacterItemState[]
+  ownedBy         CharacterInventory[]
+  equippedBy      CharacterEquipment[]
+  states          CharacterItemState[]
+  // Relations (Issue #328)
+  shopInventory   CampaignShopInventory[]
+  transactions    ShopTransaction[]
 
   @@index([slot])
   @@index([rarity])
@@ -373,6 +377,51 @@ model PlayerGameResult {
   @@map("player_game_results")
 }
 
+// ========== CAMPAIGN SHOP SYSTEM (Issue #328) ==========
+
+model CampaignShopInventory {
+  id              String   @id @default(uuid()) @db.Uuid
+  campaignId      String   @db.Uuid
+  itemId          String   @db.Uuid
+  quantity        Int      @db.SmallInt    // Current quantity in stock
+  initialQuantity Int      @db.SmallInt    // Original quantity (for resetting)
+  lastRestockedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one inventory record per campaign+item
+  @@unique([campaignId, itemId])
+  @@index([campaignId])
+  @@index([itemId])
+  @@map("campaign_shop_inventory")
+}
+
+model ShopTransaction {
+  id             String          @id @default(uuid()) @db.Uuid
+  campaignId     String          @db.Uuid
+  characterId    String          @db.Uuid
+  itemId         String          @db.Uuid
+  transactionType TransactionType
+  goldAmount     Int             // Gold spent (BUY) or received (SELL)
+  quantity       Int             @default(1) @db.SmallInt // For future bulk transactions
+  createdAt      DateTime        @default(now())
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([characterId])
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("shop_transactions")
+}
+
 // ========== CAMPAIGN TEMPLATES (Issue #244 - DB-driven campaigns) ==========
 
 model CampaignTemplate {
@@ -429,13 +478,16 @@ model Campaign {
   unlockedScenarios     Json     @default("[]") // Array of unlocked scenario IDs available next
   isCompleted           Boolean  @default(false)
   completedAt           DateTime?
+  shopConfig            Json     @default("{}") // CampaignShopConfig JSON (Issue #328)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   // Relations
-  template   CampaignTemplate? @relation(fields: [templateId], references: [id])
-  characters Character[]
-  games      Game[]      // Games played in this campaign (Issue #244)
+  template      CampaignTemplate?       @relation(fields: [templateId], references: [id])
+  characters    Character[]
+  games         Game[]                  // Games played in this campaign (Issue #244)
+  shopInventory CampaignShopInventory[] // Shop inventory (Issue #328)
+  shopTransactions ShopTransaction[]     // Shop transactions (Issue #328)
 
   @@index([templateId])
   @@map("campaigns")
@@ -582,4 +634,13 @@ enum ItemState {
   CONSUMED // Item has been consumed, refreshes between scenarios
 
   @@map("item_state")
+}
+
+// ========== SHOP SYSTEM (Issue #328) ==========
+
+enum TransactionType {
+  BUY
+  SELL
+
+  @@map("transaction_type")
 }
