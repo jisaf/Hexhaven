@@ -18,6 +18,8 @@
     "dev:direct": "node dist/backend/src/main",
     "lint": "eslint \"src/**/*.ts\" --ignore-pattern \"**/*.spec.ts\" --ignore-pattern \"**/*.test.ts\" --fix",
     "test": "jest",
+    "test:setup": "bash scripts/setup-test-db.sh",
+    "test:full": "npm run test:setup && jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
