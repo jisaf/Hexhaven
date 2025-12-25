@@ -40,20 +40,19 @@ import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTr
 import { fetchActiveRooms as apiFetchActiveRooms, fetchMyRooms as apiFetchMyRooms } from '../services/room.api';
 import styles from './Lobby.module.css';
 
-type LobbyMode = 'initial' | 'nickname-for-create' | 'creating' | 'joining' | 'in-room' | 'campaign-view';
-
 export function Lobby() {
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
 
-  // State
-  const [mode, setMode] = useState<LobbyMode>('initial');
+  // Local UI state (derived from sessionState)
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null); // Campaign for current room
   const [pendingCampaignCharacters, setPendingCampaignCharacters] = useState<string[]>([]); // Characters to auto-select after room creation
+  const [showNicknameInput, setShowNicknameInput] = useState(false); // Show nickname input for room creation
+  const [showJoinForm, setShowJoinForm] = useState(false); // Show join form
 
   // Use custom hooks
   const sessionState = useRoomSession();
@@ -131,14 +130,17 @@ export function Lobby() {
   useEffect(() => {
     if (sessionState.status === 'active' && sessionState.roomCode) {
       navigate(`/rooms/${sessionState.roomCode}/play`);
-    } else if (sessionState.status === 'lobby' && sessionState.roomCode) {
-      setMode('in-room');
+    }
+    // Close nickname/join forms when room is established
+    if (sessionState.status === 'lobby' && sessionState.roomCode) {
+      setShowNicknameInput(false);
+      setShowJoinForm(false);
     }
   }, [sessionState.status, sessionState.roomCode, navigate]);
 
   // Auto-select campaign characters after room creation
   useEffect(() => {
-    if (mode === 'in-room' && pendingCampaignCharacters.length > 0) {
+    if (sessionState.status === 'lobby' && sessionState.roomCode && pendingCampaignCharacters.length > 0) {
       console.log('[Lobby] Auto-selecting campaign characters:', pendingCampaignCharacters);
       // Add each character to the selection
       pendingCampaignCharacters.forEach((characterId) => {
@@ -148,14 +150,14 @@ export function Lobby() {
       setPendingCampaignCharacters([]);
       setIsLoading(false);
     }
-  }, [mode, pendingCampaignCharacters, addCharacter]);
+  }, [sessionState.status, sessionState.roomCode, pendingCampaignCharacters, addCharacter]);
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
     setError(null);
     try {
       await roomSessionManager.createRoom(playerNickname);
-      setMode('creating');
+      // Room creation will automatically update sessionState and trigger effect to close form
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setIsLoading(false);
@@ -172,7 +174,7 @@ export function Lobby() {
       if (displayName) {
         proceedWithRoomCreation(displayName);
       } else {
-        setMode('nickname-for-create');
+        setShowNicknameInput(true);
       }
     };
 
@@ -191,7 +193,7 @@ export function Lobby() {
     setError(null);
     try {
       await roomSessionManager.joinRoom(roomCode, playerNickname);
-      setMode('joining');
+      // Room join will automatically update sessionState and trigger effect to close form
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setIsLoading(false);
@@ -211,7 +213,7 @@ export function Lobby() {
     if (displayName) {
       handleJoinRoom(roomCode, displayName);
     } else {
-      setMode('joining');
+      setShowJoinForm(true);
     }
   };
 
@@ -238,12 +240,10 @@ export function Lobby() {
   // Campaign handlers (Issue #244)
   const handleSelectCampaign = (campaignId: string) => {
     setSelectedCampaignId(campaignId);
-    setMode('campaign-view');
   };
 
   const handleBackFromCampaign = () => {
     setSelectedCampaignId(null);
-    setMode('initial');
   };
 
   const handleStartCampaignGame = async (scenarioId: string, campaignId: string, characterIds: string[]) => {
@@ -285,10 +285,15 @@ export function Lobby() {
 
   const defaultTab = myRooms.length > 0 ? 0 : 1;
 
+  // Derive what to show from state
+  const inRoom = sessionState.status === 'lobby' && sessionState.roomCode;
+  const showInitialTabs = !inRoom && !selectedCampaignId && !showNicknameInput && !showJoinForm;
+  const showCampaignView = selectedCampaignId && !inRoom;
+
   return (
     <div className={styles.lobbyContainer}>
       <main className={styles.lobbyContent}>
-        {mode === 'initial' && (
+        {showInitialTabs && (
           <Tabs
             tabs={[
               {
@@ -306,7 +311,7 @@ export function Lobby() {
                     activeRooms={activeRooms}
                     loadingRooms={loadingRooms}
                     isLoading={isLoading}
-                    onJoinRoom={() => setMode('joining')}
+                    onJoinRoom={() => setShowJoinForm(true)}
                     onQuickJoinRoom={handleQuickJoinRoom}
                   />
                 ),
@@ -316,7 +321,7 @@ export function Lobby() {
           />
         )}
 
-        {mode === 'campaign-view' && selectedCampaignId && (
+        {showCampaignView && selectedCampaignId && (
           <CampaignView
             campaignId={selectedCampaignId}
             onBack={handleBackFromCampaign}
@@ -324,12 +329,12 @@ export function Lobby() {
           />
         )}
 
-        {mode === 'nickname-for-create' && (
+        {showNicknameInput && (
           <div className={styles.nicknameMode}>
             <button
               className={styles.backButton}
               onClick={() => {
-                setMode('initial');
+                setShowNicknameInput(false);
                 setError(null);
               }}
             >
@@ -344,7 +349,7 @@ export function Lobby() {
 
               <NicknameInput
                 onSubmit={handleNicknameSubmit}
-                onCancel={() => setMode('initial')}
+                onCancel={() => setShowNicknameInput(false)}
                 isLoading={isLoading}
                 error={error || undefined}
                 initialValue={getPlayerNickname() || ''}
@@ -354,12 +359,12 @@ export function Lobby() {
           </div>
         )}
 
-        {mode === 'joining' && !room && (
+        {showJoinForm && !room && (
           <div className={styles.joinMode}>
             <button
               className={styles.backButton}
               onClick={() => {
-                setMode('initial');
+                setShowJoinForm(false);
                 setError(null);
               }}
             >
@@ -383,7 +388,7 @@ export function Lobby() {
           </div>
         )}
 
-        {mode === 'in-room' && room && (
+        {inRoom && room && (
           <LobbyRoomView
             roomCode={room.roomCode}
             players={players}
@@ -413,7 +418,7 @@ export function Lobby() {
           />
         )}
 
-        {error && mode !== 'joining' && (
+        {error && !showJoinForm && (
           <div className={styles.errorBanner} role="alert">
             {error}
           </div>
