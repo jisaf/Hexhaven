@@ -115,6 +115,11 @@ export interface WebSocketEvents {
   equipment_changed: (data: { characterId: string; equipped: import('../../../shared/types/entities').EquippedItems }) => void;
   inventory_updated: (data: { characterId: string; items: import('../../../shared/types/entities').Item[] }) => void;
 
+  // Narrative events
+  narrative_display: (data: import('../../../shared/types/events').NarrativeDisplayPayload) => void;
+  narrative_acknowledged: (data: import('../../../shared/types/events').NarrativeAcknowledgedPayload) => void;
+  narrative_dismissed: (data: import('../../../shared/types/events').NarrativeDismissedPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

@@ -39,7 +39,9 @@ import { CardPileIndicator, type PileType } from '../components/game/CardPileInd
 import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
 import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
+import { NarrativeOverlay } from '../components/narrative';
 import { useHexGrid } from '../hooks/useHexGrid';
+import { useNarrative } from '../hooks/useNarrative';
 import { useGameState } from '../hooks/useGameState';
 import { useInventory } from '../hooks/useInventory';
 import { useFullscreen, exitFullscreen } from '../hooks/useFullscreen';
@@ -83,6 +85,18 @@ export function GameBoard() {
     characterId: gameState.myUserCharacterId, // Use database ID for inventory API
     enabled: !!gameState.myUserCharacterId,
   });
+
+  // Get player ID for narrative acknowledgment
+  const myPlayerId = websocketService.getPlayerUUID();
+
+  // Campaign narrative system
+  const {
+    activeNarrative,
+    isDisplaying: isNarrativeDisplaying,
+    acknowledgments: narrativeAcknowledgments,
+    myAcknowledgment: narrativeMyAcknowledgment,
+    acknowledge: acknowledgeNarrative,
+  } = useNarrative(myPlayerId);
 
   // Handle navigation back (exit fullscreen and go to lobby)
   // Memoized to prevent useFullscreen effect from re-running on every render
@@ -688,6 +702,17 @@ export function GameBoard() {
           characterName={gameState.exhaustionState.characterName}
           reason={gameState.exhaustionState.reason}
           onAcknowledge={() => gameStateManager.acknowledgeExhaustion()}
+        />
+      )}
+
+      {/* Narrative Overlay - Campaign narrative system */}
+      {isNarrativeDisplaying && activeNarrative && (
+        <NarrativeOverlay
+          narrative={activeNarrative}
+          acknowledgments={narrativeAcknowledgments}
+          myPlayerId={myPlayerId}
+          myAcknowledgment={narrativeMyAcknowledgment}
+          onAcknowledge={acknowledgeNarrative}
         />
       )}
     </div>
