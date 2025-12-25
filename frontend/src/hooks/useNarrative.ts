@@ -10,6 +10,7 @@ import { websocketService } from '../services/websocket.service';
 import type {
   NarrativeDisplayPayload,
   NarrativeAcknowledgedPayload,
+  NarrativeDismissedPayload,
 } from '../../../shared/types/events';
 import type { NarrativeType } from '../../../shared/types/narrative';
 
@@ -81,7 +82,7 @@ export function useNarrative(myPlayerId: string | null): UseNarrativeResult {
    * Handle narrative dismissed event
    */
   const handleNarrativeDismissed = useCallback(
-    (/* payload is unused but required by event signature */) => {
+    (_payload: NarrativeDismissedPayload) => {
       setActiveNarrative(null);
       setAcknowledgments([]);
     },

@@ -105,6 +105,7 @@ import {
   RoomStatus,
   getRange,
   type CharacterClass,
+  type Monster,
 } from '../../../shared/types/entities';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
@@ -175,7 +176,7 @@ export class GameGateway
 
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
-  private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
+  private readonly roomMonsters = new Map<string, Monster[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
@@ -1684,6 +1685,20 @@ export class GameGateway
         { text: `Scenario started: ${scenario.name}` },
       ]);
 
+      // Load and cache narrative definitions for this scenario
+      const narrativeDef = await this.narrativeService.loadScenarioNarrative(
+        scenario.id,
+      );
+      this.roomNarratives.set(room.roomCode, narrativeDef);
+      if (narrativeDef) {
+        this.logger.log(
+          `Loaded narrative for scenario ${scenario.id}: intro=${!!narrativeDef.intro}, triggers=${narrativeDef.triggers?.length ?? 0}`,
+        );
+      }
+
+      // Initialize narrative state for this room
+      this.narrativeService.initializeRoomState(room.roomCode);
+
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();
@@ -1713,6 +1728,23 @@ export class GameGateway
               }, 500);
             }
           },
+        );
+      }
+
+      // Display intro narrative if one exists for this scenario
+      if (narrativeDef?.intro) {
+        const players = room.players.map((p: Player) => ({
+          id: p.userId,
+          name: p.nickname,
+        }));
+        const introNarrative = this.narrativeService.createIntroNarrative(
+          narrativeDef.intro,
+          players,
+        );
+        this.narrativeService.setActiveNarrative(room.roomCode, introNarrative);
+        this.emitNarrativeDisplay(room.roomCode, introNarrative);
+        this.logger.log(
+          `Displaying intro narrative for scenario ${scenario.id}`,
         );
       }
     } catch (error) {
@@ -1921,6 +1953,9 @@ export class GameGateway
       this.logger.log(
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
       );
+
+      // Check narrative triggers after character movement
+      this.checkNarrativeTriggers(room.roomCode);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -2514,6 +2549,9 @@ export class GameGateway
           this.logger.log(
             `Monster ${target.id} marked as dead (isDead: true) for objective tracking`,
           );
+
+          // Check narrative triggers after monster kill
+          this.checkNarrativeTriggers(room.roomCode);
         }
       } else {
         // Apply damage to character target
@@ -4090,6 +4128,9 @@ export class GameGateway
     this.server.to(roomCode).emit('round_ended', {
       roundNumber: currentRoundNumber,
     });
+
+    // Check narrative triggers at end of round (for round_reached conditions)
+    this.checkNarrativeTriggers(roomCode);
   }
 
   /**
@@ -5330,33 +5371,82 @@ export class GameGateway
     const room = roomService.getRoom(roomCode);
     if (!room) return;
 
+    // Get current scenario difficulty for monster scaling
+    const scenario = this.roomScenarios.get(roomCode);
+    const difficulty = scenario?.difficulty ?? 1;
+
     // Spawn monsters
     if (effects.spawnMonsters && effects.spawnMonsters.length > 0) {
+      const roomMonsters = this.roomMonsters.get(roomCode) || [];
+
       for (const spawn of effects.spawnMonsters) {
-        this.logger.log(
-          `Spawning ${spawn.type} at (${spawn.hex.q}, ${spawn.hex.r}) in room ${roomCode}`,
+        const monster = this.scenarioService.createMonster(
+          room.id,
+          spawn.type,
+          spawn.hex,
+          spawn.isElite ?? false,
+          difficulty,
         );
-        // TODO: Implement actual monster spawning using ScenarioService
-        // This would involve creating monster instances and adding them to the room state
+
+        roomMonsters.push(monster);
+
+        this.logger.log(
+          `Spawned ${spawn.isElite ? 'elite ' : ''}${spawn.type} at (${spawn.hex.q}, ${spawn.hex.r}) in room ${roomCode}`,
+        );
+
+        // Emit monster spawned event to clients
+        this.server.to(roomCode).emit('narrative_monster_spawned', {
+          monsterId: monster.id,
+          monsterType: monster.monsterType,
+          isElite: monster.isElite,
+          hex: monster.currentHex,
+          health: monster.health,
+          maxHealth: monster.maxHealth,
+        });
       }
+
+      this.roomMonsters.set(roomCode, roomMonsters);
     }
 
     // Unlock doors
     if (effects.unlockDoors && effects.unlockDoors.length > 0) {
-      for (const doorHex of effects.unlockDoors) {
-        this.logger.log(
-          `Unlocking door at (${doorHex.q}, ${doorHex.r}) in room ${roomCode}`,
-        );
-        // TODO: Implement door unlocking by modifying map state
+      const hexMap = this.roomMaps.get(roomCode);
+      if (hexMap) {
+        for (const doorHex of effects.unlockDoors) {
+          const key = `${doorHex.q},${doorHex.r}`;
+          const tile = hexMap.get(key);
+
+          if (tile && tile.features) {
+            // Find and open door feature
+            for (const feature of tile.features) {
+              if (feature.type === 'DOOR' || feature.type === 'door') {
+                feature.isOpen = true;
+              }
+            }
+          }
+
+          this.logger.log(
+            `Unlocked door at (${doorHex.q}, ${doorHex.r}) in room ${roomCode}`,
+          );
+
+          // Emit door unlocked event to clients
+          this.server.to(roomCode).emit('narrative_door_unlocked', {
+            hex: doorHex,
+          });
+        }
       }
     }
 
-    // Reveal hexes
+    // Reveal hexes (for fog of war systems)
     if (effects.revealHexes && effects.revealHexes.length > 0) {
       this.logger.log(
         `Revealing ${effects.revealHexes.length} hexes in room ${roomCode}`,
       );
-      // TODO: Implement hex reveal (for fog of war systems)
+
+      // Emit hexes revealed event to clients
+      this.server.to(roomCode).emit('narrative_hexes_revealed', {
+        hexes: effects.revealHexes,
+      });
     }
   }
 
@@ -5392,7 +5482,7 @@ export class GameGateway
 
     // Get characters with positions from all players
     const characters = room.players
-      .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
+      .flatMap((p) => characterService.getCharactersByPlayerId(p.userId))
       .map((char) => ({
         id: char.id,
         characterClass: char.characterClass,
@@ -5401,18 +5491,18 @@ export class GameGateway
 
     // Get monsters from room state
     const roomMonsters = this.roomMonsters.get(roomCode) || [];
-    const monsters = roomMonsters.map((monster: any) => ({
+    const monsters = roomMonsters.map((monster) => ({
       id: monster.id,
-      type: monster.name,
-      isAlive: monster.health > 0,
+      type: monster.monsterType,
+      isAlive: !monster.isDead,
     }));
 
     // Count killed monsters
-    const deadMonsters = roomMonsters.filter((m: any) => m.health <= 0);
+    const deadMonsters = roomMonsters.filter((m) => m.isDead);
     const monstersKilledByType: Record<string, number> = {};
     for (const monster of deadMonsters) {
-      monstersKilledByType[monster.name] =
-        (monstersKilledByType[monster.name] || 0) + 1;
+      monstersKilledByType[monster.monsterType] =
+        (monstersKilledByType[monster.monsterType] || 0) + 1;
     }
 
     return {
@@ -5457,7 +5547,7 @@ export class GameGateway
       const room = roomService.getRoom(roomCode);
       if (!room) return;
 
-      const players = room.players.map((p: any) => ({
+      const players = room.players.map((p) => ({
         id: p.userId,
         name: p.nickname,
       }));

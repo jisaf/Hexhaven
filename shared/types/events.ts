@@ -583,6 +583,35 @@ export interface AcknowledgeNarrativePayload {
   narrativeId: string;
 }
 
+/**
+ * Server -> Client: Monster spawned by narrative trigger
+ */
+export interface NarrativeMonsterSpawnedPayload {
+  monsterId: string;
+  monsterType: string;
+  isElite: boolean;
+  hex: AxialCoordinates;
+  health: number;
+  maxHealth: number;
+  narrativeTriggerId?: string;
+}
+
+/**
+ * Server -> Client: Door unlocked by narrative trigger
+ */
+export interface NarrativeDoorUnlockedPayload {
+  hex: AxialCoordinates;
+  narrativeTriggerId?: string;
+}
+
+/**
+ * Server -> Client: Hexes revealed by narrative trigger
+ */
+export interface NarrativeHexesRevealedPayload {
+  hexes: AxialCoordinates[];
+  narrativeTriggerId?: string;
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -661,4 +690,7 @@ export interface ServerEvents {
   narrative_display: NarrativeDisplayPayload;
   narrative_acknowledged: NarrativeAcknowledgedPayload;
   narrative_dismissed: NarrativeDismissedPayload;
+  narrative_monster_spawned: NarrativeMonsterSpawnedPayload;
+  narrative_door_unlocked: NarrativeDoorUnlockedPayload;
+  narrative_hexes_revealed: NarrativeHexesRevealedPayload;
 }
