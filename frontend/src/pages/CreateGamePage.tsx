@@ -166,7 +166,7 @@ export const CreateGamePage: React.FC = () => {
         {error && (
           <div className={styles.errorBanner}>
             {error}
-            <button onClick={() => setError(null)}>✕</button>
+            <button onClick={() => setFormError(null)}>✕</button>
           </div>
         )}
 
