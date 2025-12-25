@@ -390,9 +390,11 @@ test.describe('User Story 2: Scenario Completion Detection', () => {
         await campaignCard.click();
 
         // Extract campaign ID from URL (e.g., /campaigns/uuid)
+        // Used in commented assertions below for future scenario completion testing
         const campaignUrl = page.url();
         const campaignIdMatch = campaignUrl.match(/\/campaigns\/([a-f0-9-]+)/);
-        const campaignId = campaignIdMatch ? campaignIdMatch[1] : null;
+        const _campaignId = campaignIdMatch ? campaignIdMatch[1] : null;
+        void _campaignId; // Placeholder for future use in navigation verification
 
         const startScenarioButton = page.locator('[data-testid="start-scenario-button"]').first();
         if (await startScenarioButton.isVisible({ timeout: 5000 })) {
