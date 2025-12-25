@@ -565,6 +565,10 @@ gloomhaven-hex-game/
 - Character retirement system
 - City and road events
 - Legacy unlocks (classes, scenarios)
+- Campaign context in games (Issue #318)
+  - Games store `campaignId` for proper return navigation
+  - Victory screen shows "Return to Campaign" button when in campaign
+  - Deep-linking support for campaign flow
 
 #### Advanced Features
 - Advanced monster AI (flying, jumping, disadvantage)
@@ -1147,6 +1151,10 @@ interface ServerEvents {
   'player-left': { playerId: string };
   'turn-changed': { currentPlayer: string; initiative: number };
   'error': { message: string; code: string };
+  // Campaign events (Issue #318)
+  'game-started': { scenarioId: string; campaignId?: string; ... };  // Includes campaign context
+  'campaign-scenario-completed': { campaignId: string; scenarioId: string; victory: boolean; ... };
+  'campaign-completed': { campaignId: string; completedAt: string };
 }
 ```
 

@@ -26,6 +26,9 @@ import type {
   ObjectiveProgressUpdatePayload,
   CharacterExhaustedPayload,
   ScenarioCompletedPayload,
+  // Issue #318 - Campaign events
+  CampaignScenarioCompletedPayload,
+  CampaignCompletedPayload,
 } from '../../../shared/types/events';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -85,6 +88,10 @@ export interface WebSocketEvents {
 
   // Scenario
   scenario_completed: (data: ScenarioCompletedPayload) => void;
+
+  // Campaign events (Issue #318)
+  campaign_scenario_completed: (data: CampaignScenarioCompletedPayload) => void;
+  campaign_completed: (data: CampaignCompletedPayload) => void;
 
   // Objectives (Phase 3)
   objectives_loaded: (data: ObjectivesLoadedPayload) => void;

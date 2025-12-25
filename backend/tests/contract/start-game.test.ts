@@ -352,4 +352,44 @@ describe('WebSocket Contract: start_game event', () => {
     hostSocket.on('character_selected', onSelect);
     client2Socket.on('character_selected', onSelect);
   });
+
+  // Issue #318 - Campaign context tests
+  it('should include campaignId field in game_started payload (Issue #318)', (done) => {
+    // Both players select characters
+    const hostCharacter: SelectCharacterPayload = {
+      characterClass: CharacterClass.BRUTE,
+    };
+
+    const player2Character: SelectCharacterPayload = {
+      characterClass: CharacterClass.TINKERER,
+    };
+
+    let selectCount = 0;
+    const onSelect = () => {
+      selectCount++;
+      if (selectCount === 2) {
+        // Both selected, now start game
+        const startPayload: StartGamePayload = {
+          scenarioId: 'scenario-001',
+        };
+
+        hostSocket.on('game_started', (payload: GameStartedPayload) => {
+          // Issue #318 - Verify campaignId field exists in payload
+          // For non-campaign games, it should be null or undefined
+          expect(payload).toHaveProperty('campaignId');
+          // campaignId should be null for games not started from a campaign
+          expect(payload.campaignId).toBeNull();
+          done();
+        });
+
+        hostSocket.emit('start_game', startPayload);
+      }
+    };
+
+    hostSocket.on('character_selected', onSelect);
+    client2Socket.on('character_selected', onSelect);
+
+    hostSocket.emit('select_character', hostCharacter);
+    client2Socket.emit('select_character', player2Character);
+  });
 });

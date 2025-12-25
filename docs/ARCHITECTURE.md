@@ -610,6 +610,13 @@ Campaign mode enables persistent progression across multiple game sessions, with
 - `healing`: Characters heal to full health after each scenario
 - `permadeath`: Exhausted characters are permanently retired
 
+**Campaign Context in Games (Issue #318)**:
+- Games store `campaignId` for proper return navigation
+- `game_started` event includes `campaignId` field
+- Room API endpoints return `campaignId` in responses
+- Victory screen shows "Return to Campaign" button when in campaign mode
+- Enables deep-linking: users can navigate back to campaign after game completion
+
 **Campaign Templates**:
 - Database-driven template system for dynamic campaign creation
 - Templates define scenario progression, unlock conditions, player limits
@@ -877,8 +884,9 @@ CREATE TABLE campaigns (
 -- Added campaign_id foreign key to existing characters table
 ALTER TABLE characters ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
 
--- Game Rooms (updated for campaigns - Issue #244)
+-- Game Rooms (updated for campaigns - Issue #244, #318)
 -- Added campaign_id foreign key to track campaign games
+-- Used for return navigation after game completion (Issue #318)
 ALTER TABLE game_rooms ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
 ```
 
@@ -1005,7 +1013,7 @@ room_joined         { roomCode, players }  # players include characterClasses[]
 player_joined       { player }
 player_left         { playerId }
 character_selected  { playerId, characterClasses[], characterIds?, activeIndex }
-game_started        { scenario, initialState }
+game_started        { scenario, initialState, campaignId? }  # Issue #318: Campaign context
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
 next_turn_started   { entityId }
@@ -1220,4 +1228,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-15
+**Last Review**: 2025-12-25 (Updated for Issue #318 - Campaign Context)

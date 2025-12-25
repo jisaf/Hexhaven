@@ -378,6 +378,26 @@ export function GameBoard() {
     setScenarioResult(null);
   }, []);
 
+  // Issue #318 - Handle return to campaign after game completion
+  const handleReturnToCampaign = useCallback(async () => {
+    if (!roomCode || !gameState.campaignId) return;
+
+    try {
+      // Emit leave_game event
+      websocketService.emit('leave_game', { roomCode });
+
+      // Clean up game state
+      gameSessionCoordinator.switchGame();
+
+      // Navigate to campaign details page
+      navigate(`/campaigns/${gameState.campaignId}`);
+    } catch (error) {
+      console.error('Failed to return to campaign:', error);
+      // Fallback: still attempt navigation even if cleanup fails
+      navigate(`/campaigns/${gameState.campaignId}`);
+    }
+  }, [roomCode, navigate, gameState.campaignId]);
+
   const handleAttackClick = () => {
     const attackAction = gameStateManager.getAttackAction();
     if (attackAction && gameState.myCharacterId) {
@@ -645,6 +665,8 @@ export function GameBoard() {
           onClose={() => setScenarioResult(null)}
           onReturnToLobby={handleReturnToLobby}
           onPlayAgain={handlePlayAgain}
+          campaignId={gameState.campaignId}
+          onReturnToCampaign={handleReturnToCampaign}
         />
       )}
 

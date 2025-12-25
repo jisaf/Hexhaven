@@ -52,6 +52,7 @@ interface GetRoomResponse {
     id: string;
     roomCode: string;
     status: string;
+    campaignId?: string; // Issue #318 - Campaign context
     scenarioId?: string;
     createdAt: string;
     updatedAt: string;
@@ -191,6 +192,7 @@ export class RoomsController {
             id: room.id,
             roomCode: room.roomCode,
             status: room.status,
+            campaignId: room.campaignId || undefined,
             scenarioId: room.scenarioId || undefined,
             createdAt: room.createdAt.toISOString(),
             updatedAt: room.updatedAt.toISOString(),
@@ -240,6 +242,7 @@ export class RoomsController {
           id: room.id,
           roomCode: room.roomCode,
           status: room.status,
+          campaignId: room.campaignId || undefined,
           scenarioId: room.scenarioId || undefined,
           createdAt: room.createdAt.toISOString(),
           updatedAt: room.updatedAt.toISOString(),
@@ -295,6 +298,7 @@ export class RoomsController {
           id: room.id,
           roomCode: room.roomCode,
           status: room.status,
+          campaignId: room.campaignId || undefined,
           scenarioId: room.scenarioId || undefined,
           createdAt: room.createdAt.toISOString(),
           updatedAt: room.updatedAt.toISOString(),

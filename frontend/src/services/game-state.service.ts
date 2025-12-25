@@ -121,6 +121,9 @@ interface GameState {
   // Core game data
   gameData: GameStartedPayload | null;
 
+  // Campaign context (Issue #318)
+  campaignId: string | null;
+
   // Turn management
   currentRound: number;
   turnOrder: TurnEntity[];
@@ -253,6 +256,7 @@ interface VisualUpdateCallbacks {
 class GameStateManager {
   private state: GameState = {
     gameData: null,
+    campaignId: null, // Issue #318 - Campaign context
     currentRound: 0,
     turnOrder: [],
     currentTurnEntityId: null,
@@ -331,6 +335,9 @@ class GameStateManager {
 
   private handleGameStarted(data: GameStartedPayload): void {
     this.addLog([{ text: `Scenario started: ${data.scenarioName}` }]);
+
+    // Issue #318 - Extract campaign context from payload
+    this.state.campaignId = data.campaignId || null;
 
     const playerUUID = websocketService.getPlayerUUID();
     if (!playerUUID) return;
@@ -1325,6 +1332,7 @@ class GameStateManager {
   public reset(): void {
     this.state = {
         gameData: null,
+        campaignId: null, // Issue #318 - Reset campaign context
         currentRound: 0,
         turnOrder: [],
         currentTurnEntityId: null,

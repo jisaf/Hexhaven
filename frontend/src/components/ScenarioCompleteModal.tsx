@@ -33,6 +33,9 @@ interface ScenarioCompleteModalProps {
   onClose: () => void;
   onPlayAgain?: () => void;
   onReturnToLobby?: () => void;
+  // Issue #318 - Campaign context for return navigation
+  campaignId?: string | null;
+  onReturnToCampaign?: () => void;
 }
 
 export const ScenarioCompleteModal: React.FC<ScenarioCompleteModalProps> = ({
@@ -40,6 +43,8 @@ export const ScenarioCompleteModal: React.FC<ScenarioCompleteModalProps> = ({
   onClose,
   onPlayAgain,
   onReturnToLobby,
+  campaignId,
+  onReturnToCampaign,
 }) => {
   return (
     <div className="scenario-complete-modal-overlay" onClick={onClose}>
@@ -134,6 +139,12 @@ export const ScenarioCompleteModal: React.FC<ScenarioCompleteModalProps> = ({
 
         {/* Action Buttons */}
         <div className="modal-actions">
+          {/* Issue #318 - Show Return to Campaign as primary when in campaign */}
+          {campaignId && onReturnToCampaign && (
+            <button className="btn-action btn-campaign" onClick={onReturnToCampaign}>
+              Return to Campaign
+            </button>
+          )}
           {onPlayAgain && (
             <button className="btn-action btn-play-again" onClick={onPlayAgain}>
               Play Again

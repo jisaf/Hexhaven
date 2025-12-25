@@ -728,6 +728,144 @@ export interface UserStatisticsResponse {
 
 ---
 
+---
+
+## Room API
+
+### Get Room Details
+
+Retrieve details for a specific game room.
+
+**Endpoint**: `GET /api/rooms/:roomCode`
+
+**Authentication**: Required
+
+**URL Parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| roomCode | string | Yes | 6-character room code |
+
+**Success Response** (200 OK):
+
+```json
+{
+  "room": {
+    "id": "room-uuid",
+    "roomCode": "ABC123",
+    "status": "lobby",
+    "campaignId": "campaign-uuid",
+    "scenarioId": "scenario-uuid",
+    "createdAt": "2025-12-25T10:00:00.000Z",
+    "updatedAt": "2025-12-25T10:05:00.000Z",
+    "expiresAt": "2025-12-26T10:00:00.000Z",
+    "playerCount": 2
+  },
+  "players": [
+    {
+      "id": "player-uuid",
+      "userId": "user-uuid",
+      "nickname": "Player1",
+      "isHost": true,
+      "characterClass": "Brute",
+      "connectionStatus": "connected"
+    }
+  ]
+}
+```
+
+**Response Fields** (Issue #318):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| campaignId | string (optional) | UUID of campaign if game is part of a campaign |
+| scenarioId | string (optional) | UUID of selected scenario |
+
+**Note**: The `campaignId` field enables "Return to Campaign" navigation in the victory screen when the game is part of a campaign.
+
+---
+
+### Get User's Rooms
+
+Retrieve all rooms the user is currently in.
+
+**Endpoint**: `GET /api/rooms/my-rooms/:userId`
+
+**Authentication**: Required
+
+**Success Response** (200 OK):
+
+```json
+{
+  "rooms": [
+    {
+      "room": {
+        "id": "room-uuid",
+        "roomCode": "ABC123",
+        "status": "lobby",
+        "campaignId": "campaign-uuid",
+        "scenarioId": null,
+        "createdAt": "2025-12-25T10:00:00.000Z",
+        "updatedAt": "2025-12-25T10:05:00.000Z",
+        "expiresAt": "2025-12-26T10:00:00.000Z",
+        "playerCount": 2
+      },
+      "players": [...]
+    }
+  ]
+}
+```
+
+---
+
+### Create Room
+
+Create a new game room.
+
+**Endpoint**: `POST /api/rooms`
+
+**Authentication**: Required
+
+**Request Body**:
+
+```json
+{
+  "nickname": "Player1",
+  "campaignId": "campaign-uuid",
+  "scenarioId": "scenario-uuid"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| nickname | string | Yes | Player's display name |
+| campaignId | string | No | UUID of campaign (for campaign games) |
+| scenarioId | string | No | UUID of pre-selected scenario |
+
+**Success Response** (201 Created):
+
+```json
+{
+  "room": {
+    "id": "room-uuid",
+    "roomCode": "ABC123",
+    "status": "lobby",
+    "campaignId": "campaign-uuid",
+    "scenarioId": "scenario-uuid",
+    "createdAt": "2025-12-25T10:00:00.000Z",
+    "expiresAt": "2025-12-26T10:00:00.000Z"
+  },
+  "player": {
+    "id": "player-uuid",
+    "userId": "user-uuid",
+    "nickname": "Player1",
+    "isHost": true
+  }
+}
+```
+
+---
+
 ## Related Documentation
 
 - [game-completion-system.md](./game-completion-system.md) - Game completion architecture
@@ -736,5 +874,5 @@ export interface UserStatisticsResponse {
 
 ---
 
-**Last Updated**: 2025-12-07
-**Version**: 1.0.0 (Issue #186 - Game Completion System)
+**Last Updated**: 2025-12-25
+**Version**: 1.1.0 (Issue #318 - Campaign Context in Room Metadata)

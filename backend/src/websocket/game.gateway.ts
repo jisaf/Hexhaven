@@ -577,6 +577,8 @@ export class GameGateway
     );
 
     Object.assign(gameStartedPayload, {
+      // Issue #318 - Campaign context for return navigation
+      campaignId: room.campaignId || null,
       // Background image configuration (Issue #191)
       backgroundImageUrl: scenario?.backgroundImageUrl,
       backgroundOpacity: scenario?.backgroundOpacity,
@@ -1614,6 +1616,8 @@ export class GameGateway
       );
 
       Object.assign(gameStartedPayload, {
+        // Issue #318 - Campaign context for return navigation
+        campaignId: room.campaignId || null,
         // Background image configuration (Issue #191)
         backgroundImageUrl: scenario.backgroundImageUrl,
         backgroundOpacity: scenario.backgroundOpacity,
