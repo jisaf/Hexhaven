@@ -382,14 +382,20 @@ export function GameBoard() {
   const handleReturnToCampaign = useCallback(async () => {
     if (!roomCode || !gameState.campaignId) return;
 
-    // Emit leave_game event
-    websocketService.emit('leave_game', { roomCode });
+    try {
+      // Emit leave_game event
+      websocketService.emit('leave_game', { roomCode });
 
-    // Clean up game state
-    gameSessionCoordinator.switchGame();
+      // Clean up game state
+      gameSessionCoordinator.switchGame();
 
-    // Navigate to campaign details page
-    navigate(`/campaigns/${gameState.campaignId}`);
+      // Navigate to campaign details page
+      navigate(`/campaigns/${gameState.campaignId}`);
+    } catch (error) {
+      console.error('Failed to return to campaign:', error);
+      // Fallback: still attempt navigation even if cleanup fails
+      navigate(`/campaigns/${gameState.campaignId}`);
+    }
   }, [roomCode, navigate, gameState.campaignId]);
 
   const handleAttackClick = () => {
