@@ -41,9 +41,16 @@ import type { CharacterClass } from '../../../shared/types/entities';
 export type JoinIntent = 'create' | 'join' | 'rejoin' | 'refresh';
 
 /**
- * Room status lifecycle
+ * Room status lifecycle (DEPRECATED - use connectionStatus + isGameActive)
+ * @deprecated Will be removed after #309-317 migration
  */
 export type RoomStatus = 'disconnected' | 'joining' | 'lobby' | 'active';
+
+/**
+ * Connection status - tracks WebSocket/room connection state
+ * Separated from game mode state for Issue #308
+ */
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
 
 /**
  * Player role in the room
@@ -67,7 +74,28 @@ import type { Player } from '../components/PlayerList';
 
 export interface RoomSessionState {
   roomCode: string | null;
+
+  /**
+   * Connection status - tracks WebSocket/room connection state
+   * @see Issue #308 - RoomSessionManager Simplification
+   */
+  connectionStatus: ConnectionStatus;
+
+  /**
+   * Whether a game is actively in progress
+   * false = in lobby (waiting to start)
+   * true = game is active
+   * @see Issue #308 - RoomSessionManager Simplification
+   */
+  isGameActive: boolean;
+
+  /**
+   * @deprecated Use connectionStatus + isGameActive instead
+   * Will be removed after #309-317 migration
+   * Computed: disconnected→disconnected, connecting→joining, connected+!active→lobby, connected+active→active
+   */
   status: RoomStatus;
+
   playerRole: PlayerRole;
   players: Player[];
   gameState: GameStartedPayload | null;
@@ -75,6 +103,18 @@ export interface RoomSessionState {
   error: { message: string } | null;
   /** Current player's character selections (single source of truth) */
   currentPlayerCharacters: CurrentPlayerCharacters;
+
+  /**
+   * Campaign ID if this room is part of a campaign
+   * @see Issue #308 - Campaign context tracking
+   */
+  campaignId: string | null;
+
+  /**
+   * Scenario ID for the current room
+   * @see Issue #308 - Scenario context tracking
+   */
+  scenarioId: string | null;
 }
 
 /**
@@ -91,6 +131,7 @@ export interface RoomJoinedPayload {
     characterClass?: string;
   }>;
   scenarioId?: string;
+  campaignId?: string;
 }
 
 /**
@@ -105,7 +146,9 @@ type StateUpdateCallback = (state: RoomSessionState) => void;
 class RoomSessionManager {
   private state: RoomSessionState = {
     roomCode: null,
-    status: 'disconnected',
+    connectionStatus: 'disconnected',
+    isGameActive: false,
+    status: 'disconnected', // Computed for backward compatibility
     playerRole: null,
     players: [],
     gameState: null,
@@ -116,6 +159,8 @@ class RoomSessionManager {
       characterIds: [],
       activeIndex: 0,
     },
+    campaignId: null,
+    scenarioId: null,
   };
 
   // Prevents duplicate joins within same session
@@ -127,6 +172,32 @@ class RoomSessionManager {
 
   constructor() {
     this.setupWebSocketListeners();
+  }
+
+  /**
+   * Compute backward-compatible status from connectionStatus and isGameActive
+   * @deprecated This is for backward compatibility during #309-317 migration
+   */
+  private computeStatus(): RoomStatus {
+    if (this.state.connectionStatus === 'disconnected') return 'disconnected';
+    if (this.state.connectionStatus === 'connecting') return 'joining';
+    if (this.state.isGameActive) return 'active';
+    return 'lobby';
+  }
+
+  /**
+   * Update state with new connectionStatus/isGameActive and auto-compute status
+   * This ensures status is always in sync during the transition period
+   */
+  private updateConnectionState(
+    connectionStatus: ConnectionStatus,
+    isGameActive?: boolean
+  ): void {
+    this.state.connectionStatus = connectionStatus;
+    if (isGameActive !== undefined) {
+      this.state.isGameActive = isGameActive;
+    }
+    this.state.status = this.computeStatus();
   }
 
   private setupWebSocketListeners(): void {
@@ -234,14 +305,14 @@ class RoomSessionManager {
       console.log(`[RoomSessionManager] ensureJoined called with intent: ${intent}`);
 
       // Prevent duplicate joins in same session
-      if (this.hasJoinedInSession && this.state.status !== 'disconnected') {
+      if (this.hasJoinedInSession && this.state.connectionStatus !== 'disconnected') {
         // Special case: Allow 'refresh' intent if we're in an active game but missing game state
         // This happens when navigating to /game after Lobby has unmounted
-        if (intent === 'refresh' && this.state.status === 'active' && !this.state.gameState) {
+        if (intent === 'refresh' && this.state.isGameActive && !this.state.gameState) {
           console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
         } else {
           console.log(
-            `[RoomSessionManager] Already joined in this session (status: ${this.state.status}), skipping duplicate join`
+            `[RoomSessionManager] Already joined in this session (connectionStatus: ${this.state.connectionStatus}, isGameActive: ${this.state.isGameActive}), skipping duplicate join`
           );
           return;
         }
@@ -274,7 +345,7 @@ class RoomSessionManager {
       }
 
       // Update state: we're attempting to join
-      this.state.status = 'joining';
+      this.updateConnectionState('connecting');
       this.state.lastJoinIntent = intent;
       this.state.roomCode = roomCode; // Ensure state has room code
       this.emitStateUpdate();
@@ -295,7 +366,7 @@ class RoomSessionManager {
       // On error, mark as disconnected and set error state
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       console.error('[RoomSessionManager] ❌ Error in ensureJoined:', errorMessage);
-      this.state.status = 'disconnected';
+      this.updateConnectionState('disconnected', false);
       this.state.error = { message: errorMessage };
       this.emitStateUpdate();
     } finally {
@@ -311,7 +382,9 @@ class RoomSessionManager {
     console.log('[RoomSessionManager] onRoomJoined:', data);
 
     this.state.roomCode = data.roomCode;
-    this.state.status = data.roomStatus === 'active' ? 'active' : 'lobby';
+    // Issue #308: Separate connection status from game active state
+    this.updateConnectionState('connected', data.roomStatus === 'active');
+
     this.state.players = data.players.map(p => ({
       ...p,
       connectionStatus: 'connected',
@@ -322,8 +395,12 @@ class RoomSessionManager {
     const currentPlayer = data.players.find((p) => p.id === currentUserId);
     this.state.playerRole = currentPlayer?.isHost ? 'host' : 'player';
 
+    // Issue #308: Store campaign and scenario context
+    this.state.campaignId = data.campaignId || null;
+    this.state.scenarioId = data.scenarioId || null;
+
     console.log(
-      `[RoomSessionManager] Room status updated: ${this.state.status}, role: ${this.state.playerRole}`
+      `[RoomSessionManager] Room status updated: connectionStatus=${this.state.connectionStatus}, isGameActive=${this.state.isGameActive}, role: ${this.state.playerRole}`
     );
 
     this.emitStateUpdate();
@@ -430,10 +507,11 @@ class RoomSessionManager {
   public onGameStarted(data: GameStartedPayload): void {
     console.log('[RoomSessionManager] onGameStarted with', data.mapLayout?.length || 0, 'tiles');
 
-    this.state.status = 'active';
+    // Issue #308: Set isGameActive to true (connectionStatus remains 'connected')
+    this.updateConnectionState('connected', true);
     this.state.gameState = data;
 
-    console.log('[RoomSessionManager] Game state stored, status set to active');
+    console.log('[RoomSessionManager] Game state stored, isGameActive=true');
 
     this.emitStateUpdate();
   }
@@ -445,7 +523,8 @@ class RoomSessionManager {
   public onDisconnected(): void {
     console.log('[RoomSessionManager] WebSocket disconnected');
 
-    this.state.status = 'disconnected';
+    // Issue #308: Set connectionStatus to disconnected (preserve isGameActive for reconnection context)
+    this.updateConnectionState('disconnected');
     this.hasJoinedInSession = false; // Allow rejoin after disconnect
 
     this.emitStateUpdate();
@@ -459,7 +538,9 @@ class RoomSessionManager {
 
     this.state = {
       roomCode: null,
-      status: 'disconnected',
+      connectionStatus: 'disconnected',
+      isGameActive: false,
+      status: 'disconnected', // Computed for backward compatibility
       playerRole: null,
       players: [],
       gameState: null,
@@ -470,6 +551,8 @@ class RoomSessionManager {
         characterIds: [],
         activeIndex: 0,
       },
+      campaignId: null,
+      scenarioId: null,
     };
 
     this.hasJoinedInSession = false;
@@ -490,7 +573,9 @@ class RoomSessionManager {
     // Clear frontend state only (don't leave backend room yet)
     this.state = {
       roomCode: null,
-      status: 'disconnected',
+      connectionStatus: 'disconnected',
+      isGameActive: false,
+      status: 'disconnected', // Computed for backward compatibility
       playerRole: null,
       players: [],
       gameState: null,
@@ -501,6 +586,8 @@ class RoomSessionManager {
         characterIds: [],
         activeIndex: 0,
       },
+      campaignId: null,
+      scenarioId: null,
     };
 
     this.hasJoinedInSession = false;
@@ -517,7 +604,8 @@ class RoomSessionManager {
     console.log('[RoomSessionManager] Clearing game state');
 
     this.state.gameState = null;
-    this.state.status = 'lobby';
+    // Issue #308: Keep connected but set game as not active
+    this.updateConnectionState('connected', false);
 
     this.emitStateUpdate();
   }
