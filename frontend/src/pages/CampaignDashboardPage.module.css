@@ -1,0 +1,28 @@
+/**
+ * Campaign Dashboard Page Styles (Issue #316)
+ */
+
+.campaignDashboardContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 64px; /* Account for fixed header */
+  min-height: 100vh;
+}
+
+.campaignDashboardContent {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .campaignDashboardContent {
+    padding: 1rem;
+  }
+}

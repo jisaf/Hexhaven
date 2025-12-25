@@ -16,15 +16,24 @@ export interface UserCharacterSelectProps {
   selectedCharacterId?: string;
   disabledCharacterIds?: string[];
   onSelect: (characterId: string) => void;
+  /** Optional callback that passes full character details */
+  onSelectWithDetails?: (character: CharacterResponse) => void;
   /** Compact mode for inline display (smaller cards) */
   compact?: boolean;
+  /** Disabled state */
+  disabled?: boolean;
+  /** Character IDs to exclude from display */
+  excludeCharacterIds?: string[];
 }
 
 export function UserCharacterSelect({
   selectedCharacterId,
   disabledCharacterIds = [],
   onSelect,
+  onSelectWithDetails,
   compact = false,
+  disabled = false,
+  excludeCharacterIds = [],
 }: UserCharacterSelectProps) {
   const { t } = useTranslation();
   const [characters, setCharacters] = useState<CharacterResponse[]>([]);
@@ -57,12 +66,21 @@ export function UserCharacterSelect({
   };
 
   const handleSelect = (characterId: string, character: CharacterResponse) => {
-    // Don't allow selecting characters in active games or disabled
-    if (character.currentGameId || disabledCharacterIds.includes(characterId)) {
+    // Don't allow selecting characters in active games, disabled, or excluded
+    if (character.currentGameId || disabledCharacterIds.includes(characterId) || disabled) {
       return;
     }
     onSelect(characterId);
+    // Also call the detailed callback if provided
+    if (onSelectWithDetails) {
+      onSelectWithDetails(character);
+    }
   };
+
+  // Filter out excluded characters
+  const displayCharacters = characters.filter(
+    c => !excludeCharacterIds.includes(c.id)
+  );
 
   if (loading) {
     return (
@@ -91,16 +109,16 @@ export function UserCharacterSelect({
     );
   }
 
-  if (characters.length === 0) {
+  if (displayCharacters.length === 0) {
     return (
       <div className="user-character-select">
         <h3 className="character-select-title">
           {t('lobby:selectCharacter', 'Select Your Character')}
         </h3>
         <div className="no-characters">
-          <p>You don't have any characters yet.</p>
+          <p>{characters.length === 0 ? "You don't have any characters yet." : 'No available characters.'}</p>
           <Link to="/characters/create" className="create-character-link">
-            Create Your First Character
+            Create New Character
           </Link>
         </div>
         <style>{noCharactersStyles}</style>
@@ -117,10 +135,10 @@ export function UserCharacterSelect({
       )}
 
       <div className="character-grid">
-        {characters.map((character) => {
+        {displayCharacters.map((character) => {
           const isSelected = selectedCharacterId === character.id;
           const isInGame = !!character.currentGameId;
-          const isDisabled = disabledCharacterIds.includes(character.id) || isInGame;
+          const isDisabled = disabledCharacterIds.includes(character.id) || isInGame || disabled;
 
           return (
             <button

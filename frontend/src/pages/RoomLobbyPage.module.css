@@ -1,0 +1,106 @@
+/**
+ * Room Lobby Page Styles (Issue #313)
+ */
+
+.roomLobbyContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 64px; /* Account for fixed header */
+  min-height: 100vh;
+}
+
+.roomLobbyContent {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: flex-start;
+  padding-bottom: 0.5rem;
+}
+
+.leaveButton {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #3a506b;
+  border-radius: 6px;
+  color: #8a9db8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.leaveButton:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: #8a9db8;
+  font-size: 1.1rem;
+}
+
+/* Not Connected State */
+.notConnected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.notConnected h2 {
+  font-family: 'MedievalSharp', serif;
+  font-size: 1.5rem;
+  color: #c9a444;
+  margin: 0;
+}
+
+.backButton {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #3a506b;
+  border-radius: 6px;
+  color: #8a9db8;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  border-color: #c9a444;
+  color: #c9a444;
+}
+
+/* Error Banner */
+.errorBanner {
+  padding: 1rem;
+  background: rgba(139, 0, 0, 0.5);
+  border: 1px solid #ffadad;
+  border-radius: 8px;
+  color: #ffadad;
+  text-align: center;
+  max-width: 400px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .roomLobbyContent {
+    padding: 1rem;
+  }
+}
