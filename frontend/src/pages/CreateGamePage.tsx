@@ -235,8 +235,7 @@ export const CreateGamePage: React.FC = () => {
                 ) : (
                   <CharacterSelect
                     onSelect={handleAddCharacterClass}
-                    disabled={isLoading}
-                    excludeCharacterIds={selectedCharacters.map(c => c.id)}
+                    disabledClasses={selectedCharacters.map(c => c.classType)}
                   />
                 )}
                 <button
