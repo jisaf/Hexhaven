@@ -98,6 +98,7 @@ export const JoinGamePage: React.FC = () => {
             isLoading={isLoading}
             error={error || undefined}
             initialNickname={displayName}
+            initialRoomCode={urlRoomCode || ''}
             isAuthenticated={isAuthenticated}
           />
 

@@ -20,7 +20,6 @@ import './App.css';
 
 // Lazy load route components
 const Lobby = lazy(() => import('./pages/Lobby').then(m => ({ default: m.Lobby })));
-const GameBoard = lazy(() => import('./pages/GameBoard').then(m => ({ default: m.GameBoard })));
 const HexMapDemo = lazy(() => import('./pages/HexMapDemo').then(m => ({ default: m.HexMapDemo })));
 const ScenarioDesigner = lazy(() => import('./pages/ScenarioDesigner'));
 const TestVideos = lazy(() => import('./pages/TestVideos').then(m => ({ default: m.TestVideos })));

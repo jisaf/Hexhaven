@@ -11,14 +11,12 @@
  */
 
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { CampaignView } from '../components/lobby/CampaignView';
 import styles from './CampaignDashboardPage.module.css';
 
 export const CampaignDashboardPage: React.FC = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation(['common', 'lobby']);
 
   // Navigate back to campaigns hub
   const handleBack = () => {
@@ -27,9 +25,13 @@ export const CampaignDashboardPage: React.FC = () => {
 
   // Navigate to campaign scenario lobby
   const handleStartGame = (scenarioId: string, campId: string, characterIds: string[]) => {
-    // Store character selections in session storage for the lobby to pick up
-    sessionStorage.setItem(`campaign-${campId}-characters`, JSON.stringify(characterIds));
-    navigate(`/campaigns/${campId}/scenario/${scenarioId}`);
+    // Pass character selections via URL query params (more robust than sessionStorage)
+    const params = new URLSearchParams();
+    if (characterIds.length > 0) {
+      params.set('characters', characterIds.join(','));
+    }
+    const queryString = params.toString();
+    navigate(`/campaigns/${campId}/scenario/${scenarioId}${queryString ? `?${queryString}` : ''}`);
   };
 
   // No campaign ID - redirect

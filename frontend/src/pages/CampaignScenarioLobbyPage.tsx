@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../services/campaign.service';
 import { roomSessionManager } from '../services/room-session.service';
@@ -20,6 +20,7 @@ import styles from './CampaignScenarioLobbyPage.module.css';
 
 export const CampaignScenarioLobbyPage: React.FC = () => {
   const { campaignId, scenarioId } = useParams<{ campaignId: string; scenarioId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
   const sessionState = useRoomSession();
@@ -52,14 +53,24 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
         setError('Scenario not found');
       }
 
-      // Load selected characters from session storage (set by CampaignDashboardPage)
-      const storedCharacters = sessionStorage.getItem(`campaign-${campaignId}-characters`);
-      if (storedCharacters) {
-        setSelectedCharacterIds(JSON.parse(storedCharacters));
+      // Load selected characters from URL query params (passed by CampaignDashboardPage)
+      // Read searchParams directly to avoid dependency loop
+      const currentParams = new URLSearchParams(window.location.search);
+      const charactersParam = currentParams.get('characters');
+      if (charactersParam) {
+        const characterIds = charactersParam.split(',').filter(Boolean);
+        setSelectedCharacterIds(characterIds);
       } else {
         // Default to all non-retired characters
         const activeChars = campaignData.characters.filter(c => !c.retired);
-        setSelectedCharacterIds(activeChars.map(c => c.id));
+        const defaultIds = activeChars.map(c => c.id);
+        setSelectedCharacterIds(defaultIds);
+
+        // Update URL with default selection so refresh preserves it
+        if (defaultIds.length > 0) {
+          currentParams.set('characters', defaultIds.join(','));
+          window.history.replaceState(null, '', `${window.location.pathname}?${currentParams.toString()}`);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load campaign data');
@@ -112,13 +123,24 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     }
   };
 
-  // Toggle character selection
+  // Toggle character selection - also updates URL to preserve state on refresh
   const handleToggleCharacter = (characterId: string) => {
-    setSelectedCharacterIds(prev =>
-      prev.includes(characterId)
+    setSelectedCharacterIds(prev => {
+      const newSelection = prev.includes(characterId)
         ? prev.filter(id => id !== characterId)
-        : [...prev, characterId]
-    );
+        : [...prev, characterId];
+
+      // Update URL params to persist selection across refresh
+      const newParams = new URLSearchParams(searchParams);
+      if (newSelection.length > 0) {
+        newParams.set('characters', newSelection.join(','));
+      } else {
+        newParams.delete('characters');
+      }
+      setSearchParams(newParams, { replace: true });
+
+      return newSelection;
+    });
   };
 
   // Navigate back

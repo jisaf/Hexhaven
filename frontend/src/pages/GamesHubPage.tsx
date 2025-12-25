@@ -23,7 +23,6 @@ export const GamesHubPage: React.FC = () => {
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
   const [myRooms, setMyRooms] = useState<RoomWithPlayers[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch active rooms
@@ -84,7 +83,7 @@ export const GamesHubPage: React.FC = () => {
         <LobbyWelcome
           activeRooms={activeRooms}
           loadingRooms={loadingRooms}
-          isLoading={isLoading}
+          isLoading={loadingRooms}
           onJoinRoom={handleJoinRoom}
           onQuickJoinRoom={handleQuickJoinRoom}
         />

@@ -25,8 +25,11 @@ import { authService } from './auth.service';
 import {
   getLastRoomCode,
   getPlayerUUID,
+  getOrCreatePlayerUUID,
   saveLastRoomCode,
   savePlayerNickname,
+  saveLastGameActive,
+  clearLastGameActive,
   getDisplayName,
   isUserAuthenticated,
 } from '../utils/storage';
@@ -453,12 +456,16 @@ class RoomSessionManager {
 
   public async createRoom(
     nickname: string,
-    options?: { campaignId?: string; scenarioId?: string }
+    options?: { campaignId?: string; scenarioId?: string; isSoloGame?: boolean }
   ): Promise<void> {
-    // Get database user ID from authenticated user
+    // Get user ID - database ID for authenticated users, or generate UUID for anonymous
+    let userId: string;
     const user = authService.getUser();
-    if (!user?.id) {
-      throw new Error('User must be authenticated to create a room');
+    if (user?.id) {
+      userId = user.id;
+    } else {
+      // Anonymous user - use or generate a UUID
+      userId = getPlayerUUID() || getOrCreatePlayerUUID();
     }
 
     const apiUrl = getApiUrl();
@@ -466,10 +473,11 @@ class RoomSessionManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: user.id, // Use database user ID, not random UUID
+        userId,
         nickname,
         campaignId: options?.campaignId,
         scenarioId: options?.scenarioId,
+        isSoloGame: options?.isSoloGame,
       }),
     });
 
@@ -479,6 +487,13 @@ class RoomSessionManager {
 
     const data = await response.json();
     saveLastRoomCode(data.room.roomCode);
+
+    // Store whether the game is active for HomePage continue routing
+    if (options?.isSoloGame) {
+      saveLastGameActive(true);
+    } else {
+      saveLastGameActive(false);
+    }
 
     // Only save nickname for anonymous users
     // Authenticated users use their username dynamically
@@ -510,6 +525,9 @@ class RoomSessionManager {
     // Issue #308: Set isGameActive to true (connectionStatus remains 'connected')
     this.updateConnectionState('connected', true);
     this.state.gameState = data;
+
+    // Save game active state for HomePage Continue Game routing
+    saveLastGameActive(true);
 
     console.log('[RoomSessionManager] Game state stored, isGameActive=true');
 
@@ -606,6 +624,9 @@ class RoomSessionManager {
     this.state.gameState = null;
     // Issue #308: Keep connected but set game as not active
     this.updateConnectionState('connected', false);
+
+    // Clear game active state for HomePage routing
+    clearLastGameActive();
 
     this.emitStateUpdate();
   }

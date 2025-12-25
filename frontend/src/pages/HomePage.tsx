@@ -11,13 +11,14 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getLastRoomCode } from '../utils/storage';
+import { getLastRoomCode, getLastGameActive } from '../utils/storage';
 import styles from './HomePage.module.css';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('home');
   const lastRoomCode = getLastRoomCode();
+  const lastGameActive = getLastGameActive();
 
   return (
     <div className={styles.homeContainer}>
@@ -35,9 +36,13 @@ export const HomePage: React.FC = () => {
           <div className={styles.continueSection}>
             <button
               className={styles.continueButton}
-              onClick={() => navigate(`/rooms/${lastRoomCode}`)}
+              onClick={() => navigate(
+                lastGameActive
+                  ? `/rooms/${lastRoomCode}/play`
+                  : `/rooms/${lastRoomCode}`
+              )}
             >
-              {t('continueGame', 'Continue Last Game')}
+              {t(lastGameActive ? 'continueGame' : 'returnToLobby', lastGameActive ? 'Continue Last Game' : 'Return to Lobby')}
               <span className={styles.roomCode}>{lastRoomCode}</span>
             </button>
           </div>

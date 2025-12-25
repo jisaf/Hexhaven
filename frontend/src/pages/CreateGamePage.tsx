@@ -17,7 +17,6 @@ import { UserCharacterSelect } from '../components/UserCharacterSelect';
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { roomSessionManager } from '../services/room-session.service';
 import { useRoomSession } from '../hooks/useRoomSession';
-import { authService } from '../services/auth.service';
 import {
   getDisplayName,
   isUserAuthenticated,
@@ -101,10 +100,11 @@ export const CreateGamePage: React.FC = () => {
         savePlayerNickname(nickname);
       }
 
-      // Create room with scenario
+      // Create room with scenario and solo game option
       // Note: characterIds will be sent via WebSocket after joining
       await roomSessionManager.createRoom(nickname, {
         scenarioId: selectedScenario,
+        isSoloGame,
       });
 
       // Room created - navigation will happen via session state change
@@ -115,13 +115,19 @@ export const CreateGamePage: React.FC = () => {
     }
   };
 
-  // Navigate to room lobby when room is created
+  // Navigate to room lobby (or game for solo) when room is created
   useEffect(() => {
     if (sessionState.connectionStatus === 'connected' && sessionState.roomCode) {
-      // Room created - navigate to room lobby
-      navigate(`/rooms/${sessionState.roomCode}`);
+      // Room created - navigate based on solo game or multiplayer
+      if (sessionState.isGameActive) {
+        // Solo game started - go directly to play
+        navigate(`/rooms/${sessionState.roomCode}/play`);
+      } else {
+        // Multiplayer - go to room lobby
+        navigate(`/rooms/${sessionState.roomCode}`);
+      }
     }
-  }, [sessionState.connectionStatus, sessionState.roomCode, navigate]);
+  }, [sessionState.connectionStatus, sessionState.roomCode, sessionState.isGameActive, navigate]);
 
   // Handle session errors
   useEffect(() => {

@@ -37,11 +37,11 @@ export const RoomLobbyPage: React.FC = () => {
   const players = sessionState.players;
 
   // Local state
-  const [selectedScenario, setSelectedScenario] = useState<string>(
-    sessionState.scenarioId || 'scenario-1'
-  );
   const [error, setError] = useState<string | null>(null);
   const [isRejoining, setIsRejoining] = useState(false);
+
+  // Derive selectedScenario from session state (single source of truth)
+  const selectedScenario = sessionState.scenarioId || 'scenario-1';
 
   // Character selection hook
   const {
@@ -104,16 +104,8 @@ export const RoomLobbyPage: React.FC = () => {
     }
   }, [sessionState.error]);
 
-  // Update selected scenario from session state
-  useEffect(() => {
-    if (sessionState.scenarioId) {
-      setSelectedScenario(sessionState.scenarioId);
-    }
-  }, [sessionState.scenarioId]);
-
-  // Scenario selection (host only)
+  // Scenario selection (host only) - updates via WebSocket, session state is source of truth
   const handleSelectScenario = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
     websocketService.selectScenario(scenarioId);
   };
 
