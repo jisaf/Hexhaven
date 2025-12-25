@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CharacterSelect, type CharacterClass } from '../components/CharacterSelect';
 import { UserCharacterSelect } from '../components/UserCharacterSelect';
+import type { CharacterResponse } from '../types/character.types';
 import { ScenarioSelectionPanel } from '../components/ScenarioSelectionPanel';
 import { roomSessionManager } from '../services/room-session.service';
 import { useRoomSession } from '../hooks/useRoomSession';
@@ -52,32 +53,38 @@ export const CreateGamePage: React.FC = () => {
   const hasCharacters = selectedCharacters.length > 0;
   const isFormValid = isNicknameValid && hasCharacters;
 
-  // Add character (anonymous or persistent)
-  const handleAddCharacter = useCallback((characterIdOrClass: string) => {
+  // Add character (anonymous - class selection)
+  const handleAddCharacterClass = useCallback((characterClass: string) => {
     if (selectedCharacters.length >= MAX_CHARACTERS_PER_PLAYER) return;
 
     // Check if already selected
-    if (selectedCharacters.some(c => c.id === characterIdOrClass || c.classType === characterIdOrClass)) {
+    if (selectedCharacters.some(c => c.classType === characterClass)) {
       return;
     }
 
-    // For anonymous users, characterIdOrClass is the class name
-    // For authenticated users, it's the character UUID
-    const isClassSelect = ['Brute', 'Tinkerer', 'Spellweaver', 'Scoundrel', 'Cragheart', 'Mindthief'].includes(characterIdOrClass);
+    setSelectedCharacters(prev => [...prev, {
+      id: characterClass, // For anonymous, use class as ID
+      classType: characterClass as CharacterClass,
+    }]);
 
-    if (isClassSelect) {
-      setSelectedCharacters(prev => [...prev, {
-        id: characterIdOrClass,
-        classType: characterIdOrClass as CharacterClass,
-      }]);
-    } else {
-      // For authenticated users, we need to fetch character details
-      // For now, just use the ID as both id and classType
-      setSelectedCharacters(prev => [...prev, {
-        id: characterIdOrClass,
-        classType: characterIdOrClass as CharacterClass, // Will be updated from API
-      }]);
+    setShowCharacterSelect(false);
+  }, [selectedCharacters]);
+
+  // Add character (authenticated - persistent character with details)
+  const handleAddCharacterWithDetails = useCallback((character: CharacterResponse) => {
+    if (selectedCharacters.length >= MAX_CHARACTERS_PER_PLAYER) return;
+
+    // Check if already selected
+    if (selectedCharacters.some(c => c.id === character.id)) {
+      return;
     }
+
+    setSelectedCharacters(prev => [...prev, {
+      id: character.id,
+      classType: character.className as CharacterClass,
+      name: character.name,
+      level: character.level,
+    }]);
 
     setShowCharacterSelect(false);
   }, [selectedCharacters]);
@@ -191,7 +198,9 @@ export const CreateGamePage: React.FC = () => {
             <div className={styles.selectedCharacters}>
               {selectedCharacters.map((char, index) => (
                 <div key={char.id} className={styles.characterChip}>
-                  <span className={styles.characterName}>{char.classType}</span>
+                  <span className={styles.characterName}>
+                    {char.name ? `${char.name} (${char.classType})` : char.classType}
+                  </span>
                   <button
                     className={styles.removeCharacterBtn}
                     onClick={() => handleRemoveCharacter(index)}
@@ -218,13 +227,14 @@ export const CreateGamePage: React.FC = () => {
               <div className={styles.characterSelectPanel}>
                 {isAuthenticated ? (
                   <UserCharacterSelect
-                    onSelect={handleAddCharacter}
+                    onSelect={() => {}} // No-op since we use onSelectWithDetails
+                    onSelectWithDetails={handleAddCharacterWithDetails}
                     disabled={isLoading}
                     excludeCharacterIds={selectedCharacters.map(c => c.id)}
                   />
                 ) : (
                   <CharacterSelect
-                    onSelect={handleAddCharacter}
+                    onSelect={handleAddCharacterClass}
                     disabled={isLoading}
                     excludeCharacterIds={selectedCharacters.map(c => c.id)}
                   />

@@ -77,7 +77,7 @@ export const RoomLobbyPage: React.FC = () => {
           }
 
           // Try to rejoin the room
-          await roomSessionManager.ensureJoined();
+          await roomSessionManager.ensureJoined('rejoin');
         } catch (err) {
           console.error('Failed to rejoin room:', err);
           setError(err instanceof Error ? err.message : 'Failed to rejoin room');

@@ -130,6 +130,19 @@ function LegacyGameRedirect() {
 }
 
 /**
+ * Check if a path should hide the header (game and scenario designer pages)
+ */
+function isFullscreenPage(pathname: string): boolean {
+  // Scenario designer page
+  if (pathname === '/design') return true;
+  // Legacy game page: /game/:roomCode
+  if (pathname.startsWith('/game/')) return true;
+  // New game page: /rooms/:roomCode/play
+  if (pathname.startsWith('/rooms/') && pathname.endsWith('/play')) return true;
+  return false;
+}
+
+/**
  * Layout Component
  * Renders Header and Menu on non-game pages, handles menu state
  */
@@ -138,10 +151,7 @@ function Layout() {
   const location = useLocation();
 
   // Check if current page should hide header (game and scenario designer pages)
-  // Includes both old /game/:roomCode route and new /rooms/:roomCode/play route
-  const isGamePage = location.pathname.startsWith('/game/') ||
-    location.pathname.match(/^\/rooms\/[^/]+\/play$/) !== null ||
-    location.pathname === '/design';
+  const isGamePage = isFullscreenPage(location.pathname);
 
   // Check if current page is Lobby (show Create Game button in header)
   // Show on /lobby but not on new HomePage which has its own Create Game button

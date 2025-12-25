@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Tabs } from '../components/Tabs';
 import { MyRoomsList, type RoomWithPlayers } from '../components/lobby/MyRoomsList';
 import { LobbyWelcome } from '../components/lobby/LobbyWelcome';
+import { type ActiveRoom } from '../components/lobby/ActiveRoomsList';
 import { fetchActiveRooms, fetchMyRooms } from '../services/room.api';
 import styles from './GamesHubPage.module.css';
 
@@ -20,7 +21,7 @@ export const GamesHubPage: React.FC = () => {
   const { t } = useTranslation(['common', 'lobby']);
 
   // State
-  const [activeRooms, setActiveRooms] = useState<any[]>([]);
+  const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
   const [myRooms, setMyRooms] = useState<RoomWithPlayers[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -54,9 +54,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
       }
 
       // Load selected characters from URL query params (passed by CampaignDashboardPage)
-      // Read searchParams directly to avoid dependency loop
-      const currentParams = new URLSearchParams(window.location.search);
-      const charactersParam = currentParams.get('characters');
+      const charactersParam = searchParams.get('characters');
       if (charactersParam) {
         const characterIds = charactersParam.split(',').filter(Boolean);
         setSelectedCharacterIds(characterIds);
@@ -68,8 +66,10 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
 
         // Update URL with default selection so refresh preserves it
         if (defaultIds.length > 0) {
-          currentParams.set('characters', defaultIds.join(','));
-          window.history.replaceState(null, '', `${window.location.pathname}?${currentParams.toString()}`);
+          setSearchParams(
+            { characters: defaultIds.join(',') },
+            { replace: true }
+          );
         }
       }
     } catch (err) {
@@ -77,7 +77,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [campaignId, scenarioId]);
+  }, [campaignId, scenarioId, searchParams, setSearchParams]);
 
   useEffect(() => {
     fetchData();
