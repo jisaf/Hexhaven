@@ -5223,10 +5223,10 @@ export class GameGateway
    * Handle narrative acknowledgment from a player
    */
   @SubscribeMessage('acknowledge_narrative')
-  async handleAcknowledgeNarrative(
+  handleAcknowledgeNarrative(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AcknowledgeNarrativePayload,
-  ): Promise<void> {
+  ): void {
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -5270,7 +5270,7 @@ export class GameGateway
 
       // If all acknowledged, proceed
       if (allAcknowledged) {
-        await this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
+        this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
       }
     } catch (error) {
       this.logger.error(
@@ -5289,10 +5289,10 @@ export class GameGateway
   /**
    * Handle when all players have acknowledged a narrative
    */
-  private async handleAllNarrativeAcknowledged(
+  private handleAllNarrativeAcknowledged(
     roomCode: string,
     narrative: import('../../../shared/types/narrative').ActiveNarrative,
-  ): Promise<void> {
+  ): void {
     const room = roomService.getRoom(roomCode);
     if (!room) return;
 

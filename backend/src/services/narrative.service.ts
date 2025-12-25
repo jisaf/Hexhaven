@@ -148,7 +148,7 @@ export class NarrativeService {
       return narrativeDef;
     } catch (error) {
       this.logger.error(
-        `Failed to load narrative for scenario ${scenarioId}: ${error}`,
+        `Failed to load narrative for scenario ${scenarioId}: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
     }

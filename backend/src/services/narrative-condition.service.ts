@@ -50,7 +50,9 @@ export class NarrativeConditionService {
       this.logger.warn('Unknown condition type encountered');
       return false;
     } catch (error) {
-      this.logger.error(`Error evaluating condition: ${error}`);
+      this.logger.error(
+        `Error evaluating condition: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return false;
     }
   }
@@ -87,7 +89,7 @@ export class NarrativeConditionService {
       return false;
     }
 
-    this.logger.warn(`Unknown operator: ${operator}`);
+    this.logger.warn(`Unknown operator: ${String(operator)}`);
     return false;
   }
 
