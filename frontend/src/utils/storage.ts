@@ -22,6 +22,7 @@ const STORAGE_KEYS = {
   PLAYER_UUID: 'hexhaven_player_uuid', // Used for anonymous users only
   PLAYER_NICKNAME: 'hexhaven_player_nickname',
   LAST_ROOM_CODE: 'hexhaven_last_room_code',
+  LAST_GAME_ACTIVE: 'hexhaven_last_game_active',
   GAME_PREFERENCES: 'hexhaven_preferences',
 } as const;
 
@@ -179,6 +180,40 @@ export function clearLastRoomCode(): void {
     localStorage.removeItem(STORAGE_KEYS.LAST_ROOM_CODE);
   } catch (error) {
     console.error('Failed to clear room code:', error);
+  }
+}
+
+/**
+ * Store whether last game was active (for Continue Game routing)
+ */
+export function saveLastGameActive(isActive: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_GAME_ACTIVE, isActive ? 'true' : 'false');
+  } catch (error) {
+    console.error('Failed to save game active state:', error);
+  }
+}
+
+/**
+ * Get whether last game was active
+ */
+export function getLastGameActive(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.LAST_GAME_ACTIVE) === 'true';
+  } catch (error) {
+    console.error('Failed to get game active state:', error);
+    return false;
+  }
+}
+
+/**
+ * Clear last game active state
+ */
+export function clearLastGameActive(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.LAST_GAME_ACTIVE);
+  } catch (error) {
+    console.error('Failed to clear game active state:', error);
   }
 }
 

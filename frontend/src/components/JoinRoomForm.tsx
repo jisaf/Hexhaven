@@ -12,6 +12,7 @@ export interface JoinRoomFormProps {
   isLoading?: boolean;
   error?: string;
   initialNickname?: string;
+  initialRoomCode?: string;
   isAuthenticated?: boolean;
 }
 
@@ -20,10 +21,11 @@ export function JoinRoomForm({
   isLoading,
   error,
   initialNickname = '',
+  initialRoomCode = '',
   isAuthenticated = false
 }: JoinRoomFormProps) {
   const { t } = useTranslation('lobby');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(initialRoomCode.toUpperCase());
   const [nickname, setNickname] = useState(initialNickname);
   const [touched, setTouched] = useState({ roomCode: false, nickname: false });
 

@@ -6,7 +6,7 @@
  */
 
 import { useEffect, lazy, Suspense, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { websocketService } from './services/websocket.service';
 import { getWebSocketUrl } from './config/api';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
@@ -20,7 +20,6 @@ import './App.css';
 
 // Lazy load route components
 const Lobby = lazy(() => import('./pages/Lobby').then(m => ({ default: m.Lobby })));
-const GameBoard = lazy(() => import('./pages/GameBoard').then(m => ({ default: m.GameBoard })));
 const HexMapDemo = lazy(() => import('./pages/HexMapDemo').then(m => ({ default: m.HexMapDemo })));
 const ScenarioDesigner = lazy(() => import('./pages/ScenarioDesigner'));
 const TestVideos = lazy(() => import('./pages/TestVideos').then(m => ({ default: m.TestVideos })));
@@ -33,7 +32,8 @@ const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ defa
 const ItemCreatorTool = lazy(() => import('./pages/ItemCreatorTool').then(m => ({ default: m.ItemCreatorTool })));
 const CardDemo = lazy(() => import('./pages/CardDemo').then(m => ({ default: m.CardDemo })));
 
-// New multi-page game flow routes
+// New multi-page game flow routes (Issue #305-317)
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const GamesHubPage = lazy(() => import('./pages/GamesHubPage').then(m => ({ default: m.GamesHubPage })));
 const CreateGamePage = lazy(() => import('./pages/CreateGamePage').then(m => ({ default: m.CreateGamePage })));
 const JoinGamePage = lazy(() => import('./pages/JoinGamePage').then(m => ({ default: m.JoinGamePage })));
@@ -121,6 +121,28 @@ function ConnectionUI() {
 }
 
 /**
+ * Legacy Game Route Redirect Component
+ * Redirects /game/:roomCode to /rooms/:roomCode/play for backward compatibility
+ */
+function LegacyGameRedirect() {
+  const { roomCode } = useParams<{ roomCode: string }>();
+  return <Navigate to={`/rooms/${roomCode}/play`} replace />;
+}
+
+/**
+ * Check if a path should hide the header (game and scenario designer pages)
+ */
+function isFullscreenPage(pathname: string): boolean {
+  // Scenario designer page
+  if (pathname === '/design') return true;
+  // Legacy game page: /game/:roomCode
+  if (pathname.startsWith('/game/')) return true;
+  // New game page: /rooms/:roomCode/play
+  if (pathname.startsWith('/rooms/') && pathname.endsWith('/play')) return true;
+  return false;
+}
+
+/**
  * Layout Component
  * Renders Header and Menu on non-game pages, handles menu state
  */
@@ -129,10 +151,11 @@ function Layout() {
   const location = useLocation();
 
   // Check if current page should hide header (game and scenario designer pages)
-  const isGamePage = location.pathname.startsWith('/game/') || location.pathname === '/design';
+  const isGamePage = isFullscreenPage(location.pathname);
 
-  // Check if current page is Lobby (show Create Game button)
-  const isLobbyPage = location.pathname === '/';
+  // Check if current page is Lobby (show Create Game button in header)
+  // Show on /lobby but not on new HomePage which has its own Create Game button
+  const isLobbyPage = location.pathname === '/lobby' || location.pathname === '/games';
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -164,7 +187,10 @@ function Layout() {
         </>
       )}
       <Routes>
-        <Route path="/" element={<Lobby />} />
+        {/* New home page (Issue #309) */}
+        <Route path="/" element={<HomePage />} />
+        {/* Legacy lobby route for backward compatibility */}
+        <Route path="/lobby" element={<Lobby />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
@@ -172,7 +198,8 @@ function Layout() {
         <Route path="/characters/:characterId" element={<ProtectedRoute><CharacterDetail /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><MatchHistory /></ProtectedRoute>} />
         <Route path="/creator/items" element={<ItemCreatorTool />} />
-        <Route path="/game/:roomCode" element={<GameBoard />} />
+        {/* Legacy route - redirect to new URL structure */}
+        <Route path="/game/:roomCode" element={<LegacyGameRedirect />} />
 
         {/* New multi-page game flow routes */}
         <Route path="/games" element={<GamesHubPage />} />
