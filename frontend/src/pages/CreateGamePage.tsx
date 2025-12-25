@@ -45,8 +45,11 @@ export const CreateGamePage: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<string>('scenario-1');
   const [isSoloGame, setIsSoloGame] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+
+  // Derive displayed error from form error or session error
+  const error = formError || sessionState.error?.message || null;
 
   // Validation
   const isNicknameValid = isAuthenticated || (nickname.length >= 1 && nickname.length <= 50);
@@ -117,7 +120,7 @@ export const CreateGamePage: React.FC = () => {
       // Room created - navigation will happen via session state change
     } catch (err) {
       console.error('Failed to create room:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create room');
+      setFormError(err instanceof Error ? err.message : 'Failed to create room');
       setIsLoading(false);
     }
   };
@@ -136,12 +139,12 @@ export const CreateGamePage: React.FC = () => {
     }
   }, [sessionState.connectionStatus, sessionState.roomCode, sessionState.isGameActive, navigate]);
 
-  // Handle session errors
+  // Reset loading when session error occurs (error is derived above)
   useEffect(() => {
-    if (sessionState.error) {
-      setError(sessionState.error.message);
+    if (sessionState.error && isLoading) {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only reset loading on error, not on isLoading change
   }, [sessionState.error]);
 
   return (

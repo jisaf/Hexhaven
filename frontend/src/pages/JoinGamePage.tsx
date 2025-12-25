@@ -28,7 +28,10 @@ export const JoinGamePage: React.FC = () => {
   const sessionState = useRoomSession();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Derive displayed error from form error or session error
+  const error = formError || sessionState.error?.message || null;
 
   // Get initial values
   const displayName = getDisplayName() || '';
@@ -37,7 +40,7 @@ export const JoinGamePage: React.FC = () => {
   // Handle join submission
   const handleJoin = async (roomCode: string, nickname: string) => {
     setIsLoading(true);
-    setError(null);
+    setFormError(null);
 
     try {
       // Save room code for ensureJoined
@@ -47,7 +50,7 @@ export const JoinGamePage: React.FC = () => {
       await roomSessionManager.joinRoom(roomCode, nickname);
     } catch (err) {
       console.error('Failed to join room:', err);
-      setError(err instanceof Error ? err.message : 'Failed to join room');
+      setFormError(err instanceof Error ? err.message : 'Failed to join room');
       setIsLoading(false);
     }
   };
@@ -64,12 +67,12 @@ export const JoinGamePage: React.FC = () => {
     }
   }, [sessionState.connectionStatus, sessionState.roomCode, sessionState.isGameActive, navigate]);
 
-  // Handle session errors
+  // Reset loading when session error occurs (error is derived above)
   useEffect(() => {
-    if (sessionState.error) {
-      setError(sessionState.error.message);
+    if (sessionState.error && isLoading) {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only reset loading on error, not on isLoading change
   }, [sessionState.error]);
 
   return (
