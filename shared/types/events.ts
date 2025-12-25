@@ -145,6 +145,7 @@ export interface CharacterSelectedPayload {
 export interface GameStartedPayload {
   scenarioId: string;
   scenarioName: string;
+  campaignId?: string | null; // Issue #318 - Campaign context for return navigation
   mapLayout: {
     coordinates: AxialCoordinates;
     terrain: string;

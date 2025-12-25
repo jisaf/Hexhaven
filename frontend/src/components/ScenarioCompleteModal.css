@@ -307,6 +307,18 @@
   letter-spacing: 1px;
 }
 
+/* Issue #318 - Return to Campaign button (primary action) */
+.btn-campaign {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  color: white;
+}
+
+.btn-campaign:hover {
+  background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+}
+
 .btn-play-again {
   background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
   color: white;
