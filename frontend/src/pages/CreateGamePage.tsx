@@ -102,7 +102,7 @@ export const CreateGamePage: React.FC = () => {
     if (!isFormValid) return;
 
     setIsLoading(true);
-    setError(null);
+    setFormError(null);
 
     try {
       // Save nickname for anonymous users
