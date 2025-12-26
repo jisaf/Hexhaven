@@ -80,9 +80,7 @@ function validateCondition(
     }
 
     if (!Array.isArray(conditions)) {
-      throw new Error(
-        `Conditions must be an array in trigger ${triggerId}`,
-      );
+      throw new Error(`Conditions must be an array in trigger ${triggerId}`);
     }
 
     return {
@@ -120,9 +118,7 @@ function validateRewards(
   if (json === null || json === undefined) return undefined;
 
   if (!isConditionObject(json)) {
-    throw new Error(
-      `Invalid rewards in trigger ${triggerId}: expected object`,
-    );
+    throw new Error(`Invalid rewards in trigger ${triggerId}: expected object`);
   }
 
   const rewards: NarrativeRewards = {};
@@ -154,7 +150,7 @@ function validateRewards(
         `Invalid rewards.items in trigger ${triggerId}: expected string array`,
       );
     }
-    rewards.items = json.items as string[];
+    rewards.items = json.items;
   }
 
   return rewards;
@@ -205,7 +201,7 @@ function validateGameEffects(
         );
       }
       return {
-        type: m.type as string,
+        type: m.type,
         hex: m.hex as { q: number; r: number },
         isElite: typeof m.isElite === 'boolean' ? m.isElite : undefined,
       };
@@ -353,7 +349,10 @@ export class NarrativeService {
           },
           conditions: validateCondition(trigger.conditions, trigger.triggerId),
           rewards: validateRewards(trigger.rewards, trigger.triggerId),
-          gameEffects: validateGameEffects(trigger.gameEffects, trigger.triggerId),
+          gameEffects: validateGameEffects(
+            trigger.gameEffects,
+            trigger.triggerId,
+          ),
         })),
       };
 

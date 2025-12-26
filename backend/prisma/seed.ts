@@ -640,6 +640,165 @@ async function seedCharacterInventory() {
   console.log(`✓ Seeded inventory: ${inventoryCount} items owned, ${equipmentCount} items equipped`);
 }
 
+/**
+ * Seed narrative content for the Trivial Training campaign scenarios.
+ * This demonstrates the full narrative system with intro, victory, defeat,
+ * and mid-scenario triggers with game effects.
+ */
+async function seedTrivialTrainingNarratives() {
+  console.log('Seeding narratives for Trivial Training campaign...');
+
+  // Look up the training scenarios
+  const scenario1 = await prisma.scenario.findUnique({ where: { name: 'Training Dummy - Part 1' } });
+  const scenario2 = await prisma.scenario.findUnique({ where: { name: 'Training Dummy - Part 2' } });
+
+  if (!scenario1 || !scenario2) {
+    console.warn('⚠ Training scenarios not found. Skipping narrative seeding.');
+    return;
+  }
+
+  // Narrative for Part 1: The Training Grounds
+  const narrative1 = await prisma.scenarioNarrative.upsert({
+    where: { scenarioId: scenario1.id },
+    update: {
+      introTitle: 'Welcome to the Training Grounds',
+      introText: `You stand at the entrance of the Mercenary Guild's training facility. A weathered instructor gestures toward a straw practice dummy in the center of the room.
+
+"Every warrior must start somewhere," he says gruffly. "Show me what you can do against this training dummy. Don't worry—it won't fight back. Much."
+
+The dummy's button eyes seem to stare at you mockingly.`,
+      victoryTitle: 'First Steps Taken',
+      victoryText: `The training dummy collapses into a pile of straw and cloth. The instructor nods approvingly.
+
+"Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
+
+You feel a surge of confidence. This is just the beginning.`,
+      defeatTitle: 'A Humbling Lesson',
+      defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
+
+"Don't feel too bad," the instructor says, helping you up. "The first lesson is always the hardest. Rest up and try again."
+
+Perhaps a different approach is needed...`,
+    },
+    create: {
+      scenarioId: scenario1.id,
+      introTitle: 'Welcome to the Training Grounds',
+      introText: `You stand at the entrance of the Mercenary Guild's training facility. A weathered instructor gestures toward a straw practice dummy in the center of the room.
+
+"Every warrior must start somewhere," he says gruffly. "Show me what you can do against this training dummy. Don't worry—it won't fight back. Much."
+
+The dummy's button eyes seem to stare at you mockingly.`,
+      victoryTitle: 'First Steps Taken',
+      victoryText: `The training dummy collapses into a pile of straw and cloth. The instructor nods approvingly.
+
+"Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
+
+You feel a surge of confidence. This is just the beginning.`,
+      defeatTitle: 'A Humbling Lesson',
+      defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
+
+"Don't feel too bad," the instructor says, helping you up. "The first lesson is always the hardest. Rest up and try again."
+
+Perhaps a different approach is needed...`,
+    },
+  });
+
+  // Add a mid-scenario trigger for Part 1: encouragement at round 2
+  await prisma.narrativeTrigger.deleteMany({
+    where: { narrativeId: narrative1.id },
+  });
+
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative1.id,
+      triggerId: 'round-2-encouragement',
+      displayOrder: 1,
+      title: 'Keep Going!',
+      text: `The instructor watches from the sideline. "You're doing well! Keep at it—the dummy is weakening!"`,
+      conditions: {
+        type: 'round_reached',
+        params: { round: 2 },
+      },
+    },
+  });
+
+  // Narrative for Part 2: The Advanced Challenge
+  const narrative2 = await prisma.scenarioNarrative.upsert({
+    where: { scenarioId: scenario2.id },
+    update: {
+      introTitle: 'The Advanced Challenge',
+      introText: `You enter the second training room. This one is larger, with reinforced walls scarred by countless practice sessions.
+
+In the center stands another training dummy, but this one looks different—its straw is packed tighter, its wooden frame reinforced with metal bands.
+
+"Ah, you're back," the instructor says with a knowing smile. "This dummy won't go down as easily. Show me you've learned from your first encounter."`,
+      victoryTitle: 'Training Complete!',
+      victoryText: `With a final, decisive blow, the reinforced dummy shatters into pieces. The instructor breaks into a rare smile.
+
+"Outstanding work! You've completed the basic training course. The Mercenary Guild officially recognizes you as a novice adventurer."
+
+He hands you a worn leather pouch containing your reward—and something else. A small badge bearing the guild's insignia.
+
+"Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
+
+CAMPAIGN COMPLETE!`,
+      defeatTitle: 'So Close...',
+      defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
+
+"You made it further than most first-timers," the instructor admits. "But this dummy requires more than brute force. Think about your approach, rest, and try again."
+
+The second challenge awaits your return.`,
+    },
+    create: {
+      scenarioId: scenario2.id,
+      introTitle: 'The Advanced Challenge',
+      introText: `You enter the second training room. This one is larger, with reinforced walls scarred by countless practice sessions.
+
+In the center stands another training dummy, but this one looks different—its straw is packed tighter, its wooden frame reinforced with metal bands.
+
+"Ah, you're back," the instructor says with a knowing smile. "This dummy won't go down as easily. Show me you've learned from your first encounter."`,
+      victoryTitle: 'Training Complete!',
+      victoryText: `With a final, decisive blow, the reinforced dummy shatters into pieces. The instructor breaks into a rare smile.
+
+"Outstanding work! You've completed the basic training course. The Mercenary Guild officially recognizes you as a novice adventurer."
+
+He hands you a worn leather pouch containing your reward—and something else. A small badge bearing the guild's insignia.
+
+"Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
+
+CAMPAIGN COMPLETE!`,
+      defeatTitle: 'So Close...',
+      defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
+
+"You made it further than most first-timers," the instructor admits. "But this dummy requires more than brute force. Think about your approach, rest, and try again."
+
+The second challenge awaits your return.`,
+    },
+  });
+
+  // Add mid-scenario triggers for Part 2
+  await prisma.narrativeTrigger.deleteMany({
+    where: { narrativeId: narrative2.id },
+  });
+
+  // Trigger 1: Halfway point encouragement
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative2.id,
+      triggerId: 'halfway-encouragement',
+      displayOrder: 1,
+      title: 'Almost There!',
+      text: `The instructor calls out: "The dummy is showing wear! Focus your attacks and finish the job!"`,
+      conditions: {
+        type: 'round_reached',
+        params: { round: 3 },
+      },
+    },
+  });
+
+  console.log('✓ Seeded narratives for Trivial Training campaign (2 scenarios with triggers)');
+}
+
 async function main() {
   console.log('Starting database seed...\n');
 
@@ -652,6 +811,7 @@ async function main() {
     await seedScenarios();
     await seedCampaignTemplates(); // Issue #244 - Campaign Mode (DB-driven templates)
     await seedTrivialCampaignTemplate(); // Trivial 2-scenario campaign for demos
+    await seedTrivialTrainingNarratives(); // Narrative content for Trivial Training campaign
     await seedCharacterInventory(); // Seed random items to characters for testing
 
     console.log('\n✅ Database seed completed successfully!');
