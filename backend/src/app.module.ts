@@ -16,6 +16,7 @@ import { GameHistoryController } from './api/game-history.controller';
 import { ItemsController } from './api/items.controller';
 import { InventoryController } from './api/inventory.controller';
 import { CampaignsController } from './api/campaigns.controller';
+import { UsersController } from './api/users.controller';
 import { ScenarioService } from './services/scenario.service';
 import { CampaignService } from './services/campaign.service';
 import { InventoryService } from './services/inventory.service';
@@ -61,6 +62,7 @@ import { ShopController } from './api/shop.controller';
     InventoryController, // Issue #205 Sprint 2: Character inventory management
     CampaignsController, // Issue #244: Campaign mode management
     ShopController, // Issue #328: Campaign shop system
+    UsersController, // User profile and roles endpoint
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [

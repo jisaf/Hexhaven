@@ -472,9 +472,9 @@ async function seedTestUsers() {
   const passwordHash = await bcrypt.hash(password, saltRounds);
 
   const testUsersData = [
-    { username: 'foo', className: 'Brute', roles: ['player', 'creator'] },
-    { username: 'bar', className: 'Tinkerer', roles: ['player'] },
-    { username: 'baz', className: 'Spellweaver', roles: ['player'] },
+    { username: 'foo', className: 'Brute', roles: ['player', 'creator', 'admin'] },
+    { username: 'bar', className: 'Tinkerer', roles: ['player', 'creator', 'admin'] },
+    { username: 'baz', className: 'Spellweaver', roles: ['player', 'creator', 'admin'] },
   ];
 
   // Fetch all character classes and create a map by name
