@@ -25,7 +25,7 @@ export type {
   ShopTransactionHistory,
   PurchaseResult,
   SellResult,
-} from 'shared/types/shop';
+} from '../../../shared/types/shop';
 
 // ========== DTOs ==========
 

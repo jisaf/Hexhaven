@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { ShopService } from '../services/shop.service';
 import { PrismaService } from '../services/prisma.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   PurchaseItemDto,
   SellItemDto,

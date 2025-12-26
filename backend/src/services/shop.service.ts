@@ -18,7 +18,7 @@ import {
 import { UpdateShopConfigDto } from '../types/shop.types';
 import { NotFoundError, ForbiddenError } from '../types/errors';
 import { Prisma, PrismaClient, Rarity, TransactionType } from '@prisma/client';
-import { ItemRarity } from 'shared/types/entities';
+import { ItemRarity } from '../../../shared/types/entities';
 
 // Map Prisma Rarity to shared ItemRarity
 const toItemRarity = (rarity: Rarity): ItemRarity => rarity as ItemRarity;
@@ -87,7 +87,7 @@ export class ShopService {
 
     await this.prisma.campaign.update({
       where: { id: campaignId },
-      data: { shopConfig: shopConfig as unknown as Prisma.JsonValue },
+      data: { shopConfig: shopConfig as unknown as Prisma.InputJsonValue },
     });
 
     return this.getShopInventory(campaignId);
@@ -116,7 +116,7 @@ export class ShopService {
       itemUnlockMode: 'all_available',
       allowSelling: true,
       sellPriceMultiplier: 0.5,
-    }) as CampaignShopConfig;
+    }) as unknown as CampaignShopConfig;
 
     const inventory: ShopItem[] = campaign.shopInventory.map((inv) => ({
       id: inv.id,
@@ -194,7 +194,7 @@ export class ShopService {
       throw new NotFoundError(`Campaign with ID ${campaignId} not found`);
     }
 
-    const currentConfig = (campaign.shopConfig || {}) as CampaignShopConfig;
+    const currentConfig = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
     const newConfig: CampaignShopConfig = {
       ...currentConfig,
       ...configUpdate,
@@ -202,7 +202,7 @@ export class ShopService {
 
     await this.prisma.campaign.update({
       where: { id: campaignId },
-      data: { shopConfig: newConfig as unknown as Prisma.JsonValue },
+      data: { shopConfig: newConfig as unknown as Prisma.InputJsonValue },
     });
 
     return this.getShopInventory(campaignId);
@@ -253,7 +253,7 @@ export class ShopService {
         );
       }
 
-      const config = (campaign.shopConfig || {}) as CampaignShopConfig;
+      const config = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
 
       // Validate item availability
       if (
@@ -393,7 +393,7 @@ export class ShopService {
         throw new NotFoundError(`Item ${itemId} not found`);
       }
 
-      const config = (campaign.shopConfig || {}) as CampaignShopConfig;
+      const config = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
 
       if (config.allowSelling === false) {
         throw new ForbiddenError(
