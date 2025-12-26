@@ -5,7 +5,7 @@
  * Used for before-scenario and after-scenario (victory/defeat) narratives.
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import type { NarrativeContent, NarrativeType } from '../../../../shared/types/narrative';
 import type { NarrativeAcknowledgmentState } from '../../hooks/useNarrative';
 import { PlayerAcknowledgmentStatus } from './PlayerAcknowledgmentStatus';
@@ -28,6 +28,8 @@ export const NarrativeStoryPage: React.FC<NarrativeStoryPageProps> = ({
   myAcknowledgment,
   onAcknowledge,
 }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   const getHeaderClass = () => {
     switch (type) {
       case 'victory':
@@ -55,8 +57,26 @@ export const NarrativeStoryPage: React.FC<NarrativeStoryPageProps> = ({
     }
   };
 
+  // Keyboard handler for Enter/Space to acknowledge
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !myAcknowledgment) {
+        e.preventDefault();
+        onAcknowledge();
+      }
+    },
+    [myAcknowledgment, onAcknowledge],
+  );
+
+  // Focus button on mount and attach keyboard listener
+  useEffect(() => {
+    buttonRef.current?.focus();
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
-    <div className="narrative-story-page">
+    <div className="narrative-story-page" role="dialog" aria-modal="true">
       <div className="story-content-wrapper">
         {/* Background image if provided */}
         {content.imageUrl && (
@@ -99,9 +119,11 @@ export const NarrativeStoryPage: React.FC<NarrativeStoryPageProps> = ({
 
           {/* Continue button */}
           <button
+            ref={buttonRef}
             className={`story-continue-button ${myAcknowledgment ? 'acknowledged' : ''}`}
             onClick={onAcknowledge}
             disabled={myAcknowledgment}
+            aria-label={myAcknowledgment ? 'Waiting for others to acknowledge' : getButtonText()}
           >
             {getButtonText()}
           </button>

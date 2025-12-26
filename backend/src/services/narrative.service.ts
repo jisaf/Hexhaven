@@ -22,7 +22,222 @@ import type {
   NarrativeGameContext,
   ActiveNarrative,
   TriggerState,
+  NarrativeConditionType,
+  ConditionOperator,
 } from '../../../shared/types/narrative';
+
+// ========== RUNTIME VALIDATION HELPERS ==========
+
+const VALID_CONDITION_TYPES: Set<NarrativeConditionType> = new Set([
+  'character_on_hex',
+  'characters_on_hexes',
+  'monsters_killed',
+  'round_reached',
+  'all_enemies_dead',
+  'treasure_collected',
+  'door_opened',
+  'loot_collected',
+]);
+
+const VALID_OPERATORS: Set<ConditionOperator> = new Set(['AND', 'OR']);
+
+/**
+ * Type guard for condition objects
+ */
+function isConditionObject(obj: unknown): obj is Record<string, unknown> {
+  return typeof obj === 'object' && obj !== null;
+}
+
+/**
+ * Recursively validate and parse a narrative condition
+ */
+function validateCondition(
+  json: unknown,
+  triggerId: string,
+  depth = 0,
+): NarrativeCondition {
+  if (depth > 10) {
+    throw new Error(
+      `Condition nesting too deep in trigger ${triggerId} (max 10 levels)`,
+    );
+  }
+
+  if (!isConditionObject(json)) {
+    throw new Error(
+      `Invalid condition in trigger ${triggerId}: expected object, got ${typeof json}`,
+    );
+  }
+
+  // Check for compound condition (AND/OR)
+  if ('operator' in json && 'conditions' in json) {
+    const operator = json.operator;
+    const conditions = json.conditions;
+
+    if (!VALID_OPERATORS.has(operator as ConditionOperator)) {
+      throw new Error(
+        `Invalid operator "${String(operator)}" in trigger ${triggerId}`,
+      );
+    }
+
+    if (!Array.isArray(conditions)) {
+      throw new Error(
+        `Conditions must be an array in trigger ${triggerId}`,
+      );
+    }
+
+    return {
+      operator: operator as ConditionOperator,
+      conditions: conditions.map((c) =>
+        validateCondition(c, triggerId, depth + 1),
+      ),
+    };
+  }
+
+  // Leaf condition
+  if (!('type' in json)) {
+    throw new Error(`Missing condition type in trigger ${triggerId}`);
+  }
+
+  const type = json.type;
+  if (!VALID_CONDITION_TYPES.has(type as NarrativeConditionType)) {
+    throw new Error(
+      `Invalid condition type "${String(type)}" in trigger ${triggerId}`,
+    );
+  }
+
+  // Return validated condition - type is correct, params can vary
+  // Cast through unknown to satisfy TypeScript's strict type checking
+  return json as unknown as NarrativeCondition;
+}
+
+/**
+ * Validate rewards structure
+ */
+function validateRewards(
+  json: unknown,
+  triggerId: string,
+): NarrativeRewards | undefined {
+  if (json === null || json === undefined) return undefined;
+
+  if (!isConditionObject(json)) {
+    throw new Error(
+      `Invalid rewards in trigger ${triggerId}: expected object`,
+    );
+  }
+
+  const rewards: NarrativeRewards = {};
+
+  if ('gold' in json) {
+    if (typeof json.gold !== 'number') {
+      throw new Error(
+        `Invalid rewards.gold in trigger ${triggerId}: expected number`,
+      );
+    }
+    rewards.gold = json.gold;
+  }
+
+  if ('xp' in json) {
+    if (typeof json.xp !== 'number') {
+      throw new Error(
+        `Invalid rewards.xp in trigger ${triggerId}: expected number`,
+      );
+    }
+    rewards.xp = json.xp;
+  }
+
+  if ('items' in json) {
+    if (
+      !Array.isArray(json.items) ||
+      !json.items.every((i) => typeof i === 'string')
+    ) {
+      throw new Error(
+        `Invalid rewards.items in trigger ${triggerId}: expected string array`,
+      );
+    }
+    rewards.items = json.items as string[];
+  }
+
+  return rewards;
+}
+
+/**
+ * Validate hex coordinates
+ */
+function isValidHex(obj: unknown): boolean {
+  return (
+    isConditionObject(obj) &&
+    typeof obj.q === 'number' &&
+    typeof obj.r === 'number'
+  );
+}
+
+/**
+ * Validate game effects structure
+ */
+function validateGameEffects(
+  json: unknown,
+  triggerId: string,
+): NarrativeGameEffects | undefined {
+  if (json === null || json === undefined) return undefined;
+
+  if (!isConditionObject(json)) {
+    throw new Error(
+      `Invalid gameEffects in trigger ${triggerId}: expected object`,
+    );
+  }
+
+  const effects: NarrativeGameEffects = {};
+
+  if ('spawnMonsters' in json) {
+    if (!Array.isArray(json.spawnMonsters)) {
+      throw new Error(
+        `Invalid gameEffects.spawnMonsters in trigger ${triggerId}`,
+      );
+    }
+    effects.spawnMonsters = json.spawnMonsters.map((m, i) => {
+      if (
+        !isConditionObject(m) ||
+        typeof m.type !== 'string' ||
+        !isValidHex(m.hex)
+      ) {
+        throw new Error(
+          `Invalid monster spawn at index ${i} in trigger ${triggerId}`,
+        );
+      }
+      return {
+        type: m.type as string,
+        hex: m.hex as { q: number; r: number },
+        isElite: typeof m.isElite === 'boolean' ? m.isElite : undefined,
+      };
+    });
+  }
+
+  if ('unlockDoors' in json) {
+    if (
+      !Array.isArray(json.unlockDoors) ||
+      !json.unlockDoors.every(isValidHex)
+    ) {
+      throw new Error(
+        `Invalid gameEffects.unlockDoors in trigger ${triggerId}`,
+      );
+    }
+    effects.unlockDoors = json.unlockDoors as { q: number; r: number }[];
+  }
+
+  if ('revealHexes' in json) {
+    if (
+      !Array.isArray(json.revealHexes) ||
+      !json.revealHexes.every(isValidHex)
+    ) {
+      throw new Error(
+        `Invalid gameEffects.revealHexes in trigger ${triggerId}`,
+      );
+    }
+    effects.revealHexes = json.revealHexes as { q: number; r: number }[];
+  }
+
+  return effects;
+}
 
 /**
  * Default timeout for narrative acknowledgment (60 seconds)
@@ -136,11 +351,9 @@ export class NarrativeService {
             text: trigger.text,
             imageUrl: trigger.imageUrl ?? undefined,
           },
-          conditions: trigger.conditions as unknown as NarrativeCondition,
-          rewards: trigger.rewards as unknown as NarrativeRewards | undefined,
-          gameEffects: trigger.gameEffects as unknown as
-            | NarrativeGameEffects
-            | undefined,
+          conditions: validateCondition(trigger.conditions, trigger.triggerId),
+          rewards: validateRewards(trigger.rewards, trigger.triggerId),
+          gameEffects: validateGameEffects(trigger.gameEffects, trigger.triggerId),
         })),
       };
 
@@ -437,7 +650,8 @@ export class NarrativeService {
    * Check if there's an active narrative blocking gameplay
    */
   isNarrativeActive(roomCode: string): boolean {
-    return this.roomActiveNarrative.get(roomCode) !== null;
+    const narrative = this.roomActiveNarrative.get(roomCode);
+    return narrative !== null && narrative !== undefined;
   }
 
   /**

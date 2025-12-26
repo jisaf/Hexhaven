@@ -104,6 +104,7 @@ import {
   ConnectionStatus,
   RoomStatus,
   getRange,
+  type AxialCoordinates,
   type CharacterClass,
   type Monster,
 } from '../../../shared/types/entities';
@@ -224,6 +225,14 @@ export class GameGateway
       }
     >
   >(); // roomCode -> (playerId -> stats)
+
+  // Narrative system: Track game state for condition evaluation
+  private readonly roomOpenedDoors = new Map<string, AxialCoordinates[]>(); // roomCode -> opened door hexes
+  private readonly roomCollectedTreasures = new Map<string, string[]>(); // roomCode -> collected treasure IDs
+  private readonly roomCollectedLootHexes = new Map<
+    string,
+    AxialCoordinates[]
+  >(); // roomCode -> loot collection hexes
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -1073,6 +1082,12 @@ export class GameGateway
         this.roomAccumulatedStats.delete(roomCode);
         this.roomGameStartTime.delete(roomCode);
         this.roomPlayerStats.delete(roomCode);
+        // Narrative system cleanup
+        this.narrativeService.cleanupRoomState(roomCode);
+        this.roomNarratives.delete(roomCode);
+        this.roomOpenedDoors.delete(roomCode);
+        this.roomCollectedTreasures.delete(roomCode);
+        this.roomCollectedLootHexes.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -1698,6 +1713,9 @@ export class GameGateway
 
       // Initialize narrative state for this room
       this.narrativeService.initializeRoomState(room.roomCode);
+      this.roomOpenedDoors.set(room.roomCode, []);
+      this.roomCollectedTreasures.set(room.roomCode, []);
+      this.roomCollectedLootHexes.set(room.roomCode, []);
 
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
@@ -2886,6 +2904,12 @@ export class GameGateway
       this.server
         .to(room.roomCode)
         .emit('loot_collected', lootCollectedPayload);
+
+      // Track loot collection for narrative condition evaluation
+      this.trackCollectedLoot(room.roomCode, payload.hexCoordinates);
+
+      // Check narrative triggers after loot collection
+      this.checkNarrativeTriggers(room.roomCode);
 
       this.logger.log(
         `Manual collected ${lootAtPosition.length} loot token(s) by ${userId} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
@@ -5425,6 +5449,9 @@ export class GameGateway
             }
           }
 
+          // Track opened door for narrative condition evaluation
+          this.trackOpenedDoor(roomCode, doorHex);
+
           this.logger.log(
             `Unlocked door at (${doorHex.q}, ${doorHex.r}) in room ${roomCode}`,
           );
@@ -5506,15 +5533,56 @@ export class GameGateway
     }
 
     return {
-      currentRound: room.currentRound || 1,
+      currentRound: this.currentRound.get(roomCode) || 1,
       characters,
       monsters,
       monstersKilled: deadMonsters.length,
       monstersKilledByType,
-      openedDoors: [], // TODO: Track opened doors in room state
-      collectedTreasures: [], // TODO: Track collected treasures
-      collectedLootHexes: [], // TODO: Track loot collection hexes
+      openedDoors: this.roomOpenedDoors.get(roomCode) || [],
+      collectedTreasures: this.roomCollectedTreasures.get(roomCode) || [],
+      collectedLootHexes: this.roomCollectedLootHexes.get(roomCode) || [],
     };
+  }
+
+  // ========== NARRATIVE STATE TRACKING HELPERS ==========
+
+  /**
+   * Track an opened door for narrative condition evaluation
+   * Prevents duplicates via coordinate comparison
+   */
+  private trackOpenedDoor(roomCode: string, hex: AxialCoordinates): void {
+    const doors = this.roomOpenedDoors.get(roomCode) || [];
+    const alreadyTracked = doors.some((d) => d.q === hex.q && d.r === hex.r);
+    if (!alreadyTracked) {
+      doors.push(hex);
+      this.roomOpenedDoors.set(roomCode, doors);
+    }
+  }
+
+  /**
+   * Track a collected treasure for narrative condition evaluation
+   */
+  private trackCollectedTreasure(roomCode: string, treasureId: string): void {
+    const treasures = this.roomCollectedTreasures.get(roomCode) || [];
+    if (!treasures.includes(treasureId)) {
+      treasures.push(treasureId);
+      this.roomCollectedTreasures.set(roomCode, treasures);
+    }
+  }
+
+  /**
+   * Track loot collection at a hex for narrative condition evaluation
+   * Prevents duplicates via coordinate comparison
+   */
+  private trackCollectedLoot(roomCode: string, hex: AxialCoordinates): void {
+    const lootHexes = this.roomCollectedLootHexes.get(roomCode) || [];
+    const alreadyTracked = lootHexes.some(
+      (h) => h.q === hex.q && h.r === hex.r,
+    );
+    if (!alreadyTracked) {
+      lootHexes.push(hex);
+      this.roomCollectedLootHexes.set(roomCode, lootHexes);
+    }
   }
 
   /**

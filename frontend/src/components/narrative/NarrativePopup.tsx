@@ -5,7 +5,7 @@
  * Shows narrative text and optional rewards/effects.
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import type { NarrativeContent, NarrativeRewards, NarrativeGameEffects } from '../../../../shared/types/narrative';
 import type { NarrativeAcknowledgmentState } from '../../hooks/useNarrative';
 import { PlayerAcknowledgmentStatus } from './PlayerAcknowledgmentStatus';
@@ -30,6 +30,7 @@ export const NarrativePopup: React.FC<NarrativePopupProps> = ({
   myAcknowledgment,
   onAcknowledge,
 }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const hasRewards = rewards && (rewards.gold || rewards.xp);
   const hasEffects = gameEffects && (
     gameEffects.spawnMonsters?.length ||
@@ -37,8 +38,26 @@ export const NarrativePopup: React.FC<NarrativePopupProps> = ({
     gameEffects.revealHexes?.length
   );
 
+  // Keyboard handler for Enter/Space to acknowledge
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !myAcknowledgment) {
+        e.preventDefault();
+        onAcknowledge();
+      }
+    },
+    [myAcknowledgment, onAcknowledge],
+  );
+
+  // Focus button on mount and attach keyboard listener
+  useEffect(() => {
+    buttonRef.current?.focus();
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
-    <div className="narrative-popup-overlay" onClick={onAcknowledge}>
+    <div className="narrative-popup-overlay" role="dialog" aria-modal="true">
       <div className="narrative-popup" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         {content.title && (
@@ -114,9 +133,11 @@ export const NarrativePopup: React.FC<NarrativePopupProps> = ({
 
         {/* Dismiss button */}
         <button
+          ref={buttonRef}
           className={`popup-dismiss-button ${myAcknowledgment ? 'acknowledged' : ''}`}
           onClick={onAcknowledge}
           disabled={myAcknowledgment}
+          aria-label={myAcknowledgment ? 'Waiting for others to acknowledge' : 'Continue to dismiss narrative'}
         >
           {myAcknowledgment ? 'Waiting for others...' : 'Continue'}
         </button>
