@@ -176,7 +176,15 @@ fi
 # Copy frontend to nginx directory
 sudo mkdir -p /var/www/hexhaven/frontend
 sudo cp -r frontend/* /var/www/hexhaven/frontend/
+
+# Create backgrounds upload directory (writable by backend)
+sudo mkdir -p /var/www/hexhaven/frontend/backgrounds
+sudo chown ubuntu:ubuntu /var/www/hexhaven/frontend/backgrounds
+sudo chmod 755 /var/www/hexhaven/frontend/backgrounds
+
 sudo chown -R www-data:www-data /var/www/hexhaven
+# Re-set backgrounds ownership for backend uploads
+sudo chown ubuntu:ubuntu /var/www/hexhaven/frontend/backgrounds
 
 # Configure nginx
 SERVER_IP=$(hostname -I | awk '{print $1}')
