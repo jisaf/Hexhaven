@@ -44,3 +44,4 @@ export * from './game-state';
 export * from './objectives';
 export * from './campaign';
 export * from './narrative';
+export * from './shop';

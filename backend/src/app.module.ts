@@ -39,6 +39,8 @@ import { ValidationService } from './services/validation.service';
 import { ElementalStateService } from './services/elemental-state.service';
 import { NarrativeService } from './services/narrative.service';
 import { NarrativeConditionService } from './services/narrative-condition.service';
+import { ShopService } from './services/shop.service';
+import { ShopController } from './api/shop.controller';
 
 @Module({
   imports: [],
@@ -58,6 +60,7 @@ import { NarrativeConditionService } from './services/narrative-condition.servic
     ItemsController, // Issue #205: Items and inventory system
     InventoryController, // Issue #205 Sprint 2: Character inventory management
     CampaignsController, // Issue #244: Campaign mode management
+    ShopController, // Issue #328: Campaign shop system
     // AccountsController, // TODO: Re-enable once Prisma connection is fixed
   ],
   providers: [
@@ -86,6 +89,7 @@ import { NarrativeConditionService } from './services/narrative-condition.servic
     CampaignService, // Issue #244: Campaign mode business logic
     NarrativeService, // Campaign narrative system
     NarrativeConditionService, // Narrative trigger condition evaluation
+    ShopService, // Issue #328: Campaign shop system
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,
