@@ -8,11 +8,12 @@
  * - Creates room with campaign context and navigates to room lobby
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../services/campaign.service';
 import { roomSessionManager } from '../services/room-session.service';
+import { websocketService } from '../services/websocket.service';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { getDisplayName } from '../utils/storage';
 import type { CampaignWithDetails, CampaignScenario } from '../services/campaign.service';
@@ -32,6 +33,9 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+
+  // Track pending auto-start for campaign mode (skip room lobby)
+  const pendingAutoStart = useRef<{ characterIds: string[]; scenarioId: string } | null>(null);
 
   // Fetch campaign and scenario data
   const fetchData = useCallback(async () => {
@@ -83,22 +87,40 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Navigate to room lobby when room is created
+  // Auto-start game when room is connected (skip room lobby for campaign mode)
   useEffect(() => {
-    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode) {
-      navigate(`/rooms/${sessionState.roomCode}`);
+    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode && pendingAutoStart.current) {
+      const { characterIds, scenarioId: autoStartScenarioId } = pendingAutoStart.current;
+      pendingAutoStart.current = null; // Clear to prevent re-triggering
+
+      // Auto-select each character
+      characterIds.forEach((charId) => {
+        websocketService.selectCharacter(charId, 'add');
+      });
+
+      // Select the scenario and start the game
+      websocketService.selectScenario(autoStartScenarioId);
+
+      // Small delay to ensure character selection is processed before starting
+      setTimeout(() => {
+        websocketService.startGame(autoStartScenarioId);
+        // Navigate directly to the game (skip room lobby)
+        navigate(`/rooms/${sessionState.roomCode}/play`);
+      }, 100);
     }
   }, [sessionState.connectionStatus, sessionState.roomCode, navigate]);
 
-  // Handle session errors
+  // Handle session errors - use microtask to avoid synchronous setState in effect
   useEffect(() => {
     if (sessionState.error) {
-      setError(sessionState.error.message);
-      setIsCreatingRoom(false);
+      queueMicrotask(() => {
+        setError(sessionState.error?.message ?? 'Connection error');
+        setIsCreatingRoom(false);
+      });
     }
   }, [sessionState.error]);
 
-  // Start game - create room with campaign context
+  // Start game - create room with campaign context and auto-start (skip room lobby)
   const handleStartGame = async () => {
     if (!campaign || !scenario || selectedCharacterIds.length === 0) return;
 
@@ -111,13 +133,20 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     setIsCreatingRoom(true);
     setError(null);
 
+    // Set pending auto-start so we skip the room lobby
+    pendingAutoStart.current = {
+      characterIds: selectedCharacterIds,
+      scenarioId: scenario.scenarioId,
+    };
+
     try {
       await roomSessionManager.createRoom(displayName, {
         campaignId: campaign.id,
         scenarioId: scenario.scenarioId,
       });
-      // Navigation happens via useEffect when room is connected
+      // Auto-start happens via useEffect when room is connected
     } catch (err) {
+      pendingAutoStart.current = null; // Clear on error
       setError(err instanceof Error ? err.message : 'Failed to create room');
       setIsCreatingRoom(false);
     }
