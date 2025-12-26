@@ -95,6 +95,7 @@ export class ShopService {
 
   /**
    * Get shop inventory for a campaign with availability info
+   * Auto-initializes shop if empty
    */
   async getShopInventory(campaignId: string): Promise<CampaignShopView> {
     const campaign = await this.prisma.campaign.findUnique({
@@ -104,6 +105,11 @@ export class ShopService {
 
     if (!campaign) {
       throw new NotFoundError(`Campaign with ID ${campaignId} not found`);
+    }
+
+    // Auto-initialize shop if empty
+    if (campaign.shopInventory.length === 0) {
+      return this.initializeShopForCampaign(campaignId);
     }
 
     const config = (campaign.shopConfig || {
