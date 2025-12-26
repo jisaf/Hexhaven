@@ -13,6 +13,13 @@ import type {
   ItemEffect,
 } from './entities';
 
+import type {
+  NarrativeContent,
+  NarrativeRewards,
+  NarrativeGameEffects,
+  NarrativeType,
+} from './narrative';
+
 // ========== CLIENT -> SERVER EVENTS ==========
 
 export interface JoinRoomPayload {
@@ -527,6 +534,84 @@ export interface CampaignCompletedPayload {
   victory: boolean; // True if final scenario won, false if all characters retired
 }
 
+// ========== NARRATIVE SYSTEM EVENTS ==========
+
+/**
+ * Server -> Client: Display narrative content
+ * Triggers fullscreen story page or modal popup
+ */
+export interface NarrativeDisplayPayload {
+  narrativeId: string;
+  type: NarrativeType;
+  triggerId?: string;
+  content: NarrativeContent;
+  rewards?: NarrativeRewards;
+  gameEffects?: NarrativeGameEffects;
+  acknowledgments: {
+    playerId: string;
+    playerName: string;
+    acknowledged: boolean;
+  }[];
+}
+
+/**
+ * Server -> Client: Player acknowledged narrative
+ * Updates UI to show which players have acknowledged
+ */
+export interface NarrativeAcknowledgedPayload {
+  narrativeId: string;
+  playerId: string;
+  playerName: string;
+  allAcknowledged: boolean;
+}
+
+/**
+ * Server -> Client: All players acknowledged, proceed
+ * Signals that the narrative phase is complete
+ */
+export interface NarrativeDismissedPayload {
+  narrativeId: string;
+  type: NarrativeType;
+  gameEffectsApplied?: boolean;
+}
+
+/**
+ * Client -> Server: Acknowledge narrative
+ * Player clicks "Continue" or "Dismiss"
+ */
+export interface AcknowledgeNarrativePayload {
+  narrativeId: string;
+}
+
+/**
+ * Server -> Client: Monster spawned by narrative trigger
+ */
+export interface NarrativeMonsterSpawnedPayload {
+  monsterId: string;
+  monsterType: string;
+  isElite: boolean;
+  hex: AxialCoordinates;
+  health: number;
+  maxHealth: number;
+  narrativeTriggerId?: string;
+}
+
+/**
+ * Server -> Client: Door unlocked by narrative trigger
+ */
+export interface NarrativeDoorUnlockedPayload {
+  hex: AxialCoordinates;
+  narrativeTriggerId?: string;
+}
+
+/**
+ * Server -> Client: Hexes revealed by narrative trigger
+ */
+export interface NarrativeHexesRevealedPayload {
+  hexes: AxialCoordinates[];
+  narrativeTriggerId?: string;
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -546,6 +631,8 @@ export interface ClientEvents {
   use_item: UseItemPayload;
   equip_item: EquipItemPayload;
   unequip_item: UnequipItemPayload;
+  // Narrative system events
+  acknowledge_narrative: AcknowledgeNarrativePayload;
 }
 
 export interface RoundStartedPayload {
@@ -599,4 +686,11 @@ export interface ServerEvents {
   // Issue #244: Campaign events
   campaign_scenario_completed: CampaignScenarioCompletedPayload;
   campaign_completed: CampaignCompletedPayload;
+  // Narrative system events
+  narrative_display: NarrativeDisplayPayload;
+  narrative_acknowledged: NarrativeAcknowledgedPayload;
+  narrative_dismissed: NarrativeDismissedPayload;
+  narrative_monster_spawned: NarrativeMonsterSpawnedPayload;
+  narrative_door_unlocked: NarrativeDoorUnlockedPayload;
+  narrative_hexes_revealed: NarrativeHexesRevealedPayload;
 }

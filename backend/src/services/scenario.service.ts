@@ -355,6 +355,36 @@ export class ScenarioService {
   }
 
   /**
+   * Create a single monster at a specific hex (for narrative triggers)
+   */
+  createMonster(
+    roomId: string,
+    monsterType: string,
+    hex: AxialCoordinates,
+    isElite: boolean = false,
+    difficulty: number = 1,
+  ): Monster {
+    const baseStats = this.getMonsterBaseStats(monsterType, isElite);
+    const scaledStats = this.scaleMonsterStats(baseStats, difficulty);
+
+    return {
+      id: this.generateMonsterId(),
+      roomId,
+      monsterType,
+      isElite,
+      health: scaledStats.health,
+      maxHealth: scaledStats.health,
+      movement: scaledStats.movement,
+      attack: scaledStats.attack,
+      range: scaledStats.range,
+      currentHex: hex,
+      specialAbilities: this.getMonsterSpecialAbilities(monsterType),
+      conditions: [],
+      isDead: false,
+    };
+  }
+
+  /**
    * Generate unique monster ID
    */
   private generateMonsterId(): string {

@@ -515,10 +515,73 @@ model Scenario {
   backgroundAnchors    Json?    // Two-anchor alignment data (Issue #191)
 
   // Relations
-  games Game[]
+  games     Game[]
+  narrative ScenarioNarrative?
 
   @@index([difficulty])
   @@map("scenarios")
+}
+
+// ========== SCENARIO NARRATIVES (Campaign Narrative Feature) ==========
+
+model ScenarioNarrative {
+  id              String   @id @default(uuid()) @db.Uuid
+  scenarioId      String   @unique @db.Uuid
+
+  // Before scenario narrative (intro)
+  introTitle      String?  @db.VarChar(200)
+  introText       String?  @db.Text
+  introImageUrl   String?  @db.VarChar(500)
+
+  // After scenario narrative (victory)
+  victoryTitle    String?  @db.VarChar(200)
+  victoryText     String?  @db.Text
+  victoryImageUrl String?  @db.VarChar(500)
+
+  // After scenario narrative (defeat)
+  defeatTitle     String?  @db.VarChar(200)
+  defeatText      String?  @db.Text
+  defeatImageUrl  String?  @db.VarChar(500)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  scenario  Scenario           @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  triggers  NarrativeTrigger[]
+
+  @@map("scenario_narratives")
+}
+
+model NarrativeTrigger {
+  id              String   @id @default(uuid()) @db.Uuid
+  narrativeId     String   @db.Uuid
+
+  // Trigger identification
+  triggerId       String   @db.VarChar(100) // Unique identifier per scenario
+  displayOrder    Int      @default(0) @db.SmallInt // Order if multiple triggers fire
+
+  // Narrative content
+  title           String?  @db.VarChar(200)
+  text            String   @db.Text
+  imageUrl        String?  @db.VarChar(500)
+
+  // Trigger conditions (JSON - NarrativeCondition structure from shared/types/narrative.ts)
+  conditions      Json
+
+  // Optional rewards when narrative is acknowledged
+  rewards         Json?    // { gold?: number, xp?: number }
+
+  // Optional game effects to apply after all players acknowledge
+  gameEffects     Json?    // { spawnMonsters?: [...], unlockDoors?: [...] }
+
+  createdAt       DateTime @default(now())
+
+  // Relations
+  narrative  ScenarioNarrative @relation(fields: [narrativeId], references: [id], onDelete: Cascade)
+
+  @@index([narrativeId])
+  @@map("narrative_triggers")
 }
 
 // ========== ANONYMOUS GAMEPLAY (001 - Legacy) ==========

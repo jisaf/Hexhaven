@@ -37,6 +37,8 @@ import { ActionDispatcherService } from './services/action-dispatcher.service';
 import { ForcedMovementService } from './services/forced-movement.service';
 import { ValidationService } from './services/validation.service';
 import { ElementalStateService } from './services/elemental-state.service';
+import { NarrativeService } from './services/narrative.service';
+import { NarrativeConditionService } from './services/narrative-condition.service';
 import { ShopService } from './services/shop.service';
 import { ShopController } from './api/shop.controller';
 
@@ -85,6 +87,8 @@ import { ShopController } from './api/shop.controller';
     ValidationService, // Issue #220: Action validation
     ElementalStateService, // Issue #220: Element infusion/consumption
     CampaignService, // Issue #244: Campaign mode business logic
+    NarrativeService, // Campaign narrative system
+    NarrativeConditionService, // Narrative trigger condition evaluation
     ShopService, // Issue #328: Campaign shop system
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,

@@ -77,6 +77,17 @@ import { ActionDispatcherService } from '../services/action-dispatcher.service';
 import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
 import { CampaignService } from '../services/campaign.service';
+import { NarrativeService } from '../services/narrative.service';
+import type {
+  NarrativeDisplayPayload,
+  NarrativeAcknowledgedPayload,
+  NarrativeDismissedPayload,
+  AcknowledgeNarrativePayload,
+} from '../../../shared/types/events';
+import type {
+  ScenarioNarrativeDef,
+  NarrativeGameContext,
+} from '../../../shared/types/narrative';
 import {
   getPush,
   getPull,
@@ -93,7 +104,9 @@ import {
   ConnectionStatus,
   RoomStatus,
   getRange,
+  type AxialCoordinates,
   type CharacterClass,
+  type Monster,
 } from '../../../shared/types/entities';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
@@ -117,10 +130,20 @@ export class GameGateway
     private readonly forcedMovementService: ForcedMovementService,
     private readonly elementalStateService: ElementalStateService,
     private readonly campaignService: CampaignService, // Issue #244 - Campaign Mode
+    private readonly narrativeService: NarrativeService, // Campaign narrative system
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
   }
+
+  /**
+   * Cached scenario narratives per room
+   * Key: roomCode
+   */
+  private readonly roomNarratives = new Map<
+    string,
+    ScenarioNarrativeDef | null
+  >();
 
   afterInit(_server: Server) {
     // Initialization logging removed for performance
@@ -154,7 +177,7 @@ export class GameGateway
 
   // Game state: per-room state
   private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
-  private readonly roomMonsters = new Map<string, any[]>(); // roomCode -> monsters array
+  private readonly roomMonsters = new Map<string, Monster[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
   private readonly currentRound = new Map<string, number>(); // roomCode -> current round
@@ -202,6 +225,14 @@ export class GameGateway
       }
     >
   >(); // roomCode -> (playerId -> stats)
+
+  // Narrative system: Track game state for condition evaluation
+  private readonly roomOpenedDoors = new Map<string, AxialCoordinates[]>(); // roomCode -> opened door hexes
+  private readonly roomCollectedTreasures = new Map<string, string[]>(); // roomCode -> collected treasure IDs
+  private readonly roomCollectedLootHexes = new Map<
+    string,
+    AxialCoordinates[]
+  >(); // roomCode -> loot collection hexes
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -653,6 +684,9 @@ export class GameGateway
               willReconnect: true, // Player can reconnect within 10 minutes
             });
 
+            // Track disconnected player for narrative timeout handling
+            this.narrativeService.markPlayerDisconnected(room.roomCode, userId);
+
             this.logger.log(
               `Session saved for disconnected player ${userId} in room ${room.roomCode}`,
             );
@@ -891,6 +925,29 @@ export class GameGateway
               `Objectives included in game state for ${nickname} in active room`,
             );
           }
+
+          // If there's an active narrative, send it to the reconnecting player
+          const activeNarrative =
+            this.narrativeService.getActiveNarrative(roomCode);
+          if (activeNarrative) {
+            this.logger.log(
+              `Sending active narrative to ${nickname} in room ${roomCode}`,
+            );
+            const narrativePayload: NarrativeDisplayPayload = {
+              narrativeId: activeNarrative.id,
+              type: activeNarrative.type,
+              triggerId: activeNarrative.triggerId,
+              content: activeNarrative.content,
+              rewards: activeNarrative.rewards,
+              gameEffects: activeNarrative.gameEffects,
+              acknowledgments: activeNarrative.acknowledgments.map((a) => ({
+                playerId: a.playerId,
+                playerName: a.playerName,
+                acknowledged: a.acknowledged,
+              })),
+            };
+            client.emit('narrative_display', narrativePayload);
+          }
         } catch (activeGameError) {
           this.logger.error(
             `Error sending game state to ${nickname}:`,
@@ -1025,6 +1082,12 @@ export class GameGateway
         this.roomAccumulatedStats.delete(roomCode);
         this.roomGameStartTime.delete(roomCode);
         this.roomPlayerStats.delete(roomCode);
+        // Narrative system cleanup
+        this.narrativeService.cleanupRoomState(roomCode);
+        this.roomNarratives.delete(roomCode);
+        this.roomOpenedDoors.delete(roomCode);
+        this.roomCollectedTreasures.delete(roomCode);
+        this.roomCollectedLootHexes.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -1637,6 +1700,23 @@ export class GameGateway
         { text: `Scenario started: ${scenario.name}` },
       ]);
 
+      // Load and cache narrative definitions for this scenario
+      const narrativeDef = await this.narrativeService.loadScenarioNarrative(
+        scenario.id,
+      );
+      this.roomNarratives.set(room.roomCode, narrativeDef);
+      if (narrativeDef) {
+        this.logger.log(
+          `Loaded narrative for scenario ${scenario.id}: intro=${!!narrativeDef.intro}, triggers=${narrativeDef.triggers?.length ?? 0}`,
+        );
+      }
+
+      // Initialize narrative state for this room
+      this.narrativeService.initializeRoomState(room.roomCode);
+      this.roomOpenedDoors.set(room.roomCode, []);
+      this.roomCollectedTreasures.set(room.roomCode, []);
+      this.roomCollectedLootHexes.set(room.roomCode, []);
+
       // Send game_started individually to each connected client
       // This ensures all clients (including the host who is already in the room) receive the event
       const roomSockets = await this.server.in(room.roomCode).fetchSockets();
@@ -1666,6 +1746,23 @@ export class GameGateway
               }, 500);
             }
           },
+        );
+      }
+
+      // Display intro narrative if one exists for this scenario
+      if (narrativeDef?.intro) {
+        const players = room.players.map((p: Player) => ({
+          id: p.userId,
+          name: p.nickname,
+        }));
+        const introNarrative = this.narrativeService.createIntroNarrative(
+          narrativeDef.intro,
+          players,
+        );
+        this.narrativeService.setActiveNarrative(room.roomCode, introNarrative);
+        this.emitNarrativeDisplay(room.roomCode, introNarrative);
+        this.logger.log(
+          `Displaying intro narrative for scenario ${scenario.id}`,
         );
       }
     } catch (error) {
@@ -1874,6 +1971,9 @@ export class GameGateway
       this.logger.log(
         `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
       );
+
+      // Check narrative triggers after character movement
+      this.checkNarrativeTriggers(room.roomCode);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -2467,6 +2567,9 @@ export class GameGateway
           this.logger.log(
             `Monster ${target.id} marked as dead (isDead: true) for objective tracking`,
           );
+
+          // Check narrative triggers after monster kill
+          this.checkNarrativeTriggers(room.roomCode);
         }
       } else {
         // Apply damage to character target
@@ -2801,6 +2904,12 @@ export class GameGateway
       this.server
         .to(room.roomCode)
         .emit('loot_collected', lootCollectedPayload);
+
+      // Track loot collection for narrative condition evaluation
+      this.trackCollectedLoot(room.roomCode, payload.hexCoordinates);
+
+      // Check narrative triggers after loot collection
+      this.checkNarrativeTriggers(room.roomCode);
 
       this.logger.log(
         `Manual collected ${lootAtPosition.length} loot token(s) by ${userId} at (${payload.hexCoordinates.q}, ${payload.hexCoordinates.r}), total value: ${totalGold} gold`,
@@ -4043,6 +4152,9 @@ export class GameGateway
     this.server.to(roomCode).emit('round_ended', {
       roundNumber: currentRoundNumber,
     });
+
+    // Check narrative triggers at end of round (for round_reached conditions)
+    this.checkNarrativeTriggers(roomCode);
   }
 
   /**
@@ -5167,6 +5279,357 @@ export class GameGateway
         `Failed to refresh items after rest: ${error instanceof Error ? error.message : String(error)}`,
       );
       // Don't throw - item refresh failure shouldn't break rest mechanics
+    }
+  }
+
+  // ========== NARRATIVE SYSTEM HANDLERS ==========
+
+  /**
+   * Handle narrative acknowledgment from a player
+   */
+  @SubscribeMessage('acknowledge_narrative')
+  handleAcknowledgeNarrative(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: AcknowledgeNarrativePayload,
+  ): void {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room');
+      }
+
+      const { room, roomCode } = roomData;
+      const player = room.getPlayer(userId);
+      if (!player) {
+        throw new Error('Player not found in room');
+      }
+
+      const activeNarrative =
+        this.narrativeService.getActiveNarrative(roomCode);
+      if (!activeNarrative || activeNarrative.id !== payload.narrativeId) {
+        this.logger.warn(
+          `Acknowledge for unknown narrative ${payload.narrativeId} in room ${roomCode}`,
+        );
+        return;
+      }
+
+      // Record acknowledgment
+      const allAcknowledged = this.narrativeService.acknowledgeNarrative(
+        roomCode,
+        userId,
+      );
+
+      // Broadcast acknowledgment to all players
+      const ackPayload: NarrativeAcknowledgedPayload = {
+        narrativeId: payload.narrativeId,
+        playerId: userId,
+        playerName: player.nickname,
+        allAcknowledged,
+      };
+      this.server.to(roomCode).emit('narrative_acknowledged', ackPayload);
+
+      // If all acknowledged, proceed
+      if (allAcknowledged) {
+        this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Acknowledge narrative error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      client.emit('error', {
+        code: 'ACKNOWLEDGE_NARRATIVE_ERROR',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to acknowledge narrative',
+      } as ErrorPayload);
+    }
+  }
+
+  /**
+   * Handle when all players have acknowledged a narrative
+   */
+  private handleAllNarrativeAcknowledged(
+    roomCode: string,
+    narrative: import('../../../shared/types/narrative').ActiveNarrative,
+  ): void {
+    const room = roomService.getRoom(roomCode);
+    if (!room) return;
+
+    // Apply game effects if any
+    if (narrative.gameEffects) {
+      this.applyNarrativeGameEffects(roomCode, narrative.gameEffects);
+    }
+
+    // Clear the narrative
+    this.narrativeService.clearActiveNarrative(roomCode);
+
+    // Emit dismissed event
+    const dismissedPayload: NarrativeDismissedPayload = {
+      narrativeId: narrative.id,
+      type: narrative.type,
+      gameEffectsApplied: !!narrative.gameEffects,
+    };
+    this.server.to(roomCode).emit('narrative_dismissed', dismissedPayload);
+
+    // Check for queued narratives
+    const nextNarrative = this.narrativeService.dequeueNarrative(roomCode);
+    if (nextNarrative) {
+      this.narrativeService.setActiveNarrative(roomCode, nextNarrative);
+      this.emitNarrativeDisplay(roomCode, nextNarrative);
+    }
+  }
+
+  /**
+   * Apply game effects from a narrative trigger
+   */
+  private applyNarrativeGameEffects(
+    roomCode: string,
+    effects: import('../../../shared/types/narrative').NarrativeGameEffects,
+  ): void {
+    const room = roomService.getRoom(roomCode);
+    if (!room) return;
+
+    // Get current scenario difficulty for monster scaling
+    const scenario = this.roomScenarios.get(roomCode);
+    const difficulty = scenario?.difficulty ?? 1;
+
+    // Spawn monsters
+    if (effects.spawnMonsters && effects.spawnMonsters.length > 0) {
+      const roomMonsters = this.roomMonsters.get(roomCode) || [];
+
+      for (const spawn of effects.spawnMonsters) {
+        const monster = this.scenarioService.createMonster(
+          room.id,
+          spawn.type,
+          spawn.hex,
+          spawn.isElite ?? false,
+          difficulty,
+        );
+
+        roomMonsters.push(monster);
+
+        this.logger.log(
+          `Spawned ${spawn.isElite ? 'elite ' : ''}${spawn.type} at (${spawn.hex.q}, ${spawn.hex.r}) in room ${roomCode}`,
+        );
+
+        // Emit monster spawned event to clients
+        this.server.to(roomCode).emit('narrative_monster_spawned', {
+          monsterId: monster.id,
+          monsterType: monster.monsterType,
+          isElite: monster.isElite,
+          hex: monster.currentHex,
+          health: monster.health,
+          maxHealth: monster.maxHealth,
+        });
+      }
+
+      this.roomMonsters.set(roomCode, roomMonsters);
+    }
+
+    // Unlock doors
+    if (effects.unlockDoors && effects.unlockDoors.length > 0) {
+      const hexMap = this.roomMaps.get(roomCode);
+      if (hexMap) {
+        for (const doorHex of effects.unlockDoors) {
+          const key = `${doorHex.q},${doorHex.r}`;
+          const tile = hexMap.get(key);
+
+          if (tile && tile.features) {
+            // Find and open door feature
+            for (const feature of tile.features) {
+              if (feature.type === 'DOOR' || feature.type === 'door') {
+                feature.isOpen = true;
+              }
+            }
+          }
+
+          // Track opened door for narrative condition evaluation
+          this.trackOpenedDoor(roomCode, doorHex);
+
+          this.logger.log(
+            `Unlocked door at (${doorHex.q}, ${doorHex.r}) in room ${roomCode}`,
+          );
+
+          // Emit door unlocked event to clients
+          this.server.to(roomCode).emit('narrative_door_unlocked', {
+            hex: doorHex,
+          });
+        }
+      }
+    }
+
+    // Reveal hexes (for fog of war systems)
+    if (effects.revealHexes && effects.revealHexes.length > 0) {
+      this.logger.log(
+        `Revealing ${effects.revealHexes.length} hexes in room ${roomCode}`,
+      );
+
+      // Emit hexes revealed event to clients
+      this.server.to(roomCode).emit('narrative_hexes_revealed', {
+        hexes: effects.revealHexes,
+      });
+    }
+  }
+
+  /**
+   * Emit narrative display event to all players in a room
+   */
+  private emitNarrativeDisplay(
+    roomCode: string,
+    narrative: import('../../../shared/types/narrative').ActiveNarrative,
+  ): void {
+    const payload: NarrativeDisplayPayload = {
+      narrativeId: narrative.id,
+      type: narrative.type,
+      triggerId: narrative.triggerId,
+      content: narrative.content,
+      rewards: narrative.rewards,
+      gameEffects: narrative.gameEffects,
+      acknowledgments: narrative.acknowledgments.map((a) => ({
+        playerId: a.playerId,
+        playerName: a.playerName,
+        acknowledged: a.acknowledged,
+      })),
+    };
+    this.server.to(roomCode).emit('narrative_display', payload);
+  }
+
+  /**
+   * Build game context for narrative condition evaluation
+   */
+  private buildNarrativeContext(roomCode: string): NarrativeGameContext | null {
+    const room = roomService.getRoom(roomCode);
+    if (!room) return null;
+
+    // Get characters with positions from all players
+    const characters = room.players
+      .flatMap((p) => characterService.getCharactersByPlayerId(p.userId))
+      .map((char) => ({
+        id: char.id,
+        characterClass: char.characterClass,
+        hex: char.position || { q: 0, r: 0 },
+      }));
+
+    // Get monsters from room state
+    const roomMonsters = this.roomMonsters.get(roomCode) || [];
+    const monsters = roomMonsters.map((monster) => ({
+      id: monster.id,
+      type: monster.monsterType,
+      isAlive: !monster.isDead,
+    }));
+
+    // Count killed monsters
+    const deadMonsters = roomMonsters.filter((m) => m.isDead);
+    const monstersKilledByType: Record<string, number> = {};
+    for (const monster of deadMonsters) {
+      monstersKilledByType[monster.monsterType] =
+        (monstersKilledByType[monster.monsterType] || 0) + 1;
+    }
+
+    return {
+      currentRound: this.currentRound.get(roomCode) || 1,
+      characters,
+      monsters,
+      monstersKilled: deadMonsters.length,
+      monstersKilledByType,
+      openedDoors: this.roomOpenedDoors.get(roomCode) || [],
+      collectedTreasures: this.roomCollectedTreasures.get(roomCode) || [],
+      collectedLootHexes: this.roomCollectedLootHexes.get(roomCode) || [],
+    };
+  }
+
+  // ========== NARRATIVE STATE TRACKING HELPERS ==========
+
+  /**
+   * Track an opened door for narrative condition evaluation
+   * Prevents duplicates via coordinate comparison
+   */
+  private trackOpenedDoor(roomCode: string, hex: AxialCoordinates): void {
+    const doors = this.roomOpenedDoors.get(roomCode) || [];
+    const alreadyTracked = doors.some((d) => d.q === hex.q && d.r === hex.r);
+    if (!alreadyTracked) {
+      doors.push(hex);
+      this.roomOpenedDoors.set(roomCode, doors);
+    }
+  }
+
+  /**
+   * Track a collected treasure for narrative condition evaluation
+   */
+  private trackCollectedTreasure(roomCode: string, treasureId: string): void {
+    const treasures = this.roomCollectedTreasures.get(roomCode) || [];
+    if (!treasures.includes(treasureId)) {
+      treasures.push(treasureId);
+      this.roomCollectedTreasures.set(roomCode, treasures);
+    }
+  }
+
+  /**
+   * Track loot collection at a hex for narrative condition evaluation
+   * Prevents duplicates via coordinate comparison
+   */
+  private trackCollectedLoot(roomCode: string, hex: AxialCoordinates): void {
+    const lootHexes = this.roomCollectedLootHexes.get(roomCode) || [];
+    const alreadyTracked = lootHexes.some(
+      (h) => h.q === hex.q && h.r === hex.r,
+    );
+    if (!alreadyTracked) {
+      lootHexes.push(hex);
+      this.roomCollectedLootHexes.set(roomCode, lootHexes);
+    }
+  }
+
+  /**
+   * Check and fire narrative triggers after a game action
+   * Call this after moves, attacks, round ends, etc.
+   */
+  private checkNarrativeTriggers(roomCode: string): void {
+    // Skip if narrative is already active
+    if (this.narrativeService.isNarrativeActive(roomCode)) {
+      return;
+    }
+
+    const narrativeDef = this.roomNarratives.get(roomCode);
+    if (!narrativeDef || !narrativeDef.triggers) {
+      return;
+    }
+
+    const context = this.buildNarrativeContext(roomCode);
+    if (!context) {
+      return;
+    }
+
+    const trigger = this.narrativeService.checkTriggers(
+      roomCode,
+      narrativeDef,
+      context,
+    );
+
+    if (trigger) {
+      const room = roomService.getRoom(roomCode);
+      if (!room) return;
+
+      const players = room.players.map((p) => ({
+        id: p.userId,
+        name: p.nickname,
+      }));
+
+      const narrative = this.narrativeService.createTriggerNarrative(
+        trigger,
+        players,
+      );
+      this.narrativeService.setActiveNarrative(roomCode, narrative);
+      this.emitNarrativeDisplay(roomCode, narrative);
+
+      this.logger.log(
+        `Narrative trigger ${trigger.triggerId} fired in room ${roomCode}`,
+      );
     }
   }
 }
