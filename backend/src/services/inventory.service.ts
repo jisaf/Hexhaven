@@ -767,10 +767,7 @@ export class InventoryService {
    * Validate that an item can be added to character's inventory
    * Throws if validation fails
    */
-  validateCanAddItem(
-    ownedItems: { itemId: string }[],
-    itemId: string,
-  ): void {
+  validateCanAddItem(ownedItems: { itemId: string }[], itemId: string): void {
     if (ownedItems.some((inv) => inv.itemId === itemId)) {
       throw new ConflictError('Character already owns this item');
     }
@@ -800,9 +797,7 @@ export class InventoryService {
 
     // Check if equipped
     if (equippedItems.some((eq) => eq.itemId === itemId)) {
-      throw new ValidationError(
-        'Cannot sell equipped item. Unequip it first.',
-      );
+      throw new ValidationError('Cannot sell equipped item. Unequip it first.');
     }
 
     return inventoryItem;

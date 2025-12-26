@@ -23,6 +23,45 @@ import { ItemRarity } from '../../../shared/types/entities';
 // Map Prisma Rarity to shared ItemRarity
 const toItemRarity = (rarity: Rarity): ItemRarity => rarity as ItemRarity;
 
+// Default shop configuration
+const DEFAULT_SHOP_CONFIG: CampaignShopConfig = {
+  itemUnlockMode: 'all_available',
+  allowSelling: true,
+  sellPriceMultiplier: 0.5,
+};
+
+/**
+ * Parse JSON value to CampaignShopConfig with type-safe defaults
+ */
+function parseShopConfig(json: Prisma.JsonValue): CampaignShopConfig {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    return { ...DEFAULT_SHOP_CONFIG };
+  }
+  const obj = json as Record<string, unknown>;
+  return {
+    itemUnlockMode:
+      obj.itemUnlockMode === 'prosperity_gated'
+        ? 'prosperity_gated'
+        : 'all_available',
+    prosperityUnlocks:
+      obj.prosperityUnlocks as CampaignShopConfig['prosperityUnlocks'],
+    itemQuantityOverrides:
+      obj.itemQuantityOverrides as CampaignShopConfig['itemQuantityOverrides'],
+    defaultItemQuantity:
+      typeof obj.defaultItemQuantity === 'number'
+        ? obj.defaultItemQuantity
+        : DEFAULT_SHOP_CONFIG.defaultItemQuantity,
+    allowSelling:
+      typeof obj.allowSelling === 'boolean'
+        ? obj.allowSelling
+        : DEFAULT_SHOP_CONFIG.allowSelling,
+    sellPriceMultiplier:
+      typeof obj.sellPriceMultiplier === 'number'
+        ? obj.sellPriceMultiplier
+        : DEFAULT_SHOP_CONFIG.sellPriceMultiplier,
+  };
+}
+
 interface PurchaseValidation {
   valid: boolean;
   reason?: string;
@@ -112,11 +151,7 @@ export class ShopService {
       return this.initializeShopForCampaign(campaignId);
     }
 
-    const config = (campaign.shopConfig || {
-      itemUnlockMode: 'all_available',
-      allowSelling: true,
-      sellPriceMultiplier: 0.5,
-    }) as unknown as CampaignShopConfig;
+    const config = parseShopConfig(campaign.shopConfig);
 
     const inventory: ShopItem[] = campaign.shopInventory.map((inv) => ({
       id: inv.id,
@@ -194,7 +229,7 @@ export class ShopService {
       throw new NotFoundError(`Campaign with ID ${campaignId} not found`);
     }
 
-    const currentConfig = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
+    const currentConfig = parseShopConfig(campaign.shopConfig);
     const newConfig: CampaignShopConfig = {
       ...currentConfig,
       ...configUpdate,
@@ -253,7 +288,7 @@ export class ShopService {
         );
       }
 
-      const config = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
+      const config = parseShopConfig(campaign.shopConfig);
 
       // Validate item availability
       if (
@@ -393,7 +428,7 @@ export class ShopService {
         throw new NotFoundError(`Item ${itemId} not found`);
       }
 
-      const config = (campaign.shopConfig || {}) as unknown as CampaignShopConfig;
+      const config = parseShopConfig(campaign.shopConfig);
 
       if (config.allowSelling === false) {
         throw new ForbiddenError(
