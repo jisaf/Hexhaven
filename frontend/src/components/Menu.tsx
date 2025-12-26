@@ -13,10 +13,11 @@
  * - Mobile-responsive width
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Menu.module.css';
 import { authService } from '../services/auth.service';
+import { getApiUrl } from '../config/api';
 import LanguageSelector from './LanguageSelector';
 
 interface MenuProps {
@@ -27,6 +28,33 @@ interface MenuProps {
 export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const isAuthenticated = authService.isAuthenticated();
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  // Fetch user roles when authenticated
+  useEffect(() => {
+    const fetchRoles = async () => {
+      if (!isAuthenticated) {
+        setUserRoles([]);
+        return;
+      }
+      const token = localStorage.getItem('hexhaven_access_token');
+      if (!token) return;
+      try {
+        const response = await fetch(`${getApiUrl()}/users/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserRoles(data.roles || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user roles:', error);
+      }
+    };
+    fetchRoles();
+  }, [isAuthenticated]);
+
+  const hasCreatorAccess = userRoles.includes('creator') || userRoles.includes('admin');
 
   // Handle Esc key to close menu
   useEffect(() => {
@@ -148,6 +176,30 @@ export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
               >
                 <span className={styles.menuItemText}>New Game</span>
               </button>
+              {hasCreatorAccess && (
+                <>
+                  <div className={styles.menuDivider}></div>
+                  <div className={styles.menuSectionLabel}>Creator Tools</div>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => handleMenuItemClick('/design')}
+                  >
+                    <span className={styles.menuItemText}>Scenario Designer</span>
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => handleMenuItemClick('/creator/items')}
+                  >
+                    <span className={styles.menuItemText}>Item Creator</span>
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => handleMenuItemClick('/carddemo')}
+                  >
+                    <span className={styles.menuItemText}>Card Demo</span>
+                  </button>
+                </>
+              )}
               <div className={styles.menuDivider}></div>
               <button
                 className={`${styles.menuItem} ${styles.menuItemDanger}`}

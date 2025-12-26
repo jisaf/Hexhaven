@@ -130,6 +130,16 @@
   margin: 8px 0;
 }
 
+/* Menu Section Label (for grouping menu items) */
+.menuSectionLabel {
+  padding: 8px 24px;
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
 /* Danger Menu Item (Logout) */
 .menuItemDanger {
   color: #ff6b6b;
