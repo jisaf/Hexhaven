@@ -6,46 +6,26 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { InventoryService } from './inventory.service';
-import { ItemService } from './item.service';
 import {
   CampaignShopConfig,
-  InitializeShopDto,
-  ShopInventoryItem,
-  CampaignShop,
-  ShopTransactionResponse,
+  ShopItem,
+  CampaignShopView,
+  ShopTransaction,
   ShopTransactionHistory,
   PurchaseResult,
   SellResult,
-  ShopTransactionType,
-  UpdateShopConfigDto,
 } from '../types/shop.types';
-import {
-  ValidationError,
-  NotFoundError,
-  ConflictError,
-  ForbiddenError,
-} from '../types/errors';
-import { Prisma, Rarity, TransactionType } from '@prisma/client';
+import { UpdateShopConfigDto } from '../types/shop.types';
+import { NotFoundError, ForbiddenError } from '../types/errors';
+import { Prisma, PrismaClient, Rarity, TransactionType } from '@prisma/client';
+import { ItemRarity } from 'shared/types/entities';
+
+// Map Prisma Rarity to shared ItemRarity
+const toItemRarity = (rarity: Rarity): ItemRarity => rarity as ItemRarity;
 
 interface PurchaseValidation {
   valid: boolean;
   reason?: string;
-}
-
-interface ShopInventoryRecord {
-  id: string;
-  campaignId: string;
-  itemId: string;
-  quantity: number;
-  initialQuantity: number;
-  lastRestockedAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  item: {
-    name: string;
-    cost: number;
-    rarity: Rarity;
-  };
 }
 
 @Injectable()
@@ -53,7 +33,6 @@ export class ShopService {
   constructor(
     private prisma: PrismaService,
     private inventoryService: InventoryService,
-    private itemService: ItemService,
   ) {}
 
   /**
@@ -62,9 +41,8 @@ export class ShopService {
    */
   async initializeShopForCampaign(
     campaignId: string,
-    customConfig?: CampaignShopConfig,
-  ): Promise<CampaignShop> {
-    // Verify campaign exists
+    customConfig?: Partial<CampaignShopConfig>,
+  ): Promise<CampaignShopView> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
     });
@@ -73,21 +51,17 @@ export class ShopService {
       throw new NotFoundError(`Campaign with ID ${campaignId} not found`);
     }
 
-    // Default config
-    const shopConfig: CampaignShopConfig = customConfig || {
+    const shopConfig: CampaignShopConfig = {
       itemUnlockMode: 'all_available',
       defaultItemQuantity: 1,
       allowSelling: true,
       sellPriceMultiplier: 0.5,
+      ...customConfig,
     };
 
-    // Get all items
     const items = await this.prisma.item.findMany();
-
-    // Create shop inventory for each item
     const defaultQuantity = shopConfig.defaultItemQuantity || 1;
 
-    // Use transaction to create all inventory records atomically
     await this.prisma.$transaction(
       items.map((item) => {
         const overrideQuantity =
@@ -95,10 +69,7 @@ export class ShopService {
 
         return this.prisma.campaignShopInventory.upsert({
           where: {
-            campaignId_itemId: {
-              campaignId,
-              itemId: item.id,
-            },
+            campaignId_itemId: { campaignId, itemId: item.id },
           },
           update: {
             quantity: overrideQuantity,
@@ -114,7 +85,6 @@ export class ShopService {
       }),
     );
 
-    // Update campaign config
     await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { shopConfig: shopConfig as unknown as Prisma.JsonValue },
@@ -126,7 +96,7 @@ export class ShopService {
   /**
    * Get shop inventory for a campaign with availability info
    */
-  async getShopInventory(campaignId: string): Promise<CampaignShop> {
+  async getShopInventory(campaignId: string): Promise<CampaignShopView> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: { shopInventory: { include: { item: true } } },
@@ -136,20 +106,22 @@ export class ShopService {
       throw new NotFoundError(`Campaign with ID ${campaignId} not found`);
     }
 
-    const config = campaign.shopConfig as CampaignShopConfig;
-    const inventoryItems = campaign.shopInventory as ShopInventoryRecord[];
+    const config = (campaign.shopConfig || {
+      itemUnlockMode: 'all_available',
+      allowSelling: true,
+      sellPriceMultiplier: 0.5,
+    }) as CampaignShopConfig;
 
-    // Map to response with availability info
-    const inventory: ShopInventoryItem[] = inventoryItems.map((inv) => ({
+    const inventory: ShopItem[] = campaign.shopInventory.map((inv) => ({
       id: inv.id,
       itemId: inv.itemId,
       itemName: inv.item.name,
       cost: inv.item.cost,
-      rarity: inv.item.rarity,
+      rarity: toItemRarity(inv.item.rarity),
       quantity: inv.quantity,
       initialQuantity: inv.initialQuantity,
       isAvailable: this.isItemAvailable(
-        inv.item,
+        inv.item.rarity,
         campaign.prosperityLevel,
         config,
       ),
@@ -171,7 +143,7 @@ export class ShopService {
    * Check if an item is available based on prosperity level and config
    */
   isItemAvailable(
-    item: { rarity: Rarity },
+    rarity: Rarity,
     prosperityLevel: number,
     config: CampaignShopConfig,
   ): boolean {
@@ -181,22 +153,21 @@ export class ShopService {
 
     if (config.itemUnlockMode === 'prosperity_gated') {
       if (!config.prosperityUnlocks) {
-        return true; // No unlocks defined, all available
+        return true;
       }
 
-      // Find the highest prosperity level unlocks at or below current level
       const applicableLevels = Object.keys(config.prosperityUnlocks)
         .map(Number)
         .filter((level) => level <= prosperityLevel);
 
       if (applicableLevels.length === 0) {
-        return false; // No unlock level matches
+        return false;
       }
 
       const highestLevel = Math.max(...applicableLevels);
       const unlockedRarities = config.prosperityUnlocks[highestLevel];
 
-      return unlockedRarities.includes(item.rarity);
+      return unlockedRarities.includes(rarity as ItemRarity);
     }
 
     return false;
@@ -208,7 +179,7 @@ export class ShopService {
   async updateShopConfig(
     campaignId: string,
     configUpdate: UpdateShopConfigDto,
-  ): Promise<CampaignShop> {
+  ): Promise<CampaignShopView> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
     });
@@ -233,6 +204,7 @@ export class ShopService {
 
   /**
    * Purchase an item from the shop
+   * All validation and mutations happen inside a single transaction
    */
   async purchaseItem(
     campaignId: string,
@@ -240,81 +212,85 @@ export class ShopService {
     itemId: string,
     quantity = 1,
   ): Promise<PurchaseResult> {
-    // Get character for gold check
-    const character = await this.prisma.character.findUnique({
-      where: { id: characterId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      // Fetch all required data inside transaction for consistency
+      const [character, shopInventory, campaign] = await Promise.all([
+        tx.character.findUnique({
+          where: { id: characterId },
+          include: { ownedItems: true },
+        }),
+        tx.campaignShopInventory.findUnique({
+          where: { campaignId_itemId: { campaignId, itemId } },
+          include: { item: true },
+        }),
+        tx.campaign.findUnique({
+          where: { id: campaignId },
+        }),
+      ]);
 
-    if (!character) {
-      throw new NotFoundError(`Character with ID ${characterId} not found`);
-    }
+      if (!character) {
+        throw new NotFoundError(`Character with ID ${characterId} not found`);
+      }
 
-    // Get shop inventory
-    const shopInventory = await this.prisma.campaignShopInventory.findUnique({
-      where: {
-        campaignId_itemId: { campaignId, itemId },
-      },
-      include: { item: true },
-    });
+      if (!campaign) {
+        throw new NotFoundError(`Campaign ${campaignId} not found`);
+      }
 
-    if (!shopInventory) {
-      throw new NotFoundError(
-        `Item ${itemId} not found in shop for campaign ${campaignId}`,
+      // Verify character belongs to this campaign
+      if (character.campaignId !== campaignId) {
+        throw new ForbiddenError('Character is not part of this campaign');
+      }
+
+      if (!shopInventory) {
+        throw new NotFoundError(
+          `Item ${itemId} not found in shop for campaign ${campaignId}`,
+        );
+      }
+
+      const config = (campaign.shopConfig || {}) as CampaignShopConfig;
+
+      // Validate item availability
+      if (
+        !this.isItemAvailable(
+          shopInventory.item.rarity,
+          campaign.prosperityLevel,
+          config,
+        )
+      ) {
+        throw new ForbiddenError(
+          `Item ${shopInventory.item.name} is not available at prosperity level ${campaign.prosperityLevel}`,
+        );
+      }
+
+      // Validate purchase (stock and gold)
+      const totalCost = shopInventory.item.cost * quantity;
+      const validation = this.validatePurchase(
+        character.gold,
+        shopInventory.quantity,
+        shopInventory.item.cost,
+        quantity,
       );
-    }
 
-    // Get campaign for config
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
-    });
+      if (!validation.valid) {
+        throw new ForbiddenError(
+          validation.reason || 'Purchase validation failed',
+        );
+      }
 
-    if (!campaign) {
-      throw new NotFoundError(`Campaign ${campaignId} not found`);
-    }
+      // Use InventoryService validation (DRY - shared with direct inventory operations)
+      this.inventoryService.validateCanAddItem(character.ownedItems, itemId);
 
-    const config = campaign.shopConfig as CampaignShopConfig;
-
-    // Validate availability
-    if (
-      !this.isItemAvailable(
-        shopInventory.item,
-        campaign.prosperityLevel,
-        config,
-      )
-    ) {
-      throw new ForbiddenError(
-        `Item ${shopInventory.item.name} is not available at prosperity level ${campaign.prosperityLevel}`,
-      );
-    }
-
-    // Validate purchase
-    const totalCost = shopInventory.item.cost * quantity;
-    const validation = this.validatePurchase(
-      character,
-      shopInventory,
-      quantity,
-    );
-
-    if (!validation.valid) {
-      throw new ValidationError(
-        validation.reason || 'Purchase validation failed',
-      );
-    }
-
-    // Execute purchase in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Reduce shop inventory
+      // Execute purchase: reduce shop inventory
       await tx.campaignShopInventory.update({
         where: { id: shopInventory.id },
         data: { quantity: shopInventory.quantity - quantity },
       });
 
-      // Add to character inventory
-      await this.inventoryService.addToInventory(
+      // Add to character inventory using InventoryService (DRY)
+      await this.inventoryService.addItemToInventoryTx(
+        tx as unknown as PrismaClient,
         characterId,
         itemId,
-        quantity,
-        totalCost,
       );
 
       // Deduct gold from character
@@ -333,52 +309,49 @@ export class ShopService {
           goldAmount: totalCost,
           quantity,
         },
-        include: { item: true },
       });
 
-      return {
-        character: updatedCharacter,
-        transaction,
-      };
-    });
-
-    const item = await this.itemService.getItemOrThrow(itemId);
-
-    return {
-      success: true,
-      item: {
+      const shopItem: ShopItem = {
         id: shopInventory.id,
         itemId,
-        itemName: item.name,
-        cost: item.cost,
-        rarity: item.rarity,
+        itemName: shopInventory.item.name,
+        cost: shopInventory.item.cost,
+        rarity: toItemRarity(shopInventory.item.rarity),
         quantity: shopInventory.quantity - quantity,
         initialQuantity: shopInventory.initialQuantity,
         isAvailable: this.isItemAvailable(
-          item,
+          shopInventory.item.rarity,
           campaign.prosperityLevel,
           config,
         ),
         lastRestockedAt: shopInventory.lastRestockedAt,
-      },
-      goldSpent: totalCost,
-      characterGoldRemaining: result.character.gold,
-      transaction: {
-        id: result.transaction.id,
+      };
+
+      const transactionResponse: ShopTransaction = {
+        id: transaction.id,
         campaignId,
         characterId,
         itemId,
-        itemName: result.transaction.item.name,
-        transactionType: ShopTransactionType.BUY,
+        itemName: shopInventory.item.name,
+        transactionType: 'BUY',
         goldAmount: totalCost,
         quantity,
-        createdAt: result.transaction.createdAt,
-      },
-    };
+        createdAt: transaction.createdAt,
+      };
+
+      return {
+        success: true,
+        item: shopItem,
+        goldSpent: totalCost,
+        characterGoldRemaining: updatedCharacter.gold,
+        transaction: transactionResponse,
+      };
+    });
   }
 
   /**
    * Sell an item back to the shop
+   * All validation and mutations happen inside a single transaction
    */
   async sellItem(
     campaignId: string,
@@ -386,47 +359,64 @@ export class ShopService {
     itemId: string,
     quantity = 1,
   ): Promise<SellResult> {
-    // Get campaign for config
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      // Fetch all required data inside transaction
+      const [campaign, character, item] = await Promise.all([
+        tx.campaign.findUnique({ where: { id: campaignId } }),
+        tx.character.findUnique({
+          where: { id: characterId },
+          include: { ownedItems: true, equippedItems: true },
+        }),
+        tx.item.findUnique({ where: { id: itemId } }),
+      ]);
 
-    if (!campaign) {
-      throw new NotFoundError(`Campaign ${campaignId} not found`);
-    }
+      if (!campaign) {
+        throw new NotFoundError(`Campaign ${campaignId} not found`);
+      }
 
-    const config = campaign.shopConfig as CampaignShopConfig;
+      if (!character) {
+        throw new NotFoundError(`Character ${characterId} not found`);
+      }
 
-    if (!config.allowSelling) {
-      throw new ForbiddenError('Selling items is not allowed in this campaign');
-    }
+      // Verify character belongs to this campaign
+      if (character.campaignId !== campaignId) {
+        throw new ForbiddenError('Character is not part of this campaign');
+      }
 
-    // Get character
-    const character = await this.prisma.character.findUnique({
-      where: { id: characterId },
-    });
+      if (!item) {
+        throw new NotFoundError(`Item ${itemId} not found`);
+      }
 
-    if (!character) {
-      throw new NotFoundError(`Character ${characterId} not found`);
-    }
+      const config = (campaign.shopConfig || {}) as CampaignShopConfig;
 
-    // Get item
-    const item = await this.itemService.getItemOrThrow(itemId);
+      if (config.allowSelling === false) {
+        throw new ForbiddenError(
+          'Selling items is not allowed in this campaign',
+        );
+      }
 
-    // Calculate sell price
-    const sellPrice = this.calculateSellPrice(
-      item.cost,
-      config.sellPriceMultiplier || 0.5,
-    );
-    const totalGoldEarned = sellPrice * quantity;
+      // Use InventoryService validation (DRY - shared with direct inventory operations)
+      // Allows selling during game for shop transactions
+      const ownedItem = this.inventoryService.validateCanRemoveItem(
+        character.ownedItems,
+        character.equippedItems,
+        itemId,
+        { allowDuringGame: true },
+      );
 
-    // Execute sale in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Remove from character inventory
-      await this.inventoryService.removeFromInventory(
+      // Calculate sell price
+      const sellPrice = this.calculateSellPrice(
+        item.cost,
+        config.sellPriceMultiplier ?? 0.5,
+      );
+      const totalGoldEarned = sellPrice * quantity;
+
+      // Remove from character inventory using InventoryService (DRY)
+      await this.inventoryService.removeItemFromInventoryTx(
+        tx as unknown as PrismaClient,
+        ownedItem.id,
         characterId,
         itemId,
-        quantity,
       );
 
       // Add gold to character
@@ -445,14 +435,11 @@ export class ShopService {
           goldAmount: totalGoldEarned,
           quantity,
         },
-        include: { item: true },
       });
 
-      // Increase shop inventory
+      // Increase shop inventory (item goes back into shop stock)
       const shopInv = await tx.campaignShopInventory.findUnique({
-        where: {
-          campaignId_itemId: { campaignId, itemId },
-        },
+        where: { campaignId_itemId: { campaignId, itemId } },
       });
 
       if (shopInv) {
@@ -462,30 +449,27 @@ export class ShopService {
         });
       }
 
-      return {
-        character: updatedCharacter,
-        transaction,
-      };
-    });
-
-    return {
-      success: true,
-      itemId,
-      itemName: item.name,
-      goldEarned: totalGoldEarned,
-      characterGoldRemaining: result.character.gold,
-      transaction: {
-        id: result.transaction.id,
+      const transactionResponse: ShopTransaction = {
+        id: transaction.id,
         campaignId,
         characterId,
         itemId,
-        itemName: result.transaction.item.name,
-        transactionType: ShopTransactionType.SELL,
+        itemName: item.name,
+        transactionType: 'SELL',
         goldAmount: totalGoldEarned,
         quantity,
-        createdAt: result.transaction.createdAt,
-      },
-    };
+        createdAt: transaction.createdAt,
+      };
+
+      return {
+        success: true,
+        itemId,
+        itemName: item.name,
+        goldEarned: totalGoldEarned,
+        characterGoldRemaining: updatedCharacter.gold,
+        transaction: transactionResponse,
+      };
+    });
   }
 
   /**
@@ -503,25 +487,24 @@ export class ShopService {
       throw new NotFoundError(`Campaign ${campaignId} not found`);
     }
 
-    const transactions = await this.prisma.shopTransaction.findMany({
-      where: { campaignId },
-      include: { item: true },
-      orderBy: { createdAt: 'desc' },
-      take: options?.limit || 100,
-      skip: options?.offset || 0,
-    });
-
-    const totalCount = await this.prisma.shopTransaction.count({
-      where: { campaignId },
-    });
-
-    const totalGoldSpent = transactions
-      .filter((t) => t.transactionType === TransactionType.BUY)
-      .reduce((sum, t) => sum + t.goldAmount, 0);
-
-    const totalGoldEarned = transactions
-      .filter((t) => t.transactionType === TransactionType.SELL)
-      .reduce((sum, t) => sum + t.goldAmount, 0);
+    const [transactions, totalCount, buyStats, sellStats] = await Promise.all([
+      this.prisma.shopTransaction.findMany({
+        where: { campaignId },
+        include: { item: true },
+        orderBy: { createdAt: 'desc' },
+        take: options?.limit || 100,
+        skip: options?.offset || 0,
+      }),
+      this.prisma.shopTransaction.count({ where: { campaignId } }),
+      this.prisma.shopTransaction.aggregate({
+        where: { campaignId, transactionType: TransactionType.BUY },
+        _sum: { goldAmount: true },
+      }),
+      this.prisma.shopTransaction.aggregate({
+        where: { campaignId, transactionType: TransactionType.SELL },
+        _sum: { goldAmount: true },
+      }),
+    ]);
 
     return {
       transactions: transactions.map((t) => ({
@@ -531,16 +514,14 @@ export class ShopService {
         itemId: t.itemId,
         itemName: t.item.name,
         transactionType:
-          t.transactionType === TransactionType.BUY
-            ? ShopTransactionType.BUY
-            : ShopTransactionType.SELL,
+          t.transactionType === TransactionType.BUY ? 'BUY' : 'SELL',
         goldAmount: t.goldAmount,
         quantity: t.quantity,
         createdAt: t.createdAt,
       })),
       totalCount,
-      totalGoldSpent,
-      totalGoldEarned,
+      totalGoldSpent: buyStats._sum.goldAmount || 0,
+      totalGoldEarned: sellStats._sum.goldAmount || 0,
     };
   }
 
@@ -559,19 +540,29 @@ export class ShopService {
       throw new NotFoundError(`Character ${characterId} not found`);
     }
 
-    const transactions = await this.prisma.shopTransaction.findMany({
-      where: { characterId, campaignId },
-      include: { item: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const totalGoldSpent = transactions
-      .filter((t) => t.transactionType === TransactionType.BUY)
-      .reduce((sum, t) => sum + t.goldAmount, 0);
-
-    const totalGoldEarned = transactions
-      .filter((t) => t.transactionType === TransactionType.SELL)
-      .reduce((sum, t) => sum + t.goldAmount, 0);
+    const [transactions, buyStats, sellStats] = await Promise.all([
+      this.prisma.shopTransaction.findMany({
+        where: { characterId, campaignId },
+        include: { item: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.shopTransaction.aggregate({
+        where: {
+          characterId,
+          campaignId,
+          transactionType: TransactionType.BUY,
+        },
+        _sum: { goldAmount: true },
+      }),
+      this.prisma.shopTransaction.aggregate({
+        where: {
+          characterId,
+          campaignId,
+          transactionType: TransactionType.SELL,
+        },
+        _sum: { goldAmount: true },
+      }),
+    ]);
 
     return {
       transactions: transactions.map((t) => ({
@@ -581,23 +572,21 @@ export class ShopService {
         itemId: t.itemId,
         itemName: t.item.name,
         transactionType:
-          t.transactionType === TransactionType.BUY
-            ? ShopTransactionType.BUY
-            : ShopTransactionType.SELL,
+          t.transactionType === TransactionType.BUY ? 'BUY' : 'SELL',
         goldAmount: t.goldAmount,
         quantity: t.quantity,
         createdAt: t.createdAt,
       })),
       totalCount: transactions.length,
-      totalGoldSpent,
-      totalGoldEarned,
+      totalGoldSpent: buyStats._sum.goldAmount || 0,
+      totalGoldEarned: sellStats._sum.goldAmount || 0,
     };
   }
 
   /**
    * Restock items to their initial quantities
    */
-  async restockItems(campaignId: string): Promise<CampaignShop> {
+  async restockItems(campaignId: string): Promise<CampaignShopView> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: { shopInventory: true },
@@ -607,7 +596,6 @@ export class ShopService {
       throw new NotFoundError(`Campaign ${campaignId} not found`);
     }
 
-    // Reset all items to initial quantity
     await this.prisma.$transaction(
       campaign.shopInventory.map((inv) =>
         this.prisma.campaignShopInventory.update({
@@ -627,24 +615,23 @@ export class ShopService {
    * Validate a purchase
    */
   private validatePurchase(
-    character: { gold: number },
-    shopInventory: { quantity: number; item: { cost: number } },
+    characterGold: number,
+    shopQuantity: number,
+    itemCost: number,
     quantity: number,
   ): PurchaseValidation {
-    // Check quantity available
-    if (quantity > shopInventory.quantity) {
+    if (quantity > shopQuantity) {
       return {
         valid: false,
-        reason: `Only ${shopInventory.quantity} items available, requested ${quantity}`,
+        reason: `Only ${shopQuantity} items available, requested ${quantity}`,
       };
     }
 
-    // Check gold
-    const totalCost = shopInventory.item.cost * quantity;
-    if (character.gold < totalCost) {
+    const totalCost = itemCost * quantity;
+    if (characterGold < totalCost) {
       return {
         valid: false,
-        reason: `Insufficient gold: have ${character.gold}, need ${totalCost}`,
+        reason: `Insufficient gold: have ${characterGold}, need ${totalCost}`,
       };
     }
 

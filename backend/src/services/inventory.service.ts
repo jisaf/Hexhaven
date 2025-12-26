@@ -760,6 +760,88 @@ export class InventoryService {
     };
   }
 
+  // ========== TRANSACTION-SAFE OPERATIONS ==========
+  // These methods can be used within external transactions (e.g., ShopService)
+
+  /**
+   * Validate that an item can be added to character's inventory
+   * Throws if validation fails
+   */
+  validateCanAddItem(
+    ownedItems: { itemId: string }[],
+    itemId: string,
+  ): void {
+    if (ownedItems.some((inv) => inv.itemId === itemId)) {
+      throw new ConflictError('Character already owns this item');
+    }
+  }
+
+  /**
+   * Validate that an item can be removed from character's inventory
+   * Returns the inventory record if valid
+   * Throws if validation fails
+   */
+  validateCanRemoveItem(
+    ownedItems: { id: string; itemId: string }[],
+    equippedItems: { itemId: string }[],
+    itemId: string,
+    options?: { allowDuringGame?: boolean; currentGameId?: string | null },
+  ): { id: string; itemId: string } {
+    // Check if in active game (unless explicitly allowed)
+    if (!options?.allowDuringGame && options?.currentGameId) {
+      throw new ConflictError('Cannot modify inventory during active game');
+    }
+
+    // Check if owned
+    const inventoryItem = ownedItems.find((inv) => inv.itemId === itemId);
+    if (!inventoryItem) {
+      throw new ValidationError('Character does not own this item');
+    }
+
+    // Check if equipped
+    if (equippedItems.some((eq) => eq.itemId === itemId)) {
+      throw new ValidationError(
+        'Cannot sell equipped item. Unequip it first.',
+      );
+    }
+
+    return inventoryItem;
+  }
+
+  /**
+   * Add item to inventory within an existing transaction
+   * Does NOT handle gold - caller is responsible
+   */
+  async addItemToInventoryTx(
+    tx: PrismaClient,
+    characterId: string,
+    itemId: string,
+  ): Promise<void> {
+    await tx.characterInventory.create({
+      data: { characterId, itemId },
+    });
+  }
+
+  /**
+   * Remove item from inventory within an existing transaction
+   * Does NOT handle gold - caller is responsible
+   */
+  async removeItemFromInventoryTx(
+    tx: PrismaClient,
+    inventoryRecordId: string,
+    characterId: string,
+    itemId: string,
+  ): Promise<void> {
+    await tx.characterInventory.delete({
+      where: { id: inventoryRecordId },
+    });
+
+    // Also clean up any item state records
+    await tx.characterItemState.deleteMany({
+      where: { characterId, itemId },
+    });
+  }
+
   // ========== HELPER METHODS ==========
 
   /**

@@ -13,15 +13,19 @@ import {
   Req,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ShopService } from '../services/shop.service';
-import { CampaignService } from '../services/campaign.service';
 import { PrismaService } from '../services/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   PurchaseItemDto,
   SellItemDto,
   UpdateShopConfigDto,
+  CampaignShopView,
+  ShopTransactionHistory,
+  PurchaseResult,
+  SellResult,
 } from '../types/shop.types';
 
 interface RequestWithUser extends Request {
@@ -33,7 +37,6 @@ interface RequestWithUser extends Request {
 export class ShopController {
   constructor(
     private shopService: ShopService,
-    private campaignService: CampaignService,
     private prisma: PrismaService,
   ) {}
 
@@ -42,22 +45,27 @@ export class ShopController {
    * Get current shop inventory and configuration
    */
   @Get()
-  async getShop(@Param('campaignId') campaignId: string) {
+  async getShop(
+    @Param('campaignId') campaignId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<CampaignShopView> {
+    await this.verifyCampaignAccess(campaignId, req.user.userId);
+
     return this.shopService.getShopInventory(campaignId);
   }
 
   /**
    * POST /api/campaigns/:campaignId/shop/config
-   * Update shop configuration (campaign owner only)
+   * Update shop configuration
+   * Requires user to have a character in the campaign
    */
   @Post('config')
   async updateShopConfig(
     @Param('campaignId') campaignId: string,
     @Body() configUpdate: UpdateShopConfigDto,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify campaign ownership
-    await this.verifyCampaignOwnership(campaignId, req.user.userId);
+  ): Promise<CampaignShopView> {
+    await this.verifyCampaignAccess(campaignId, req.user.userId);
 
     return this.shopService.updateShopConfig(campaignId, configUpdate);
   }
@@ -69,10 +77,9 @@ export class ShopController {
   @Post('purchase')
   async purchaseItem(
     @Param('campaignId') campaignId: string,
-    @Body() dto: PurchaseItemDto & { characterId: string },
+    @Body() dto: PurchaseItemDto,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify character belongs to user
+  ): Promise<PurchaseResult> {
     await this.verifyCharacterOwnership(dto.characterId, req.user.userId);
 
     const quantity = dto.quantity || 1;
@@ -96,10 +103,9 @@ export class ShopController {
   @Post('sell')
   async sellItem(
     @Param('campaignId') campaignId: string,
-    @Body() dto: SellItemDto & { characterId: string },
+    @Body() dto: SellItemDto,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify character belongs to user
+  ): Promise<SellResult> {
     await this.verifyCharacterOwnership(dto.characterId, req.user.userId);
 
     const quantity = dto.quantity || 1;
@@ -118,15 +124,15 @@ export class ShopController {
 
   /**
    * GET /api/campaigns/:campaignId/shop/transactions
-   * Get shop transaction history (campaign owner only)
+   * Get shop transaction history for the campaign
+   * Requires user to have a character in the campaign
    */
   @Get('transactions')
   async getTransactionHistory(
     @Param('campaignId') campaignId: string,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify campaign ownership
-    await this.verifyCampaignOwnership(campaignId, req.user.userId);
+  ): Promise<ShopTransactionHistory> {
+    await this.verifyCampaignAccess(campaignId, req.user.userId);
 
     return this.shopService.getTransactionHistory(campaignId);
   }
@@ -140,8 +146,7 @@ export class ShopController {
     @Param('campaignId') campaignId: string,
     @Param('characterId') characterId: string,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify character belongs to user
+  ): Promise<ShopTransactionHistory> {
     await this.verifyCharacterOwnership(characterId, req.user.userId);
 
     return this.shopService.getCharacterTransactionHistory(
@@ -152,43 +157,43 @@ export class ShopController {
 
   /**
    * POST /api/campaigns/:campaignId/shop/restock
-   * Manually restock shop items (campaign owner only)
+   * Manually restock shop items
+   * Requires user to have a character in the campaign
    */
   @Post('restock')
   async restockItems(
     @Param('campaignId') campaignId: string,
     @Req() req: RequestWithUser,
-  ) {
-    // Verify campaign ownership
-    await this.verifyCampaignOwnership(campaignId, req.user.userId);
+  ): Promise<CampaignShopView> {
+    await this.verifyCampaignAccess(campaignId, req.user.userId);
 
     return this.shopService.restockItems(campaignId);
   }
 
   /**
-   * Verify that the user owns/is the creator of the campaign
+   * Verify that the user has access to the campaign
+   * (has at least one character in the campaign)
    */
-  private async verifyCampaignOwnership(
+  private async verifyCampaignAccess(
     campaignId: string,
     userId: string,
   ): Promise<void> {
-    const campaign =
-      await this.campaignService.getCampaignWithDetails(campaignId);
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { characters: { select: { userId: true } } },
+    });
 
     if (!campaign) {
       throw new NotFoundException(`Campaign ${campaignId} not found`);
     }
 
-    // Check if any character in the campaign belongs to this user
-    const userCharacter = campaign.characters.find(
+    const hasAccess = campaign.characters.some(
       (char) => char.userId === userId,
     );
 
-    if (!userCharacter) {
-      // Check if user is the campaign creator (first character added)
-      // For now, allow any user with characters in campaign to manage shop
-      throw new NotFoundException(
-        'User does not have characters in this campaign',
+    if (!hasAccess) {
+      throw new ForbiddenException(
+        'You do not have access to this campaign. Join with a character first.',
       );
     }
   }
@@ -209,7 +214,7 @@ export class ShopController {
     }
 
     if (character.userId !== userId) {
-      throw new NotFoundException('User does not own this character');
+      throw new ForbiddenException('You do not own this character');
     }
   }
 }

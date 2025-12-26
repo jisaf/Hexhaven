@@ -3,7 +3,7 @@
  * Types shared between frontend and backend for shop functionality
  */
 
-import { Rarity } from '@prisma/client';
+import { ItemRarity } from './entities';
 
 export type ShopTransactionType = 'BUY' | 'SELL';
 
@@ -13,13 +13,14 @@ export type ShopTransactionType = 'BUY' | 'SELL';
 export interface CampaignShopConfig {
   itemUnlockMode: 'all_available' | 'prosperity_gated';
   prosperityUnlocks?: {
-    [prosperityLevel: number]: Rarity[];
+    [prosperityLevel: number]: ItemRarity[];
   };
   itemQuantityOverrides?: {
     [itemId: string]: number;
   };
   defaultItemQuantity?: number;
   allowSelling?: boolean;
+  /** Sell price multiplier (0.0 - 1.0, default: 0.5 = half price) */
   sellPriceMultiplier?: number;
 }
 
@@ -31,9 +32,11 @@ export interface ShopItem {
   itemId: string;
   itemName: string;
   cost: number;
-  rarity: Rarity;
+  rarity: ItemRarity;
   quantity: number;
+  initialQuantity: number;
   isAvailable: boolean;
+  lastRestockedAt?: Date | string;
 }
 
 /**
@@ -43,6 +46,8 @@ export interface CampaignShopView {
   campaignId: string;
   inventory: ShopItem[];
   config: CampaignShopConfig;
+  totalItems: number;
+  availableItems: number;
 }
 
 /**
@@ -58,4 +63,37 @@ export interface ShopTransaction {
   goldAmount: number;
   quantity: number;
   createdAt: string | Date;
+}
+
+/**
+ * Transaction history with aggregates
+ */
+export interface ShopTransactionHistory {
+  transactions: ShopTransaction[];
+  totalCount: number;
+  totalGoldSpent: number;
+  totalGoldEarned: number;
+}
+
+/**
+ * Purchase result response
+ */
+export interface PurchaseResult {
+  success: boolean;
+  item: ShopItem;
+  goldSpent: number;
+  characterGoldRemaining: number;
+  transaction: ShopTransaction;
+}
+
+/**
+ * Sell result response
+ */
+export interface SellResult {
+  success: boolean;
+  itemId: string;
+  itemName: string;
+  goldEarned: number;
+  characterGoldRemaining: number;
+  transaction: ShopTransaction;
 }
