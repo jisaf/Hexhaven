@@ -16,6 +16,8 @@ module.exports = {
       name: 'hexhaven-backend',
       script: './backend/dist/backend/src/main.js',
       cwd: '/opt/hexhaven',
+      // Preload dotenv BEFORE any modules load (fixes env var timing issue)
+      node_args: '-r dotenv/config',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
