@@ -4,7 +4,7 @@
 
 -- Create transaction_type enum if not exists
 DO $$ BEGIN
-  IF NOT EXISTS(SELECT 1 FROM pg_enum WHERE enumname = 'transaction_type') THEN
+  IF NOT EXISTS(SELECT 1 FROM pg_type WHERE typname = 'transaction_type') THEN
     CREATE TYPE "transaction_type" AS ENUM ('BUY', 'SELL');
   END IF;
 END $$;
