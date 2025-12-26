@@ -4,7 +4,7 @@ set -e
 # Fresh SSH deployment to production server
 # Usage: ./deploy-prod.sh [ssh-key-path]
 
-HOST="${PRODUCTION_HOST:-129.213.88.197}"
+HOST="${PRODUCTION_HOST:-143.47.118.207}"
 USER="ubuntu"
 SSH_KEY="${1:-}"
 
@@ -38,7 +38,7 @@ VITE_BRANCH_NAME="$BRANCH_NAME" npm run build -w frontend
 info "Creating deployment package"
 mkdir -p /tmp/hexhaven-deploy/frontend /tmp/hexhaven-deploy/backend /tmp/hexhaven-deploy/scripts
 cp package.json package-lock.json /tmp/hexhaven-deploy/
-cp backend/package.json /tmp/hexhaven-deploy/backend/
+cp backend/package.json backend/package-lock.json /tmp/hexhaven-deploy/backend/
 cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
 cp -r frontend/dist/* /tmp/hexhaven-deploy/frontend/
 cp ecosystem.config.js /tmp/hexhaven-deploy/
@@ -107,6 +107,12 @@ cd /tmp
 rm -rf /tmp/hexhaven-extract
 
 # Deploy
+cd /opt/hexhaven
+
+# Install backend dependencies
+echo "Installing backend dependencies..."
+cd /opt/hexhaven/backend
+npm ci --omit=dev
 cd /opt/hexhaven
 
 # Initialize server config
