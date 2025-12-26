@@ -38,7 +38,7 @@ VITE_BRANCH_NAME="$BRANCH_NAME" npm run build -w frontend
 info "Creating deployment package"
 mkdir -p /tmp/hexhaven-deploy/frontend /tmp/hexhaven-deploy/backend /tmp/hexhaven-deploy/scripts
 cp package.json package-lock.json /tmp/hexhaven-deploy/
-cp backend/package.json backend/package-lock.json /tmp/hexhaven-deploy/backend/
+cp backend/package.json /tmp/hexhaven-deploy/backend/
 cp -r backend/dist backend/prisma /tmp/hexhaven-deploy/backend/
 cp -r frontend/dist/* /tmp/hexhaven-deploy/frontend/
 cp ecosystem.config.js /tmp/hexhaven-deploy/
@@ -109,11 +109,38 @@ rm -rf /tmp/hexhaven-extract
 # Deploy
 cd /opt/hexhaven
 
-# Install backend dependencies
+# Install backend dependencies using npm workspaces
 echo "Installing backend dependencies..."
-cd /opt/hexhaven/backend
-npm ci --omit=dev
-cd /opt/hexhaven
+
+# Verify root package files exist (workspace setup)
+if [ ! -f package.json ]; then
+  echo "ERROR: root package.json not found!"
+  exit 1
+fi
+if [ ! -f package-lock.json ]; then
+  echo "ERROR: root package-lock.json not found!"
+  exit 1
+fi
+
+echo "Found root package.json and package-lock.json"
+echo "Running npm ci for backend workspace..."
+
+# Install only backend workspace dependencies using root lockfile
+npm ci --omit=dev -w backend 2>&1 || {
+  echo "npm ci failed, trying npm install..."
+  npm install --omit=dev -w backend 2>&1 || {
+    echo "ERROR: Failed to install backend dependencies"
+    exit 1
+  }
+}
+
+# Verify critical modules are installed
+if [ ! -d node_modules/uuid ]; then
+  echo "ERROR: uuid module not installed in root node_modules!"
+  ls -la node_modules/ | head -20
+  exit 1
+fi
+echo "✓ Backend dependencies installed successfully"
 
 # Initialize server config
 if [ -f scripts/server-config.sh ]; then
@@ -149,7 +176,15 @@ fi
 # Copy frontend to nginx directory
 sudo mkdir -p /var/www/hexhaven/frontend
 sudo cp -r frontend/* /var/www/hexhaven/frontend/
+
+# Create backgrounds upload directory (writable by backend)
+sudo mkdir -p /var/www/hexhaven/frontend/backgrounds
+sudo chown ubuntu:ubuntu /var/www/hexhaven/frontend/backgrounds
+sudo chmod 755 /var/www/hexhaven/frontend/backgrounds
+
 sudo chown -R www-data:www-data /var/www/hexhaven
+# Re-set backgrounds ownership for backend uploads
+sudo chown ubuntu:ubuntu /var/www/hexhaven/frontend/backgrounds
 
 # Configure nginx
 SERVER_IP=$(hostname -I | awk '{print $1}')

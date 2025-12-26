@@ -188,6 +188,9 @@ LOG_LEVEL=${log_level}
 
 # Frontend URLs
 FRONTEND_URL=${frontend_url}
+
+# Upload Configuration
+BACKGROUNDS_DIR=/var/www/hexhaven/frontend/backgrounds
 EOF
 
     # Add optional services if configured
