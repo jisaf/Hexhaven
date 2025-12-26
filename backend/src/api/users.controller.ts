@@ -10,9 +10,14 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { AuthenticatedRequest } from '../types/auth.types';
+import { JwtPayload } from '../types/auth.types';
 import { prisma } from '../db/client';
+
+interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
 
 @Controller('api/users')
 export class UsersController {
