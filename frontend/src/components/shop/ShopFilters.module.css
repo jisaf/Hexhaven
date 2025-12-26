@@ -1,0 +1,155 @@
+/**
+ * ShopFilters Component Styles (Issue #337)
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--color-surface, #2a2a2a);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 12px;
+}
+
+/* Search row */
+.searchRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  background: var(--color-surface-hover, #333333);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  color: var(--color-text-primary, #ffffff);
+  font-size: 0.875rem;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary, #4a90d9);
+}
+
+.clearButton {
+  background: var(--color-surface-hover, #333333);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  color: var(--color-text-secondary, #b0b0b0);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.clearButton:hover {
+  color: var(--color-text-primary, #ffffff);
+  border-color: var(--color-text-secondary, #b0b0b0);
+}
+
+/* Filter row */
+.filterRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.select {
+  flex: 1;
+  min-width: 120px;
+  background: var(--color-surface-hover, #333333);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text-primary, #ffffff);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-primary, #4a90d9);
+}
+
+/* Sort group */
+.sortGroup {
+  display: flex;
+  gap: 0;
+}
+
+.sortGroup .select {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.sortDirection {
+  background: var(--color-surface-hover, #333333);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 0 8px 8px 0;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text-primary, #ffffff);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sortDirection:hover {
+  background: var(--color-border, #404040);
+}
+
+/* Toggle row */
+.toggleRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #b0b0b0);
+  cursor: pointer;
+}
+
+.toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary, #4a90d9);
+  cursor: pointer;
+}
+
+/* Results count */
+.resultsCount {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #b0b0b0);
+  text-align: right;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-border, #404040);
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .filterRow {
+    flex-direction: column;
+  }
+
+  .select {
+    min-width: 100%;
+  }
+
+  .sortGroup {
+    width: 100%;
+  }
+
+  .sortGroup .select {
+    flex: 1;
+  }
+}

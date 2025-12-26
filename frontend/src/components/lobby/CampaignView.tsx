@@ -1,9 +1,10 @@
 /**
- * CampaignView Component (Issue #244)
+ * CampaignView Component (Issue #244, #342)
  *
  * Displays campaign details including:
  * - Campaign progress and stats
  * - Characters in campaign
+ * - Campaign shop (Issue #326)
  * - Available scenarios
  * - Ability to start a game in the campaign
  */
@@ -12,6 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
+import { CampaignShop } from '../shop';
 import type {
   CampaignWithDetails,
   CampaignScenario,
@@ -40,6 +42,9 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   const [availableCharacters, setAvailableCharacters] = useState<CharacterResponse[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   const [addingCharacter, setAddingCharacter] = useState(false);
+
+  // Shop state (Issue #326)
+  const [showShop, setShowShop] = useState(false);
 
   const fetchCampaignData = useCallback(async () => {
     try {
@@ -296,6 +301,31 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
           </div>
         )}
       </div>
+
+      {/* Shop Section (Issue #326) */}
+      {activeCharacters.length > 0 && !campaign.isCompleted && (
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              {t('shop', 'Shop')}
+            </h2>
+            <button
+              className={styles.shopButton}
+              onClick={() => setShowShop(!showShop)}
+            >
+              {showShop ? 'Hide Shop' : 'Open Shop'}
+            </button>
+          </div>
+
+          {showShop && (
+            <CampaignShop
+              campaignId={campaignId}
+              characters={activeCharacters}
+              onClose={() => setShowShop(false)}
+            />
+          )}
+        </div>
+      )}
 
       {/* Scenarios Section */}
       <div className={styles.section}>
