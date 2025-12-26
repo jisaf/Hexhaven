@@ -112,7 +112,37 @@ cd /opt/hexhaven
 # Install backend dependencies
 echo "Installing backend dependencies..."
 cd /opt/hexhaven/backend
-npm ci --omit=dev
+
+# Verify package files exist
+if [ ! -f package.json ]; then
+  echo "ERROR: backend/package.json not found!"
+  exit 1
+fi
+if [ ! -f package-lock.json ]; then
+  echo "ERROR: backend/package-lock.json not found!"
+  exit 1
+fi
+
+echo "Found package.json and package-lock.json"
+echo "Running npm ci..."
+
+# Run npm ci with verbose output
+npm ci --omit=dev 2>&1 || {
+  echo "npm ci failed, trying npm install..."
+  npm install --omit=dev 2>&1 || {
+    echo "ERROR: Failed to install backend dependencies"
+    exit 1
+  }
+}
+
+# Verify critical modules are installed
+if [ ! -d node_modules/uuid ]; then
+  echo "ERROR: uuid module not installed!"
+  ls -la node_modules/ | head -20
+  exit 1
+fi
+echo "✓ Backend dependencies installed successfully"
+
 cd /opt/hexhaven
 
 # Initialize server config
