@@ -274,6 +274,28 @@ export function useHexGrid(
     }
   }, []);
 
+  // Spawn a new monster on the board (from narrative trigger)
+  const spawnMonster = useCallback((monsterData: { monsterId: string; monsterType: string; isElite: boolean; hex: Axial; health: number; maxHealth: number }) => {
+    if (hexGridRef.current) {
+      // Build full monster object with required fields for MonsterSprite
+      hexGridRef.current.addMonster({
+        id: monsterData.monsterId,
+        roomId: '', // Not needed for visual rendering
+        monsterType: monsterData.monsterType,
+        isElite: monsterData.isElite,
+        currentHex: monsterData.hex,
+        health: monsterData.health,
+        maxHealth: monsterData.maxHealth,
+        movement: 2,
+        attack: 1,
+        range: 1,
+        specialAbilities: [],
+        conditions: [],
+        isDead: false,
+      });
+    }
+  }, []);
+
   const spawnLootToken = useCallback((lootData: LootSpawnedPayload) => {
     if (hexGridRef.current) {
       hexGridRef.current.spawnLootToken(lootData);
@@ -325,6 +347,7 @@ export function useHexGrid(
     updateMonsterHealth,
     removeCharacter,
     removeMonster,
+    spawnMonster,
     spawnLootToken,
     collectLootToken,
     getCharacter,

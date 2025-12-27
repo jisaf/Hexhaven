@@ -228,9 +228,19 @@ As a regular player, I want to optionally create an account to save my character
 - Frontend is a Progressive Web App (PWA) built with React and Canvas/WebGL rendering (PixiJS) for cross-platform mobile compatibility
 - Backend is built with Node.js (TypeScript) using Express or NestJS framework for server-authoritative game logic, enabling code sharing with frontend
 
+## Post-MVP Features (Now Implemented)
+
+The following features were initially out of scope for MVP but have since been implemented:
+
+- **Campaign Mode**: Persistent progression across multiple scenarios with character persistence, scenario unlocking, and death mode options (healing vs permadeath)
+- **Items and Inventory System**: Gloomhaven-inspired equipment with slots, usage types, and role-based access control
+- **Campaign Narrative System**: Rich storytelling with intro/outro narratives and mid-scenario triggers that can spawn monsters, grant rewards (with distribution modes: triggerer/collective/everyone), and modify game state
+
+See `/docs/narrative-system.md` and `/docs/ARCHITECTURE.md` for implementation details.
+
 ## Out of Scope (Explicitly Not Included in MVP)
 
-- Campaign progression tracking (unlocks, city events, road events, achievements)
+- ~~Campaign progression tracking~~ (now implemented)
 - Character retirement and unlocking new classes
 - Item shop, purchasing, and item management
 - Personal quest cards

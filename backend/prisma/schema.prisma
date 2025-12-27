@@ -537,11 +537,13 @@ model ScenarioNarrative {
   victoryTitle    String?  @db.VarChar(200)
   victoryText     String?  @db.Text
   victoryImageUrl String?  @db.VarChar(500)
+  victoryRewards  Json?    // { gold?: number, xp?: number, items?: string[], distribution?: string }
 
   // After scenario narrative (defeat)
   defeatTitle     String?  @db.VarChar(200)
   defeatText      String?  @db.Text
   defeatImageUrl  String?  @db.VarChar(500)
+  defeatRewards   Json?    // { gold?: number, xp?: number, items?: string[], distribution?: string }
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

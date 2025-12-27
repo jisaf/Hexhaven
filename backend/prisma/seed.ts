@@ -640,6 +640,9 @@ async function seedCharacterInventory() {
   console.log(`✓ Seeded inventory: ${inventoryCount} items owned, ${equipmentCount} items equipped`);
 }
 
+// Shared reward configuration for tutorial scenarios
+const TUTORIAL_VICTORY_REWARDS = { gold: 10, xp: 10, distribution: 'everyone' as const };
+
 /**
  * Seed narrative content for the Trivial Training campaign scenarios.
  * This demonstrates the full narrative system with intro, victory, defeat,
@@ -657,50 +660,33 @@ async function seedTrivialTrainingNarratives() {
     return;
   }
 
-  // Narrative for Part 1: The Training Grounds
+  // Narrative content for Part 1: The Training Grounds
+  const narrative1Content = {
+    introTitle: 'Welcome to the Training Grounds',
+    introText: `You stand at the entrance of the Mercenary Guild's training facility. A weathered instructor gestures toward a straw practice dummy in the center of the room.
+
+"Every warrior must start somewhere," he says gruffly. "Show me what you can do against this training dummy. Don't worry—it won't fight back. Much."
+
+The dummy's button eyes seem to stare at you mockingly.`,
+    victoryTitle: 'First Steps Taken',
+    victoryText: `The training dummy collapses into a pile of straw and cloth. The instructor nods approvingly.
+
+"Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
+
+You feel a surge of confidence. This is just the beginning.`,
+    victoryRewards: TUTORIAL_VICTORY_REWARDS,
+    defeatTitle: 'A Humbling Lesson',
+    defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
+
+"Don't feel too bad," the instructor says, helping you up. "The first lesson is always the hardest. Rest up and try again."
+
+Perhaps a different approach is needed...`,
+  };
+
   const narrative1 = await prisma.scenarioNarrative.upsert({
     where: { scenarioId: scenario1.id },
-    update: {
-      introTitle: 'Welcome to the Training Grounds',
-      introText: `You stand at the entrance of the Mercenary Guild's training facility. A weathered instructor gestures toward a straw practice dummy in the center of the room.
-
-"Every warrior must start somewhere," he says gruffly. "Show me what you can do against this training dummy. Don't worry—it won't fight back. Much."
-
-The dummy's button eyes seem to stare at you mockingly.`,
-      victoryTitle: 'First Steps Taken',
-      victoryText: `The training dummy collapses into a pile of straw and cloth. The instructor nods approvingly.
-
-"Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
-
-You feel a surge of confidence. This is just the beginning.`,
-      defeatTitle: 'A Humbling Lesson',
-      defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
-
-"Don't feel too bad," the instructor says, helping you up. "The first lesson is always the hardest. Rest up and try again."
-
-Perhaps a different approach is needed...`,
-    },
-    create: {
-      scenarioId: scenario1.id,
-      introTitle: 'Welcome to the Training Grounds',
-      introText: `You stand at the entrance of the Mercenary Guild's training facility. A weathered instructor gestures toward a straw practice dummy in the center of the room.
-
-"Every warrior must start somewhere," he says gruffly. "Show me what you can do against this training dummy. Don't worry—it won't fight back. Much."
-
-The dummy's button eyes seem to stare at you mockingly.`,
-      victoryTitle: 'First Steps Taken',
-      victoryText: `The training dummy collapses into a pile of straw and cloth. The instructor nods approvingly.
-
-"Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
-
-You feel a surge of confidence. This is just the beginning.`,
-      defeatTitle: 'A Humbling Lesson',
-      defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
-
-"Don't feel too bad," the instructor says, helping you up. "The first lesson is always the hardest. Rest up and try again."
-
-Perhaps a different approach is needed...`,
-    },
+    update: narrative1Content,
+    create: { scenarioId: scenario1.id, ...narrative1Content },
   });
 
   // Add a mid-scenario trigger for Part 1: encouragement at round 2
@@ -722,58 +708,54 @@ Perhaps a different approach is needed...`,
     },
   });
 
-  // Narrative for Part 2: The Advanced Challenge
+  // Trigger for entering the hex between start and dummy (q:1, r:0)
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative1.id,
+      triggerId: 'approach-dummy-1',
+      displayOrder: 0, // Show before round-2 encouragement
+      title: 'Face Your First Opponent',
+      text: `You step forward, closing the distance to the training dummy. Its button eyes seem to follow your movement.
+
+"Good," the instructor nods. "Now show me what you've got. Remember—every great warrior started with a single swing."`,
+      conditions: {
+        type: 'character_on_hex',
+        params: { hex: { q: 1, r: 0 } },
+      },
+    },
+  });
+
+  // Narrative content for Part 2: The Advanced Challenge
+  const narrative2Content = {
+    introTitle: 'The Advanced Challenge',
+    introText: `You enter the second training room. This one is larger, with reinforced walls scarred by countless practice sessions.
+
+In the center stands another training dummy, but this one looks different—its straw is packed tighter, its wooden frame reinforced with metal bands.
+
+"Ah, you're back," the instructor says with a knowing smile. "This dummy won't go down as easily. Show me you've learned from your first encounter."`,
+    victoryTitle: 'Training Complete!',
+    victoryText: `With a final, decisive blow, the reinforced dummy shatters into pieces. The instructor breaks into a rare smile.
+
+"Outstanding work! You've completed the basic training course. The Mercenary Guild officially recognizes you as a novice adventurer."
+
+He hands you a worn leather pouch containing your reward—and something else. A small badge bearing the guild's insignia.
+
+"Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
+
+CAMPAIGN COMPLETE!`,
+    victoryRewards: TUTORIAL_VICTORY_REWARDS,
+    defeatTitle: 'So Close...',
+    defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
+
+"You made it further than most first-timers," the instructor admits. "But this dummy requires more than brute force. Think about your approach, rest, and try again."
+
+The second challenge awaits your return.`,
+  };
+
   const narrative2 = await prisma.scenarioNarrative.upsert({
     where: { scenarioId: scenario2.id },
-    update: {
-      introTitle: 'The Advanced Challenge',
-      introText: `You enter the second training room. This one is larger, with reinforced walls scarred by countless practice sessions.
-
-In the center stands another training dummy, but this one looks different—its straw is packed tighter, its wooden frame reinforced with metal bands.
-
-"Ah, you're back," the instructor says with a knowing smile. "This dummy won't go down as easily. Show me you've learned from your first encounter."`,
-      victoryTitle: 'Training Complete!',
-      victoryText: `With a final, decisive blow, the reinforced dummy shatters into pieces. The instructor breaks into a rare smile.
-
-"Outstanding work! You've completed the basic training course. The Mercenary Guild officially recognizes you as a novice adventurer."
-
-He hands you a worn leather pouch containing your reward—and something else. A small badge bearing the guild's insignia.
-
-"Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
-
-CAMPAIGN COMPLETE!`,
-      defeatTitle: 'So Close...',
-      defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
-
-"You made it further than most first-timers," the instructor admits. "But this dummy requires more than brute force. Think about your approach, rest, and try again."
-
-The second challenge awaits your return.`,
-    },
-    create: {
-      scenarioId: scenario2.id,
-      introTitle: 'The Advanced Challenge',
-      introText: `You enter the second training room. This one is larger, with reinforced walls scarred by countless practice sessions.
-
-In the center stands another training dummy, but this one looks different—its straw is packed tighter, its wooden frame reinforced with metal bands.
-
-"Ah, you're back," the instructor says with a knowing smile. "This dummy won't go down as easily. Show me you've learned from your first encounter."`,
-      victoryTitle: 'Training Complete!',
-      victoryText: `With a final, decisive blow, the reinforced dummy shatters into pieces. The instructor breaks into a rare smile.
-
-"Outstanding work! You've completed the basic training course. The Mercenary Guild officially recognizes you as a novice adventurer."
-
-He hands you a worn leather pouch containing your reward—and something else. A small badge bearing the guild's insignia.
-
-"Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
-
-CAMPAIGN COMPLETE!`,
-      defeatTitle: 'So Close...',
-      defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
-
-"You made it further than most first-timers," the instructor admits. "But this dummy requires more than brute force. Think about your approach, rest, and try again."
-
-The second challenge awaits your return.`,
-    },
+    update: narrative2Content,
+    create: { scenarioId: scenario2.id, ...narrative2Content },
   });
 
   // Add mid-scenario triggers for Part 2
@@ -792,6 +774,37 @@ The second challenge awaits your return.`,
       conditions: {
         type: 'round_reached',
         params: { round: 3 },
+      },
+    },
+  });
+
+  // Trigger for entering the hex between start and dummy (q:2, r:0)
+  // Spawns a second training dummy as a surprise challenge and grants 10gp
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative2.id,
+      triggerId: 'approach-dummy-2',
+      displayOrder: 0, // Show before round encouragement
+      title: 'The Real Challenge Begins',
+      text: `You advance toward the reinforced dummy. Up close, you can see the iron bands reinforcing its frame—this won't be as easy as the first one.
+
+Suddenly, a second dummy drops from a ceiling harness behind you!
+
+"Surprise!" the instructor laughs. "Did I forget to mention this room has two? Here's something for your trouble."
+
+He tosses you a small pouch of coins.`,
+      conditions: {
+        type: 'character_on_hex',
+        params: { hex: { q: 2, r: 0 } },
+      },
+      rewards: {
+        gold: 10,
+        distribution: 'triggerer', // Only the player who stepped on the hex gets the reward
+      },
+      gameEffects: {
+        spawnMonsters: [
+          { type: 'training-dummy', hex: { q: 4, r: 0 }, isElite: false },
+        ],
       },
     },
   });

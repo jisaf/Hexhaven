@@ -153,6 +153,22 @@ function validateRewards(
     rewards.items = json.items;
   }
 
+  if ('distribution' in json) {
+    const validDistributions = ['everyone', 'triggerer', 'collective'];
+    if (
+      typeof json.distribution !== 'string' ||
+      !validDistributions.includes(json.distribution)
+    ) {
+      throw new Error(
+        `Invalid rewards.distribution in trigger ${triggerId}: expected 'everyone', 'triggerer', or 'collective'`,
+      );
+    }
+    rewards.distribution = json.distribution as
+      | 'everyone'
+      | 'triggerer'
+      | 'collective';
+  }
+
   return rewards;
 }
 
@@ -329,6 +345,7 @@ export class NarrativeService {
               title: narrative.victoryTitle ?? undefined,
               text: narrative.victoryText,
               imageUrl: narrative.victoryImageUrl ?? undefined,
+              rewards: validateRewards(narrative.victoryRewards, 'victory'),
             }
           : undefined,
         defeat: narrative.defeatText
@@ -336,6 +353,7 @@ export class NarrativeService {
               title: narrative.defeatTitle ?? undefined,
               text: narrative.defeatText,
               imageUrl: narrative.defeatImageUrl ?? undefined,
+              rewards: validateRewards(narrative.defeatRewards, 'defeat'),
             }
           : undefined,
         triggers: narrative.triggers.map((trigger) => ({
@@ -415,16 +433,28 @@ export class NarrativeService {
 
   /**
    * Create a victory/defeat narrative for display
+   *
+   * Note: Victory/defeat rewards are applied to the database in handleScenarioCompleted()
+   * BEFORE this narrative is created. The rewardsAlreadyApplied flag ensures that
+   * handleAllNarrativeAcknowledged() does NOT attempt to re-apply rewards when
+   * players acknowledge the narrative.
+   *
+   * This separation ensures:
+   * 1. Rewards are persisted to DB immediately upon scenario completion
+   * 2. The narrative displays rewards for visual confirmation
+   * 3. Acknowledging the narrative doesn't duplicate the reward application
    */
   createOutroNarrative(
     type: 'victory' | 'defeat',
     content: NarrativeContent,
     players: { id: string; name: string }[],
+    rewards?: NarrativeRewards,
   ): ActiveNarrative {
     return {
       id: uuidv4(),
       type,
       content,
+      rewards,
       acknowledgments: players.map((p) => ({
         playerId: p.id,
         playerName: p.name,
@@ -433,6 +463,9 @@ export class NarrativeService {
       displayedAt: Date.now(),
       timeoutMs: DEFAULT_NARRATIVE_TIMEOUT_MS,
       disconnectedPlayers: [],
+      // Rewards were already applied in handleScenarioCompleted()
+      // This flag prevents duplicate application when narrative is acknowledged
+      rewardsAlreadyApplied: true,
     };
   }
 
@@ -442,11 +475,13 @@ export class NarrativeService {
   createTriggerNarrative(
     trigger: NarrativeTriggerDef,
     players: { id: string; name: string }[],
+    triggeredBy?: string,
   ): ActiveNarrative {
     return {
       id: uuidv4(),
       type: 'trigger',
       triggerId: trigger.triggerId,
+      triggeredBy,
       content: trigger.content,
       rewards: trigger.rewards,
       gameEffects: trigger.gameEffects,
@@ -516,6 +551,74 @@ export class NarrativeService {
     }
 
     return null;
+  }
+
+  /**
+   * Check if any trigger would fire with the given context WITHOUT marking it as fired
+   * Used for movement interrupt detection - peek at triggers before committing movement
+   */
+  peekTrigger(
+    roomCode: string,
+    narrativeDef: ScenarioNarrativeDef,
+    context: NarrativeGameContext,
+  ): NarrativeTriggerDef | null {
+    if (!narrativeDef.triggers || narrativeDef.triggers.length === 0) {
+      return null;
+    }
+
+    const triggerStates = this.roomTriggerStates.get(roomCode);
+    if (!triggerStates) {
+      this.logger.warn(
+        `[peekTrigger] No trigger states found for room ${roomCode}`,
+      );
+      return null;
+    }
+
+    // Sort by displayOrder and check each trigger
+    const sortedTriggers = [...narrativeDef.triggers].sort(
+      (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+    );
+
+    for (const trigger of sortedTriggers) {
+      // Skip if already fired
+      const state = triggerStates.get(trigger.triggerId);
+      if (state?.fired) {
+        continue;
+      }
+
+      // Evaluate conditions (but don't mark as fired)
+      if (this.conditionService.evaluate(trigger.conditions, context)) {
+        this.logger.log(
+          `[peekTrigger] Trigger ${trigger.triggerId} would fire in room ${roomCode}`,
+        );
+        return trigger;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Mark a specific trigger as fired (used after movement interrupt)
+   */
+  markTriggerFired(roomCode: string, triggerId: string): void {
+    const triggerStates = this.roomTriggerStates.get(roomCode);
+    if (!triggerStates) {
+      this.logger.warn(
+        `[markTriggerFired] No trigger states for room ${roomCode}`,
+      );
+      return;
+    }
+
+    triggerStates.set(triggerId, {
+      triggerId,
+      fired: true,
+      firedAt: Date.now(),
+    });
+
+    this.logger.log(
+      `[markTriggerFired] Trigger ${triggerId} marked as fired in room ${roomCode}`,
+    );
   }
 
   /**
@@ -651,6 +754,17 @@ export class NarrativeService {
   isNarrativeActive(roomCode: string): boolean {
     const narrative = this.roomActiveNarrative.get(roomCode);
     return narrative !== null && narrative !== undefined;
+  }
+
+  /**
+   * Clear the narrative queue for a room
+   * Used when scenario ends - queued mid-game triggers are no longer relevant
+   */
+  clearQueue(roomCode: string): void {
+    this.roomNarrativeQueue.set(roomCode, []);
+    this.logger.log(
+      `[clearQueue] Cleared narrative queue for room ${roomCode}`,
+    );
   }
 
   /**

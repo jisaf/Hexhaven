@@ -8,6 +8,7 @@
 import { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { websocketService } from './services/websocket.service';
+import { narrativeStateService } from './services/narrative-state.service';
 import { getWebSocketUrl } from './config/api';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -259,6 +260,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // NOTE: narrativeStateService.initialize() is now a no-op.
+    // The service uses eager initialization in its constructor to prevent
+    // race conditions where events could be lost between module load and init.
+    // This call is kept for backward compatibility but can be removed.
+    narrativeStateService.initialize();
+
     const wsUrl = getWebSocketUrl();
     websocketService.connect(wsUrl);
 

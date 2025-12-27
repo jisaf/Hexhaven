@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.1
-**Last Updated**: 2025-12-20
-**Status**: Production-Ready (MVP + Campaign Mode)
+**Version**: 1.2
+**Last Updated**: 2025-12-27
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System)
 
 ---
 
@@ -35,6 +35,7 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 - Optional account system with progression tracking
 - Campaign mode with scenario progression (Issue #244)
 - Items and inventory system (Issue #205)
+- Campaign narrative system with triggers, rewards, and game effects
 
 ---
 
@@ -244,6 +245,7 @@ frontend/src/
 │   ├── room-session.service.ts            # Room session state manager
 │   ├── game-state.service.ts              # Game state manager with visual callbacks
 │   ├── game-session-coordinator.service.ts # Lifecycle coordinator (facade pattern)
+│   ├── narrative-state.service.ts         # Narrative state singleton (WebSocket-driven)
 │   └── api.service.ts                     # REST API client
 ├── hooks/               # React hooks
 │   ├── useGameState.ts           # Game state subscription hook
@@ -251,7 +253,8 @@ frontend/src/
 │   ├── useCharacterSelection.ts  # Character selection management
 │   ├── useHexGrid.ts             # HexGrid rendering management
 │   ├── useOrientation.ts         # Orientation handling
-│   └── useBackgroundImage.ts     # Issue #191: Background image state management
+│   ├── useBackgroundImage.ts     # Issue #191: Background image state management
+│   └── useNarrative.ts           # Narrative state and acknowledgment
 └── i18n/                # Internationalization
     ├── index.ts
     └── locales/         # Translation files (en, es, fr, de, zh)
@@ -282,6 +285,7 @@ backend/src/
 │   ├── item.service.ts          # Issue #205: Item CRUD with role-based access
 │   ├── inventory.service.ts     # Issue #205: Character inventory management
 │   ├── campaign.service.ts      # Issue #244: Campaign management with caching
+│   ├── narrative.service.ts     # Campaign narrative state, triggers, conditions
 │   └── background-upload.service.ts  # Issue #191: Background image uploads
 ├── models/              # Domain models
 │   ├── player.model.ts
@@ -627,6 +631,95 @@ Campaign mode enables persistent progression across multiple game sessions, with
 - User must have character in campaign to view/access it
 - Validated DTOs with @IsUUID, @IsString, @IsIn decorators
 
+### Campaign Narrative System
+
+The narrative system enables rich storytelling through intro/outro narratives and mid-scenario triggers with game effects and rewards.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Frontend UI        │────>│  Backend Gateway    │────>│  PostgreSQL      │
+│  (React + Overlay)  │     │  (NestJS + Events)  │     │  (Prisma ORM)    │
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │
+         │                           │
+         ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐
+│  NarrativeState     │     │  NarrativeService   │
+│  Service (Frontend) │     │  (Backend State)    │
+└─────────────────────┘     └─────────────────────┘
+```
+
+**Key Components**:
+
+1. **NarrativeService** (`backend/src/services/narrative.service.ts`):
+   - Manages active narrative state per room
+   - Evaluates trigger conditions (AND/OR logic, negation)
+   - Tracks fired triggers to prevent re-triggering
+   - Queues narratives when multiple fire simultaneously
+   - Creates intro, trigger, and victory/defeat narratives
+
+2. **GameGateway Narrative Methods** (`backend/src/websocket/game.gateway.ts`):
+   - `checkNarrativeTriggers()`: Evaluates all triggers against game state
+   - `checkTriggerAtPosition()`: Checks for hex-entry triggers during movement
+   - `fireNarrativeTrigger()`: Fires trigger and queues if necessary
+   - `applyNarrativeGameEffects()`: Spawns monsters, unlocks doors
+   - `applyNarrativeRewards()`: Distributes rewards based on mode
+   - `handleAcknowledgeNarrative()`: Processes player acknowledgments
+
+3. **NarrativeStateService** (`frontend/src/services/narrative-state.service.ts`):
+   - Singleton managing narrative state independent of component lifecycle
+   - Subscribes to WebSocket events at initialization
+   - Provides subscribe/getState API for components
+   - Handles acknowledgment emission to server
+
+4. **Frontend Components**:
+   - `NarrativeOverlay`: Routes to appropriate display component
+   - `NarrativeStoryPage`: Full-screen intro/victory/defeat
+   - `NarrativePopup`: Modal for mid-game triggers
+   - `useNarrative` hook: React integration
+
+**Narrative Types**:
+- `intro`: Before scenario begins (full-screen)
+- `trigger`: Mid-scenario events (modal popup)
+- `victory`: Scenario completed successfully (full-screen)
+- `defeat`: Scenario failed (full-screen)
+
+**Trigger Conditions**:
+| Type | Description |
+|------|-------------|
+| `character_on_hex` | Character at specific hex (interrupts movement) |
+| `round_reached` | Game round reached |
+| `monsters_killed` | Kill count reached |
+| `all_enemies_dead` | All monsters defeated |
+| `door_opened` | Specific door opened |
+
+**Game Effects**:
+- `spawnMonsters`: Create new monsters at specified hexes
+- `unlockDoors`: Open locked doors
+- `revealHexes`: Reveal fog-of-war hexes
+
+**Reward Distribution Modes**:
+| Mode | Behavior |
+|------|----------|
+| `everyone` | Each player gets full reward (default) |
+| `triggerer` | Only triggering player gets reward |
+| `collective` | Split evenly among all players |
+
+**WebSocket Events**:
+```typescript
+// Server → Client
+narrative_display          // Show narrative overlay
+narrative_acknowledged     // Player acknowledged
+narrative_dismissed        // All acknowledged, close overlay
+narrative_rewards_granted  // Rewards applied
+
+// Client → Server
+acknowledge_narrative      // Player acknowledges
+```
+
+**Documentation**: See `/docs/narrative-system.md` for complete guide.
+
 ### Multi-Character Control System
 
 Players can control multiple characters (up to 4) in a single game session, enabling solo play with multiple characters or controlling additional characters when fewer players are available.
@@ -888,6 +981,38 @@ ALTER TABLE characters ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
 -- Added campaign_id foreign key to track campaign games
 -- Used for return navigation after game completion (Issue #318)
 ALTER TABLE game_rooms ADD COLUMN campaign_id UUID REFERENCES campaigns(id);
+
+-- Scenario Narratives (Campaign Narrative System)
+CREATE TABLE scenario_narratives (
+  id UUID PRIMARY KEY,
+  scenario_id UUID UNIQUE REFERENCES scenarios(id),
+  intro_title VARCHAR(200),
+  intro_text TEXT,
+  intro_image_url VARCHAR(500),
+  victory_title VARCHAR(200),
+  victory_text TEXT,
+  victory_image_url VARCHAR(500),
+  defeat_title VARCHAR(200),
+  defeat_text TEXT,
+  defeat_image_url VARCHAR(500),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Narrative Triggers (Mid-scenario events)
+CREATE TABLE narrative_triggers (
+  id UUID PRIMARY KEY,
+  narrative_id UUID REFERENCES scenario_narratives(id),
+  trigger_id VARCHAR(100),           -- Unique per scenario (e.g., 'approach-dummy')
+  display_order INTEGER DEFAULT 0,   -- Order when multiple fire
+  title VARCHAR(200),
+  text TEXT NOT NULL,
+  image_url VARCHAR(500),
+  conditions JSONB NOT NULL,         -- Condition tree (AND/OR/type)
+  rewards JSONB,                     -- { gold, xp, items, distribution }
+  game_effects JSONB,                -- { spawnMonsters, unlockDoors, revealHexes }
+  created_at TIMESTAMP
+);
 ```
 
 ### Game State JSONB Structure
@@ -1005,6 +1130,9 @@ end_turn         { roomCode }
 use_item         { roomCode, characterId, itemId }
 equip_item       { roomCode, characterId, itemId, slotIndex? }
 unequip_item     { roomCode, characterId, itemId }
+
+# Narratives
+acknowledge_narrative  { narrativeId }
 ```
 
 **Server → Client**:
@@ -1032,6 +1160,13 @@ items_refreshed     { characterId, refreshedItems }
 # Campaigns (Issue #244)
 campaign_scenario_completed  { campaignId, scenarioId, victory, unlockedScenarios, healedCharacters, retiredCharacters }
 campaign_completed           { campaignId, completedAt }
+
+# Narratives
+narrative_display         { narrativeId, type, content, acknowledgments }
+narrative_acknowledged    { narrativeId, playerId }
+narrative_dismissed       { narrativeId }
+narrative_monster_spawned { monsterId, monsterType, hex, isElite }
+narrative_rewards_granted { rewards[], distribution }
 ```
 
 ---
@@ -1228,4 +1363,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-25 (Updated for Issue #318 - Campaign Context)
+**Last Review**: 2025-12-27 (Updated for Campaign Narrative System)
