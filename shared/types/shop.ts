@@ -3,7 +3,7 @@
  * Types shared between frontend and backend for shop functionality
  */
 
-import { ItemRarity } from './entities';
+import { ItemRarity, ItemSlot } from './entities';
 
 export type ShopTransactionType = 'BUY' | 'SELL';
 
@@ -33,6 +33,7 @@ export interface ShopItem {
   itemName: string;
   cost: number;
   rarity: ItemRarity;
+  slot: ItemSlot;
   quantity: number;
   initialQuantity: number;
   isAvailable: boolean;

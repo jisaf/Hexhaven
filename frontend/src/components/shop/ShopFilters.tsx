@@ -9,29 +9,31 @@
  * - Show/hide sold out and unaffordable items
  */
 
-import type { ItemSlot, ItemRarity } from '../../../../shared/types/entities';
+import { useState, useEffect } from 'react';
+import { ItemSlot, ItemRarity } from '../../../../shared/types/entities';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import type { ShopFilters as ShopFiltersType, ShopSortOption } from '../../hooks/useShop';
 import styles from './ShopFilters.module.css';
 
 // Slot options
 const SLOT_OPTIONS: { value: ItemSlot | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All Slots' },
-  { value: 'HEAD', label: 'Head' },
-  { value: 'BODY', label: 'Body' },
-  { value: 'LEGS', label: 'Legs' },
-  { value: 'ONE_HAND', label: 'Hand' },
-  { value: 'TWO_HAND', label: '2-Hand' },
-  { value: 'SMALL', label: 'Small' },
+  { value: ItemSlot.HEAD, label: 'Head' },
+  { value: ItemSlot.BODY, label: 'Body' },
+  { value: ItemSlot.LEGS, label: 'Legs' },
+  { value: ItemSlot.ONE_HAND, label: 'Hand' },
+  { value: ItemSlot.TWO_HAND, label: '2-Hand' },
+  { value: ItemSlot.SMALL, label: 'Small' },
 ];
 
 // Rarity options
 const RARITY_OPTIONS: { value: ItemRarity | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All Rarities' },
-  { value: 'COMMON', label: 'Common' },
-  { value: 'UNCOMMON', label: 'Uncommon' },
-  { value: 'RARE', label: 'Rare' },
-  { value: 'EPIC', label: 'Epic' },
-  { value: 'LEGENDARY', label: 'Legendary' },
+  { value: ItemRarity.COMMON, label: 'Common' },
+  { value: ItemRarity.UNCOMMON, label: 'Uncommon' },
+  { value: ItemRarity.RARE, label: 'Rare' },
+  { value: ItemRarity.EPIC, label: 'Epic' },
+  { value: ItemRarity.LEGENDARY, label: 'Legendary' },
 ];
 
 // Sort options
@@ -65,9 +67,29 @@ export function ShopFilters({
   totalItems = 0,
   filteredCount = 0,
 }: ShopFiltersProps) {
+  // Local search input state for immediate feedback
+  const [searchInput, setSearchInput] = useState(filters.searchQuery || '');
+
+  // Debounce search input (300ms delay)
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+
+  // Sync debounced search to filters
+  useEffect(() => {
+    if (debouncedSearch !== filters.searchQuery) {
+      onFiltersChange({ ...filters, searchQuery: debouncedSearch });
+    }
+  }, [debouncedSearch, filters, onFiltersChange]);
+
+  // Sync filters.searchQuery to local state when cleared externally
+  useEffect(() => {
+    if (filters.searchQuery === '' && searchInput !== '') {
+      setSearchInput('');
+    }
+  }, [filters.searchQuery, searchInput]);
+
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({ ...filters, searchQuery: e.target.value });
+    setSearchInput(e.target.value);
   };
 
   // Handle slot filter change
@@ -102,6 +124,7 @@ export function ShopFilters({
 
   // Clear all filters
   const clearFilters = () => {
+    setSearchInput('');
     onFiltersChange({
       slot: 'ALL',
       rarity: 'ALL',
@@ -114,7 +137,7 @@ export function ShopFilters({
   const hasActiveFilters =
     filters.slot !== 'ALL' ||
     filters.rarity !== 'ALL' ||
-    (filters.searchQuery && filters.searchQuery.length > 0) ||
+    searchInput.length > 0 ||
     filters.showSoldOut ||
     !filters.showUnaffordable;
 
@@ -125,7 +148,7 @@ export function ShopFilters({
         <input
           type="text"
           placeholder="Search items..."
-          value={filters.searchQuery || ''}
+          value={searchInput}
           onChange={handleSearchChange}
           className={styles.searchInput}
         />

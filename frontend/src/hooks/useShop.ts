@@ -45,6 +45,10 @@ interface UseShopOptions {
   characterGold?: number;
   /** Whether shop features are enabled */
   enabled?: boolean;
+  /** Callback when another player purchases an item */
+  onOtherPlayerPurchase?: (data: { characterName: string; itemName: string }) => void;
+  /** Callback when another player sells an item */
+  onOtherPlayerSell?: (data: { characterName: string; itemName: string }) => void;
 }
 
 interface UseShopReturn {
@@ -114,6 +118,8 @@ export function useShop({
   characterId,
   characterGold = 0,
   enabled = true,
+  onOtherPlayerPurchase,
+  onOtherPlayerSell,
 }: UseShopOptions): UseShopReturn {
   const [shop, setShop] = useState<CampaignShopView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -168,16 +174,23 @@ export function useShop({
 
     // Item purchased event (for toast notifications)
     const unsubItemPurchased = websocketService.on('item_purchased', (payload) => {
-      if (payload.campaignId === campaignId) {
-        // Could trigger toast notification here
-        console.log('[useShop] Item purchased:', payload);
+      if (payload.campaignId === campaignId && payload.characterId !== characterId) {
+        // Another player made a purchase - notify via callback
+        onOtherPlayerPurchase?.({
+          characterName: payload.characterName,
+          itemName: payload.itemName,
+        });
       }
     });
 
     // Item sold event
     const unsubItemSold = websocketService.on('item_sold', (payload) => {
-      if (payload.campaignId === campaignId) {
-        console.log('[useShop] Item sold:', payload);
+      if (payload.campaignId === campaignId && payload.characterId !== characterId) {
+        // Another player sold an item - notify via callback
+        onOtherPlayerSell?.({
+          characterName: payload.characterName,
+          itemName: payload.itemName,
+        });
       }
     });
 
@@ -186,7 +199,7 @@ export function useShop({
       unsubItemPurchased();
       unsubItemSold();
     };
-  }, [campaignId, enabled]);
+  }, [campaignId, characterId, enabled, onOtherPlayerPurchase, onOtherPlayerSell]);
 
   // Check if an item is available (in stock and unlocked)
   const isItemAvailable = useCallback((item: ShopItem): boolean => {
@@ -217,10 +230,9 @@ export function useShop({
     let items = [...shop.inventory];
 
     // Apply filters
-    // Note: Slot filtering disabled until full item data with slot info is available
-    // if (filters.slot && filters.slot !== 'ALL') {
-    //   items = items.filter((item) => item.slot === filters.slot);
-    // }
+    if (filters.slot && filters.slot !== 'ALL') {
+      items = items.filter((item) => item.slot === filters.slot);
+    }
 
     if (filters.rarity && filters.rarity !== 'ALL') {
       items = items.filter((item) => item.rarity === filters.rarity);

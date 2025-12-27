@@ -9,6 +9,7 @@
  */
 
 import { useMemo } from 'react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { Item, ItemRarity, ItemSlot, ItemUsageType } from '../../../../shared/types/entities';
 import type { ShopItem } from '../../services/shop.service';
 import styles from './ItemDetailModal.module.css';
@@ -77,6 +78,10 @@ export function ItemDetailModal({
   onSell,
   actionInProgress = false,
 }: ItemDetailModalProps) {
+  // Focus trap for modal accessibility
+  // Note: must be called before any early return
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
+
   // Use full item data if available, otherwise derive from shop item
   // Note: useMemo must be called unconditionally (before early return)
   const itemData = useMemo(() => {
@@ -134,7 +139,7 @@ export function ItemDetailModal({
       aria-modal="true"
       aria-labelledby="item-modal-title"
     >
-      <div className={styles.modal}>
+      <div ref={modalRef} className={styles.modal} tabIndex={-1}>
         {/* Close button */}
         <button
           className={styles.closeButton}

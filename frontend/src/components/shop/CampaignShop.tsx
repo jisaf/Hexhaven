@@ -9,12 +9,14 @@
  * - Sell view for owned items
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useShop } from '../../hooks/useShop';
+import { useToast } from '../../contexts/ToastContext';
 import { CharacterGoldSelector } from './CharacterGoldSelector';
 import { ShopFilters } from './ShopFilters';
 import { ShopItemCard } from './ShopItemCard';
 import { ItemDetailModal } from './ItemDetailModal';
+import { SellInventoryView } from './SellInventoryView';
 import type { CampaignCharacterSummary } from '../../../../shared/types/campaign';
 import styles from './CampaignShop.module.css';
 
@@ -48,10 +50,28 @@ export function CampaignShop({
   // Item detail modal state
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
+  // Toast notifications
+  const { success, error: showError, info } = useToast();
+
   // Get selected character data
   const selectedCharacter = useMemo(
     () => characters.find((c) => c.id === selectedCharacterId),
     [characters, selectedCharacterId]
+  );
+
+  // Handlers for other player shop events
+  const handleOtherPlayerPurchase = useCallback(
+    ({ characterName, itemName }: { characterName: string; itemName: string }) => {
+      info(`${characterName} purchased ${itemName}`);
+    },
+    [info]
+  );
+
+  const handleOtherPlayerSell = useCallback(
+    ({ characterName, itemName }: { characterName: string; itemName: string }) => {
+      info(`${characterName} sold ${itemName}`);
+    },
+    [info]
   );
 
   // Shop hook
@@ -76,7 +96,16 @@ export function CampaignShop({
     characterId: selectedCharacterId,
     characterGold: selectedCharacter?.gold || 0,
     enabled: true,
+    onOtherPlayerPurchase: handleOtherPlayerPurchase,
+    onOtherPlayerSell: handleOtherPlayerSell,
   });
+
+  // Show error toast when error state changes
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   // Find selected item for modal
   const shopInventory = shop?.inventory;
@@ -85,27 +114,26 @@ export function CampaignShop({
     return shopInventory.find((item) => item.itemId === selectedItemId);
   }, [selectedItemId, shopInventory]);
 
-  // Handle buy
+  // Handle buy with toast notification
   const handleBuy = useCallback(
     async (itemId: string) => {
       const result = await purchaseItem(itemId);
       if (result) {
-        // Could show toast notification here
-        console.log('[CampaignShop] Purchase successful:', result);
+        success(`Purchased ${result.item.itemName} for ${result.goldSpent}g`);
       }
     },
-    [purchaseItem]
+    [purchaseItem, success]
   );
 
-  // Handle sell
+  // Handle sell with toast notification
   const handleSell = useCallback(
     async (itemId: string) => {
       const result = await sellItem(itemId);
       if (result) {
-        console.log('[CampaignShop] Sell successful:', result);
+        success(`Sold ${result.itemName} for ${result.goldEarned}g`);
       }
     },
-    [sellItem]
+    [sellItem, success]
   );
 
   // Handle view details
@@ -235,21 +263,15 @@ export function CampaignShop({
       )}
 
       {/* Sell Tab */}
-      {activeTab === 'sell' && (
-        <div className={styles.sellSection}>
-          <p className={styles.sellInfo}>
-            Sell items from your inventory to get gold back. Items are sold at{' '}
-            {Math.round((shop?.config.sellPriceMultiplier || 0.5) * 100)}% of their
-            purchase price.
-          </p>
-          {/* TODO: Implement SellInventoryView with character's owned items */}
-          <div className={styles.emptyState}>
-            <p>Select items from your inventory to sell.</p>
-            <p className={styles.hint}>
-              (Sell view will show your character's owned items)
-            </p>
-          </div>
-        </div>
+      {activeTab === 'sell' && selectedCharacterId && (
+        <SellInventoryView
+          campaignId={campaignId}
+          characterId={selectedCharacterId}
+          sellPriceMultiplier={shop?.config.sellPriceMultiplier || 0.5}
+          onSell={handleSell}
+          selling={selling}
+          onViewDetails={handleViewDetails}
+        />
       )}
 
       {/* Item Detail Modal */}
