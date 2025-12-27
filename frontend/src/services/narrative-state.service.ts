@@ -32,13 +32,23 @@ class NarrativeStateService {
   private state: NarrativeState = { activeNarrative: null, acknowledgments: [] };
   private subscribers = new Set<StateSubscriber>();
   private unsubscribers: (() => void)[] = [];
+  private initialized = false;
 
-  constructor() {
+  /**
+   * Initialize the service by subscribing to WebSocket events.
+   * This must be called explicitly at app startup to ensure events are captured.
+   * Safe to call multiple times - will only initialize once.
+   */
+  initialize(): void {
+    if (this.initialized) {
+      return;
+    }
+    this.initialized = true;
     this.subscribeToWebSocket();
   }
 
   /**
-   * Subscribe to WebSocket events at service creation.
+   * Subscribe to WebSocket events.
    * This ensures we capture events regardless of component mount state.
    */
   private subscribeToWebSocket(): void {

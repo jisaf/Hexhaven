@@ -11,8 +11,14 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from './prisma.service';
 import type { NarrativeRewards } from '../../../shared/types/narrative';
+
+/** Maximum number of retry attempts for transient database failures */
+const MAX_RETRY_ATTEMPTS = 3;
+/** Base delay between retries in milliseconds (doubles with each attempt) */
+const RETRY_BASE_DELAY_MS = 100;
 
 export interface RewardedPlayer {
   playerId: string;
@@ -26,12 +32,21 @@ export interface RewardApplicationResult {
   rewardedPlayers: RewardedPlayer[];
   distribution: string;
   error?: string;
+  /** Correlation ID for tracking errors - provide to users for support requests */
+  correlationId?: string;
 }
 
 interface PlayerInfo {
   id: string;
   userId: string;
   characterId: string | null;
+}
+
+/** Player with guaranteed non-null characterId, ready for reward processing */
+interface EligiblePlayer {
+  id: string;
+  userId: string;
+  characterId: string;
 }
 
 @Injectable()
@@ -47,6 +62,56 @@ export class NarrativeRewardService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Retry a database operation with exponential backoff
+   * @param operation - Async operation to retry
+   * @param correlationId - ID for logging
+   * @returns Result of operation or throws after max retries
+   */
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    correlationId: string,
+  ): Promise<T> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+      try {
+        return await operation();
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+
+        // Don't retry on non-transient errors (e.g., record not found)
+        if (this.isNonTransientError(lastError)) {
+          throw lastError;
+        }
+
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+          this.logger.warn(
+            `[${correlationId}] Retry attempt ${attempt}/${MAX_RETRY_ATTEMPTS} after ${delay}ms: ${lastError.message}`,
+          );
+          await this.sleep(delay);
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  /** Check if an error is non-transient (should not be retried) */
+  private isNonTransientError(error: Error): boolean {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('record not found') ||
+      message.includes('unique constraint') ||
+      message.includes('foreign key constraint')
+    );
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
    * Apply rewards from a narrative trigger based on distribution mode
    * @param roomCode - Room identifier
    * @param rewards - Reward configuration
@@ -60,16 +125,25 @@ export class NarrativeRewardService {
     players: PlayerInfo[],
     triggeredBy?: string,
   ): Promise<RewardApplicationResult> {
+    const correlationId = randomUUID().slice(0, 8);
     const distribution = rewards.distribution ?? 'everyone';
-    const allPlayers = players.filter((p) => p.characterId);
+
+    // Filter to players with characters (type-safe: guarantees characterId is non-null)
+    const eligiblePlayers: EligiblePlayer[] = players
+      .filter(
+        (p): p is PlayerInfo & { characterId: string } =>
+          p.characterId !== null,
+      )
+      .map((p) => ({ id: p.id, userId: p.userId, characterId: p.characterId }));
+
     const rewardedPlayers: RewardedPlayer[] = [];
 
     // Determine which players get rewards based on distribution mode
-    let targetPlayers: typeof allPlayers;
+    let targetPlayers: EligiblePlayer[];
     if (distribution === 'triggerer' && triggeredBy) {
-      targetPlayers = allPlayers.filter((p) => p.userId === triggeredBy);
+      targetPlayers = eligiblePlayers.filter((p) => p.userId === triggeredBy);
     } else {
-      targetPlayers = allPlayers;
+      targetPlayers = eligiblePlayers;
     }
 
     if (targetPlayers.length === 0) {
@@ -90,7 +164,8 @@ export class NarrativeRewardService {
     const pendingTrackings: { userId: string; gold: number; xp: number }[] = [];
 
     for (const player of targetPlayers) {
-      if (!player.characterId) continue;
+      // player.characterId is guaranteed non-null by EligiblePlayer type
+      const { characterId } = player;
 
       const updates: {
         gold?: { increment: number };
@@ -105,19 +180,21 @@ export class NarrativeRewardService {
       }
 
       if (Object.keys(updates).length > 0) {
-        const characterId = player.characterId;
-
-        // Create promise for this update
-        const updatePromise = this.prisma.character
-          .update({
-            where: { id: characterId },
-            data: updates,
-          })
-          .then(() => {
-            this.logger.log(
-              `Applied rewards to character ${characterId}: gold=${goldPerPlayer}, xp=${xpPerPlayer} (distribution: ${distribution})`,
-            );
-          });
+        // Create promise with retry logic for transient failures
+        const updatePromise = this.withRetry(
+          () =>
+            this.prisma.character
+              .update({
+                where: { id: characterId },
+                data: updates,
+              })
+              .then(() => {
+                this.logger.log(
+                  `[${correlationId}] Applied rewards to character ${characterId}: gold=${goldPerPlayer}, xp=${xpPerPlayer} (distribution: ${distribution})`,
+                );
+              }),
+          correlationId,
+        );
 
         updatePromises.push(updatePromise);
 
@@ -155,20 +232,20 @@ export class NarrativeRewardService {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         this.logger.error(
-          `Failed to apply narrative rewards in room ${roomCode}: ${errorMessage}`,
+          `[${correlationId}] Failed to apply narrative rewards in room ${roomCode}: ${errorMessage}`,
         );
         return {
           success: false,
           rewardedPlayers: [],
           distribution,
-          error:
-            'Failed to save rewards to database. Please contact support if rewards are missing.',
+          correlationId,
+          error: `Failed to save rewards to database. Reference ID: ${correlationId}`,
         };
       }
     }
 
     this.logger.log(
-      `Granted narrative rewards to ${rewardedPlayers.length} players in room ${roomCode} (distribution: ${distribution})`,
+      `[${correlationId}] Granted narrative rewards to ${rewardedPlayers.length} players in room ${roomCode} (distribution: ${distribution})`,
     );
 
     return { success: true, rewardedPlayers, distribution };

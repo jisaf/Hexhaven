@@ -15,6 +15,14 @@ import { roomSessionManager } from '../services/room-session.service';
 import { useRoomSession } from './useRoomSession';
 import { getDisplayName } from '../utils/storage';
 
+/**
+ * Delay in milliseconds before starting the game after character selection.
+ * This allows time for WebSocket character selection events to be processed
+ * by the server before the game start request is sent. Without this delay,
+ * the game may start before all character selections are registered.
+ */
+const CHARACTER_SELECTION_PROPAGATION_DELAY_MS = 100;
+
 interface AutoStartConfig {
   characterIds: string[];
   scenarioId: string;
@@ -88,12 +96,12 @@ export function useAutoStartGame(options: UseAutoStartGameOptions = {}): UseAuto
         // Select the scenario and start the game
         websocketService.selectScenario(scenarioId);
 
-        // Small delay to ensure character selection is processed before starting
-        // Store timeout ref for cleanup
+        // Delay to ensure character selection is processed before starting
+        // (see CHARACTER_SELECTION_PROPAGATION_DELAY_MS documentation)
         autoStartTimeoutRef.current = setTimeout(() => {
           autoStartTimeoutRef.current = null;
           websocketService.startGame(scenarioId);
-        }, 100);
+        }, CHARACTER_SELECTION_PROPAGATION_DELAY_MS);
       } catch (err) {
         // Use queueMicrotask to avoid synchronous setState in effect
         const errorMessage = err instanceof Error ? err.message : 'Failed to auto-start game';

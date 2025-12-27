@@ -292,8 +292,8 @@ class GameStateManager {
   private visualCallbacks: VisualUpdateCallbacks = {};
 
   // Store bound handlers for proper cleanup (fixes HMR duplicate registration)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private boundHandlers: Map<string, any> = new Map();
+  // Handler type matches websocketService.on() callback signature
+  private boundHandlers: Map<EventName, (data: unknown) => void> = new Map();
   private listenersSetup = false;
 
   constructor() {
@@ -346,10 +346,9 @@ class GameStateManager {
     }
 
     // Helper to register and track handlers
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const register = (event: string, handler: (data: any) => void) => {
+    const register = (event: EventName, handler: (data: unknown) => void) => {
       this.boundHandlers.set(event, handler);
-      websocketService.on(event as EventName, handler);
+      websocketService.on(event, handler);
     };
 
     register('game_started', this.handleGameStarted.bind(this));
