@@ -2,8 +2,14 @@
  * Narrative State Service
  *
  * Singleton service that manages narrative state independently of component lifecycle.
- * Subscribes to WebSocket events at initialization, ensuring state is captured
- * regardless of which components are mounted.
+ * Uses EAGER INITIALIZATION pattern to subscribe to WebSocket events immediately
+ * on module load, preventing race conditions where events arrive before components mount.
+ *
+ * ARCHITECTURAL NOTE (Race Condition Fix):
+ * Previously this service required an explicit initialize() call from App.tsx,
+ * which created a gap between module load and initialization where events could be lost.
+ * Now the constructor subscribes to WebSocket events immediately. The WebSocketService
+ * queues handlers if the socket isn't connected yet, ensuring no events are lost.
  *
  * Components subscribe to state changes via the subscribe() method.
  */
@@ -35,16 +41,29 @@ class NarrativeStateService {
   private initialized = false;
 
   /**
-   * Initialize the service by subscribing to WebSocket events.
-   * This must be called explicitly at app startup to ensure events are captured.
-   * Safe to call multiple times - will only initialize once.
+   * Constructor - EAGER INITIALIZATION
+   *
+   * Subscribes to WebSocket events immediately on instantiation.
+   * This prevents the race condition where events could arrive between
+   * module load and explicit initialization.
+   *
+   * The WebSocketService.on() method queues handlers if socket isn't connected,
+   * so this is safe to call before WebSocket connection is established.
+   */
+  constructor() {
+    this.subscribeToWebSocket();
+    this.initialized = true;
+  }
+
+  /**
+   * Initialize the service.
+   *
+   * @deprecated No longer required - service now uses eager initialization.
+   * Kept for backward compatibility. Safe to call - will be a no-op.
    */
   initialize(): void {
-    if (this.initialized) {
-      return;
-    }
-    this.initialized = true;
-    this.subscribeToWebSocket();
+    // No-op: initialization now happens in constructor
+    // Kept for backward compatibility with existing code that calls this
   }
 
   /**

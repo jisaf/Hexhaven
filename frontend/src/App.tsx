@@ -254,9 +254,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize narrative service to subscribe to WebSocket events
-    // This must be done explicitly (not as side-effect import) to prevent
-    // bundlers from tree-shaking it and ensure initialization order
+    // NOTE: narrativeStateService.initialize() is now a no-op.
+    // The service uses eager initialization in its constructor to prevent
+    // race conditions where events could be lost between module load and init.
+    // This call is kept for backward compatibility but can be removed.
     narrativeStateService.initialize();
 
     const wsUrl = getWebSocketUrl();

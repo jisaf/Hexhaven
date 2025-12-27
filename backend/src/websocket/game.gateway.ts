@@ -4750,10 +4750,6 @@ export class GameGateway
         };
       });
 
-      // Get accumulated narrative rewards from mid-game triggers
-      const accumulatedRewards =
-        this.narrativeRewardService.getAccumulatedRewards(roomCode);
-
       // Get victory/defeat narrative and its rewards
       const narrativeDef = this.roomNarratives.get(roomCode);
       const narrativeContent = isVictory
@@ -4766,11 +4762,66 @@ export class GameGateway
           ? narrativeContent.rewards
           : undefined;
 
+      // CRITICAL FIX: Apply victory/defeat rewards to database BEFORE building the payload
+      // Previously, outroRewards were only shown in the payload but never persisted.
+      // The rewardsAlreadyApplied=true flag on the narrative prevented re-application,
+      // but the rewards were never applied in the first place - causing silent failures.
+      if (outroRewards && (outroRewards.gold || outroRewards.xp)) {
+        const playersForRewards = room.players.map((p) => ({
+          id: p.id,
+          userId: p.userId,
+          characterId: p.characterId,
+        }));
+
+        try {
+          const rewardResult = await this.narrativeRewardService.applyRewards(
+            roomCode,
+            outroRewards,
+            playersForRewards,
+          );
+
+          if (rewardResult.success) {
+            this.logger.log(
+              `Applied ${isVictory ? 'victory' : 'defeat'} rewards to ${rewardResult.rewardedPlayers.length} players in room ${roomCode}`,
+            );
+            // Emit reward event so clients know rewards were granted
+            if (rewardResult.rewardedPlayers.length > 0) {
+              this.server.to(roomCode).emit('narrative_rewards_granted', {
+                rewards: rewardResult.rewardedPlayers,
+                distribution: rewardResult.distribution,
+                source: isVictory ? 'victory' : 'defeat',
+              });
+            }
+          } else {
+            this.logger.error(
+              `Failed to apply ${isVictory ? 'victory' : 'defeat'} rewards in room ${roomCode}: ${rewardResult.error}`,
+            );
+            this.server.to(roomCode).emit('narrative_rewards_failed', {
+              error: rewardResult.error,
+              source: isVictory ? 'victory' : 'defeat',
+            });
+          }
+        } catch (rewardError) {
+          const errorMessage =
+            rewardError instanceof Error
+              ? rewardError.message
+              : 'Unknown error';
+          this.logger.error(
+            `Exception applying ${isVictory ? 'victory' : 'defeat'} rewards in room ${roomCode}: ${errorMessage}`,
+          );
+          // Don't throw - scenario completion should still succeed
+        }
+      }
+
+      // Get accumulated narrative rewards (now includes victory/defeat rewards just applied)
+      const accumulatedRewards =
+        this.narrativeRewardService.getAccumulatedRewards(roomCode);
+
       // Build scenario completed payload
-      // Include both accumulated narrative rewards and outro rewards in totals
+      // Victory/defeat rewards are now included in accumulatedRewards (applied above)
       const scenarioCompletedPayload: ScenarioCompletedPayload = {
         victory: isVictory,
-        experience: totalExperience + (outroRewards?.xp ?? 0),
+        experience: totalExperience,
         loot: Array.from(lootByPlayer.entries()).map(([playerId, data]) => {
           const playerNarrativeRewards = accumulatedRewards.get(playerId) || {
             gold: 0,
@@ -4778,11 +4829,8 @@ export class GameGateway
           };
           return {
             playerId,
-            // Total gold = loot tokens + mid-game narrative rewards + outro rewards
-            gold:
-              data.gold +
-              playerNarrativeRewards.gold +
-              (outroRewards?.gold ?? 0),
+            // Total gold = loot tokens + all narrative rewards (including victory/defeat)
+            gold: data.gold + playerNarrativeRewards.gold,
             items: data.items,
           };
         }),
@@ -4793,31 +4841,31 @@ export class GameGateway
         playerStats,
       };
 
-      // Also add XP from mid-game narrative rewards to experience total
-      if (accumulatedRewards) {
+      // Add XP from all narrative rewards (mid-game + victory/defeat) to experience total
+      if (accumulatedRewards && accumulatedRewards.size > 0) {
         let totalNarrativeXP = 0;
         for (const rewards of accumulatedRewards.values()) {
           totalNarrativeXP += rewards.xp;
         }
         // Average XP per player (narrative XP is already per-player in accumulator)
-        if (accumulatedRewards.size > 0) {
-          scenarioCompletedPayload.experience += Math.floor(
-            totalNarrativeXP / accumulatedRewards.size,
-          );
-        }
+        scenarioCompletedPayload.experience += Math.floor(
+          totalNarrativeXP / accumulatedRewards.size,
+        );
       }
 
       // If no loot was collected but rewards exist, add entries for all players
-      const hasAnyRewards =
-        (accumulatedRewards && accumulatedRewards.size > 0) || outroRewards;
-      if (hasAnyRewards && scenarioCompletedPayload.loot.length === 0) {
+      if (
+        accumulatedRewards &&
+        accumulatedRewards.size > 0 &&
+        scenarioCompletedPayload.loot.length === 0
+      ) {
         for (const player of room.players) {
-          const playerNarrativeRewards = accumulatedRewards?.get(
+          const playerNarrativeRewards = accumulatedRewards.get(
             player.userId,
           ) || { gold: 0, xp: 0 };
           scenarioCompletedPayload.loot.push({
             playerId: player.userId,
-            gold: playerNarrativeRewards.gold + (outroRewards?.gold ?? 0),
+            gold: playerNarrativeRewards.gold,
             items: [],
           });
         }
@@ -4830,13 +4878,15 @@ export class GameGateway
           name: p.nickname || 'Player',
         }));
 
-        // Pass rewards to narrative for display only - they're already counted in scenario_completed
-        // The createOutroNarrative sets rewardsAlreadyApplied=true to prevent double-application
+        // Pass rewards to narrative for display only.
+        // Rewards were already applied to the database above (CRITICAL FIX).
+        // The createOutroNarrative sets rewardsAlreadyApplied=true to prevent duplicate application
+        // when the narrative is acknowledged via handleAllNarrativeAcknowledged.
         const outroNarrative = this.narrativeService.createOutroNarrative(
           isVictory ? 'victory' : 'defeat',
           narrativeContent,
           players,
-          outroRewards, // Include rewards for display in narrative overlay (not applied again)
+          outroRewards, // Include rewards for display in narrative overlay
         );
 
         // Clear any stale narratives/queued triggers - scenario is over
