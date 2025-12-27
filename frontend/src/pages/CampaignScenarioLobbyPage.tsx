@@ -104,11 +104,16 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
       // Small delay to ensure character selection is processed before starting
       setTimeout(() => {
         websocketService.startGame(autoStartScenarioId);
-        // Navigate directly to the game (skip room lobby)
-        navigate(`/rooms/${sessionState.roomCode}/play`);
       }, 100);
     }
-  }, [sessionState.connectionStatus, sessionState.roomCode, navigate]);
+  }, [sessionState.connectionStatus, sessionState.roomCode]);
+
+  // Navigate to game once it's actually started (game_started event received)
+  useEffect(() => {
+    if (sessionState.isGameActive && sessionState.roomCode && isCreatingRoom) {
+      navigate(`/rooms/${sessionState.roomCode}/play`);
+    }
+  }, [sessionState.isGameActive, sessionState.roomCode, isCreatingRoom, navigate]);
 
   // Handle session errors - use microtask to avoid synchronous setState in effect
   useEffect(() => {

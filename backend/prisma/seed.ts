@@ -673,6 +673,7 @@ The dummy's button eyes seem to stare at you mockingly.`,
 "Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
 
 You feel a surge of confidence. This is just the beginning.`,
+      victoryRewards: { gold: 10, xp: 10, distribution: 'everyone' },
       defeatTitle: 'A Humbling Lesson',
       defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
 
@@ -694,6 +695,7 @@ The dummy's button eyes seem to stare at you mockingly.`,
 "Not bad for a beginner. You've got potential." He tosses you a small pouch of coins. "There's more where that came from if you're willing to face a real challenge. Report to the next training room when you're ready."
 
 You feel a surge of confidence. This is just the beginning.`,
+      victoryRewards: { gold: 10, xp: 10, distribution: 'everyone' },
       defeatTitle: 'A Humbling Lesson',
       defeatText: `You collapse to one knee, exhausted. The training dummy stands undefeated, somehow looking smug despite being made of straw.
 
@@ -722,6 +724,23 @@ Perhaps a different approach is needed...`,
     },
   });
 
+  // Trigger for entering the hex between start and dummy (q:1, r:0)
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative1.id,
+      triggerId: 'approach-dummy-1',
+      displayOrder: 0, // Show before round-2 encouragement
+      title: 'Face Your First Opponent',
+      text: `You step forward, closing the distance to the training dummy. Its button eyes seem to follow your movement.
+
+"Good," the instructor nods. "Now show me what you've got. Remember—every great warrior started with a single swing."`,
+      conditions: {
+        type: 'character_on_hex',
+        params: { hex: { q: 1, r: 0 } },
+      },
+    },
+  });
+
   // Narrative for Part 2: The Advanced Challenge
   const narrative2 = await prisma.scenarioNarrative.upsert({
     where: { scenarioId: scenario2.id },
@@ -742,6 +761,7 @@ He hands you a worn leather pouch containing your reward—and something else. A
 "Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
 
 CAMPAIGN COMPLETE!`,
+      victoryRewards: { gold: 10, xp: 10, distribution: 'everyone' },
       defeatTitle: 'So Close...',
       defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
 
@@ -767,6 +787,7 @@ He hands you a worn leather pouch containing your reward—and something else. A
 "Keep that badge close. It marks you as one of us now. Real adventures await beyond these walls. Good luck out there."
 
 CAMPAIGN COMPLETE!`,
+      victoryRewards: { gold: 10, xp: 10, distribution: 'everyone' },
       defeatTitle: 'So Close...',
       defeatText: `The reinforced dummy proves too much. You've exhausted yourself against its iron-banded frame.
 
@@ -792,6 +813,37 @@ The second challenge awaits your return.`,
       conditions: {
         type: 'round_reached',
         params: { round: 3 },
+      },
+    },
+  });
+
+  // Trigger for entering the hex between start and dummy (q:2, r:0)
+  // Spawns a second training dummy as a surprise challenge and grants 10gp
+  await prisma.narrativeTrigger.create({
+    data: {
+      narrativeId: narrative2.id,
+      triggerId: 'approach-dummy-2',
+      displayOrder: 0, // Show before round encouragement
+      title: 'The Real Challenge Begins',
+      text: `You advance toward the reinforced dummy. Up close, you can see the iron bands reinforcing its frame—this won't be as easy as the first one.
+
+Suddenly, a second dummy drops from a ceiling harness behind you!
+
+"Surprise!" the instructor laughs. "Did I forget to mention this room has two? Here's something for your trouble."
+
+He tosses you a small pouch of coins.`,
+      conditions: {
+        type: 'character_on_hex',
+        params: { hex: { q: 2, r: 0 } },
+      },
+      rewards: {
+        gold: 10,
+        distribution: 'triggerer', // Only the player who stepped on the hex gets the reward
+      },
+      gameEffects: {
+        spawnMonsters: [
+          { type: 'training-dummy', hex: { q: 4, r: 0 }, isElite: false },
+        ],
       },
     },
   });
