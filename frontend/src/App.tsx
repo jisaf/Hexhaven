@@ -239,6 +239,10 @@ function App() {
       // Rich brick red for test.hexhaven.net
       backgroundColor = '#8B2F2F';
       backgroundColorRgb = '139, 47, 47';
+    } else if (subdomain === 'qa') {
+      // Rich burnt orange for qa.hexhaven.net
+      backgroundColor = '#8B4513';
+      backgroundColorRgb = '139, 69, 19';
     } else if (subdomain === 'dev') {
       // Rich earthy green for dev.hexhaven.net
       backgroundColor = '#2F5233';

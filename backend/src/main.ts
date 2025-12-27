@@ -64,6 +64,8 @@ async function bootstrap() {
       'http://10.1.1.80:5173', // Network dev server
       'https://test.hexhaven.net', // Domain
       'http://test.hexhaven.net', // Domain (http)
+      'https://qa.hexhaven.net', // QA domain
+      'http://qa.hexhaven.net', // QA domain (http)
       'https://hexhaven.net', // Production domain
       'http://hexhaven.net', // Production domain (http)
       'https://www.hexhaven.net', // Production domain (www)
