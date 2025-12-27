@@ -2008,11 +2008,40 @@ export class GameGateway
       );
 
       // Fire the trigger that interrupted movement (if any)
+      // Wrap in try-catch to prevent trigger failures from affecting the completed movement
+      // Movement is already complete and valid - trigger failure should not roll it back
       if (triggerToFire) {
-        this.fireNarrativeTrigger(room.roomCode, triggerToFire, userId);
+        try {
+          this.fireNarrativeTrigger(room.roomCode, triggerToFire, userId);
+        } catch (triggerError) {
+          const triggerErrorMessage =
+            triggerError instanceof Error
+              ? triggerError.message
+              : 'Unknown trigger error';
+          this.logger.error(
+            `Failed to fire narrative trigger ${triggerToFire.triggerId} after movement: ${triggerErrorMessage}`,
+          );
+          // Emit a non-fatal error to clients - movement succeeded but trigger failed
+          this.server.to(room.roomCode).emit('narrative_trigger_error', {
+            triggerId: triggerToFire.triggerId,
+            message: `Narrative trigger failed to fire: ${triggerErrorMessage}`,
+          });
+        }
       } else {
         // Check for any other triggers that might fire at the final position
-        this.checkNarrativeTriggers(room.roomCode);
+        // Also wrap in try-catch for consistency
+        try {
+          this.checkNarrativeTriggers(room.roomCode);
+        } catch (triggerError) {
+          const triggerErrorMessage =
+            triggerError instanceof Error
+              ? triggerError.message
+              : 'Unknown trigger error';
+          this.logger.error(
+            `Failed to check narrative triggers after movement: ${triggerErrorMessage}`,
+          );
+          // Non-fatal - movement is still valid
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -4801,13 +4830,13 @@ export class GameGateway
           name: p.nickname || 'Player',
         }));
 
-        // Pass rewards to narrative for display, but they're already counted in scenario_completed
-        // The narrative rewards will still be applied via applyNarrativeRewards when acknowledged
+        // Pass rewards to narrative for display only - they're already counted in scenario_completed
+        // The createOutroNarrative sets rewardsAlreadyApplied=true to prevent double-application
         const outroNarrative = this.narrativeService.createOutroNarrative(
           isVictory ? 'victory' : 'defeat',
           narrativeContent,
           players,
-          outroRewards, // Include rewards for display in narrative overlay
+          outroRewards, // Include rewards for display in narrative overlay (not applied again)
         );
 
         // Clear any stale narratives/queued triggers - scenario is over
@@ -5510,15 +5539,37 @@ export class GameGateway
     }
 
     // Apply rewards if any - await to ensure persistence before proceeding
-    if (narrative.rewards) {
-      await this.applyNarrativeRewards(
-        roomCode,
-        narrative.rewards,
-        narrative.triggeredBy,
+    // Skip if rewards were already applied elsewhere (e.g., victory/defeat in scenario_completed)
+    // Wrap in try-catch to ensure narrative dismissal proceeds even if reward application fails
+    if (narrative.rewards && !narrative.rewardsAlreadyApplied) {
+      try {
+        await this.applyNarrativeRewards(
+          roomCode,
+          narrative.rewards,
+          narrative.triggeredBy,
+        );
+      } catch (rewardError) {
+        // Log the error but don't block narrative dismissal
+        const errorMessage =
+          rewardError instanceof Error
+            ? rewardError.message
+            : 'Unknown reward error';
+        this.logger.error(
+          `[handleAllNarrativeAcknowledged] Failed to apply rewards for narrative ${narrative.id}: ${errorMessage}`,
+        );
+        // Notify clients of the failure
+        this.server.to(roomCode).emit('narrative_rewards_failed', {
+          narrativeId: narrative.id,
+          error: `Failed to apply rewards: ${errorMessage}`,
+        });
+      }
+    } else if (narrative.rewards && narrative.rewardsAlreadyApplied) {
+      this.logger.debug(
+        `[handleAllNarrativeAcknowledged] Skipping reward application - already applied for ${narrative.type} narrative`,
       );
     }
 
-    // Clear the narrative
+    // Clear the narrative - this should always happen even if rewards failed
     this.narrativeService.clearActiveNarrative(roomCode);
 
     // Emit dismissed event

@@ -433,6 +433,10 @@ export class NarrativeService {
 
   /**
    * Create a victory/defeat narrative for display
+   *
+   * Note: Victory/defeat rewards are included in the scenario_completed payload
+   * and should NOT be applied again when the narrative is acknowledged.
+   * The rewardsAlreadyApplied flag prevents double-application.
    */
   createOutroNarrative(
     type: 'victory' | 'defeat',
@@ -453,6 +457,9 @@ export class NarrativeService {
       displayedAt: Date.now(),
       timeoutMs: DEFAULT_NARRATIVE_TIMEOUT_MS,
       disconnectedPlayers: [],
+      // Victory/defeat rewards are included in scenario_completed payload
+      // so they must NOT be applied again when narrative is acknowledged
+      rewardsAlreadyApplied: true,
     };
   }
 

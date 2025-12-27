@@ -287,6 +287,12 @@ export interface ActiveNarrative {
   displayedAt: number;
   timeoutMs: number; // Default 60000
   disconnectedPlayers: string[]; // Players who disconnected during narrative
+  /**
+   * If true, rewards have already been applied elsewhere (e.g., in scenario_completed)
+   * and should NOT be applied again when the narrative is acknowledged.
+   * Used for victory/defeat narratives where rewards are included in the completion payload.
+   */
+  rewardsAlreadyApplied?: boolean;
 }
 
 // ========== GAME CONTEXT FOR EVALUATION ==========

@@ -8,9 +8,10 @@
  * - Calculate per-player reward amounts based on distribution mode
  * - Persist rewards to database with proper error handling
  * - Track accumulated rewards for victory summary
+ * - TTL-based cleanup to prevent memory leaks from abandoned rooms
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from './prisma.service';
 import type { NarrativeRewards } from '../../../shared/types/narrative';
@@ -19,6 +20,16 @@ import type { NarrativeRewards } from '../../../shared/types/narrative';
 const MAX_RETRY_ATTEMPTS = 3;
 /** Base delay between retries in milliseconds (doubles with each attempt) */
 const RETRY_BASE_DELAY_MS = 100;
+
+/**
+ * TTL-based cleanup configuration.
+ * Rooms that haven't been accessed within the TTL will have their
+ * accumulated rewards data cleaned up to prevent memory leaks.
+ */
+/** Time-to-live for room reward data in milliseconds (2 hours) */
+const ROOM_REWARDS_TTL_MS = 2 * 60 * 60 * 1000;
+/** Interval for running cleanup checks in milliseconds (15 minutes) */
+const CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
 
 export interface RewardedPlayer {
   playerId: string;
@@ -50,7 +61,7 @@ interface EligiblePlayer {
 }
 
 @Injectable()
-export class NarrativeRewardService {
+export class NarrativeRewardService implements OnModuleDestroy {
   private readonly logger = new Logger(NarrativeRewardService.name);
 
   // Track accumulated rewards per room for victory summary
@@ -59,7 +70,99 @@ export class NarrativeRewardService {
     Map<string, { gold: number; xp: number }>
   >();
 
-  constructor(private readonly prisma: PrismaService) {}
+  // Track last access time per room for TTL-based cleanup
+  private readonly roomLastAccessTime = new Map<string, number>();
+
+  // Cleanup timer reference for proper shutdown
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(private readonly prisma: PrismaService) {
+    // Start periodic cleanup timer to prevent memory leaks from abandoned rooms
+    this.startCleanupTimer();
+  }
+
+  /**
+   * Cleanup on module destroy (NestJS lifecycle hook)
+   */
+  onModuleDestroy(): void {
+    this.stopCleanupTimer();
+  }
+
+  /**
+   * Start the periodic cleanup timer
+   */
+  private startCleanupTimer(): void {
+    if (this.cleanupTimer) return;
+
+    this.cleanupTimer = setInterval(() => {
+      this.runCleanup();
+    }, CLEANUP_INTERVAL_MS);
+
+    this.logger.log(
+      `Started TTL-based cleanup timer (interval: ${CLEANUP_INTERVAL_MS}ms, TTL: ${ROOM_REWARDS_TTL_MS}ms)`,
+    );
+  }
+
+  /**
+   * Stop the cleanup timer (for testing or shutdown)
+   */
+  stopCleanupTimer(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+      this.logger.log('Stopped TTL-based cleanup timer');
+    }
+  }
+
+  /**
+   * Check if cleanup timer is active (for testing)
+   */
+  isCleanupTimerActive(): boolean {
+    return this.cleanupTimer !== null;
+  }
+
+  /**
+   * Run cleanup of stale room data.
+   * Removes reward data for rooms that haven't been accessed within the TTL.
+   */
+  runCleanup(): void {
+    const now = Date.now();
+    const staleRooms: string[] = [];
+
+    for (const [roomCode, lastAccess] of this.roomLastAccessTime.entries()) {
+      if (now - lastAccess > ROOM_REWARDS_TTL_MS) {
+        staleRooms.push(roomCode);
+      }
+    }
+
+    if (staleRooms.length > 0) {
+      for (const roomCode of staleRooms) {
+        this.roomNarrativeRewards.delete(roomCode);
+        this.roomLastAccessTime.delete(roomCode);
+      }
+
+      this.logger.log(
+        `TTL cleanup: Removed stale reward data for ${staleRooms.length} room(s): ${staleRooms.join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * Update the last access time for a room (refreshes TTL)
+   */
+  private touchRoom(roomCode: string): void {
+    this.roomLastAccessTime.set(roomCode, Date.now());
+  }
+
+  /**
+   * Check if room has any tracked data
+   */
+  hasRoomData(roomCode: string): boolean {
+    return (
+      this.roomNarrativeRewards.has(roomCode) ||
+      this.roomLastAccessTime.has(roomCode)
+    );
+  }
 
   /**
    * Retry a database operation with exponential backoff
@@ -94,7 +197,9 @@ export class NarrativeRewardService {
       }
     }
 
-    throw lastError;
+    // TypeScript requires explicit Error type for throw
+    // lastError will always be set after the loop since we only reach here if all attempts failed
+    throw lastError ?? new Error('Unknown error after retries exhausted');
   }
 
   /** Check if an error is non-transient (should not be retried) */
@@ -260,6 +365,9 @@ export class NarrativeRewardService {
     gold: number,
     xp: number,
   ): void {
+    // Refresh TTL when tracking rewards
+    this.touchRoom(roomCode);
+
     let playerRewards = this.roomNarrativeRewards.get(roomCode);
     if (!playerRewards) {
       playerRewards = new Map();
@@ -274,10 +382,16 @@ export class NarrativeRewardService {
 
   /**
    * Get accumulated rewards for all players in a room
+   * @param roomCode - Room identifier
+   * @param refreshTTL - If true, refresh the room's TTL (default: false for backward compatibility)
    */
   getAccumulatedRewards(
     roomCode: string,
+    refreshTTL: boolean = false,
   ): Map<string, { gold: number; xp: number }> {
+    if (refreshTTL && this.roomNarrativeRewards.has(roomCode)) {
+      this.touchRoom(roomCode);
+    }
     return (
       this.roomNarrativeRewards.get(roomCode) ||
       new Map<string, { gold: number; xp: number }>()
@@ -286,8 +400,10 @@ export class NarrativeRewardService {
 
   /**
    * Clear accumulated rewards for a room (e.g., when game ends)
+   * Also removes the room from TTL tracking.
    */
   clearAccumulatedRewards(roomCode: string): void {
     this.roomNarrativeRewards.delete(roomCode);
+    this.roomLastAccessTime.delete(roomCode);
   }
 }
