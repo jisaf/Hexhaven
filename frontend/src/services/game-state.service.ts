@@ -792,11 +792,10 @@ class GameStateManager {
     console.log('[GameStateManager] Monster spawned:', data);
 
     // Build full monster object with required fields
-    // Use roomId from existing monsters or empty string (frontend display doesn't need it)
-    const roomId = this.state.gameData?.monsters?.[0]?.roomId || '';
+    // roomId is not needed for frontend display, use empty string
     const newMonster = {
       id: data.monsterId,
-      roomId,
+      roomId: '',
       monsterType: data.monsterType,
       isElite: data.isElite,
       currentHex: data.hex,
