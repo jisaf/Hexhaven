@@ -9,27 +9,9 @@
 
 import { useMemo } from 'react';
 import type { ShopItem } from '../../services/shop.service';
-import type { ItemRarity, ItemSlot } from '../../../../shared/types/entities';
+import type { ItemSlot } from '../../../../shared/types/entities';
+import { RARITY_COLORS, SLOT_LABELS } from '../../constants/item';
 import styles from './ShopItemCard.module.css';
-
-// Rarity color mapping (from PRD)
-const RARITY_COLORS: Record<ItemRarity, string> = {
-  COMMON: '#9ab0c9',
-  UNCOMMON: '#2ecc71',
-  RARE: '#3498db',
-  EPIC: '#9b59b6',
-  LEGENDARY: '#f1c40f',
-};
-
-// Slot display names
-const SLOT_LABELS: Record<ItemSlot, string> = {
-  HEAD: 'Head',
-  BODY: 'Body',
-  LEGS: 'Legs',
-  ONE_HAND: 'Hand',
-  TWO_HAND: '2-Hand',
-  SMALL: 'Small',
-};
 
 interface ShopItemCardProps {
   /** Shop item data */

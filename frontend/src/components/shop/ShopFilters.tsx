@@ -73,19 +73,24 @@ export function ShopFilters({
   // Debounce search input (300ms delay)
   const debouncedSearch = useDebouncedValue(searchInput, 300);
 
-  // Sync debounced search to filters
+  // Sync debounced search to filters - only when debounced value actually changes
   useEffect(() => {
+    // Only update if the value actually changed from the current filter value
     if (debouncedSearch !== filters.searchQuery) {
       onFiltersChange({ ...filters, searchQuery: debouncedSearch });
     }
-  }, [debouncedSearch, filters, onFiltersChange]);
+    // Note: We intentionally omit 'filters' from deps to avoid re-render loop.
+    // The comparison check prevents unnecessary updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, onFiltersChange, filters.searchQuery]);
 
   // Sync filters.searchQuery to local state when cleared externally
   useEffect(() => {
     if (filters.searchQuery === '' && searchInput !== '') {
       setSearchInput('');
     }
-  }, [filters.searchQuery, searchInput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.searchQuery]);
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

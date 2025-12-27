@@ -12,12 +12,11 @@ import { useCallback, useMemo } from 'react';
 import { useInventory } from '../../hooks/useInventory';
 import { useToast } from '../../contexts/ToastContext';
 import { SellItemCard } from './SellItemCard';
+import { RARITY_ORDER, UNEQUIP_DELAY_MS } from '../../constants/item';
 import type { EquippedItems } from '../../../../shared/types/entities';
 import styles from './SellInventoryView.module.css';
 
 interface SellInventoryViewProps {
-  /** Campaign ID (for context) */
-  campaignId: string;
   /** Character ID to show inventory for */
   characterId: string;
   /** Sell price multiplier (e.g., 0.5 for 50%) */
@@ -51,7 +50,6 @@ function calculateSellPrice(cost: number, multiplier: number): number {
 }
 
 export function SellInventoryView({
-  campaignId: _campaignId,
   characterId,
   sellPriceMultiplier,
   onSell,
@@ -82,7 +80,7 @@ export function SellInventoryView({
           // Unequip first
           await unequipItem(itemId);
           // Brief delay to ensure database is updated
-          await new Promise((resolve) => setTimeout(resolve, 150));
+          await new Promise((resolve) => setTimeout(resolve, UNEQUIP_DELAY_MS));
         }
 
         // Then sell
@@ -101,14 +99,6 @@ export function SellInventoryView({
 
   // Sort items: equipped first, then by rarity, then by name
   const sortedItems = useMemo(() => {
-    const RARITY_ORDER = {
-      LEGENDARY: 5,
-      EPIC: 4,
-      RARE: 3,
-      UNCOMMON: 2,
-      COMMON: 1,
-    };
-
     return [...ownedItems].sort((a, b) => {
       // Equipped items first
       const aEquipped = isItemEquipped(a.id, equippedItems);

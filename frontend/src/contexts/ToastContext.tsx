@@ -5,7 +5,7 @@
  * Used for shop purchase/sell feedback and real-time multiplayer notifications.
  */
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 // Toast types
@@ -57,6 +57,16 @@ interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // Track timer IDs for cleanup to prevent memory leaks
+  const timerRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      timerRefs.current.forEach((timerId) => clearTimeout(timerId));
+      timerRefs.current.clear();
+    };
+  }, []);
 
   // Add a toast
   const addToast = useCallback((toast: Omit<Toast, 'id'>): string => {
@@ -71,9 +81,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
     // Auto-dismiss if duration > 0
     if (toast.duration > 0) {
-      setTimeout(() => {
+      const timerId = setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
+        timerRefs.current.delete(id);
       }, toast.duration);
+      timerRefs.current.set(id, timerId);
     }
 
     return id;
@@ -81,11 +93,20 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   // Remove a toast
   const removeToast = useCallback((id: string) => {
+    // Clear any pending timer for this toast
+    const timerId = timerRefs.current.get(id);
+    if (timerId) {
+      clearTimeout(timerId);
+      timerRefs.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   // Clear all toasts
   const clearToasts = useCallback(() => {
+    // Clear all pending timers
+    timerRefs.current.forEach((timerId) => clearTimeout(timerId));
+    timerRefs.current.clear();
     setToasts([]);
   }, []);
 

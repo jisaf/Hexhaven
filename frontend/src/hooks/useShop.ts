@@ -18,6 +18,7 @@ import {
   type SellResult,
 } from '../services/shop.service';
 import type { ItemRarity, ItemSlot } from '../../../shared/types/entities';
+import { RARITY_ORDER } from '../constants/item';
 
 // ========== Filter Types ==========
 
@@ -85,16 +86,6 @@ interface UseShopReturn {
   /** Whether a sale is in progress */
   selling: boolean;
 }
-
-// ========== Rarity Order for Sorting ==========
-
-const RARITY_ORDER: Record<ItemRarity, number> = {
-  COMMON: 1,
-  UNCOMMON: 2,
-  RARE: 3,
-  EPIC: 4,
-  LEGENDARY: 5,
-};
 
 // ========== Default Filter/Sort ==========
 

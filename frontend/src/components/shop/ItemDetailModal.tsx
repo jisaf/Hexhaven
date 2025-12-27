@@ -10,35 +10,10 @@
 
 import { useMemo } from 'react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import type { Item, ItemRarity, ItemSlot, ItemUsageType } from '../../../../shared/types/entities';
+import type { Item } from '../../../../shared/types/entities';
 import type { ShopItem } from '../../services/shop.service';
+import { RARITY_COLORS, SLOT_LABELS_FULL, USAGE_LABELS } from '../../constants/item';
 import styles from './ItemDetailModal.module.css';
-
-// Rarity color mapping
-const RARITY_COLORS: Record<ItemRarity, string> = {
-  COMMON: '#9ab0c9',
-  UNCOMMON: '#2ecc71',
-  RARE: '#3498db',
-  EPIC: '#9b59b6',
-  LEGENDARY: '#f1c40f',
-};
-
-// Slot display names
-const SLOT_LABELS: Record<ItemSlot, string> = {
-  HEAD: 'Head',
-  BODY: 'Body',
-  LEGS: 'Legs',
-  ONE_HAND: 'One Hand',
-  TWO_HAND: 'Two Hands',
-  SMALL: 'Small Item',
-};
-
-// Usage type display
-const USAGE_LABELS: Record<ItemUsageType, string> = {
-  PERSISTENT: 'Persistent (always active)',
-  SPENT: 'Spent (refreshes on rest)',
-  CONSUMED: 'Consumed (single use)',
-};
 
 interface ItemDetailModalProps {
   /** Shop item data */
@@ -171,7 +146,7 @@ export function ItemDetailModal({
               {itemData.rarity.charAt(0) + itemData.rarity.slice(1).toLowerCase()}
             </span>
             {itemData.slot && (
-              <span className={styles.slotBadge}>{SLOT_LABELS[itemData.slot]}</span>
+              <span className={styles.slotBadge}>{SLOT_LABELS_FULL[itemData.slot]}</span>
             )}
           </div>
         </div>

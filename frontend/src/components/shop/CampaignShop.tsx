@@ -9,7 +9,7 @@
  * - Sell view for owned items
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useShop } from '../../hooks/useShop';
 import { useToast } from '../../contexts/ToastContext';
 import { CharacterGoldSelector } from './CharacterGoldSelector';
@@ -100,10 +100,17 @@ export function CampaignShop({
     onOtherPlayerSell: handleOtherPlayerSell,
   });
 
-  // Show error toast when error state changes
+  // Track last shown error to prevent duplicate toasts
+  const lastShownErrorRef = useRef<string | null>(null);
+
+  // Show error toast when error state changes (only once per unique error)
   useEffect(() => {
-    if (error) {
+    if (error && error !== lastShownErrorRef.current) {
+      lastShownErrorRef.current = error;
       showError(error);
+    } else if (!error) {
+      // Reset when error is cleared
+      lastShownErrorRef.current = null;
     }
   }, [error, showError]);
 
@@ -265,7 +272,6 @@ export function CampaignShop({
       {/* Sell Tab */}
       {activeTab === 'sell' && selectedCharacterId && (
         <SellInventoryView
-          campaignId={campaignId}
           characterId={selectedCharacterId}
           sellPriceMultiplier={shop?.config.sellPriceMultiplier || 0.5}
           onSell={handleSell}
