@@ -112,7 +112,7 @@ class ShopService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to purchase item');
+      throw new Error(errorData.error?.message || errorData.message || 'Failed to purchase item');
     }
 
     return response.json();
@@ -135,7 +135,7 @@ class ShopService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to sell item');
+      throw new Error(errorData.error?.message || errorData.message || 'Failed to sell item');
     }
 
     return response.json();
