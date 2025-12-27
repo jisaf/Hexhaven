@@ -179,7 +179,7 @@ class RoomSessionManager {
     roomJoined?: (data: RoomJoinedPayload) => void;
     gameStarted?: (data: GameStartedPayload) => void;
     disconnected?: () => void;
-    playerJoined?: (data: PlayerJoinedPayload) => void;
+    playerJoined?: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
     playerLeft?: (data: { playerId: string }) => void;
     characterSelected?: (data: CharacterSelectedPayload) => void;
   } = {};
