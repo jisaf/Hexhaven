@@ -46,6 +46,19 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   // Shop state (Issue #326)
   const [showShop, setShowShop] = useState(false);
 
+  // Handle character gold update from shop transactions
+  const handleCharacterGoldUpdate = useCallback((characterId: string, newGold: number) => {
+    setCampaign((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        characters: prev.characters.map((char) =>
+          char.id === characterId ? { ...char, gold: newGold } : char
+        ),
+      };
+    });
+  }, []);
+
   const fetchCampaignData = useCallback(async () => {
     try {
       setLoading(true);
@@ -322,6 +335,7 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
               campaignId={campaignId}
               characters={activeCharacters}
               onClose={() => setShowShop(false)}
+              onCharacterGoldUpdate={handleCharacterGoldUpdate}
             />
           )}
         </div>

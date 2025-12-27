@@ -31,6 +31,8 @@ interface CampaignShopProps {
   onClose?: () => void;
   /** Whether to show as modal or inline */
   isModal?: boolean;
+  /** Callback when character gold changes after a transaction */
+  onCharacterGoldUpdate?: (characterId: string, newGold: number) => void;
 }
 
 export function CampaignShop({
@@ -38,6 +40,7 @@ export function CampaignShop({
   characters,
   onClose,
   isModal = false,
+  onCharacterGoldUpdate,
 }: CampaignShopProps) {
   // Active tab (buy or sell)
   const [activeTab, setActiveTab] = useState<ShopTab>('buy');
@@ -127,9 +130,13 @@ export function CampaignShop({
       const result = await purchaseItem(itemId);
       if (result) {
         success(`Purchased ${result.item.itemName} for ${result.goldSpent}g`);
+        // Update character gold in parent state
+        if (selectedCharacterId && onCharacterGoldUpdate) {
+          onCharacterGoldUpdate(selectedCharacterId, result.characterGoldRemaining);
+        }
       }
     },
-    [purchaseItem, success]
+    [purchaseItem, success, selectedCharacterId, onCharacterGoldUpdate]
   );
 
   // Handle sell with toast notification
@@ -138,9 +145,13 @@ export function CampaignShop({
       const result = await sellItem(itemId);
       if (result) {
         success(`Sold ${result.itemName} for ${result.goldEarned}g`);
+        // Update character gold in parent state
+        if (selectedCharacterId && onCharacterGoldUpdate) {
+          onCharacterGoldUpdate(selectedCharacterId, result.characterGoldRemaining);
+        }
       }
     },
-    [sellItem, success]
+    [sellItem, success, selectedCharacterId, onCharacterGoldUpdate]
   );
 
   // Handle view details
