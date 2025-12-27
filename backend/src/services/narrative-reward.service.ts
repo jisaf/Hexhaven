@@ -84,8 +84,10 @@ export class NarrativeRewardService {
       : 0;
     const xpPerPlayer = rewards.xp ? Math.floor(rewards.xp / playerCount) : 0;
 
-    // Collect all database update promises
+    // Collect all database update promises and tracking data
     const updatePromises: Promise<void>[] = [];
+    // Store tracking data to apply after DB updates succeed
+    const pendingTrackings: { userId: string; gold: number; xp: number }[] = [];
 
     for (const player of targetPlayers) {
       if (!player.characterId) continue;
@@ -126,15 +128,30 @@ export class NarrativeRewardService {
           xp: xpPerPlayer,
         });
 
-        // Track rewards for victory summary
-        this.trackReward(roomCode, player.userId, goldPerPlayer, xpPerPlayer);
+        // Queue tracking data - will be applied after DB updates succeed
+        pendingTrackings.push({
+          userId: player.userId,
+          gold: goldPerPlayer,
+          xp: xpPerPlayer,
+        });
       }
     }
 
-    // Wait for all database updates to complete
+    // Wait for all database updates to complete before tracking
     if (updatePromises.length > 0) {
       try {
         await Promise.all(updatePromises);
+
+        // Only track rewards after DB updates succeed to prevent
+        // showing rewards in victory summary that weren't persisted
+        for (const tracking of pendingTrackings) {
+          this.trackReward(
+            roomCode,
+            tracking.userId,
+            tracking.gold,
+            tracking.xp,
+          );
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         this.logger.error(

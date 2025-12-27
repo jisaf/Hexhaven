@@ -8,14 +8,11 @@
  * - Creates room with campaign context and navigates to room lobby
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../services/campaign.service';
-import { roomSessionManager } from '../services/room-session.service';
-import { websocketService } from '../services/websocket.service';
-import { useRoomSession } from '../hooks/useRoomSession';
-import { getDisplayName } from '../utils/storage';
+import { useAutoStartGame } from '../hooks/useAutoStartGame';
 import type { CampaignWithDetails, CampaignScenario } from '../services/campaign.service';
 import styles from './CampaignScenarioLobbyPage.module.css';
 
@@ -24,18 +21,17 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
-  const sessionState = useRoomSession();
+  const { isStarting: isCreatingRoom, error: autoStartError, clearError, startGame } = useAutoStartGame();
 
   // State
   const [campaign, setCampaign] = useState<CampaignWithDetails | null>(null);
   const [scenario, setScenario] = useState<CampaignScenario | null>(null);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Track pending auto-start for campaign mode (skip room lobby)
-  const pendingAutoStart = useRef<{ characterIds: string[]; scenarioId: string } | null>(null);
+  // Combine errors from fetch and auto-start
+  const error = fetchError || autoStartError;
 
   // Fetch campaign and scenario data
   const fetchData = useCallback(async () => {
@@ -54,7 +50,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
       if (selectedScenario) {
         setScenario(selectedScenario);
       } else {
-        setError('Scenario not found');
+        setFetchError('Scenario not found');
       }
 
       // Load selected characters from URL query params (passed by CampaignDashboardPage)
@@ -77,7 +73,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load campaign data');
+      setFetchError(err instanceof Error ? err.message : 'Failed to load campaign data');
     } finally {
       setLoading(false);
     }
@@ -87,74 +83,10 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Auto-start game when room is connected (skip room lobby for campaign mode)
-  useEffect(() => {
-    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode && pendingAutoStart.current) {
-      const { characterIds, scenarioId: autoStartScenarioId } = pendingAutoStart.current;
-      pendingAutoStart.current = null; // Clear to prevent re-triggering
-
-      // Auto-select each character
-      characterIds.forEach((charId) => {
-        websocketService.selectCharacter(charId, 'add');
-      });
-
-      // Select the scenario and start the game
-      websocketService.selectScenario(autoStartScenarioId);
-
-      // Small delay to ensure character selection is processed before starting
-      setTimeout(() => {
-        websocketService.startGame(autoStartScenarioId);
-      }, 100);
-    }
-  }, [sessionState.connectionStatus, sessionState.roomCode]);
-
-  // Navigate to game once it's actually started (game_started event received)
-  useEffect(() => {
-    if (sessionState.isGameActive && sessionState.roomCode && isCreatingRoom) {
-      navigate(`/rooms/${sessionState.roomCode}/play`);
-    }
-  }, [sessionState.isGameActive, sessionState.roomCode, isCreatingRoom, navigate]);
-
-  // Handle session errors - use microtask to avoid synchronous setState in effect
-  useEffect(() => {
-    if (sessionState.error) {
-      queueMicrotask(() => {
-        setError(sessionState.error?.message ?? 'Connection error');
-        setIsCreatingRoom(false);
-      });
-    }
-  }, [sessionState.error]);
-
   // Start game - create room with campaign context and auto-start (skip room lobby)
   const handleStartGame = async () => {
     if (!campaign || !scenario || selectedCharacterIds.length === 0) return;
-
-    const displayName = getDisplayName();
-    if (!displayName) {
-      setError('Please set a nickname first');
-      return;
-    }
-
-    setIsCreatingRoom(true);
-    setError(null);
-
-    // Set pending auto-start so we skip the room lobby
-    pendingAutoStart.current = {
-      characterIds: selectedCharacterIds,
-      scenarioId: scenario.scenarioId,
-    };
-
-    try {
-      await roomSessionManager.createRoom(displayName, {
-        campaignId: campaign.id,
-        scenarioId: scenario.scenarioId,
-      });
-      // Auto-start happens via useEffect when room is connected
-    } catch (err) {
-      pendingAutoStart.current = null; // Clear on error
-      setError(err instanceof Error ? err.message : 'Failed to create room');
-      setIsCreatingRoom(false);
-    }
+    await startGame(scenario.scenarioId, campaign.id, selectedCharacterIds);
   };
 
   // Toggle character selection - also updates URL to preserve state on refresh
@@ -228,7 +160,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
         {error && (
           <div className={styles.errorBanner}>
             {error}
-            <button onClick={() => setError(null)}>✕</button>
+            <button onClick={() => { setFetchError(null); clearError(); }}>✕</button>
           </div>
         )}
 

@@ -5444,14 +5444,14 @@ export class GameGateway
       }
 
       // Record acknowledgment
-      this.logger.log(
+      this.logger.debug(
         `[handleAcknowledgeNarrative] Player ${userId} acknowledging narrative ${payload.narrativeId}`,
       );
       const allAcknowledged = this.narrativeService.acknowledgeNarrative(
         roomCode,
         userId,
       );
-      this.logger.log(
+      this.logger.debug(
         `[handleAcknowledgeNarrative] allAcknowledged: ${allAcknowledged}`,
       );
 
@@ -5466,7 +5466,7 @@ export class GameGateway
 
       // If all acknowledged, proceed (await to ensure rewards persist before response)
       if (allAcknowledged) {
-        this.logger.log(
+        this.logger.debug(
           `[handleAcknowledgeNarrative] All acknowledged, proceeding to dismiss`,
         );
         await this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
@@ -5492,7 +5492,7 @@ export class GameGateway
     roomCode: string,
     narrative: import('../../../shared/types/narrative').ActiveNarrative,
   ): Promise<void> {
-    this.logger.log(
+    this.logger.debug(
       `[handleAllNarrativeAcknowledged] Processing for room ${roomCode}, narrative type: ${narrative.type}`,
     );
 
@@ -5527,7 +5527,7 @@ export class GameGateway
       type: narrative.type,
       gameEffectsApplied: !!narrative.gameEffects,
     };
-    this.logger.log(
+    this.logger.debug(
       `[handleAllNarrativeAcknowledged] Emitting narrative_dismissed for ${narrative.type}`,
     );
     this.server.to(roomCode).emit('narrative_dismissed', dismissedPayload);
@@ -5535,13 +5535,15 @@ export class GameGateway
     // Check for queued narratives
     const nextNarrative = this.narrativeService.dequeueNarrative(roomCode);
     if (nextNarrative) {
-      this.logger.log(
+      this.logger.debug(
         `[handleAllNarrativeAcknowledged] Found queued narrative, displaying`,
       );
       this.narrativeService.setActiveNarrative(roomCode, nextNarrative);
       this.emitNarrativeDisplay(roomCode, nextNarrative);
     } else {
-      this.logger.log(`[handleAllNarrativeAcknowledged] No queued narratives`);
+      this.logger.debug(
+        `[handleAllNarrativeAcknowledged] No queued narratives`,
+      );
     }
   }
 

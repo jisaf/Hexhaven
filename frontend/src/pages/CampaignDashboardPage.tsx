@@ -10,127 +10,24 @@
  * Wraps CampaignView component and adapts it for page routing.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CampaignView } from '../components/lobby/CampaignView';
-import { roomSessionManager } from '../services/room-session.service';
-import { websocketService } from '../services/websocket.service';
-import { useRoomSession } from '../hooks/useRoomSession';
-import { getDisplayName } from '../utils/storage';
+import { useAutoStartGame } from '../hooks/useAutoStartGame';
 import styles from './CampaignDashboardPage.module.css';
 
 export const CampaignDashboardPage: React.FC = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const navigate = useNavigate();
-  const sessionState = useRoomSession();
-  const [isStarting, setIsStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Track pending auto-start for campaign mode (skip room lobby entirely)
-  const pendingAutoStart = useRef<{ characterIds: string[]; scenarioId: string } | null>(null);
-  // Track timeout for cleanup on unmount
-  const autoStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isStarting, error, clearError, startGame } = useAutoStartGame();
 
   // Navigate back to campaigns hub
   const handleBack = () => {
     navigate('/campaigns');
   };
 
-  // Cleanup timeout on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (autoStartTimeoutRef.current) {
-        clearTimeout(autoStartTimeoutRef.current);
-        autoStartTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
-  // Handle auto-start failure
-  const handleAutoStartError = useCallback((errorMessage: string) => {
-    setError(errorMessage);
-    setIsStarting(false);
-    pendingAutoStart.current = null;
-    if (autoStartTimeoutRef.current) {
-      clearTimeout(autoStartTimeoutRef.current);
-      autoStartTimeoutRef.current = null;
-    }
-  }, []);
-
-  // Auto-start game when room is connected (skip room lobby entirely)
-  useEffect(() => {
-    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode && pendingAutoStart.current) {
-      const { characterIds, scenarioId } = pendingAutoStart.current;
-      pendingAutoStart.current = null; // Clear to prevent re-triggering
-
-      try {
-        // Auto-select each character
-        characterIds.forEach((charId) => {
-          websocketService.selectCharacter(charId, 'add');
-        });
-
-        // Select the scenario and start the game
-        websocketService.selectScenario(scenarioId);
-
-        // Small delay to ensure character selection is processed before starting
-        // Store timeout ref for cleanup
-        autoStartTimeoutRef.current = setTimeout(() => {
-          autoStartTimeoutRef.current = null;
-          websocketService.startGame(scenarioId);
-        }, 100);
-      } catch (err) {
-        // Use queueMicrotask to avoid synchronous setState in effect (linter rule)
-        const errorMessage = err instanceof Error ? err.message : 'Failed to auto-start game';
-        queueMicrotask(() => handleAutoStartError(errorMessage));
-      }
-    }
-  }, [sessionState.connectionStatus, sessionState.roomCode, handleAutoStartError]);
-
-  // Navigate to game once it's actually started (game_started event received)
-  useEffect(() => {
-    if (sessionState.isGameActive && sessionState.roomCode && isStarting) {
-      navigate(`/rooms/${sessionState.roomCode}/play`);
-    }
-  }, [sessionState.isGameActive, sessionState.roomCode, isStarting, navigate]);
-
-  // Handle session errors - use microtask to avoid synchronous setState in effect
-  useEffect(() => {
-    if (sessionState.error) {
-      queueMicrotask(() => {
-        setError(sessionState.error?.message ?? 'Connection error');
-        setIsStarting(false);
-      });
-    }
-  }, [sessionState.error]);
-
   // Start game directly - create room and auto-start (skip scenario lobby)
   const handleStartGame = async (scenarioId: string, campId: string, characterIds: string[]) => {
-    const displayName = getDisplayName();
-    if (!displayName) {
-      setError('Please set a nickname first');
-      return;
-    }
-
-    setIsStarting(true);
-    setError(null);
-
-    // Set pending auto-start so we skip both scenario lobby and room lobby
-    pendingAutoStart.current = {
-      characterIds,
-      scenarioId,
-    };
-
-    try {
-      await roomSessionManager.createRoom(displayName, {
-        campaignId: campId,
-        scenarioId,
-      });
-      // Auto-start happens via useEffect when room is connected
-    } catch (err) {
-      pendingAutoStart.current = null; // Clear on error
-      setError(err instanceof Error ? err.message : 'Failed to create room');
-      setIsStarting(false);
-    }
+    await startGame(scenarioId, campId, characterIds);
   };
 
   // No campaign ID - redirect
@@ -145,7 +42,7 @@ export const CampaignDashboardPage: React.FC = () => {
         {error && (
           <div className={styles.errorBanner}>
             {error}
-            <button onClick={() => setError(null)}>✕</button>
+            <button onClick={clearError}>✕</button>
           </div>
         )}
         {isStarting && (

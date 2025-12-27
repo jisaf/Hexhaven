@@ -153,6 +153,22 @@ function validateRewards(
     rewards.items = json.items;
   }
 
+  if ('distribution' in json) {
+    const validDistributions = ['everyone', 'triggerer', 'collective'];
+    if (
+      typeof json.distribution !== 'string' ||
+      !validDistributions.includes(json.distribution)
+    ) {
+      throw new Error(
+        `Invalid rewards.distribution in trigger ${triggerId}: expected 'everyone', 'triggerer', or 'collective'`,
+      );
+    }
+    rewards.distribution = json.distribution as
+      | 'everyone'
+      | 'triggerer'
+      | 'collective';
+  }
+
   return rewards;
 }
 
