@@ -39,6 +39,7 @@ import { ValidationService } from './services/validation.service';
 import { ElementalStateService } from './services/elemental-state.service';
 import { NarrativeService } from './services/narrative.service';
 import { NarrativeConditionService } from './services/narrative-condition.service';
+import { NarrativeRewardService } from './services/narrative-reward.service';
 import { ShopService } from './services/shop.service';
 import { ShopController } from './api/shop.controller';
 
@@ -89,6 +90,7 @@ import { ShopController } from './api/shop.controller';
     CampaignService, // Issue #244: Campaign mode business logic
     NarrativeService, // Campaign narrative system
     NarrativeConditionService, // Narrative trigger condition evaluation
+    NarrativeRewardService, // Narrative reward calculation and persistence (extracted from GameGateway)
     ShopService, // Issue #328: Campaign shop system
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,

@@ -78,6 +78,7 @@ import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
 import { CampaignService } from '../services/campaign.service';
 import { NarrativeService } from '../services/narrative.service';
+import { NarrativeRewardService } from '../services/narrative-reward.service';
 import type {
   NarrativeDisplayPayload,
   NarrativeAcknowledgedPayload,
@@ -131,6 +132,7 @@ export class GameGateway
     private readonly elementalStateService: ElementalStateService,
     private readonly campaignService: CampaignService, // Issue #244 - Campaign Mode
     private readonly narrativeService: NarrativeService, // Campaign narrative system
+    private readonly narrativeRewardService: NarrativeRewardService, // Narrative reward calculation (extracted)
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -233,11 +235,6 @@ export class GameGateway
     string,
     AxialCoordinates[]
   >(); // roomCode -> loot collection hexes
-  // Track accumulated narrative rewards per player for victory summary
-  private readonly roomNarrativeRewards = new Map<
-    string,
-    Map<string, { gold: number; xp: number }>
-  >(); // roomCode -> (playerId -> accumulated rewards)
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -1089,11 +1086,11 @@ export class GameGateway
         this.roomPlayerStats.delete(roomCode);
         // Narrative system cleanup
         this.narrativeService.cleanupRoomState(roomCode);
+        this.narrativeRewardService.clearAccumulatedRewards(roomCode);
         this.roomNarratives.delete(roomCode);
         this.roomOpenedDoors.delete(roomCode);
         this.roomCollectedTreasures.delete(roomCode);
         this.roomCollectedLootHexes.delete(roomCode);
-        this.roomNarrativeRewards.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -1946,12 +1943,18 @@ export class GameGateway
       // If a trigger fires, interrupt movement at that hex
       let actualTargetHex = payload.targetHex;
       let actualPath = path;
-      let triggerToFire: import('../../../shared/types/narrative').NarrativeTriggerDef | null = null;
+      let triggerToFire:
+        | import('../../../shared/types/narrative').NarrativeTriggerDef
+        | null = null;
 
       // Check each hex in the path (excluding the starting hex which is index 0)
       for (let i = 1; i < path.length; i++) {
         const hex = path[i];
-        const trigger = this.checkTriggerAtPosition(room.roomCode, character.id, hex);
+        const trigger = this.checkTriggerAtPosition(
+          room.roomCode,
+          character.id,
+          hex,
+        );
         if (trigger) {
           // Interrupt movement at this hex
           actualTargetHex = hex;
@@ -1965,7 +1968,8 @@ export class GameGateway
       }
 
       // Calculate actual movement distance
-      const actualMoveDistance = actualPath.length > 0 ? actualPath.length - 1 : 0;
+      const actualMoveDistance =
+        actualPath.length > 0 ? actualPath.length - 1 : 0;
 
       // Move character to actual target (may be interrupted position)
       characterService.moveCharacter(character.id, actualTargetHex);
@@ -4718,7 +4722,8 @@ export class GameGateway
       });
 
       // Get accumulated narrative rewards from mid-game triggers
-      const accumulatedRewards = this.roomNarrativeRewards.get(roomCode);
+      const accumulatedRewards =
+        this.narrativeRewardService.getAccumulatedRewards(roomCode);
 
       // Get victory/defeat narrative and its rewards
       const narrativeDef = this.roomNarratives.get(roomCode);
@@ -4727,9 +4732,10 @@ export class GameGateway
         : narrativeDef?.defeat;
 
       // Victory narrative rewards (from scenario definition)
-      const outroRewards = isVictory && narrativeContent?.rewards
-        ? narrativeContent.rewards
-        : undefined;
+      const outroRewards =
+        isVictory && narrativeContent?.rewards
+          ? narrativeContent.rewards
+          : undefined;
 
       // Build scenario completed payload
       // Include both accumulated narrative rewards and outro rewards in totals
@@ -4737,11 +4743,17 @@ export class GameGateway
         victory: isVictory,
         experience: totalExperience + (outroRewards?.xp ?? 0),
         loot: Array.from(lootByPlayer.entries()).map(([playerId, data]) => {
-          const playerNarrativeRewards = accumulatedRewards?.get(playerId) || { gold: 0, xp: 0 };
+          const playerNarrativeRewards = accumulatedRewards.get(playerId) || {
+            gold: 0,
+            xp: 0,
+          };
           return {
             playerId,
             // Total gold = loot tokens + mid-game narrative rewards + outro rewards
-            gold: data.gold + playerNarrativeRewards.gold + (outroRewards?.gold ?? 0),
+            gold:
+              data.gold +
+              playerNarrativeRewards.gold +
+              (outroRewards?.gold ?? 0),
             items: data.items,
           };
         }),
@@ -4760,15 +4772,20 @@ export class GameGateway
         }
         // Average XP per player (narrative XP is already per-player in accumulator)
         if (accumulatedRewards.size > 0) {
-          scenarioCompletedPayload.experience += Math.floor(totalNarrativeXP / accumulatedRewards.size);
+          scenarioCompletedPayload.experience += Math.floor(
+            totalNarrativeXP / accumulatedRewards.size,
+          );
         }
       }
 
       // If no loot was collected but rewards exist, add entries for all players
-      const hasAnyRewards = (accumulatedRewards && accumulatedRewards.size > 0) || outroRewards;
+      const hasAnyRewards =
+        (accumulatedRewards && accumulatedRewards.size > 0) || outroRewards;
       if (hasAnyRewards && scenarioCompletedPayload.loot.length === 0) {
         for (const player of room.players) {
-          const playerNarrativeRewards = accumulatedRewards?.get(player.userId) || { gold: 0, xp: 0 };
+          const playerNarrativeRewards = accumulatedRewards?.get(
+            player.userId,
+          ) || { gold: 0, xp: 0 };
           scenarioCompletedPayload.loot.push({
             playerId: player.userId,
             gold: playerNarrativeRewards.gold + (outroRewards?.gold ?? 0),
@@ -5396,10 +5413,10 @@ export class GameGateway
    * Handle narrative acknowledgment from a player
    */
   @SubscribeMessage('acknowledge_narrative')
-  handleAcknowledgeNarrative(
+  async handleAcknowledgeNarrative(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AcknowledgeNarrativePayload,
-  ): void {
+  ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -5427,12 +5444,16 @@ export class GameGateway
       }
 
       // Record acknowledgment
-      this.logger.log(`[handleAcknowledgeNarrative] Player ${userId} acknowledging narrative ${payload.narrativeId}`);
+      this.logger.log(
+        `[handleAcknowledgeNarrative] Player ${userId} acknowledging narrative ${payload.narrativeId}`,
+      );
       const allAcknowledged = this.narrativeService.acknowledgeNarrative(
         roomCode,
         userId,
       );
-      this.logger.log(`[handleAcknowledgeNarrative] allAcknowledged: ${allAcknowledged}`);
+      this.logger.log(
+        `[handleAcknowledgeNarrative] allAcknowledged: ${allAcknowledged}`,
+      );
 
       // Broadcast acknowledgment to all players
       const ackPayload: NarrativeAcknowledgedPayload = {
@@ -5443,10 +5464,12 @@ export class GameGateway
       };
       this.server.to(roomCode).emit('narrative_acknowledged', ackPayload);
 
-      // If all acknowledged, proceed
+      // If all acknowledged, proceed (await to ensure rewards persist before response)
       if (allAcknowledged) {
-        this.logger.log(`[handleAcknowledgeNarrative] All acknowledged, proceeding to dismiss`);
-        this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
+        this.logger.log(
+          `[handleAcknowledgeNarrative] All acknowledged, proceeding to dismiss`,
+        );
+        await this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
       }
     } catch (error) {
       this.logger.error(
@@ -5465,15 +5488,19 @@ export class GameGateway
   /**
    * Handle when all players have acknowledged a narrative
    */
-  private handleAllNarrativeAcknowledged(
+  private async handleAllNarrativeAcknowledged(
     roomCode: string,
     narrative: import('../../../shared/types/narrative').ActiveNarrative,
-  ): void {
-    this.logger.log(`[handleAllNarrativeAcknowledged] Processing for room ${roomCode}, narrative type: ${narrative.type}`);
+  ): Promise<void> {
+    this.logger.log(
+      `[handleAllNarrativeAcknowledged] Processing for room ${roomCode}, narrative type: ${narrative.type}`,
+    );
 
     const room = roomService.getRoom(roomCode);
     if (!room) {
-      this.logger.warn(`[handleAllNarrativeAcknowledged] Room ${roomCode} not found`);
+      this.logger.warn(
+        `[handleAllNarrativeAcknowledged] Room ${roomCode} not found`,
+      );
       return;
     }
 
@@ -5482,9 +5509,13 @@ export class GameGateway
       this.applyNarrativeGameEffects(roomCode, narrative.gameEffects);
     }
 
-    // Apply rewards if any
+    // Apply rewards if any - await to ensure persistence before proceeding
     if (narrative.rewards) {
-      this.applyNarrativeRewards(roomCode, narrative.rewards, narrative.triggeredBy);
+      await this.applyNarrativeRewards(
+        roomCode,
+        narrative.rewards,
+        narrative.triggeredBy,
+      );
     }
 
     // Clear the narrative
@@ -5496,13 +5527,17 @@ export class GameGateway
       type: narrative.type,
       gameEffectsApplied: !!narrative.gameEffects,
     };
-    this.logger.log(`[handleAllNarrativeAcknowledged] Emitting narrative_dismissed for ${narrative.type}`);
+    this.logger.log(
+      `[handleAllNarrativeAcknowledged] Emitting narrative_dismissed for ${narrative.type}`,
+    );
     this.server.to(roomCode).emit('narrative_dismissed', dismissedPayload);
 
     // Check for queued narratives
     const nextNarrative = this.narrativeService.dequeueNarrative(roomCode);
     if (nextNarrative) {
-      this.logger.log(`[handleAllNarrativeAcknowledged] Found queued narrative, displaying`);
+      this.logger.log(
+        `[handleAllNarrativeAcknowledged] Found queued narrative, displaying`,
+      );
       this.narrativeService.setActiveNarrative(roomCode, nextNarrative);
       this.emitNarrativeDisplay(roomCode, nextNarrative);
     } else {
@@ -5603,93 +5638,46 @@ export class GameGateway
   }
 
   /**
-   * Apply rewards from a narrative trigger based on distribution mode
-   * - triggerer: Only the player who triggered it gets the reward
-   * - collective: Total is split evenly among all players
-   * - everyone (default): Each player gets the full reward amount
+   * Apply rewards from a narrative trigger based on distribution mode.
+   * Delegates to NarrativeRewardService for calculation and persistence,
+   * then emits appropriate WebSocket events.
    */
-  private applyNarrativeRewards(
+  private async applyNarrativeRewards(
     roomCode: string,
     rewards: import('../../../shared/types/narrative').NarrativeRewards,
     triggeredBy?: string,
-  ): void {
+  ): Promise<void> {
     const room = roomService.getRoom(roomCode);
     if (!room) return;
 
-    const distribution = rewards.distribution ?? 'everyone';
-    const allPlayers = room.players.filter((p) => p.characterId);
-    const rewardedPlayers: { playerId: string; characterId: string; gold?: number; xp?: number }[] = [];
+    // Map players to the format expected by the reward service
+    const players = room.players.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      characterId: p.characterId,
+    }));
 
-    // Determine which players get rewards based on distribution mode
-    let targetPlayers: typeof allPlayers;
-    if (distribution === 'triggerer' && triggeredBy) {
-      targetPlayers = allPlayers.filter((p) => p.userId === triggeredBy);
-    } else {
-      targetPlayers = allPlayers;
-    }
+    // Delegate to reward service for calculation and persistence
+    const result = await this.narrativeRewardService.applyRewards(
+      roomCode,
+      rewards,
+      players,
+      triggeredBy,
+    );
 
-    if (targetPlayers.length === 0) return;
-
-    // Calculate per-player amounts based on distribution mode
-    const playerCount = distribution === 'collective' ? targetPlayers.length : 1;
-    const goldPerPlayer = rewards.gold ? Math.floor(rewards.gold / playerCount) : 0;
-    const xpPerPlayer = rewards.xp ? Math.floor(rewards.xp / playerCount) : 0;
-
-    for (const player of targetPlayers) {
-      if (!player.characterId) continue;
-
-      // Update character gold/xp in database (async but we don't need to wait)
-      const updates: { gold?: { increment: number }; experience?: { increment: number } } = {};
-
-      if (goldPerPlayer > 0) {
-        updates.gold = { increment: goldPerPlayer };
-      }
-      if (xpPerPlayer > 0) {
-        updates.experience = { increment: xpPerPlayer };
-      }
-
-      if (Object.keys(updates).length > 0) {
-        this.prisma.character.update({
-          where: { id: player.characterId },
-          data: updates,
-        }).then(() => {
-          this.logger.log(
-            `Applied rewards to character ${player.characterId}: gold=${goldPerPlayer}, xp=${xpPerPlayer} (distribution: ${distribution})`,
-          );
-        }).catch((err: Error) => {
-          this.logger.error(`Failed to apply rewards to character ${player.characterId}: ${err.message}`);
-        });
-
-        rewardedPlayers.push({
-          playerId: player.id,
-          characterId: player.characterId,
-          gold: goldPerPlayer,
-          xp: xpPerPlayer,
-        });
-
-        // Track rewards for victory summary
-        let playerRewards = this.roomNarrativeRewards.get(roomCode);
-        if (!playerRewards) {
-          playerRewards = new Map();
-          this.roomNarrativeRewards.set(roomCode, playerRewards);
-        }
-        const existing = playerRewards.get(player.userId) || { gold: 0, xp: 0 };
-        playerRewards.set(player.userId, {
-          gold: existing.gold + goldPerPlayer,
-          xp: existing.xp + xpPerPlayer,
-        });
-      }
-    }
-
-    // Emit rewards granted event to clients
-    if (rewardedPlayers.length > 0) {
-      this.server.to(roomCode).emit('narrative_rewards_granted', {
-        rewards: rewardedPlayers,
-        distribution,
+    // Emit appropriate WebSocket events based on result
+    if (!result.success) {
+      this.server.to(roomCode).emit('narrative_rewards_failed', {
+        error: result.error,
       });
-      this.logger.log(
-        `Granted narrative rewards to ${rewardedPlayers.length} players in room ${roomCode} (distribution: ${distribution})`,
-      );
+      return;
+    }
+
+    if (result.rewardedPlayers.length > 0) {
+      this.server.to(roomCode).emit('narrative_rewards_granted', {
+        rewards: result.rewardedPlayers,
+        distribution: result.distribution,
+      });
     }
   }
 
@@ -5736,7 +5724,8 @@ export class GameGateway
         characterClass: char.characterClass,
         // Use override position if this is the character being checked
         hex:
-          characterPositionOverride && char.id === characterPositionOverride.characterId
+          characterPositionOverride &&
+          char.id === characterPositionOverride.characterId
             ? characterPositionOverride.hex
             : char.position || { q: 0, r: 0 },
       }));
@@ -5882,7 +5871,7 @@ export class GameGateway
 
     this.logger.log(
       `[checkTriggerAtPosition] Checking hex (${hex.q}, ${hex.r}) for character ${characterId}, ` +
-      `triggers available: ${narrativeDef.triggers.length}, narrativeActive: ${this.narrativeService.isNarrativeActive(roomCode)}`
+        `triggers available: ${narrativeDef.triggers.length}, narrativeActive: ${this.narrativeService.isNarrativeActive(roomCode)}`,
     );
 
     // Use the public peekTrigger method - check even if narrative is active

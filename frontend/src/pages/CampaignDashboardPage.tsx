@@ -10,7 +10,7 @@
  * Wraps CampaignView component and adapts it for page routing.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CampaignView } from '../components/lobby/CampaignView';
 import { roomSessionManager } from '../services/room-session.service';
@@ -28,11 +28,34 @@ export const CampaignDashboardPage: React.FC = () => {
 
   // Track pending auto-start for campaign mode (skip room lobby entirely)
   const pendingAutoStart = useRef<{ characterIds: string[]; scenarioId: string } | null>(null);
+  // Track timeout for cleanup on unmount
+  const autoStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Navigate back to campaigns hub
   const handleBack = () => {
     navigate('/campaigns');
   };
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+        autoStartTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle auto-start failure
+  const handleAutoStartError = useCallback((errorMessage: string) => {
+    setError(errorMessage);
+    setIsStarting(false);
+    pendingAutoStart.current = null;
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+      autoStartTimeoutRef.current = null;
+    }
+  }, []);
 
   // Auto-start game when room is connected (skip room lobby entirely)
   useEffect(() => {
@@ -40,20 +63,28 @@ export const CampaignDashboardPage: React.FC = () => {
       const { characterIds, scenarioId } = pendingAutoStart.current;
       pendingAutoStart.current = null; // Clear to prevent re-triggering
 
-      // Auto-select each character
-      characterIds.forEach((charId) => {
-        websocketService.selectCharacter(charId, 'add');
-      });
+      try {
+        // Auto-select each character
+        characterIds.forEach((charId) => {
+          websocketService.selectCharacter(charId, 'add');
+        });
 
-      // Select the scenario and start the game
-      websocketService.selectScenario(scenarioId);
+        // Select the scenario and start the game
+        websocketService.selectScenario(scenarioId);
 
-      // Small delay to ensure character selection is processed before starting
-      setTimeout(() => {
-        websocketService.startGame(scenarioId);
-      }, 100);
+        // Small delay to ensure character selection is processed before starting
+        // Store timeout ref for cleanup
+        autoStartTimeoutRef.current = setTimeout(() => {
+          autoStartTimeoutRef.current = null;
+          websocketService.startGame(scenarioId);
+        }, 100);
+      } catch (err) {
+        // Use queueMicrotask to avoid synchronous setState in effect (linter rule)
+        const errorMessage = err instanceof Error ? err.message : 'Failed to auto-start game';
+        queueMicrotask(() => handleAutoStartError(errorMessage));
+      }
     }
-  }, [sessionState.connectionStatus, sessionState.roomCode]);
+  }, [sessionState.connectionStatus, sessionState.roomCode, handleAutoStartError]);
 
   // Navigate to game once it's actually started (game_started event received)
   useEffect(() => {

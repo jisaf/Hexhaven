@@ -539,7 +539,9 @@ export class NarrativeService {
 
     const triggerStates = this.roomTriggerStates.get(roomCode);
     if (!triggerStates) {
-      this.logger.warn(`[peekTrigger] No trigger states found for room ${roomCode}`);
+      this.logger.warn(
+        `[peekTrigger] No trigger states found for room ${roomCode}`,
+      );
       return null;
     }
 
@@ -573,7 +575,9 @@ export class NarrativeService {
   markTriggerFired(roomCode: string, triggerId: string): void {
     const triggerStates = this.roomTriggerStates.get(roomCode);
     if (!triggerStates) {
-      this.logger.warn(`[markTriggerFired] No trigger states for room ${roomCode}`);
+      this.logger.warn(
+        `[markTriggerFired] No trigger states for room ${roomCode}`,
+      );
       return;
     }
 
@@ -583,7 +587,9 @@ export class NarrativeService {
       firedAt: Date.now(),
     });
 
-    this.logger.log(`[markTriggerFired] Trigger ${triggerId} marked as fired in room ${roomCode}`);
+    this.logger.log(
+      `[markTriggerFired] Trigger ${triggerId} marked as fired in room ${roomCode}`,
+    );
   }
 
   /**
@@ -727,7 +733,9 @@ export class NarrativeService {
    */
   clearQueue(roomCode: string): void {
     this.roomNarrativeQueue.set(roomCode, []);
-    this.logger.log(`[clearQueue] Cleared narrative queue for room ${roomCode}`);
+    this.logger.log(
+      `[clearQueue] Cleared narrative queue for room ${roomCode}`,
+    );
   }
 
   /**
