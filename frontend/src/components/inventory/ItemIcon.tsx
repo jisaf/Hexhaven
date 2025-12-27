@@ -13,6 +13,7 @@ import React from 'react';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import styles from './ItemIcon.module.css';
 import type { ItemSlot, ItemRarity } from '../../../../shared/types/entities';
+import { RARITY_COLORS, SLOT_DEFAULT_ICONS } from '../../constants/item';
 
 interface ItemIconProps {
   /** Icon class name (e.g., "ra-sword", "sword", or "ra ra-sword") */
@@ -28,25 +29,6 @@ interface ItemIconProps {
   /** Additional CSS class */
   className?: string;
 }
-
-// Default icons for each slot type
-const SLOT_DEFAULT_ICONS: Record<ItemSlot, string> = {
-  HEAD: 'ra-helmet',
-  BODY: 'ra-vest',
-  LEGS: 'ra-boot-stomp',
-  ONE_HAND: 'ra-sword',
-  TWO_HAND: 'ra-axe',
-  SMALL: 'ra-potion',
-};
-
-// Rarity colors
-const RARITY_COLORS: Record<ItemRarity, string> = {
-  COMMON: '#9ab0c9',
-  UNCOMMON: '#2ecc71',
-  RARE: '#3498db',
-  EPIC: '#9b59b6',
-  LEGENDARY: '#f1c40f',
-};
 
 /**
  * Normalize icon class to ensure proper "ra ra-xxx" format

@@ -10,8 +10,10 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from '
 import { websocketService } from './services/websocket.service';
 import { getWebSocketUrl } from './config/api';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
 import { PlayerDisconnectedBanner } from './components/PlayerDisconnectedBanner';
+import { ToastContainer } from './components/ToastContainer';
 import { DebugConsole } from './components/DebugConsole';
 import Header from './components/Header';
 import Menu from './components/Menu';
@@ -262,15 +264,18 @@ function App() {
   }, []);
 
   return (
-    <WebSocketConnectionProvider>
-      <BrowserRouter>
-        <ConnectionUI />
-        <Suspense fallback={<RouteLoading />}>
-          <Layout />
-        </Suspense>
-        <DebugConsole />
-      </BrowserRouter>
-    </WebSocketConnectionProvider>
+    <ToastProvider>
+      <WebSocketConnectionProvider>
+        <BrowserRouter>
+          <ToastContainer />
+          <ConnectionUI />
+          <Suspense fallback={<RouteLoading />}>
+            <Layout />
+          </Suspense>
+          <DebugConsole />
+        </BrowserRouter>
+      </WebSocketConnectionProvider>
+    </ToastProvider>
   );
 }
 

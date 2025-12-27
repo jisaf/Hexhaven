@@ -120,6 +120,30 @@ export interface WebSocketEvents {
   narrative_acknowledged: (data: import('../../../shared/types/events').NarrativeAcknowledgedPayload) => void;
   narrative_dismissed: (data: import('../../../shared/types/events').NarrativeDismissedPayload) => void;
 
+  // Shop events (Issue #326)
+  shop_updated: (data: {
+    campaignId: string;
+    inventory: import('../../../shared/types/shop').ShopItem[];
+    availableItems: number;
+    totalItems: number;
+  }) => void;
+  item_purchased: (data: {
+    campaignId: string;
+    characterId: string;
+    characterName: string;
+    itemId: string;
+    itemName: string;
+    goldSpent: number;
+  }) => void;
+  item_sold: (data: {
+    campaignId: string;
+    characterId: string;
+    characterName: string;
+    itemId: string;
+    itemName: string;
+    goldEarned: number;
+  }) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

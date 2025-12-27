@@ -1,9 +1,10 @@
 /**
- * CampaignView Component (Issue #244)
+ * CampaignView Component (Issue #244, #342)
  *
  * Displays campaign details including:
  * - Campaign progress and stats
  * - Characters in campaign
+ * - Campaign shop (Issue #326)
  * - Available scenarios
  * - Ability to start a game in the campaign
  */
@@ -12,6 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
+import { CampaignShop } from '../shop';
 import type {
   CampaignWithDetails,
   CampaignScenario,
@@ -40,6 +42,23 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   const [availableCharacters, setAvailableCharacters] = useState<CharacterResponse[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   const [addingCharacter, setAddingCharacter] = useState(false);
+
+  // Tab state
+  type CampaignTab = 'characters' | 'shop' | 'scenarios';
+  const [activeTab, setActiveTab] = useState<CampaignTab>('characters');
+
+  // Handle character gold update from shop transactions
+  const handleCharacterGoldUpdate = useCallback((characterId: string, newGold: number) => {
+    setCampaign((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        characters: prev.characters.map((char) =>
+          char.id === characterId ? { ...char, gold: newGold } : char
+        ),
+      };
+    });
+  }, []);
 
   const fetchCampaignData = useCallback(async () => {
     try {
@@ -199,166 +218,207 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
         </div>
       </div>
 
-      {/* Characters Section */}
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>
-            {t('characters', 'Characters')}
-            <span className={styles.sectionCount}>
-              {activeCharacters.length} active
-              {retiredCharacters.length > 0 && `, ${retiredCharacters.length} retired`}
-            </span>
-          </h2>
-          {!campaign.isCompleted && (
-            <button
-              className={styles.addCharacterButton}
-              onClick={handleShowAddCharacter}
-            >
-              + Add Character
-            </button>
-          )}
+      {/* Tab Bar */}
+      {!campaign.isCompleted && (
+        <div className={styles.tabBar}>
+          <button
+            className={`${styles.tab} ${activeTab === 'characters' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('characters')}
+          >
+            Characters
+            <span className={styles.tabBadge}>{activeCharacters.length}</span>
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'shop' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('shop')}
+            disabled={activeCharacters.length === 0}
+          >
+            Shop
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'scenarios' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('scenarios')}
+          >
+            Scenarios
+            <span className={styles.tabBadge}>{scenarios.length}</span>
+          </button>
         </div>
+      )}
 
-        {/* Add Character Modal */}
-        {showAddCharacter && (
-          <div className={styles.addCharacterModal}>
-            <div className={styles.modalHeader}>
-              <h3>Add Character to Campaign</h3>
-              <button
-                className={styles.closeButton}
-                onClick={() => setShowAddCharacter(false)}
-              >
-                ×
-              </button>
+      {/* Tab Content */}
+      <div className={styles.tabContent}>
+        {/* Characters Tab */}
+        {activeTab === 'characters' && (
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                {t('characters', 'Characters')}
+                <span className={styles.sectionCount}>
+                  {activeCharacters.length} active
+                  {retiredCharacters.length > 0 && `, ${retiredCharacters.length} retired`}
+                </span>
+              </h2>
+              {!campaign.isCompleted && (
+                <button
+                  className={styles.addCharacterButton}
+                  onClick={handleShowAddCharacter}
+                >
+                  + Add Character
+                </button>
+              )}
             </div>
-            {loadingCharacters ? (
-              <p className={styles.loadingText}>Loading your characters...</p>
-            ) : availableCharacters.length === 0 ? (
-              <p className={styles.noAvailableCharacters}>
-                No available characters. All your characters are either in campaigns or retired.
-                Create a new character first.
+
+            {/* Add Character Modal */}
+            {showAddCharacter && (
+              <div className={styles.addCharacterModal}>
+                <div className={styles.modalHeader}>
+                  <h3>Add Character to Campaign</h3>
+                  <button
+                    className={styles.closeButton}
+                    onClick={() => setShowAddCharacter(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                {loadingCharacters ? (
+                  <p className={styles.loadingText}>Loading your characters...</p>
+                ) : availableCharacters.length === 0 ? (
+                  <p className={styles.noAvailableCharacters}>
+                    No available characters. All your characters are either in campaigns or retired.
+                    Create a new character first.
+                  </p>
+                ) : (
+                  <div className={styles.availableCharactersList}>
+                    {availableCharacters.map((char) => (
+                      <div
+                        key={char.id}
+                        className={styles.availableCharacterCard}
+                        onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
+                      >
+                        <div className={styles.availableCharacterInfo}>
+                          <span className={styles.availableCharacterName}>{char.name}</span>
+                          <span className={styles.availableCharacterClass}>
+                            {char.className} Lv.{char.level}
+                          </span>
+                        </div>
+                        <button
+                          className={styles.addButton}
+                          disabled={addingCharacter}
+                        >
+                          {addingCharacter ? 'Adding...' : 'Add'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeCharacters.length === 0 ? (
+              <p className={styles.noCharacters}>
+                No characters in this campaign yet. Click "Add Character" to begin!
               </p>
             ) : (
-              <div className={styles.availableCharactersList}>
-                {availableCharacters.map((char) => (
-                  <div
-                    key={char.id}
-                    className={styles.availableCharacterCard}
-                    onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
-                  >
-                    <div className={styles.availableCharacterInfo}>
-                      <span className={styles.availableCharacterName}>{char.name}</span>
-                      <span className={styles.availableCharacterClass}>
-                        {char.className} Lv.{char.level}
-                      </span>
-                    </div>
-                    <button
-                      className={styles.addButton}
-                      disabled={addingCharacter}
-                    >
-                      {addingCharacter ? 'Adding...' : 'Add'}
-                    </button>
-                  </div>
+              <div className={styles.charactersGrid}>
+                {activeCharacters.map((character) => (
+                  <CharacterCard
+                    key={character.id}
+                    character={character}
+                    selected={selectedCharacters.includes(character.id)}
+                    onToggle={() => handleToggleCharacter(character.id)}
+                    disabled={campaign.isCompleted}
+                  />
                 ))}
+              </div>
+            )}
+
+            {retiredCharacters.length > 0 && (
+              <div className={styles.retiredSection}>
+                <h3 className={styles.retiredTitle}>Retired Characters</h3>
+                <div className={styles.retiredList}>
+                  {retiredCharacters.map((character) => (
+                    <span key={character.id} className={styles.retiredCharacter}>
+                      {character.name} ({character.className} Lv.{character.level})
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {activeCharacters.length === 0 ? (
-          <p className={styles.noCharacters}>
-            No characters in this campaign yet. Click "Add Character" to begin!
-          </p>
-        ) : (
-          <div className={styles.charactersGrid}>
-            {activeCharacters.map((character) => (
-              <CharacterCard
-                key={character.id}
-                character={character}
-                selected={selectedCharacters.includes(character.id)}
-                onToggle={() => handleToggleCharacter(character.id)}
-                disabled={campaign.isCompleted}
-              />
-            ))}
-          </div>
+        {/* Shop Tab */}
+        {activeTab === 'shop' && activeCharacters.length > 0 && (
+          <CampaignShop
+            campaignId={campaignId}
+            characters={activeCharacters}
+            onCharacterGoldUpdate={handleCharacterGoldUpdate}
+          />
         )}
 
-        {retiredCharacters.length > 0 && (
-          <div className={styles.retiredSection}>
-            <h3 className={styles.retiredTitle}>Retired Characters</h3>
-            <div className={styles.retiredList}>
-              {retiredCharacters.map((character) => (
-                <span key={character.id} className={styles.retiredCharacter}>
-                  {character.name} ({character.className} Lv.{character.level})
-                </span>
+        {/* Scenarios Tab */}
+        {activeTab === 'scenarios' && (
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              {t('scenarios', 'Scenarios')}
+            </h2>
+
+            <div className={styles.scenariosList}>
+              {scenarios.map((scenario) => (
+                <div
+                  key={scenario.scenarioId}
+                  className={`${styles.scenarioCard} ${
+                    scenario.isCompleted
+                      ? styles.completed
+                      : scenario.isUnlocked
+                        ? styles.unlocked
+                        : styles.locked
+                  } ${selectedScenario === scenario.scenarioId ? styles.selected : ''}`}
+                  onClick={() => {
+                    if (scenario.isUnlocked && !scenario.isCompleted && !campaign.isCompleted) {
+                      setSelectedScenario(scenario.scenarioId);
+                    }
+                  }}
+                >
+                  <div className={styles.scenarioHeader}>
+                    <span className={styles.scenarioName}>{scenario.name}</span>
+                    <span className={styles.scenarioStatus}>
+                      {scenario.isCompleted
+                        ? 'Completed'
+                        : scenario.isUnlocked
+                          ? 'Available'
+                          : 'Locked'}
+                    </span>
+                  </div>
+                  {scenario.description && (
+                    <p className={styles.scenarioDescription}>{scenario.description}</p>
+                  )}
+                  {scenario.unlocksScenarios && scenario.unlocksScenarios.length > 0 && !scenario.isCompleted && (
+                    <p className={styles.unlocks}>
+                      Unlocks: {scenario.unlocksScenarios.length} scenario(s)
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
+
+            {/* Start Game Button */}
+            <div className={styles.actions}>
+              <button
+                className={styles.startButton}
+                onClick={handleStartGame}
+                disabled={!canStartGame}
+              >
+                {selectedCharacters.length === 0
+                  ? 'Select characters to play'
+                  : !selectedScenario
+                    ? 'Select a scenario'
+                    : `Start Scenario with ${selectedCharacters.length} character(s)`}
+              </button>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Scenarios Section */}
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          {t('scenarios', 'Scenarios')}
-        </h2>
-
-        <div className={styles.scenariosList}>
-          {scenarios.map((scenario) => (
-            <div
-              key={scenario.scenarioId}
-              className={`${styles.scenarioCard} ${
-                scenario.isCompleted
-                  ? styles.completed
-                  : scenario.isUnlocked
-                    ? styles.unlocked
-                    : styles.locked
-              } ${selectedScenario === scenario.scenarioId ? styles.selected : ''}`}
-              onClick={() => {
-                if (scenario.isUnlocked && !scenario.isCompleted && !campaign.isCompleted) {
-                  setSelectedScenario(scenario.scenarioId);
-                }
-              }}
-            >
-              <div className={styles.scenarioHeader}>
-                <span className={styles.scenarioName}>{scenario.name}</span>
-                <span className={styles.scenarioStatus}>
-                  {scenario.isCompleted
-                    ? 'Completed'
-                    : scenario.isUnlocked
-                      ? 'Available'
-                      : 'Locked'}
-                </span>
-              </div>
-              {scenario.description && (
-                <p className={styles.scenarioDescription}>{scenario.description}</p>
-              )}
-              {scenario.unlocksScenarios && scenario.unlocksScenarios.length > 0 && !scenario.isCompleted && (
-                <p className={styles.unlocks}>
-                  Unlocks: {scenario.unlocksScenarios.length} scenario(s)
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Start Game Button */}
-      {!campaign.isCompleted && (
-        <div className={styles.actions}>
-          <button
-            className={styles.startButton}
-            onClick={handleStartGame}
-            disabled={!canStartGame}
-          >
-            {selectedCharacters.length === 0
-              ? 'Select characters to play'
-              : !selectedScenario
-                ? 'Select a scenario'
-                : `Start Scenario with ${selectedCharacters.length} character(s)`}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

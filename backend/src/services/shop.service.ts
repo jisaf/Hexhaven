@@ -17,11 +17,13 @@ import {
 } from '../types/shop.types';
 import { UpdateShopConfigDto } from '../types/shop.types';
 import { NotFoundError, ForbiddenError } from '../types/errors';
-import { Prisma, PrismaClient, Rarity, TransactionType } from '@prisma/client';
-import { ItemRarity } from '../../../shared/types/entities';
+import { Prisma, PrismaClient, Rarity, TransactionType, ItemSlot as PrismaItemSlot } from '@prisma/client';
+import { ItemRarity, ItemSlot } from '../../../shared/types/entities';
 
 // Map Prisma Rarity to shared ItemRarity
 const toItemRarity = (rarity: Rarity): ItemRarity => rarity as ItemRarity;
+// Map Prisma ItemSlot to shared ItemSlot
+const toItemSlot = (slot: PrismaItemSlot): ItemSlot => slot as ItemSlot;
 
 // Default shop configuration
 const DEFAULT_SHOP_CONFIG: CampaignShopConfig = {
@@ -159,6 +161,7 @@ export class ShopService {
       itemName: inv.item.name,
       cost: inv.item.cost,
       rarity: toItemRarity(inv.item.rarity),
+      slot: toItemSlot(inv.item.slot),
       quantity: inv.quantity,
       initialQuantity: inv.initialQuantity,
       isAvailable: this.isItemAvailable(
@@ -358,6 +361,7 @@ export class ShopService {
         itemName: shopInventory.item.name,
         cost: shopInventory.item.cost,
         rarity: toItemRarity(shopInventory.item.rarity),
+        slot: toItemSlot(shopInventory.item.slot),
         quantity: shopInventory.quantity - quantity,
         initialQuantity: shopInventory.initialQuantity,
         isAvailable: this.isItemAvailable(

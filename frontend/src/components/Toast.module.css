@@ -1,0 +1,187 @@
+/**
+ * Toast Component Styles (Issue #335, #338)
+ * Pattern reference: PlayerDisconnectedBanner.module.css
+ */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  max-width: 500px;
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 9000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.exiting {
+  animation: slideUp 0.2s ease-in forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .exiting {
+    animation: fadeOut 0.15s ease-in forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}
+
+/* Type-specific styling */
+.success {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.95), rgba(25, 135, 84, 0.95));
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  color: #ffffff;
+}
+
+.error {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.95), rgba(193, 18, 31, 0.95));
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: #ffffff;
+}
+
+.warning {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(224, 168, 0, 0.95));
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #1a1a1a;
+}
+
+.info {
+  background: linear-gradient(135deg, rgba(74, 144, 217, 0.95), rgba(58, 123, 192, 0.95));
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  color: #ffffff;
+}
+
+/* Icon */
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.warning .icon {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Message */
+.message {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Dismiss button */
+.dismissButton {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.dismissButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.warning .dismissButton {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.warning .dismissButton:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsive */
+@media (max-width: 540px) {
+  .toast {
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+    min-width: unset;
+    max-width: unset;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .exiting {
+    animation: slideUp 0.2s ease-in forwards;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+  }
+}
