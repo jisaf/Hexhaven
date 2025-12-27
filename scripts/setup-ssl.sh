@@ -95,7 +95,8 @@ main() {
     echo "1) hexhaven.net (production)"
     echo "2) dev.hexhaven.net (development)"
     echo "3) test.hexhaven.net (test)"
-    read -p "Enter choice [1-3]: " choice
+    echo "4) qa.hexhaven.net (QA)"
+    read -p "Enter choice [1-4]: " choice
 
     case $choice in
         1)
@@ -108,6 +109,10 @@ main() {
             ;;
         3)
             DOMAIN="test.hexhaven.net"
+            EXTRA_DOMAINS=""
+            ;;
+        4)
+            DOMAIN="qa.hexhaven.net"
             EXTRA_DOMAINS=""
             ;;
         *)

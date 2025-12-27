@@ -13,6 +13,14 @@ export class SocketIOAdapter extends IoAdapter {
           'http://localhost:4173',
           'http://150.136.173.159',
           'http://10.1.1.80:5173',
+          'https://test.hexhaven.net',
+          'http://test.hexhaven.net',
+          'https://qa.hexhaven.net',
+          'http://qa.hexhaven.net',
+          'https://hexhaven.net',
+          'http://hexhaven.net',
+          'https://www.hexhaven.net',
+          'http://www.hexhaven.net',
         ];
 
     const isDevelopment = process.env.NODE_ENV !== 'production';
