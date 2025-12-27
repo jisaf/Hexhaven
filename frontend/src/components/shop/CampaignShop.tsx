@@ -107,15 +107,19 @@ export function CampaignShop({
   const lastShownErrorRef = useRef<string | null>(null);
 
   // Show error toast when error state changes (only once per unique error)
+  // Then clear the error so shop view is restored (not replaced by error screen)
   useEffect(() => {
     if (error && error !== lastShownErrorRef.current) {
       lastShownErrorRef.current = error;
       showError(error);
+      // Clear the error after showing toast by refreshing the shop
+      // This restores the shop view instead of showing error screen
+      refreshShop();
     } else if (!error) {
       // Reset when error is cleared
       lastShownErrorRef.current = null;
     }
-  }, [error, showError]);
+  }, [error, showError, refreshShop]);
 
   // Find selected item for modal
   const shopInventory = shop?.inventory;

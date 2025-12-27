@@ -301,9 +301,10 @@ export function useShop({
         return result;
       } catch (err) {
         console.error('[useShop] Purchase failed:', err);
-        setError(err instanceof Error ? err.message : 'Purchase failed');
-        // Refresh to get correct state
-        fetchShop();
+        const errorMessage = err instanceof Error ? err.message : 'Purchase failed';
+        setError(errorMessage);
+        // Don't call fetchShop() here - it would clear the error before toast shows
+        // The shop state may be slightly stale but user needs to see the error
         return null;
       } finally {
         setPurchasing(false);
@@ -346,9 +347,9 @@ export function useShop({
         return result;
       } catch (err) {
         console.error('[useShop] Sell failed:', err);
-        setError(err instanceof Error ? err.message : 'Sell failed');
-        // Refresh to get correct state
-        fetchShop();
+        const errorMessage = err instanceof Error ? err.message : 'Sell failed';
+        setError(errorMessage);
+        // Don't call fetchShop() here - it would clear the error before toast shows
         return null;
       } finally {
         setSelling(false);
