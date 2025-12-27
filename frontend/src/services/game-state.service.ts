@@ -346,7 +346,8 @@ class GameStateManager {
     }
 
     // Helper to register and track handlers
-    const register = (event: string, handler: (...args: unknown[]) => void) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const register = (event: string, handler: (data: any) => void) => {
       this.boundHandlers.set(event, handler);
       websocketService.on(event as EventName, handler);
     };
@@ -791,7 +792,8 @@ class GameStateManager {
     console.log('[GameStateManager] Monster spawned:', data);
 
     // Build full monster object with required fields
-    const roomId = this.state.gameData?.characters?.[0]?.roomId || '';
+    // Use roomId from existing monsters or empty string (frontend display doesn't need it)
+    const roomId = this.state.gameData?.monsters?.[0]?.roomId || '';
     const newMonster = {
       id: data.monsterId,
       roomId,
@@ -826,7 +828,7 @@ class GameStateManager {
     // Log the spawn
     this.addLog([
       { text: 'A ' },
-      { text: data.isElite ? 'elite ' : '', color: 'yellow' },
+      { text: data.isElite ? 'elite ' : '', color: 'gold' },
       { text: data.monsterType, color: 'red' },
       { text: ' has appeared!' },
     ]);

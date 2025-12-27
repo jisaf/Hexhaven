@@ -35,7 +35,7 @@ import {
   isUserAuthenticated,
 } from '../utils/storage';
 import { getApiUrl } from '../config/api';
-import type { GameStartedPayload, RoomJoinedPayload, PlayerJoinedPayload, CharacterSelectedPayload } from '../../../shared/types/events';
+import type { GameStartedPayload, PlayerJoinedPayload, CharacterSelectedPayload } from '../../../shared/types/events';
 import type { CharacterClass } from '../../../shared/types/entities';
 
 /**
@@ -252,9 +252,9 @@ class RoomSessionManager {
     this.boundHandlers.gameStarted = this.onGameStarted.bind(this);
     this.boundHandlers.disconnected = this.onDisconnected.bind(this);
     this.boundHandlers.playerJoined = (data: PlayerJoinedPayload) => this.onPlayerJoined({
-      id: data.player.id,
-      nickname: data.player.nickname,
-      isHost: data.player.isHost,
+      id: data.playerId,
+      nickname: data.nickname,
+      isHost: data.isHost,
       connectionStatus: 'connected',
       isReady: false,
     });

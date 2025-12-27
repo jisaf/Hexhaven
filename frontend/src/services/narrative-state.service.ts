@@ -76,7 +76,8 @@ class NarrativeStateService {
    * Emits to server - backend handles dismissal and queued narratives.
    */
   acknowledge(playerId: string): void {
-    if (!this.state.activeNarrative) return;
+    const activeNarrative = this.state.activeNarrative;
+    if (!activeNarrative) return;
 
     // Mark as acknowledged locally for UI feedback
     this.state = {
@@ -90,7 +91,7 @@ class NarrativeStateService {
     // Emit acknowledgment to server - let backend handle dismissal
     // Backend will send narrative_dismissed, then any queued narrative_display
     websocketService.emit('acknowledge_narrative', {
-      narrativeId: this.state.activeNarrative.narrativeId,
+      narrativeId: activeNarrative.narrativeId,
     });
   }
 

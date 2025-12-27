@@ -8,9 +8,8 @@
 import { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { websocketService } from './services/websocket.service';
-// Import to ensure narrative service subscribes to WebSocket at app startup
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { narrativeStateService } from './services/narrative-state.service';
+// Side-effect import to ensure narrative service subscribes to WebSocket at app startup
+import './services/narrative-state.service';
 import { getWebSocketUrl } from './config/api';
 import { WebSocketConnectionProvider, useWebSocketConnection } from './contexts/WebSocketConnectionContext';
 import { ReconnectingModal } from './components/ReconnectingModal';
