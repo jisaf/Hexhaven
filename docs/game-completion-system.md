@@ -757,6 +757,43 @@ test('complete scenario and return to lobby', async ({ page }) => {
 - **Benefit**: Easy to add new objective types
 - **Trade-off**: Can't query by objective details (acceptable)
 
+### Why Options Object Instead of Boolean Parameter?
+
+The `checkScenarioCompletion` method uses an options object pattern instead of a boolean parameter:
+
+```typescript
+// BEFORE (boolean anti-pattern):
+checkScenarioCompletion(roomCode, false)  // What does false mean?
+
+// AFTER (options object pattern):
+checkScenarioCompletion(roomCode, { checkPrimaryObjective: false })
+```
+
+**Benefits**:
+- Self-documenting call sites
+- Easy to add new options without breaking existing calls
+- Clear intent at each call site
+
+**Interface**:
+```typescript
+interface ScenarioCompletionCheckOptions {
+  /**
+   * If false, only checks sub-objectives, defeat conditions, and narrative triggers
+   * If true, also checks primary objective completion for victory
+   * @default true
+   */
+  checkPrimaryObjective?: boolean;
+}
+```
+
+**Call Sites**:
+| Context | Options | Reason |
+|---------|---------|--------|
+| Attack handler | `{ checkPrimaryObjective: false }` | Defer victory to round end |
+| Turn advancement | `{ checkPrimaryObjective: false }` | Defer victory to round end |
+| Character exhaustion | `{ checkPrimaryObjective: false }` | Check defeats only |
+| Round end | `{ checkPrimaryObjective: true }` | Declare victory if objectives met |
+
 ---
 
 ## Related Documentation
@@ -769,4 +806,4 @@ test('complete scenario and return to lobby', async ({ page }) => {
 ---
 
 **Last Updated**: 2025-12-28
-**Version**: 1.1.0 (End-of-Round Victory Completion)
+**Version**: 1.2.0 (Options Object Pattern + Code Deduplication)

@@ -110,6 +110,18 @@ import {
   type Monster,
 } from '../../../shared/types/entities';
 
+/**
+ * Options for scenario completion check
+ */
+interface ScenarioCompletionCheckOptions {
+  /**
+   * If false, only checks sub-objectives, defeat conditions, and narrative triggers (used during attack/turns)
+   * If true, also checks primary objective completion for victory (used at round end)
+   * @default true
+   */
+  checkPrimaryObjective?: boolean;
+}
+
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
 @Injectable()
@@ -2839,11 +2851,12 @@ export class GameGateway
       }
 
       // Check scenario completion after attack (in case last monster died)
-      // Note: Pass false to skip primary objective check during attack
-      // Primary objective victory will be checked at round end instead
+      // Skip primary objective check during attack - victory is only declared at round end
       // This allows other players to take remaining actions and collect loot
       if (targetDead && isMonsterTarget) {
-        this.checkScenarioCompletion(room.roomCode, false);
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -3231,7 +3244,10 @@ export class GameGateway
         }
 
         // Check scenario completion after turn advancement
-        this.checkScenarioCompletion(room.roomCode);
+        // Skip primary objective check - victory is only declared at round end
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -4168,8 +4184,8 @@ export class GameGateway
 
     // Phase 3: Check scenario completion at round boundary BEFORE starting new round
     // This ensures objectives like "survive N rounds" are properly evaluated
-    // Pass true to check primary objective completion (which was deferred from attack handlers)
-    this.checkScenarioCompletion(roomCode, true);
+    // Check primary objective completion (which was deferred from attack handlers)
+    this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: true });
 
     // If game completed, don't proceed with new round setup
     if (room.status === RoomStatus.COMPLETED) {
@@ -4536,7 +4552,8 @@ export class GameGateway
       );
 
       // Check if this triggers scenario completion (all players exhausted = defeat)
-      this.checkScenarioCompletion(roomCode);
+      // Skip primary objective check - victory is only declared at round end
+      this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: false });
     } catch (error) {
       this.logger.error(
         `Failed to handle character exhaustion: ${error instanceof Error ? error.message : String(error)}`,
@@ -4547,13 +4564,12 @@ export class GameGateway
   /**
    * Check scenario completion and broadcast if complete (Phase 3 Enhanced)
    * Uses ObjectiveEvaluator and ObjectiveContextBuilder for proper objective evaluation
-   * @param checkPrimaryObjective - If false, only checks sub-objectives and narrative triggers (used during attack)
-   *                                If true, also checks primary objective completion (used at round end)
    */
   private async checkScenarioCompletion(
     roomCode: string,
-    checkPrimaryObjective: boolean = true,
+    options: ScenarioCompletionCheckOptions = {},
   ): Promise<void> {
+    const { checkPrimaryObjective = true } = options;
     try {
       // Get room state
       const room = roomService.getRoom(roomCode);
@@ -4704,39 +4720,9 @@ export class GameGateway
 
       if (!isComplete) {
         // Scenario still in progress
-        // Still update sub-objectives and narrative triggers even if not checking primary
-        this.updateObjectiveProgress(
-          roomCode,
-          objectives.primary.id,
-          primaryResult.progress?.current || 0,
-          primaryResult.progress?.target || 0,
-          objectives.primary.description,
-        );
-
-        // Evaluate secondary objectives
-        if (objectives?.secondary) {
-          for (const secondary of objectives.secondary) {
-            const result = this.objectiveEvaluatorService.evaluateObjective(
-              secondary,
-              context,
-            );
-
-            // Update progress
-            if (result.progress) {
-              this.updateObjectiveProgress(
-                roomCode,
-                secondary.id,
-                result.progress.current,
-                result.progress.target,
-                secondary.description,
-              );
-            }
-          }
-        }
-
-        // Check narrative triggers even if not checking primary objective
+        // Progress updates already happened above (lines 4657-4693)
+        // Just check narrative triggers and return
         this.checkNarrativeTriggers(roomCode);
-
         return;
       }
 
