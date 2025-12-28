@@ -34,6 +34,7 @@ const CharacterDetail = lazy(() => import('./pages/CharacterDetail').then(m => (
 const MatchHistory = lazy(() => import('./pages/MatchHistory').then(m => ({ default: m.MatchHistory })));
 const ItemCreatorTool = lazy(() => import('./pages/ItemCreatorTool').then(m => ({ default: m.ItemCreatorTool })));
 const CardDemo = lazy(() => import('./pages/CardDemo').then(m => ({ default: m.CardDemo })));
+const IconReferencePage = lazy(() => import('./pages/IconReferencePage').then(m => ({ default: m.IconReferencePage })));
 
 // New multi-page game flow routes (Issue #305-317)
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -221,6 +222,7 @@ function Layout() {
         <Route path="/design" element={<ScenarioDesigner />} />
         <Route path="/test-videos" element={<TestVideos />} />
         <Route path="/carddemo" element={<CardDemo />} />
+        <Route path="/icons" element={<IconReferencePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

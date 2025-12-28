@@ -54,11 +54,11 @@ export const EFFECT_ICONS: Record<string, EffectIcon> = {
   // Status effects
   'stun': { icon: 'ra-lightning-bolt', label: 'Stun', color: '#f1c40f' },
   'poison': { icon: 'ra-vial', label: 'Poison', color: '#27ae60' },
-  'wound': { icon: 'ra-bleeding-wounds', label: 'Wound', color: '#c0392b' },
+  'wound': { icon: 'ra-bleeding-eye', label: 'Wound', color: '#c0392b' },
   'muddle': { icon: 'ra-help', label: 'Muddle', color: '#9b59b6' },
   'immobilize': { icon: 'ra-chain', label: 'Immobilize', color: '#7f8c8d' },
-  'disarm': { icon: 'ra-broken-sword', label: 'Disarm', color: '#95a5a6' },
-  'invisible': { icon: 'ra-eye-slash', label: 'Invisible', color: '#3498db' },
+  'disarm': { icon: 'ra-broken-shield', label: 'Disarm', color: '#95a5a6' },
+  'invisible': { icon: 'ra-hood', label: 'Invisible', color: '#3498db' },
   'strengthen': { icon: 'ra-muscle-up', label: 'Strengthen', color: '#e67e22' },
   'bless': { icon: 'ra-sun-symbol', label: 'Bless', color: '#f1c40f' },
   'curse': { icon: 'ra-death-skull', label: 'Curse', color: '#2c3e50' },
@@ -82,12 +82,12 @@ export const EFFECT_ICONS: Record<string, EffectIcon> = {
   // Special
   'recover': { icon: 'ra-recycle', label: 'Recover', color: '#27ae60' },
   'loot': { icon: 'ra-gold-bar', label: 'Loot', color: '#f39c12' },
-  'xp': { icon: 'ra-star-formation', label: 'XP', color: '#f1c40f' },
-  'control': { icon: 'ra-brain', label: 'Control', color: '#9b59b6' },
+  'xp': { icon: 'ra-trophy', label: 'XP', color: '#f1c40f' },
+  'control': { icon: 'ra-overmind', label: 'Control', color: '#9b59b6' },
   'augment': { icon: 'ra-aura', label: 'Augment', color: '#8e44ad' },
 
   // Terrain
-  'obstacle': { icon: 'ra-stone-block', label: 'Obstacle', color: '#7f8c8d' },
+  'obstacle': { icon: 'ra-barrier', label: 'Obstacle', color: '#7f8c8d' },
   'trap': { icon: 'ra-bear-trap', label: 'Trap', color: '#c0392b' },
   'through obstacles': { icon: 'ra-hole-ladder', label: 'Phase', color: '#3498db' },
 };

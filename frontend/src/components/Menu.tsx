@@ -209,6 +209,15 @@ export const Menu: React.FC<MenuProps> = ({ isOpen, onClose }) => {
               </button>
             </>
           )}
+
+          {/* Resources - Available to all users */}
+          <div className={styles.menuDivider}></div>
+          <button
+            className={styles.menuItem}
+            onClick={() => handleMenuItemClick('/icons')}
+          >
+            <span className={styles.menuItemText}>Icon Reference</span>
+          </button>
         </div>
       </nav>
     </>
