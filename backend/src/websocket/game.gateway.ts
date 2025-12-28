@@ -2839,8 +2839,11 @@ export class GameGateway
       }
 
       // Check scenario completion after attack (in case last monster died)
+      // Note: Pass false to skip primary objective check during attack
+      // Primary objective victory will be checked at round end instead
+      // This allows other players to take remaining actions and collect loot
       if (targetDead && isMonsterTarget) {
-        this.checkScenarioCompletion(room.roomCode);
+        this.checkScenarioCompletion(room.roomCode, false);
       }
     } catch (error) {
       const errorMessage =
@@ -4165,7 +4168,8 @@ export class GameGateway
 
     // Phase 3: Check scenario completion at round boundary BEFORE starting new round
     // This ensures objectives like "survive N rounds" are properly evaluated
-    this.checkScenarioCompletion(roomCode);
+    // Pass true to check primary objective completion (which was deferred from attack handlers)
+    this.checkScenarioCompletion(roomCode, true);
 
     // If game completed, don't proceed with new round setup
     if (room.status === RoomStatus.COMPLETED) {
@@ -4543,8 +4547,13 @@ export class GameGateway
   /**
    * Check scenario completion and broadcast if complete (Phase 3 Enhanced)
    * Uses ObjectiveEvaluator and ObjectiveContextBuilder for proper objective evaluation
+   * @param checkPrimaryObjective - If false, only checks sub-objectives and narrative triggers (used during attack)
+   *                                If true, also checks primary objective completion (used at round end)
    */
-  private async checkScenarioCompletion(roomCode: string): Promise<void> {
+  private async checkScenarioCompletion(
+    roomCode: string,
+    checkPrimaryObjective: boolean = true,
+  ): Promise<void> {
     try {
       // Get room state
       const room = roomService.getRoom(roomCode);
@@ -4686,11 +4695,48 @@ export class GameGateway
 
       // Determine outcome
       const isDefeat = allPlayersExhausted || failureTriggered;
-      const isVictory = primaryComplete && !isDefeat;
-      const isComplete = isDefeat || isVictory;
+
+      // NEW: Only check for victory if explicitly requested
+      // When checkPrimaryObjective=false, we still want to check for defeats
+      // but not declare victory (that happens at round end)
+      const isVictory = checkPrimaryObjective && primaryComplete && !isDefeat;
+      const isComplete = isDefeat || (checkPrimaryObjective && isVictory);
 
       if (!isComplete) {
         // Scenario still in progress
+        // Still update sub-objectives and narrative triggers even if not checking primary
+        this.updateObjectiveProgress(
+          roomCode,
+          objectives.primary.id,
+          primaryResult.progress?.current || 0,
+          primaryResult.progress?.target || 0,
+          objectives.primary.description,
+        );
+
+        // Evaluate secondary objectives
+        if (objectives?.secondary) {
+          for (const secondary of objectives.secondary) {
+            const result = this.objectiveEvaluatorService.evaluateObjective(
+              secondary,
+              context,
+            );
+
+            // Update progress
+            if (result.progress) {
+              this.updateObjectiveProgress(
+                roomCode,
+                secondary.id,
+                result.progress.current,
+                result.progress.target,
+                secondary.description,
+              );
+            }
+          }
+        }
+
+        // Check narrative triggers even if not checking primary objective
+        this.checkNarrativeTriggers(roomCode);
+
         return;
       }
 
