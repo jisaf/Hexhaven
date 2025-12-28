@@ -240,6 +240,7 @@ export class CampaignService {
 
     const campaign = await this.prisma.campaign.create({
       data: {
+        createdByUserId: userId,
         templateId: dto.templateId,
         name: dto.name || template.name,
         description: template.description,

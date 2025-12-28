@@ -595,7 +595,11 @@ export class CampaignInvitationService {
       throw new NotFoundException('Campaign not found');
     }
 
-    if (campaign.characters.length === 0) {
+    // Allow campaign creator OR members with characters (Issue #388)
+    const isCreator = campaign.createdByUserId === userId;
+    const isMember = campaign.characters.length > 0;
+
+    if (!isCreator && !isMember) {
       throw new ForbiddenException('You are not a member of this campaign');
     }
   }

@@ -17,7 +17,13 @@ import {
 } from '../types/shop.types';
 import { UpdateShopConfigDto } from '../types/shop.types';
 import { NotFoundError, ForbiddenError } from '../types/errors';
-import { Prisma, PrismaClient, Rarity, TransactionType, ItemSlot as PrismaItemSlot } from '@prisma/client';
+import {
+  Prisma,
+  PrismaClient,
+  Rarity,
+  TransactionType,
+  ItemSlot as PrismaItemSlot,
+} from '@prisma/client';
 import { ItemRarity, ItemSlot } from '../../../shared/types/entities';
 
 // Map Prisma Rarity to shared ItemRarity
