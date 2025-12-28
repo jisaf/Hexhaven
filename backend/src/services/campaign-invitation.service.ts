@@ -15,6 +15,7 @@ import type {
   CampaignInvitation,
   CampaignInviteToken,
   CampaignPublicInfo,
+  InvitationStatus,
 } from '../../../shared/types/campaign';
 
 // Token TTL: 7 days
@@ -208,7 +209,10 @@ export class CampaignInvitationService {
    * Accept invitation (called when user adds character to campaign)
    * Returns the campaignId for the accepted invitation
    */
-  async acceptInvitation(invitationId: string, userId: string): Promise<string> {
+  async acceptInvitation(
+    invitationId: string,
+    userId: string,
+  ): Promise<string> {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     });
@@ -525,7 +529,7 @@ export class CampaignInvitationService {
     invitedUserId: string;
     invitedUsername: string;
     invitedByUserId: string;
-    status: string;
+    status: InvitationStatus;
     expiresAt: Date;
     createdAt: Date;
     updatedAt: Date;
