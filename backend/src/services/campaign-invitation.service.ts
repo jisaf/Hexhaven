@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { randomBytes } from 'crypto';
+import { config } from '../config/env.config';
 import type {
   CampaignInvitation,
   CampaignInviteToken,
@@ -18,10 +19,13 @@ import type {
   InvitationStatus,
 } from '../../../shared/types/campaign';
 
-// Token TTL: 7 days
-const TOKEN_TTL_DAYS = 7;
-// Direct invite TTL: 30 days
-const INVITATION_TTL_DAYS = 30;
+// Invitation status constants for type-safe comparisons
+const INVITATION_STATUS = {
+  PENDING: 'PENDING' as const,
+  ACCEPTED: 'ACCEPTED' as const,
+  DECLINED: 'DECLINED' as const,
+  EXPIRED: 'EXPIRED' as const,
+};
 
 @Injectable()
 export class CampaignInvitationService {
@@ -95,7 +99,7 @@ export class CampaignInvitationService {
       },
     });
 
-    if (existingInvitation && existingInvitation.status === 'PENDING') {
+    if (existingInvitation && existingInvitation.status === INVITATION_STATUS.PENDING) {
       throw new BadRequestException(
         `User '${invitedUsername}' already has a pending invitation to this campaign`,
       );
@@ -103,7 +107,7 @@ export class CampaignInvitationService {
 
     // Create invitation
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + INVITATION_TTL_DAYS);
+    expiresAt.setDate(expiresAt.getDate() + config.campaign.directInvitationTtlDays);
 
     const invitation = await this.prisma.campaignInvitation.create({
       data: {
@@ -111,7 +115,7 @@ export class CampaignInvitationService {
         invitedUserId: invitedUser.id,
         invitedUsername: invitedUser.username,
         invitedByUserId: invitingUserId,
-        status: 'PENDING',
+        status: INVITATION_STATUS.PENDING,
         expiresAt,
       },
       include: {
@@ -140,7 +144,7 @@ export class CampaignInvitationService {
     const invitations = await this.prisma.campaignInvitation.findMany({
       where: {
         campaignId,
-        status: 'PENDING',
+        status: INVITATION_STATUS.PENDING,
         expiresAt: { gt: new Date() },
       },
       include: {
@@ -164,7 +168,7 @@ export class CampaignInvitationService {
     const invitations = await this.prisma.campaignInvitation.findMany({
       where: {
         invitedUserId: userId,
-        status: 'PENDING',
+        status: INVITATION_STATUS.PENDING,
         expiresAt: { gt: new Date() },
       },
       include: {
@@ -196,7 +200,7 @@ export class CampaignInvitationService {
     // Validate user is member of campaign
     await this.validateCampaignMembership(invitation.campaignId, userId);
 
-    if (invitation.status !== 'PENDING') {
+    if (invitation.status !== INVITATION_STATUS.PENDING) {
       throw new BadRequestException('Can only revoke pending invitations');
     }
 
@@ -225,21 +229,21 @@ export class CampaignInvitationService {
       throw new ForbiddenException('This invitation was not sent to you');
     }
 
-    if (invitation.status !== 'PENDING') {
+    if (invitation.status !== INVITATION_STATUS.PENDING) {
       throw new BadRequestException('Invitation has already been processed');
     }
 
     if (invitation.expiresAt < new Date()) {
       await this.prisma.campaignInvitation.update({
         where: { id: invitationId },
-        data: { status: 'EXPIRED' },
+        data: { status: INVITATION_STATUS.EXPIRED },
       });
       throw new BadRequestException('Invitation has expired');
     }
 
     await this.prisma.campaignInvitation.update({
       where: { id: invitationId },
-      data: { status: 'ACCEPTED' },
+      data: { status: INVITATION_STATUS.ACCEPTED },
     });
 
     return invitation.campaignId;
@@ -261,13 +265,13 @@ export class CampaignInvitationService {
       throw new ForbiddenException('This invitation was not sent to you');
     }
 
-    if (invitation.status !== 'PENDING') {
+    if (invitation.status !== INVITATION_STATUS.PENDING) {
       throw new BadRequestException('Invitation has already been processed');
     }
 
     await this.prisma.campaignInvitation.update({
       where: { id: invitationId },
-      data: { status: 'DECLINED' },
+      data: { status: INVITATION_STATUS.DECLINED },
     });
   }
 
@@ -290,7 +294,7 @@ export class CampaignInvitationService {
     const token = this.generateToken();
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + TOKEN_TTL_DAYS);
+    expiresAt.setDate(expiresAt.getDate() + config.campaign.inviteTokenTtlDays);
 
     const inviteToken = await this.prisma.campaignInviteToken.create({
       data: {
@@ -359,43 +363,11 @@ export class CampaignInvitationService {
    * Returns campaignId if valid, throws otherwise
    */
   async validateToken(token: string, userId: string): Promise<string> {
-    const inviteToken = await this.prisma.campaignInviteToken.findUnique({
-      where: { token },
-      include: {
-        campaign: {
-          include: {
-            characters: true,
-          },
-        },
-      },
-    });
-
-    if (!inviteToken) {
-      throw new NotFoundException('Invalid invite token');
-    }
-
-    if (inviteToken.isRevoked) {
-      throw new BadRequestException('This invite link has been revoked');
-    }
-
-    if (inviteToken.expiresAt < new Date()) {
-      throw new BadRequestException('This invite link has expired');
-    }
+    const { inviteToken } = await this.getAndValidateToken(token, userId);
 
     if (inviteToken.usedCount >= inviteToken.maxUses) {
       throw new BadRequestException(
         'This invite link has reached its maximum uses',
-      );
-    }
-
-    // Check if user is already in campaign
-    const alreadyInCampaign = inviteToken.campaign.characters.some(
-      (char) => char.userId === userId,
-    );
-
-    if (alreadyInCampaign) {
-      throw new BadRequestException(
-        'You are already a member of this campaign',
       );
     }
 
@@ -410,39 +382,7 @@ export class CampaignInvitationService {
     token: string,
     userId: string,
   ): Promise<string> {
-    const inviteToken = await this.prisma.campaignInviteToken.findUnique({
-      where: { token },
-      include: {
-        campaign: {
-          include: {
-            characters: true,
-          },
-        },
-      },
-    });
-
-    if (!inviteToken) {
-      throw new NotFoundException('Invalid invite token');
-    }
-
-    if (inviteToken.isRevoked) {
-      throw new BadRequestException('This invite link has been revoked');
-    }
-
-    if (inviteToken.expiresAt < new Date()) {
-      throw new BadRequestException('This invite link has expired');
-    }
-
-    // Check if user is already in campaign
-    const alreadyInCampaign = inviteToken.campaign.characters.some(
-      (char) => char.userId === userId,
-    );
-
-    if (alreadyInCampaign) {
-      throw new BadRequestException(
-        'You are already a member of this campaign',
-      );
-    }
+    const { inviteToken } = await this.getAndValidateToken(token, userId);
 
     // Atomically increment used count only if under max uses
     // This prevents race conditions when multiple users use the token simultaneously
@@ -472,6 +412,63 @@ export class CampaignInvitationService {
     }
 
     return inviteToken.campaignId;
+  }
+
+  /**
+   * Helper: Validate token and check user eligibility
+   * Returns validated token with campaign relations
+   */
+  private async getAndValidateToken(
+    token: string,
+    userId: string,
+  ): Promise<{
+    inviteToken: {
+      id: string;
+      campaignId: string;
+      maxUses: number;
+      usedCount: number;
+      expiresAt: Date;
+      isRevoked: boolean;
+      campaign: {
+        characters: { userId: string }[];
+      };
+    };
+  }> {
+    const inviteToken = await this.prisma.campaignInviteToken.findUnique({
+      where: { token },
+      include: {
+        campaign: {
+          include: {
+            characters: true,
+          },
+        },
+      },
+    });
+
+    if (!inviteToken) {
+      throw new NotFoundException('Invalid invite token');
+    }
+
+    if (inviteToken.isRevoked) {
+      throw new BadRequestException('This invite link has been revoked');
+    }
+
+    if (inviteToken.expiresAt < new Date()) {
+      throw new BadRequestException('This invite link has expired');
+    }
+
+    // Check if user is already in campaign
+    const alreadyInCampaign = inviteToken.campaign.characters.some(
+      (char) => char.userId === userId,
+    );
+
+    if (alreadyInCampaign) {
+      throw new BadRequestException(
+        'You are already a member of this campaign',
+      );
+    }
+
+    return { inviteToken };
   }
 
   /**

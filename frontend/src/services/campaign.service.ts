@@ -24,18 +24,6 @@ export type {
   InvitationStatus,
 } from '../../../shared/types/campaign';
 
-import type {
-  CampaignTemplate,
-  CampaignWithDetails,
-  CampaignScenarioInfo,
-  CampaignListItem,
-  DeathMode,
-  CampaignCharacterSummary,
-  CampaignInvitation,
-  CampaignInviteToken,
-  CampaignPublicInfo,
-} from '../../../shared/types/campaign';
-
 // Alias for backwards compatibility
 export type CampaignCharacter = CampaignCharacterSummary;
 export type CampaignScenario = CampaignScenarioInfo;

@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { campaignService, type CampaignInvitation, type CampaignInviteToken } from '../services/campaign.service';
+import styles from './CampaignInvitePanel.module.css';
 
 export interface CampaignInvitePanelProps {
   campaignId: string;
@@ -100,30 +101,37 @@ export function CampaignInvitePanel({
     }
   };
 
-  const handleCopyToken = (token: string) => {
+  const handleCopyToken = async (token: string) => {
     const inviteUrl = `${window.location.origin}/campaigns/join/${token}`;
-    navigator.clipboard.writeText(inviteUrl).then(() => {
+
+    if (!navigator.clipboard) {
+      onError?.('Clipboard not supported in this browser');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
       onSuccess?.('Link copied to clipboard');
-    }).catch(() => {
+    } catch {
       onError?.('Failed to copy link');
-    });
+    }
   };
 
   if (isLoadingData) {
-    return <div className="invite-panel">Loading...</div>;
+    return <div className={styles['invite-panel']}>Loading...</div>;
   }
 
   return (
-    <div className="invite-panel">
-      <div className="tabs">
+    <div className={styles['invite-panel']}>
+      <div className={styles.tabs}>
         <button
-          className={`tab ${activeTab === 'direct' ? 'active' : ''}`}
+          className={`${styles.tab} ${activeTab === 'direct' ? styles.active : ''}`}
           onClick={() => setActiveTab('direct')}
         >
           Direct Invites
         </button>
         <button
-          className={`tab ${activeTab === 'tokens' ? 'active' : ''}`}
+          className={`${styles.tab} ${activeTab === 'tokens' ? styles.active : ''}`}
           onClick={() => setActiveTab('tokens')}
         >
           Invite Links
@@ -131,8 +139,8 @@ export function CampaignInvitePanel({
       </div>
 
       {activeTab === 'direct' && (
-        <div className="tab-content">
-          <form onSubmit={handleInviteUser} className="invite-form">
+        <div className={styles['tab-content']}>
+          <form onSubmit={handleInviteUser} className={styles['invite-form']}>
             <input
               type="text"
               value={username}
@@ -140,29 +148,29 @@ export function CampaignInvitePanel({
               placeholder="Enter username"
               maxLength={20}
               disabled={isLoading}
-              className="username-input"
+              className={styles['username-input']}
             />
-            <button type="submit" disabled={!username.trim() || isLoading} className="invite-button">
+            <button type="submit" disabled={!username.trim() || isLoading} className={styles['invite-button']}>
               {isLoading ? 'Sending...' : 'Send Invite'}
             </button>
           </form>
 
-          <div className="invitations-list">
+          <div className={styles['invitations-list']}>
             <h3>Pending Invitations</h3>
             {invitations.length === 0 ? (
-              <p className="empty-message">No pending invitations</p>
+              <p className={styles['empty-message']}>No pending invitations</p>
             ) : (
               invitations.map((inv) => (
-                <div key={inv.id} className="invitation-item">
-                  <div className="invitation-info">
-                    <span className="username">{inv.invitedUsername}</span>
-                    <span className="date">
+                <div key={inv.id} className={styles['invitation-item']}>
+                  <div className={styles['invitation-info']}>
+                    <span className={styles.username}>{inv.invitedUsername}</span>
+                    <span className={styles.date}>
                       {new Date(inv.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                   <button
                     onClick={() => handleRevokeInvitation(inv.id)}
-                    className="revoke-button"
+                    className={styles['revoke-button']}
                   >
                     Revoke
                   </button>
@@ -174,8 +182,8 @@ export function CampaignInvitePanel({
       )}
 
       {activeTab === 'tokens' && (
-        <div className="tab-content">
-          <div className="create-token-form">
+        <div className={styles['tab-content']}>
+          <div className={styles['create-token-form']}>
             <label>
               Max uses:
               <input
@@ -185,39 +193,39 @@ export function CampaignInvitePanel({
                 min={1}
                 max={100}
                 disabled={isLoading}
-                className="max-uses-input"
+                className={styles['max-uses-input']}
               />
             </label>
-            <button onClick={handleCreateToken} disabled={isLoading} className="create-token-button">
+            <button onClick={handleCreateToken} disabled={isLoading} className={styles['create-token-button']}>
               {isLoading ? 'Creating...' : 'Create Invite Link'}
             </button>
           </div>
 
-          <div className="tokens-list">
+          <div className={styles['tokens-list']}>
             <h3>Active Invite Links</h3>
             {tokens.length === 0 ? (
-              <p className="empty-message">No active invite links</p>
+              <p className={styles['empty-message']}>No active invite links</p>
             ) : (
               tokens.map((token) => (
-                <div key={token.id} className="token-item">
-                  <div className="token-info">
-                    <span className="token-uses">
+                <div key={token.id} className={styles['token-item']}>
+                  <div className={styles['token-info']}>
+                    <span className={styles['token-uses']}>
                       {token.usedCount} / {token.maxUses} uses
                     </span>
-                    <span className="token-expires">
+                    <span className={styles['token-expires']}>
                       Expires: {new Date(token.expiresAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="token-actions">
+                  <div className={styles['token-actions']}>
                     <button
                       onClick={() => handleCopyToken(token.token)}
-                      className="copy-button"
+                      className={styles['copy-button']}
                     >
                       Copy Link
                     </button>
                     <button
                       onClick={() => handleRevokeToken(token.id)}
-                      className="revoke-button"
+                      className={styles['revoke-button']}
                     >
                       Revoke
                     </button>
@@ -228,243 +236,6 @@ export function CampaignInvitePanel({
           </div>
         </div>
       )}
-
-      <style>{`
-        .invite-panel {
-          width: 100%;
-          max-width: 600px;
-          background: white;
-          border-radius: 8px;
-          padding: 24px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .tabs {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 24px;
-          border-bottom: 2px solid #e0e0e0;
-        }
-
-        .tab {
-          padding: 12px 24px;
-          background: none;
-          border: none;
-          border-bottom: 3px solid transparent;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: 500;
-          color: #666;
-          transition: all 0.2s;
-        }
-
-        .tab.active {
-          color: #4a90e2;
-          border-bottom-color: #4a90e2;
-        }
-
-        .tab:hover:not(.active) {
-          color: #333;
-        }
-
-        .tab-content {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .invite-form {
-          display: flex;
-          gap: 12px;
-        }
-
-        .username-input {
-          flex: 1;
-          padding: 12px;
-          font-size: 16px;
-          border: 2px solid #ddd;
-          border-radius: 6px;
-          transition: border-color 0.2s;
-        }
-
-        .username-input:focus {
-          outline: none;
-          border-color: #4a90e2;
-        }
-
-        .username-input:disabled {
-          background-color: #f5f5f5;
-          cursor: not-allowed;
-        }
-
-        .invite-button,
-        .create-token-button {
-          padding: 12px 24px;
-          background-color: #4a90e2;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .invite-button:hover:not(:disabled),
-        .create-token-button:hover:not(:disabled) {
-          background-color: #357abd;
-        }
-
-        .invite-button:disabled,
-        .create-token-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .invitations-list,
-        .tokens-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .invitations-list h3,
-        .tokens-list h3 {
-          margin: 0 0 12px 0;
-          font-size: 18px;
-          color: #333;
-        }
-
-        .empty-message {
-          color: #999;
-          font-style: italic;
-          text-align: center;
-          padding: 24px;
-        }
-
-        .invitation-item,
-        .token-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          background-color: #f9f9f9;
-          border-radius: 6px;
-          border: 1px solid #e0e0e0;
-        }
-
-        .invitation-info,
-        .token-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .username {
-          font-weight: 600;
-          color: #333;
-        }
-
-        .date,
-        .token-uses,
-        .token-expires {
-          font-size: 14px;
-          color: #666;
-        }
-
-        .token-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .copy-button,
-        .revoke-button {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 4px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .copy-button {
-          background-color: #2ecc71;
-          color: white;
-        }
-
-        .copy-button:hover {
-          background-color: #27ae60;
-        }
-
-        .revoke-button {
-          background-color: #e74c3c;
-          color: white;
-        }
-
-        .revoke-button:hover {
-          background-color: #c0392b;
-        }
-
-        .create-token-form {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .create-token-form label {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 16px;
-          color: #333;
-        }
-
-        .max-uses-input {
-          width: 80px;
-          padding: 8px 12px;
-          font-size: 16px;
-          border: 2px solid #ddd;
-          border-radius: 6px;
-          text-align: center;
-        }
-
-        .max-uses-input:focus {
-          outline: none;
-          border-color: #4a90e2;
-        }
-
-        @media (max-width: 768px) {
-          .invite-panel {
-            padding: 16px;
-          }
-
-          .invite-form {
-            flex-direction: column;
-          }
-
-          .invitation-item,
-          .token-item {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-
-          .token-actions {
-            justify-content: stretch;
-          }
-
-          .copy-button,
-          .revoke-button {
-            flex: 1;
-          }
-
-          .create-token-form {
-            flex-direction: column;
-            align-items: stretch;
-          }
-        }
-      `}</style>
     </div>
   );
 }
