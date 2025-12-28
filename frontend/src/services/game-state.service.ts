@@ -901,11 +901,13 @@ class GameStateManager {
     const updatedCharacter: Character = { ...character, ...updatedFields };
 
     // Create new gameData with updated character
+    // Type assertion needed because Character has abilityDeck: string[] | AbilityCard[]
+    // but GameStartedPayload expects abilityDeck: AbilityCard[] - at runtime they're AbilityCard[]
     this.state.gameData = {
       ...this.state.gameData,
       characters: this.state.gameData.characters.map(c =>
         c.id === characterId ? updatedCharacter : c
-      ),
+      ) as typeof this.state.gameData.characters,
     };
 
     return updatedCharacter;

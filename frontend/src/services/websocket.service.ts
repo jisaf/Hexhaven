@@ -119,6 +119,7 @@ export interface WebSocketEvents {
   narrative_display: (data: import('../../../shared/types/events').NarrativeDisplayPayload) => void;
   narrative_acknowledged: (data: import('../../../shared/types/events').NarrativeAcknowledgedPayload) => void;
   narrative_dismissed: (data: import('../../../shared/types/events').NarrativeDismissedPayload) => void;
+  narrative_monster_spawned: (data: import('../../../shared/types/events').NarrativeMonsterSpawnedPayload) => void;
 
   // Errors
   error: (data: { message: string; code?: string }) => void;
