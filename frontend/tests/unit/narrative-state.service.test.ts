@@ -30,7 +30,7 @@ const mockOn = jest.fn().mockImplementation((event: string, handler: (...args: u
 const mockEmit = jest.fn();
 const mockOff = jest.fn();
 
-jest.mock('../services/websocket.service', () => ({
+jest.mock('../../src/services/websocket.service', () => ({
   websocketService: {
     on: mockOn,
     emit: mockEmit,
@@ -53,7 +53,7 @@ function simulateEvent(event: string, payload?: unknown): void {
 }
 
 // Import after setting up mocks - this triggers the constructor
-import { narrativeStateService } from '../services/narrative-state.service';
+import { narrativeStateService } from '../../src/services/narrative-state.service';
 
 describe('NarrativeStateService', () => {
   beforeEach(() => {

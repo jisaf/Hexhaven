@@ -346,8 +346,9 @@ class GameStateManager {
     }
 
     // Helper to register and track handlers
-    const register = (event: EventName, handler: (data: unknown) => void) => {
-      this.boundHandlers.set(event, handler);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const register = (event: EventName, handler: (data: any) => void) => {
+      this.boundHandlers.set(event, handler as (data: unknown) => void);
       websocketService.on(event, handler);
     };
 
