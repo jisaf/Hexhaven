@@ -263,9 +263,9 @@ class CampaignService {
   /**
    * Revoke a pending invitation
    */
-  async revokeInvitation(invitationId: string): Promise<void> {
+  async revokeInvitation(campaignId: string, invitationId: string): Promise<void> {
     const response = await authService.authenticatedFetch(
-      `${getApiUrl()}/campaigns/invitations/${invitationId}`,
+      `${getApiUrl()}/campaigns/${campaignId}/invitations/${invitationId}`,
       {
         method: 'DELETE',
       },
@@ -336,9 +336,9 @@ class CampaignService {
   /**
    * Revoke an invite token
    */
-  async revokeInviteToken(tokenId: string): Promise<void> {
+  async revokeInviteToken(campaignId: string, tokenId: string): Promise<void> {
     const response = await authService.authenticatedFetch(
-      `${getApiUrl()}/campaigns/invite-tokens/${tokenId}`,
+      `${getApiUrl()}/campaigns/${campaignId}/invite-tokens/${tokenId}`,
       {
         method: 'DELETE',
       },
@@ -387,6 +387,22 @@ class CampaignService {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to join campaign');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Validate invite token without consuming it
+   */
+  async validateInviteToken(token: string): Promise<CampaignPublicInfo> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/validate-token/${token}`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to validate token');
     }
 
     return response.json();

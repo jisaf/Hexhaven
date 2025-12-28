@@ -38,11 +38,8 @@ export const CampaignJoinPage: React.FC = () => {
     setError(null);
 
     try {
-      // First validate the token by trying to join (without character)
-      const campaign = await campaignService.joinViaToken(token);
-
-      // Get public info
-      const info = await campaignService.getCampaignPublicInfo(campaign.id);
+      // Validate token without consuming it
+      const info = await campaignService.validateInviteToken(token);
       setCampaignInfo(info);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load campaign');

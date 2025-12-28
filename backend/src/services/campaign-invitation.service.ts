@@ -123,19 +123,7 @@ export class CampaignInvitationService {
       },
     });
 
-    return {
-      id: invitation.id,
-      campaignId: invitation.campaignId,
-      campaignName: invitation.campaign.name,
-      invitedUserId: invitation.invitedUserId,
-      invitedUsername: invitation.invitedUsername,
-      invitedByUserId: invitation.invitedByUserId,
-      invitedByUsername: invitation.invitedBy.username,
-      status: invitation.status,
-      expiresAt: invitation.expiresAt,
-      createdAt: invitation.createdAt,
-      updatedAt: invitation.updatedAt,
-    };
+    return this.mapToInvitationResponse(invitation);
   }
 
   /**
@@ -165,19 +153,7 @@ export class CampaignInvitationService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return invitations.map((inv) => ({
-      id: inv.id,
-      campaignId: inv.campaignId,
-      campaignName: inv.campaign.name,
-      invitedUserId: inv.invitedUserId,
-      invitedUsername: inv.invitedUsername,
-      invitedByUserId: inv.invitedByUserId,
-      invitedByUsername: inv.invitedBy.username,
-      status: inv.status,
-      expiresAt: inv.expiresAt,
-      createdAt: inv.createdAt,
-      updatedAt: inv.updatedAt,
-    }));
+    return invitations.map((inv) => this.mapToInvitationResponse(inv));
   }
 
   /**
@@ -201,19 +177,7 @@ export class CampaignInvitationService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return invitations.map((inv) => ({
-      id: inv.id,
-      campaignId: inv.campaignId,
-      campaignName: inv.campaign.name,
-      invitedUserId: inv.invitedUserId,
-      invitedUsername: inv.invitedUsername,
-      invitedByUserId: inv.invitedByUserId,
-      invitedByUsername: inv.invitedBy.username,
-      status: inv.status,
-      expiresAt: inv.expiresAt,
-      createdAt: inv.createdAt,
-      updatedAt: inv.updatedAt,
-    }));
+    return invitations.map((inv) => this.mapToInvitationResponse(inv));
   }
 
   /**
@@ -242,8 +206,9 @@ export class CampaignInvitationService {
 
   /**
    * Accept invitation (called when user adds character to campaign)
+   * Returns the campaignId for the accepted invitation
    */
-  async acceptInvitation(invitationId: string, userId: string): Promise<void> {
+  async acceptInvitation(invitationId: string, userId: string): Promise<string> {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     });
@@ -272,6 +237,8 @@ export class CampaignInvitationService {
       where: { id: invitationId },
       data: { status: 'ACCEPTED' },
     });
+
+    return invitation.campaignId;
   }
 
   /**
@@ -333,17 +300,7 @@ export class CampaignInvitationService {
       },
     });
 
-    return {
-      id: inviteToken.id,
-      campaignId: inviteToken.campaignId,
-      token: inviteToken.token,
-      createdByUserId: inviteToken.createdByUserId,
-      maxUses: inviteToken.maxUses,
-      usedCount: inviteToken.usedCount,
-      expiresAt: inviteToken.expiresAt,
-      isRevoked: inviteToken.isRevoked,
-      createdAt: inviteToken.createdAt,
-    };
+    return this.mapToTokenResponse(inviteToken);
   }
 
   /**
@@ -365,17 +322,7 @@ export class CampaignInvitationService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return tokens.map((token) => ({
-      id: token.id,
-      campaignId: token.campaignId,
-      token: token.token,
-      createdByUserId: token.createdByUserId,
-      maxUses: token.maxUses,
-      usedCount: token.usedCount,
-      expiresAt: token.expiresAt,
-      isRevoked: token.isRevoked,
-      createdAt: token.createdAt,
-    }));
+    return tokens.map((token) => this.mapToTokenResponse(token));
   }
 
   /**
@@ -404,13 +351,10 @@ export class CampaignInvitationService {
   }
 
   /**
-   * Validate and consume invite token
+   * Validate invite token without consuming it
    * Returns campaignId if valid, throws otherwise
    */
-  async validateAndConsumeToken(
-    token: string,
-    userId: string,
-  ): Promise<string> {
+  async validateToken(token: string, userId: string): Promise<string> {
     const inviteToken = await this.prisma.campaignInviteToken.findUnique({
       where: { token },
       include: {
@@ -451,15 +395,77 @@ export class CampaignInvitationService {
       );
     }
 
-    // Increment used count atomically
-    await this.prisma.campaignInviteToken.update({
-      where: { id: inviteToken.id },
-      data: {
-        usedCount: { increment: 1 },
-        // Auto-revoke if this was the last use
-        isRevoked: inviteToken.usedCount + 1 >= inviteToken.maxUses,
+    return inviteToken.campaignId;
+  }
+
+  /**
+   * Validate and consume invite token
+   * Returns campaignId if valid, throws otherwise
+   */
+  async validateAndConsumeToken(
+    token: string,
+    userId: string,
+  ): Promise<string> {
+    const inviteToken = await this.prisma.campaignInviteToken.findUnique({
+      where: { token },
+      include: {
+        campaign: {
+          include: {
+            characters: true,
+          },
+        },
       },
     });
+
+    if (!inviteToken) {
+      throw new NotFoundException('Invalid invite token');
+    }
+
+    if (inviteToken.isRevoked) {
+      throw new BadRequestException('This invite link has been revoked');
+    }
+
+    if (inviteToken.expiresAt < new Date()) {
+      throw new BadRequestException('This invite link has expired');
+    }
+
+    // Check if user is already in campaign
+    const alreadyInCampaign = inviteToken.campaign.characters.some(
+      (char) => char.userId === userId,
+    );
+
+    if (alreadyInCampaign) {
+      throw new BadRequestException(
+        'You are already a member of this campaign',
+      );
+    }
+
+    // Atomically increment used count only if under max uses
+    // This prevents race conditions when multiple users use the token simultaneously
+    const updateResult = await this.prisma.campaignInviteToken.updateMany({
+      where: {
+        id: inviteToken.id,
+        usedCount: { lt: inviteToken.maxUses },
+      },
+      data: {
+        usedCount: { increment: 1 },
+      },
+    });
+
+    // If no rows were updated, the token has reached max uses
+    if (updateResult.count === 0) {
+      throw new BadRequestException(
+        'This invite link has reached its maximum uses',
+      );
+    }
+
+    // Auto-revoke if this was the last use
+    if (inviteToken.usedCount + 1 >= inviteToken.maxUses) {
+      await this.prisma.campaignInviteToken.update({
+        where: { id: inviteToken.id },
+        data: { isRevoked: true },
+      });
+    }
 
     return inviteToken.campaignId;
   }
@@ -508,6 +514,64 @@ export class CampaignInvitationService {
    */
   private generateToken(): string {
     return randomBytes(24).toString('base64url').slice(0, 32);
+  }
+
+  /**
+   * Helper: Map Prisma invitation to response type
+   */
+  private mapToInvitationResponse(invitation: {
+    id: string;
+    campaignId: string;
+    invitedUserId: string;
+    invitedUsername: string;
+    invitedByUserId: string;
+    status: string;
+    expiresAt: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    campaign: { name: string };
+    invitedBy: { username: string };
+  }): CampaignInvitation {
+    return {
+      id: invitation.id,
+      campaignId: invitation.campaignId,
+      campaignName: invitation.campaign.name,
+      invitedUserId: invitation.invitedUserId,
+      invitedUsername: invitation.invitedUsername,
+      invitedByUserId: invitation.invitedByUserId,
+      invitedByUsername: invitation.invitedBy.username,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+      createdAt: invitation.createdAt,
+      updatedAt: invitation.updatedAt,
+    };
+  }
+
+  /**
+   * Helper: Map Prisma invite token to response type
+   */
+  private mapToTokenResponse(token: {
+    id: string;
+    campaignId: string;
+    token: string;
+    createdByUserId: string;
+    maxUses: number;
+    usedCount: number;
+    expiresAt: Date;
+    isRevoked: boolean;
+    createdAt: Date;
+  }): CampaignInviteToken {
+    return {
+      id: token.id,
+      campaignId: token.campaignId,
+      token: token.token,
+      createdByUserId: token.createdByUserId,
+      maxUses: token.maxUses,
+      usedCount: token.usedCount,
+      expiresAt: token.expiresAt,
+      isRevoked: token.isRevoked,
+      createdAt: token.createdAt,
+    };
   }
 
   /**

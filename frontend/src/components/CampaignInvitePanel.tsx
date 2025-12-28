@@ -7,7 +7,7 @@
  * - Create and manage shareable invite tokens
  */
 
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { campaignService, type CampaignInvitation, type CampaignInviteToken } from '../services/campaign.service';
 
 export interface CampaignInvitePanelProps {
@@ -30,11 +30,7 @@ export function CampaignInvitePanel({
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Load invitations and tokens
-  useEffect(() => {
-    loadData();
-  }, [campaignId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoadingData(true);
     try {
       const [invs, toks] = await Promise.all([
@@ -48,7 +44,11 @@ export function CampaignInvitePanel({
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [campaignId, onError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleInviteUser = async (e: FormEvent) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ export function CampaignInvitePanel({
 
   const handleRevokeInvitation = async (invitationId: string) => {
     try {
-      await campaignService.revokeInvitation(invitationId);
+      await campaignService.revokeInvitation(campaignId, invitationId);
       onSuccess?.('Invitation revoked');
       await loadData();
     } catch (error) {
@@ -92,7 +92,7 @@ export function CampaignInvitePanel({
 
   const handleRevokeToken = async (tokenId: string) => {
     try {
-      await campaignService.revokeInviteToken(tokenId);
+      await campaignService.revokeInviteToken(campaignId, tokenId);
       onSuccess?.('Invite link revoked');
       await loadData();
     } catch (error) {
