@@ -10,6 +10,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { config } from '../config/env.config';
 import { MIN_TOKEN_USES, MAX_TOKEN_USES } from '../types/campaign.types';
@@ -29,17 +30,17 @@ const INVITATION_STATUS = {
 };
 
 // Type for campaign with characters included
-interface CampaignWithCharacters {
-  id: string;
-  createdByUserId: string;
-  characters: Array<{
-    userId: string;
-    user: {
-      id: string;
-      username: string;
+type CampaignWithCharacters = Prisma.CampaignGetPayload<{
+  include: {
+    characters: {
+      include: {
+        user: {
+          select: { id: true; username: true };
+        };
+      };
     };
-  }>;
-}
+  };
+}>;
 
 @Injectable()
 export class CampaignInvitationService {
