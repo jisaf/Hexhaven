@@ -15,7 +15,6 @@ import {
   UseGuards,
   Req,
   ForbiddenException,
-  NotFoundException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
