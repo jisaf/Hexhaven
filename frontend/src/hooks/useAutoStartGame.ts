@@ -26,8 +26,10 @@ import type { CharacterSelectedPayload } from '../../../shared/types/events';
  * These values provide a robust approach that handles network latency
  * while avoiding indefinite waiting.
  */
-/** Initial timeout waiting for character selection confirmation (ms) */
-const CHARACTER_CONFIRMATION_TIMEOUT_MS = 1000;
+/** Initial timeout waiting for character selection confirmation (ms).
+ * Set to 2500ms to accommodate high-latency network conditions while
+ * still providing responsive feedback. */
+const CHARACTER_CONFIRMATION_TIMEOUT_MS = 2500;
 /** Maximum number of retry attempts for character selection */
 const MAX_CHARACTER_SELECTION_RETRIES = 3;
 /** Base delay for exponential backoff between retries (ms) */
@@ -156,6 +158,16 @@ export function useAutoStartGame(options: UseAutoStartGameOptions = {}): UseAuto
       return;
     }
 
+    // Clear any existing timeouts before setting new ones to prevent parallel timeout chains
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+    if (confirmationTimeoutRef.current) {
+      clearTimeout(confirmationTimeoutRef.current);
+      confirmationTimeoutRef.current = null;
+    }
+
     // Increment retry count
     state.retryCount++;
 
@@ -234,6 +246,7 @@ export function useAutoStartGame(options: UseAutoStartGameOptions = {}): UseAuto
   }, [handleAutoStartError, attemptGameStart]);
 
   // Register event listeners for character selection confirmation
+  // websocketService.on() returns an unsubscribe function, use it for cleanup
   useEffect(() => {
     const unsubscribeCharacterSelected = websocketService.on(
       'character_selected',
@@ -243,15 +256,12 @@ export function useAutoStartGame(options: UseAutoStartGameOptions = {}): UseAuto
     const unsubscribeError = websocketService.on('error', handleGameStartError);
 
     return () => {
+      // Call unsubscribe functions - these are returned by websocketService.on()
       if (typeof unsubscribeCharacterSelected === 'function') {
         unsubscribeCharacterSelected();
-      } else {
-        websocketService.off('character_selected', handleCharacterSelected);
       }
       if (typeof unsubscribeError === 'function') {
         unsubscribeError();
-      } else {
-        websocketService.off('error', handleGameStartError);
       }
     };
   }, [handleCharacterSelected, handleGameStartError]);

@@ -787,7 +787,7 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
-  private handleMonsterSpawned(data: { monsterId: string; monsterType: string; isElite: boolean; hex: Axial; health: number; maxHealth: number }): void {
+  private handleMonsterSpawned(data: { monsterId: string; monsterType: string; isElite: boolean; hex: Axial; health: number; maxHealth: number; movement: number; attack: number; range: number }): void {
     console.log('[GameStateManager] Monster spawned:', data);
 
     // Build full monster object with required fields
@@ -800,9 +800,9 @@ class GameStateManager {
       currentHex: data.hex,
       health: data.health,
       maxHealth: data.maxHealth,
-      movement: 2, // Default for training dummy
-      attack: 1,   // Default for training dummy
-      range: 1,    // Default melee range
+      movement: data.movement,
+      attack: data.attack,
+      range: data.range,
       specialAbilities: [] as string[],
       conditions: [] as import('../../../shared/types/entities').Condition[],
       isDead: false,
@@ -896,15 +896,15 @@ class GameStateManager {
 
     // Apply updates (either object or function)
     const updatedFields = typeof updates === 'function' ? updates(character) : updates;
-    const updatedCharacter = { ...character, ...updatedFields };
+    // Explicitly type as Character - safe because we spread a full Character with Partial<Character>
+    const updatedCharacter: Character = { ...character, ...updatedFields };
 
     // Create new gameData with updated character
-    // Type assertion needed because updateCharacter merges payload character with Character updates
     this.state.gameData = {
       ...this.state.gameData,
       characters: this.state.gameData.characters.map(c =>
         c.id === characterId ? updatedCharacter : c
-      ) as typeof this.state.gameData.characters,
+      ),
     };
 
     return updatedCharacter;

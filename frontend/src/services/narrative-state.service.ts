@@ -38,7 +38,6 @@ class NarrativeStateService {
   private state: NarrativeState = { activeNarrative: null, acknowledgments: [] };
   private subscribers = new Set<StateSubscriber>();
   private unsubscribers: (() => void)[] = [];
-  private initialized = false;
 
   /**
    * Constructor - EAGER INITIALIZATION
@@ -52,7 +51,6 @@ class NarrativeStateService {
    */
   constructor() {
     this.subscribeToWebSocket();
-    this.initialized = true;
   }
 
   /**

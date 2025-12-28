@@ -30,6 +30,8 @@ const RETRY_BASE_DELAY_MS = 100;
 const ROOM_REWARDS_TTL_MS = 2 * 60 * 60 * 1000;
 /** Interval for running cleanup checks in milliseconds (15 minutes) */
 const CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
+/** Maximum number of rooms to track. When exceeded, LRU rooms are evicted. */
+const MAX_TRACKED_ROOMS = 1000;
 
 export interface RewardedPlayer {
   playerId: string;
@@ -148,10 +150,40 @@ export class NarrativeRewardService implements OnModuleDestroy {
   }
 
   /**
-   * Update the last access time for a room (refreshes TTL)
+   * Update the last access time for a room (refreshes TTL).
+   * Also enforces MAX_TRACKED_ROOMS by evicting least recently used rooms.
    */
   private touchRoom(roomCode: string): void {
+    const isNewRoom = !this.roomLastAccessTime.has(roomCode);
     this.roomLastAccessTime.set(roomCode, Date.now());
+
+    // If we're adding a new room and at capacity, evict LRU room
+    if (isNewRoom && this.roomLastAccessTime.size > MAX_TRACKED_ROOMS) {
+      this.evictLRURoom();
+    }
+  }
+
+  /**
+   * Evict the least recently used room to enforce memory bounds.
+   */
+  private evictLRURoom(): void {
+    let oldestRoom: string | null = null;
+    let oldestTime = Infinity;
+
+    for (const [roomCode, lastAccess] of this.roomLastAccessTime.entries()) {
+      if (lastAccess < oldestTime) {
+        oldestTime = lastAccess;
+        oldestRoom = roomCode;
+      }
+    }
+
+    if (oldestRoom) {
+      this.roomNarrativeRewards.delete(oldestRoom);
+      this.roomLastAccessTime.delete(oldestRoom);
+      this.logger.debug(
+        `LRU eviction: Removed room ${oldestRoom} to enforce max room limit`,
+      );
+    }
   }
 
   /**
@@ -255,7 +287,10 @@ export class NarrativeRewardService implements OnModuleDestroy {
       return { success: true, rewardedPlayers: [], distribution };
     }
 
-    // Calculate per-player amounts based on distribution mode
+    // Calculate per-player amounts based on distribution mode:
+    // - 'everyone': Each player receives the full reward amount
+    // - 'triggerer': Only the triggering player receives the full reward
+    // - 'collective': Total reward is split equally among all target players
     const playerCount =
       distribution === 'collective' ? targetPlayers.length : 1;
     const goldPerPlayer = rewards.gold

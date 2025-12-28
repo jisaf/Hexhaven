@@ -94,9 +94,10 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
   });
 
   describe('Hook Initialization', () => {
-    it('should register event listeners on mount', async () => {
+    it('should register event listeners on mount', () => {
       // Import the hook - uses mocked dependencies
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       renderHook(() => useAutoStartGame());
 
       // Should register handlers for character_selected and error events
@@ -110,8 +111,9 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
       );
     });
 
-    it('should return initial state correctly', async () => {
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+    it('should return initial state correctly', () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       const { result } = renderHook(() => useAutoStartGame());
 
       expect(result.current.isStarting).toBe(false);
@@ -156,8 +158,25 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
   });
 
   describe('Cleanup', () => {
-    it('should cleanup event listeners on unmount', async () => {
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+    it('should cleanup event listeners on unmount', () => {
+      // Track unsubscribe function calls
+      const unsubscribeCalls: string[] = [];
+      const mockUnsubscribe = (event: string) => () => {
+        unsubscribeCalls.push(event);
+      };
+
+      // Override the mock to track unsubscribe calls
+      mockWebsocketService.on.mockImplementation((event: string, handler: EventHandler): (() => boolean) => {
+        if (!mockEventHandlers.has(event)) {
+          mockEventHandlers.set(event, new Set());
+        }
+        mockEventHandlers.get(event)!.add(handler);
+        const unsub = mockUnsubscribe(event);
+        return () => { unsub(); return true; };
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       const { unmount } = renderHook(() => useAutoStartGame());
 
       // Verify that event listeners were registered during mount
@@ -165,18 +184,21 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
         'character_selected',
         expect.any(Function)
       );
+      expect(mockWebsocketService.on).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function)
+      );
 
       unmount();
 
-      // Event handlers should be cleaned up via either off() or the unsubscribe function
-      // The cleanup happens via the returned unsubscribe function from the `on` mock
-      // Since our mock returns an unsubscribe function, it will be called on unmount
-      // We verify that off was called at least once (can be called multiple times for different events)
-      expect(mockWebsocketService.off).toHaveBeenCalled();
+      // Verify unsubscribe functions were called on unmount
+      expect(unsubscribeCalls).toContain('character_selected');
+      expect(unsubscribeCalls).toContain('error');
     });
 
-    it('should cancel pending timeouts on unmount', async () => {
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+    it('should cancel pending timeouts on unmount', () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       const { unmount } = renderHook(() => useAutoStartGame());
 
       // Unmount should clean up without errors
@@ -190,7 +212,8 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
         new Error('Failed to create room')
       );
 
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       const { result } = renderHook(() => useAutoStartGame());
 
       await act(async () => {
@@ -206,7 +229,8 @@ describe('useAutoStartGame - Event-Driven Character Selection', () => {
         new Error('Some error')
       );
 
-      const { useAutoStartGame } = await import('../../src/hooks/useAutoStartGame');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { useAutoStartGame } = require('../../src/hooks/useAutoStartGame');
       const { result } = renderHook(() => useAutoStartGame());
 
       await act(async () => {

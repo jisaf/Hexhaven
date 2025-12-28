@@ -5689,6 +5689,9 @@ export class GameGateway
           hex: monster.currentHex,
           health: monster.health,
           maxHealth: monster.maxHealth,
+          movement: monster.movement,
+          attack: monster.attack,
+          range: monster.range,
         });
       }
 
