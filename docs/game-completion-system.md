@@ -28,7 +28,8 @@ The Game Completion system handles everything that happens when a scenario ends:
 
 ### Key Features
 
-- **Automatic Detection**: Game completion is checked after every turn and round
+- **End-of-Round Completion**: Victory is only declared at round end, allowing players to finish actions and collect loot
+- **Immediate Defeat Detection**: Defeat conditions (exhaustion, failure) still trigger immediately
 - **Objective Support**: Primary, secondary, and failure conditions
 - **Statistics Tracking**: Per-player combat and resource stats
 - **Persistent Storage**: All results saved to PostgreSQL
@@ -47,36 +48,33 @@ The Game Completion system handles everything that happens when a scenario ends:
 │  Players take turns → Actions resolve → Events occur            │
 └────────────────┬────────────────────────────────────────────────┘
                  │
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    COMPLETION CHECKS                             │
-│  • After each turn                                               │
-│  • At round boundaries                                           │
-│  • After monster death                                           │
-│  • After character exhaustion                                    │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  OBJECTIVE EVALUATION                            │
-│  ObjectiveEvaluatorService:                                      │
-│  • Build context from game state                                 │
-│  • Evaluate primary objective                                    │
-│  • Evaluate secondary objectives                                 │
-│  • Check failure conditions                                      │
-│  • Calculate progress                                            │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
         ┌────────┴────────┐
         │                 │
         ▼                 ▼
-   ┌─────────┐      ┌─────────┐
-   │ VICTORY │      │ DEFEAT  │
-   └────┬────┘      └────┬────┘
-        │                │
-        └────────┬────────┘
-                 │
-                 ▼
+┌───────────────────┐  ┌─────────────────────────────────────────┐
+│   DURING ACTIONS  │  │            AT ROUND END                  │
+│  (Monster Death)  │  │   (After all entities have turns)       │
+│                   │  │                                          │
+│  • Update sub-    │  │  • Check primary objective completion   │
+│    objectives     │  │  • Check failure conditions             │
+│  • Fire narrative │  │  • Evaluate secondary objectives        │
+│    triggers       │  │  • Determine victory/defeat             │
+│  • Skip primary   │  │                                          │
+│    objective      │  │                                          │
+│    check          │  │                                          │
+└───────────────────┘  └────────────────┬────────────────────────┘
+                                        │
+                               ┌────────┴────────┐
+                               │                 │
+                               ▼                 ▼
+                          ┌─────────┐      ┌─────────┐
+                          │ VICTORY │      │ DEFEAT  │
+                          └────┬────┘      └────┬────┘
+                               │  (at round   │ (immediate)
+                               │    end)      │
+                               └────────┬─────┘
+                                        │
+                                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    RESULT RECORDING                              │
 │  GameResultService:                                              │
@@ -383,7 +381,9 @@ Sent when scenario ends (victory or defeat).
 }
 ```
 
-**When Sent**: Immediately when victory/defeat conditions are met
+**When Sent**:
+- **Victory**: At end of round when primary objective is complete (allows players to finish actions and collect loot)
+- **Defeat**: Immediately when defeat conditions are met (all players exhausted, failure condition triggered)
 
 ---
 
@@ -757,6 +757,45 @@ test('complete scenario and return to lobby', async ({ page }) => {
 - **Benefit**: Easy to add new objective types
 - **Trade-off**: Can't query by objective details (acceptable)
 
+### Why Options Object Instead of Boolean Parameter?
+
+The `checkScenarioCompletion` method uses an options object pattern instead of a boolean parameter:
+
+```typescript
+// BEFORE (boolean anti-pattern):
+checkScenarioCompletion(roomCode, false)  // What does false mean?
+
+// AFTER (options object pattern):
+checkScenarioCompletion(roomCode, { checkPrimaryObjective: false })
+```
+
+**Benefits**:
+- Self-documenting call sites
+- Easy to add new options without breaking existing calls
+- Clear intent at each call site
+
+**Interface** (exported from `backend/src/types/game-state.types.ts`):
+```typescript
+import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
+
+interface ScenarioCompletionCheckOptions {
+  /**
+   * If false, only checks sub-objectives, defeat conditions, and narrative triggers
+   * If true, also checks primary objective completion for victory
+   * @default true
+   */
+  checkPrimaryObjective?: boolean;
+}
+```
+
+**Call Sites**:
+| Context | Options | Reason |
+|---------|---------|--------|
+| Attack handler | `{ checkPrimaryObjective: false }` | Defer victory to round end |
+| Turn advancement | `{ checkPrimaryObjective: false }` | Defer victory to round end |
+| Character exhaustion | `{ checkPrimaryObjective: false }` | Check defeats only |
+| Round end | `{ checkPrimaryObjective: true }` | Declare victory if objectives met |
+
 ---
 
 ## Related Documentation
@@ -768,5 +807,5 @@ test('complete scenario and return to lobby', async ({ page }) => {
 
 ---
 
-**Last Updated**: 2025-12-07
-**Version**: 1.0.0 (Issue #186 - Game Completion System)
+**Last Updated**: 2025-12-28
+**Version**: 1.2.0 (Options Object Pattern + Code Deduplication)

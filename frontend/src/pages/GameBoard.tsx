@@ -157,6 +157,7 @@ export function GameBoard() {
     updateCharacterHealth,
     updateMonsterHealth,
     removeMonster,
+    spawnMonster,
     spawnLootToken,
     collectLootToken,
     setBackgroundImage, // Issue #191 - auto-fits to 20x20 world
@@ -175,11 +176,12 @@ export function GameBoard() {
         updateCharacterHealth,
         updateMonsterHealth,
         removeMonster,
+        spawnMonster,
         spawnLootToken,
         collectLootToken,
       });
     }
-  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnLootToken, collectLootToken]);
+  }, [hexGridReady, moveCharacter, updateMonsterPosition, updateCharacterHealth, updateMonsterHealth, removeMonster, spawnMonster, spawnLootToken, collectLootToken]);
 
   // Extract objectives from game state when it loads (Primary method)
   // Sanitize to ensure we only have id, description, trackProgress (not type, milestones)
@@ -255,13 +257,17 @@ export function GameBoard() {
 
       console.log('[DEBUG-SCENARIO-COMPLETE] objectivesCompleted array:', JSON.stringify(objectivesCompletedArr));
 
+      // Calculate total gold and item count from loot
+      const totalGold = payload.loot.reduce((sum, p) => sum + p.gold, 0);
+      const totalItems = payload.loot.reduce((sum, p) => sum + (p.items?.length || 0), 0);
+
       const result: ScenarioResult = {
         victory: payload.victory,
         scenarioName: gameState.gameData?.scenarioName || 'Unknown Scenario',
         roundsCompleted: gameState.currentRound || 0,
-        lootCollected: payload.loot.reduce((sum, p) => sum + p.gold, 0),
+        lootCollected: totalItems, // Count of items collected (not gold)
         experienceGained: payload.experience,
-        goldEarned: payload.loot.reduce((sum, p) => sum + p.gold, 0),
+        goldEarned: totalGold, // Total gold from loot + narrative rewards + victory bonus
         objectivesCompleted: objectivesCompletedArr,
         playerStats,
       };

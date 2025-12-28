@@ -12,9 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../services/campaign.service';
-import { roomSessionManager } from '../services/room-session.service';
-import { useRoomSession } from '../hooks/useRoomSession';
-import { getDisplayName } from '../utils/storage';
+import { useAutoStartGame } from '../hooks/useAutoStartGame';
 import type { CampaignWithDetails, CampaignScenario } from '../services/campaign.service';
 import styles from './CampaignScenarioLobbyPage.module.css';
 
@@ -23,15 +21,17 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'lobby']);
-  const sessionState = useRoomSession();
+  const { isStarting: isCreatingRoom, error: autoStartError, clearError, startGame } = useAutoStartGame();
 
   // State
   const [campaign, setCampaign] = useState<CampaignWithDetails | null>(null);
   const [scenario, setScenario] = useState<CampaignScenario | null>(null);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Combine errors from fetch and auto-start
+  const error = fetchError || autoStartError;
 
   // Fetch campaign and scenario data
   const fetchData = useCallback(async () => {
@@ -50,7 +50,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
       if (selectedScenario) {
         setScenario(selectedScenario);
       } else {
-        setError('Scenario not found');
+        setFetchError('Scenario not found');
       }
 
       // Load selected characters from URL query params (passed by CampaignDashboardPage)
@@ -73,7 +73,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load campaign data');
+      setFetchError(err instanceof Error ? err.message : 'Failed to load campaign data');
     } finally {
       setLoading(false);
     }
@@ -83,44 +83,10 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Navigate to room lobby when room is created
-  useEffect(() => {
-    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode) {
-      navigate(`/rooms/${sessionState.roomCode}`);
-    }
-  }, [sessionState.connectionStatus, sessionState.roomCode, navigate]);
-
-  // Handle session errors
-  useEffect(() => {
-    if (sessionState.error) {
-      setError(sessionState.error.message);
-      setIsCreatingRoom(false);
-    }
-  }, [sessionState.error]);
-
-  // Start game - create room with campaign context
+  // Start game - create room with campaign context and auto-start (skip room lobby)
   const handleStartGame = async () => {
     if (!campaign || !scenario || selectedCharacterIds.length === 0) return;
-
-    const displayName = getDisplayName();
-    if (!displayName) {
-      setError('Please set a nickname first');
-      return;
-    }
-
-    setIsCreatingRoom(true);
-    setError(null);
-
-    try {
-      await roomSessionManager.createRoom(displayName, {
-        campaignId: campaign.id,
-        scenarioId: scenario.scenarioId,
-      });
-      // Navigation happens via useEffect when room is connected
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create room');
-      setIsCreatingRoom(false);
-    }
+    await startGame(scenario.scenarioId, campaign.id, selectedCharacterIds);
   };
 
   // Toggle character selection - also updates URL to preserve state on refresh
@@ -194,7 +160,7 @@ export const CampaignScenarioLobbyPage: React.FC = () => {
         {error && (
           <div className={styles.errorBanner}>
             {error}
-            <button onClick={() => setError(null)}>✕</button>
+            <button onClick={() => { setFetchError(null); clearError(); }}>✕</button>
           </div>
         )}
 

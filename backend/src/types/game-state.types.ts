@@ -86,3 +86,21 @@ export interface GameEventRecord {
   eventData: any;
   createdAt: Date;
 }
+
+/**
+ * Options for scenario completion check
+ *
+ * Used by GameGateway.checkScenarioCompletion to control when victory is evaluated.
+ * This enables deferred victory checks (at round end) while still checking defeats immediately.
+ *
+ * @see game.gateway.ts checkScenarioCompletion method
+ * @see docs/game-completion-system.md for architecture details
+ */
+export interface ScenarioCompletionCheckOptions {
+  /**
+   * If false, only checks sub-objectives, defeat conditions, and narrative triggers (used during attack/turns)
+   * If true, also checks primary objective completion for victory (used at round end)
+   * @default true
+   */
+  checkPrimaryObjective?: boolean;
+}

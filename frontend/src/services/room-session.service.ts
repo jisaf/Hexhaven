@@ -21,6 +21,7 @@
  */
 
 import { websocketService } from './websocket.service';
+import { narrativeStateService } from './narrative-state.service';
 import { authService } from './auth.service';
 import {
   getLastRoomCode,
@@ -34,7 +35,7 @@ import {
   isUserAuthenticated,
 } from '../utils/storage';
 import { getApiUrl } from '../config/api';
-import type { GameStartedPayload } from '../../../shared/types/events';
+import type { GameStartedPayload, CharacterSelectedPayload } from '../../../shared/types/events';
 import type { CharacterClass } from '../../../shared/types/entities';
 
 /**
@@ -173,8 +174,45 @@ class RoomSessionManager {
   // Subscription callbacks
   private subscribers: Set<StateUpdateCallback> = new Set();
 
+  // Store bound handlers for proper cleanup (fixes HMR duplicate registration)
+  private boundHandlers: {
+    roomJoined?: (data: RoomJoinedPayload) => void;
+    gameStarted?: (data: GameStartedPayload) => void;
+    disconnected?: () => void;
+    playerJoined?: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
+    playerLeft?: (data: { playerId: string }) => void;
+    characterSelected?: (data: CharacterSelectedPayload) => void;
+  } = {};
+  private listenersSetup = false;
+
   constructor() {
     this.setupWebSocketListeners();
+  }
+
+  /**
+   * Cleanup handlers - call before module hot reload
+   */
+  public cleanup(): void {
+    if (this.boundHandlers.roomJoined) {
+      websocketService.off('room_joined', this.boundHandlers.roomJoined);
+    }
+    if (this.boundHandlers.gameStarted) {
+      websocketService.off('game_started', this.boundHandlers.gameStarted);
+    }
+    if (this.boundHandlers.disconnected) {
+      websocketService.off('ws_disconnected', this.boundHandlers.disconnected);
+    }
+    if (this.boundHandlers.playerJoined) {
+      websocketService.off('player_joined', this.boundHandlers.playerJoined);
+    }
+    if (this.boundHandlers.playerLeft) {
+      websocketService.off('player_left', this.boundHandlers.playerLeft);
+    }
+    if (this.boundHandlers.characterSelected) {
+      websocketService.off('character_selected', this.boundHandlers.characterSelected);
+    }
+    this.boundHandlers = {};
+    this.listenersSetup = false;
   }
 
   /**
@@ -204,23 +242,38 @@ class RoomSessionManager {
   }
 
   private setupWebSocketListeners(): void {
-    websocketService.on('room_joined', this.onRoomJoined.bind(this));
-    websocketService.on('player_joined', (data) => this.onPlayerJoined({
+    // Prevent duplicate registration (fixes HMR issue)
+    if (this.listenersSetup) {
+      return;
+    }
+
+    // Store bound handlers for proper cleanup
+    this.boundHandlers.roomJoined = this.onRoomJoined.bind(this);
+    this.boundHandlers.gameStarted = this.onGameStarted.bind(this);
+    this.boundHandlers.disconnected = this.onDisconnected.bind(this);
+    this.boundHandlers.playerJoined = (data: { player: { id: string; nickname: string; isHost: boolean } }) => this.onPlayerJoined({
       id: data.player.id,
       nickname: data.player.nickname,
       isHost: data.player.isHost,
       connectionStatus: 'connected',
       isReady: false,
-    }));
-    websocketService.on('player_left', (data) => this.onPlayerLeft(data.playerId));
-    websocketService.on('character_selected', (data) => this.onCharacterSelected(
+    });
+    this.boundHandlers.playerLeft = (data: { playerId: string }) => this.onPlayerLeft(data.playerId);
+    this.boundHandlers.characterSelected = (data: CharacterSelectedPayload) => this.onCharacterSelected(
       data.playerId,
       data.characterClasses || (data.characterClass ? [data.characterClass] : []),
       data.characterIds || [],
       data.activeIndex ?? 0
-    ));
-    websocketService.on('game_started', this.onGameStarted.bind(this));
-    websocketService.on('ws_disconnected', this.onDisconnected.bind(this));
+    );
+
+    websocketService.on('room_joined', this.boundHandlers.roomJoined);
+    websocketService.on('player_joined', this.boundHandlers.playerJoined);
+    websocketService.on('player_left', this.boundHandlers.playerLeft);
+    websocketService.on('character_selected', this.boundHandlers.characterSelected);
+    websocketService.on('game_started', this.boundHandlers.gameStarted);
+    websocketService.on('ws_disconnected', this.boundHandlers.disconnected);
+
+    this.listenersSetup = true;
   }
 
   /**
@@ -306,6 +359,13 @@ class RoomSessionManager {
 
     try {
       console.log(`[RoomSessionManager] ensureJoined called with intent: ${intent}`);
+
+      // For 'create' intent, ALWAYS reset session first - we're starting a fresh game
+      // This prevents stale state from previous games blocking new room creation
+      if (intent === 'create') {
+        console.log('[RoomSessionManager] Create intent - resetting session for new room');
+        this.switchRoom(); // Reset all state
+      }
 
       // Prevent duplicate joins in same session
       if (this.hasJoinedInSession && this.state.connectionStatus !== 'disconnected') {
@@ -554,6 +614,9 @@ class RoomSessionManager {
   public reset(): void {
     console.log('[RoomSessionManager] Resetting session');
 
+    // Reset narrative state when leaving room
+    narrativeStateService.reset();
+
     this.state = {
       roomCode: null,
       connectionStatus: 'disconnected',
@@ -587,6 +650,9 @@ class RoomSessionManager {
    */
   public switchRoom(): void {
     console.log('[RoomSessionManager] Switching room - clearing frontend state');
+
+    // Reset narrative state when switching rooms
+    narrativeStateService.reset();
 
     // Clear frontend state only (don't leave backend room yet)
     this.state = {
@@ -630,7 +696,22 @@ class RoomSessionManager {
 
     this.emitStateUpdate();
   }
+
+  /**
+   * Get the full stored game state
+   * Used by GameStateManager to initialize when it missed the game_started event
+   */
+  public getStoredGameState(): GameStartedPayload | null {
+    return this.state.gameState ?? null;
+  }
 }
 
 // Export singleton instance
 export const roomSessionManager = new RoomSessionManager();
+
+// Vite HMR cleanup to prevent duplicate event handlers
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    roomSessionManager.cleanup();
+  });
+}

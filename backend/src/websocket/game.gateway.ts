@@ -78,6 +78,7 @@ import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
 import { CampaignService } from '../services/campaign.service';
 import { NarrativeService } from '../services/narrative.service';
+import { NarrativeRewardService } from '../services/narrative-reward.service';
 import type {
   NarrativeDisplayPayload,
   NarrativeAcknowledgedPayload,
@@ -108,6 +109,7 @@ import {
   type CharacterClass,
   type Monster,
 } from '../../../shared/types/entities';
+import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
@@ -131,6 +133,7 @@ export class GameGateway
     private readonly elementalStateService: ElementalStateService,
     private readonly campaignService: CampaignService, // Issue #244 - Campaign Mode
     private readonly narrativeService: NarrativeService, // Campaign narrative system
+    private readonly narrativeRewardService: NarrativeRewardService, // Narrative reward calculation (extracted)
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -1084,6 +1087,7 @@ export class GameGateway
         this.roomPlayerStats.delete(roomCode);
         // Narrative system cleanup
         this.narrativeService.cleanupRoomState(roomCode);
+        this.narrativeRewardService.clearAccumulatedRewards(roomCode);
         this.roomNarratives.delete(roomCode);
         this.roomOpenedDoors.delete(roomCode);
         this.roomCollectedTreasures.delete(roomCode);
@@ -1936,11 +1940,43 @@ export class GameGateway
         throw new Error('Target hex is occupied by another character');
       }
 
-      // Move character
-      characterService.moveCharacter(character.id, payload.targetHex);
+      // Check for narrative triggers at each hex along the path
+      // If a trigger fires, interrupt movement at that hex
+      let actualTargetHex = payload.targetHex;
+      let actualPath = path;
+      let triggerToFire:
+        | import('../../../shared/types/narrative').NarrativeTriggerDef
+        | null = null;
+
+      // Check each hex in the path (excluding the starting hex which is index 0)
+      for (let i = 1; i < path.length; i++) {
+        const hex = path[i];
+        const trigger = this.checkTriggerAtPosition(
+          room.roomCode,
+          character.id,
+          hex,
+        );
+        if (trigger) {
+          // Interrupt movement at this hex
+          actualTargetHex = hex;
+          actualPath = path.slice(0, i + 1); // Include up to and including this hex
+          triggerToFire = trigger;
+          this.logger.log(
+            `Movement interrupted at (${hex.q}, ${hex.r}) by trigger ${trigger.triggerId}`,
+          );
+          break;
+        }
+      }
+
+      // Calculate actual movement distance
+      const actualMoveDistance =
+        actualPath.length > 0 ? actualPath.length - 1 : 0;
+
+      // Move character to actual target (may be interrupted position)
+      characterService.moveCharacter(character.id, actualTargetHex);
 
       // Track cumulative movement distance used this turn
-      character.addMovementUsed(moveDistance);
+      character.addMovementUsed(actualMoveDistance);
 
       // Broadcast character moved to all players with calculated path
       const characterMovedPayload: CharacterMovedPayload = {
@@ -1951,9 +1987,9 @@ export class GameGateway
           character.characterClass,
         ),
         fromHex,
-        toHex: payload.targetHex,
-        movementPath: path,
-        distance: moveDistance,
+        toHex: actualTargetHex,
+        movementPath: actualPath,
+        distance: actualMoveDistance,
       };
 
       this.server
@@ -1964,16 +2000,50 @@ export class GameGateway
       this.addGameLogEntry(room.roomCode, [
         { text: character.characterClass, color: 'lightblue' },
         { text: ` moved ` },
-        { text: `${moveDistance}`, color: 'cyan' },
+        { text: `${actualMoveDistance}`, color: 'cyan' },
         { text: ` hexes.` },
       ]);
 
       this.logger.log(
-        `Character ${character.id} moved to (${payload.targetHex.q}, ${payload.targetHex.r})`,
+        `Character ${character.id} moved to (${actualTargetHex.q}, ${actualTargetHex.r})`,
       );
 
-      // Check narrative triggers after character movement
-      this.checkNarrativeTriggers(room.roomCode);
+      // Fire the trigger that interrupted movement (if any)
+      // Wrap in try-catch to prevent trigger failures from affecting the completed movement
+      // Movement is already complete and valid - trigger failure should not roll it back
+      if (triggerToFire) {
+        try {
+          this.fireNarrativeTrigger(room.roomCode, triggerToFire, userId);
+        } catch (triggerError) {
+          const triggerErrorMessage =
+            triggerError instanceof Error
+              ? triggerError.message
+              : 'Unknown trigger error';
+          this.logger.error(
+            `Failed to fire narrative trigger ${triggerToFire.triggerId} after movement: ${triggerErrorMessage}`,
+          );
+          // Emit a non-fatal error to clients - movement succeeded but trigger failed
+          this.server.to(room.roomCode).emit('narrative_trigger_error', {
+            triggerId: triggerToFire.triggerId,
+            message: `Narrative trigger failed to fire: ${triggerErrorMessage}`,
+          });
+        }
+      } else {
+        // Check for any other triggers that might fire at the final position
+        // Also wrap in try-catch for consistency
+        try {
+          this.checkNarrativeTriggers(room.roomCode);
+        } catch (triggerError) {
+          const triggerErrorMessage =
+            triggerError instanceof Error
+              ? triggerError.message
+              : 'Unknown trigger error';
+          this.logger.error(
+            `Failed to check narrative triggers after movement: ${triggerErrorMessage}`,
+          );
+          // Non-fatal - movement is still valid
+        }
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -2770,8 +2840,12 @@ export class GameGateway
       }
 
       // Check scenario completion after attack (in case last monster died)
+      // Skip primary objective check during attack - victory is only declared at round end
+      // This allows other players to take remaining actions and collect loot
       if (targetDead && isMonsterTarget) {
-        this.checkScenarioCompletion(room.roomCode);
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -3159,7 +3233,10 @@ export class GameGateway
         }
 
         // Check scenario completion after turn advancement
-        this.checkScenarioCompletion(room.roomCode);
+        // Skip primary objective check - victory is only declared at round end
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -4096,7 +4173,8 @@ export class GameGateway
 
     // Phase 3: Check scenario completion at round boundary BEFORE starting new round
     // This ensures objectives like "survive N rounds" are properly evaluated
-    this.checkScenarioCompletion(roomCode);
+    // Check primary objective completion (which was deferred from attack handlers)
+    this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: true });
 
     // If game completed, don't proceed with new round setup
     if (room.status === RoomStatus.COMPLETED) {
@@ -4463,7 +4541,8 @@ export class GameGateway
       );
 
       // Check if this triggers scenario completion (all players exhausted = defeat)
-      this.checkScenarioCompletion(roomCode);
+      // Skip primary objective check - victory is only declared at round end
+      this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: false });
     } catch (error) {
       this.logger.error(
         `Failed to handle character exhaustion: ${error instanceof Error ? error.message : String(error)}`,
@@ -4475,7 +4554,11 @@ export class GameGateway
    * Check scenario completion and broadcast if complete (Phase 3 Enhanced)
    * Uses ObjectiveEvaluator and ObjectiveContextBuilder for proper objective evaluation
    */
-  private async checkScenarioCompletion(roomCode: string): Promise<void> {
+  private async checkScenarioCompletion(
+    roomCode: string,
+    options: ScenarioCompletionCheckOptions = {},
+  ): Promise<void> {
+    const { checkPrimaryObjective = true } = options;
     try {
       // Get room state
       const room = roomService.getRoom(roomCode);
@@ -4617,11 +4700,18 @@ export class GameGateway
 
       // Determine outcome
       const isDefeat = allPlayersExhausted || failureTriggered;
-      const isVictory = primaryComplete && !isDefeat;
+
+      // NEW: Only check for victory if explicitly requested
+      // When checkPrimaryObjective=false, we still want to check for defeats
+      // but not declare victory (that happens at round end)
+      const isVictory = checkPrimaryObjective && primaryComplete && !isDefeat;
       const isComplete = isDefeat || isVictory;
 
       if (!isComplete) {
         // Scenario still in progress
+        // Progress updates already happened above (lines 4657-4693)
+        // Just check narrative triggers and return
+        this.checkNarrativeTriggers(roomCode);
         return;
       }
 
@@ -4681,21 +4771,156 @@ export class GameGateway
         };
       });
 
+      // Get victory/defeat narrative and its rewards
+      const narrativeDef = this.roomNarratives.get(roomCode);
+      const narrativeContent = isVictory
+        ? narrativeDef?.victory
+        : narrativeDef?.defeat;
+
+      // Victory narrative rewards (from scenario definition)
+      const outroRewards =
+        isVictory && narrativeContent?.rewards
+          ? narrativeContent.rewards
+          : undefined;
+
+      // CRITICAL FIX: Apply victory/defeat rewards to database BEFORE building the payload
+      // Previously, outroRewards were only shown in the payload but never persisted.
+      // The rewardsAlreadyApplied=true flag on the narrative prevented re-application,
+      // but the rewards were never applied in the first place - causing silent failures.
+      if (outroRewards && (outroRewards.gold || outroRewards.xp)) {
+        const playersForRewards = room.players.map((p) => ({
+          id: p.id,
+          userId: p.userId,
+          characterId: p.characterId,
+        }));
+
+        try {
+          const rewardResult = await this.narrativeRewardService.applyRewards(
+            roomCode,
+            outroRewards,
+            playersForRewards,
+          );
+
+          if (rewardResult.success) {
+            this.logger.log(
+              `Applied ${isVictory ? 'victory' : 'defeat'} rewards to ${rewardResult.rewardedPlayers.length} players in room ${roomCode}`,
+            );
+            // Emit reward event so clients know rewards were granted
+            if (rewardResult.rewardedPlayers.length > 0) {
+              this.server.to(roomCode).emit('narrative_rewards_granted', {
+                rewards: rewardResult.rewardedPlayers,
+                distribution: rewardResult.distribution,
+                source: isVictory ? 'victory' : 'defeat',
+              });
+            }
+          } else {
+            this.logger.error(
+              `Failed to apply ${isVictory ? 'victory' : 'defeat'} rewards in room ${roomCode}: ${rewardResult.error}`,
+            );
+            this.server.to(roomCode).emit('narrative_rewards_failed', {
+              error: rewardResult.error,
+              source: isVictory ? 'victory' : 'defeat',
+            });
+          }
+        } catch (rewardError) {
+          const errorMessage =
+            rewardError instanceof Error
+              ? rewardError.message
+              : 'Unknown error';
+          this.logger.error(
+            `Exception applying ${isVictory ? 'victory' : 'defeat'} rewards in room ${roomCode}: ${errorMessage}`,
+          );
+          // Don't throw - scenario completion should still succeed
+        }
+      }
+
+      // Get accumulated narrative rewards (now includes victory/defeat rewards just applied)
+      const accumulatedRewards =
+        this.narrativeRewardService.getAccumulatedRewards(roomCode);
+
       // Build scenario completed payload
+      // Victory/defeat rewards are now included in accumulatedRewards (applied above)
       const scenarioCompletedPayload: ScenarioCompletedPayload = {
         victory: isVictory,
         experience: totalExperience,
-        loot: Array.from(lootByPlayer.entries()).map(([playerId, data]) => ({
-          playerId,
-          gold: data.gold,
-          items: data.items,
-        })),
+        loot: Array.from(lootByPlayer.entries()).map(([playerId, data]) => {
+          const playerNarrativeRewards = accumulatedRewards.get(playerId) || {
+            gold: 0,
+            xp: 0,
+          };
+          return {
+            playerId,
+            // Total gold = loot tokens + all narrative rewards (including victory/defeat)
+            gold: data.gold + playerNarrativeRewards.gold,
+            items: data.items,
+          };
+        }),
         completionTime,
         primaryObjectiveCompleted: primaryComplete,
         secondaryObjectivesCompleted: completedSecondaryIds,
         objectiveProgress,
         playerStats,
       };
+
+      // Add XP from all narrative rewards (mid-game + victory/defeat) to experience total
+      if (accumulatedRewards && accumulatedRewards.size > 0) {
+        let totalNarrativeXP = 0;
+        for (const rewards of accumulatedRewards.values()) {
+          totalNarrativeXP += rewards.xp;
+        }
+        // Average XP per player (narrative XP is already per-player in accumulator)
+        scenarioCompletedPayload.experience += Math.floor(
+          totalNarrativeXP / accumulatedRewards.size,
+        );
+      }
+
+      // If no loot was collected but rewards exist, add entries for all players
+      if (
+        accumulatedRewards &&
+        accumulatedRewards.size > 0 &&
+        scenarioCompletedPayload.loot.length === 0
+      ) {
+        for (const player of room.players) {
+          const playerNarrativeRewards = accumulatedRewards.get(
+            player.userId,
+          ) || { gold: 0, xp: 0 };
+          scenarioCompletedPayload.loot.push({
+            playerId: player.userId,
+            gold: playerNarrativeRewards.gold,
+            items: [],
+          });
+        }
+      }
+
+      // Display victory/defeat narrative if available
+      if (narrativeContent) {
+        const players = room.players.map((p: any) => ({
+          id: p.userId,
+          name: p.nickname || 'Player',
+        }));
+
+        // Pass rewards to narrative for display only.
+        // Rewards were already applied to the database above (CRITICAL FIX).
+        // The createOutroNarrative sets rewardsAlreadyApplied=true to prevent duplicate application
+        // when the narrative is acknowledged via handleAllNarrativeAcknowledged.
+        const outroNarrative = this.narrativeService.createOutroNarrative(
+          isVictory ? 'victory' : 'defeat',
+          narrativeContent,
+          players,
+          outroRewards, // Include rewards for display in narrative overlay
+        );
+
+        // Clear any stale narratives/queued triggers - scenario is over
+        this.narrativeService.clearActiveNarrative(roomCode);
+        this.narrativeService.clearQueue(roomCode);
+
+        this.narrativeService.setActiveNarrative(roomCode, outroNarrative);
+        this.emitNarrativeDisplay(roomCode, outroNarrative);
+
+        this.logger.log(
+          `Displayed ${isVictory ? 'victory' : 'defeat'} narrative for room ${roomCode}`,
+        );
+      }
 
       this.server
         .to(roomCode)
@@ -5288,10 +5513,10 @@ export class GameGateway
    * Handle narrative acknowledgment from a player
    */
   @SubscribeMessage('acknowledge_narrative')
-  handleAcknowledgeNarrative(
+  async handleAcknowledgeNarrative(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AcknowledgeNarrativePayload,
-  ): void {
+  ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -5319,9 +5544,15 @@ export class GameGateway
       }
 
       // Record acknowledgment
+      this.logger.debug(
+        `[handleAcknowledgeNarrative] Player ${userId} acknowledging narrative ${payload.narrativeId}`,
+      );
       const allAcknowledged = this.narrativeService.acknowledgeNarrative(
         roomCode,
         userId,
+      );
+      this.logger.debug(
+        `[handleAcknowledgeNarrative] allAcknowledged: ${allAcknowledged}`,
       );
 
       // Broadcast acknowledgment to all players
@@ -5333,9 +5564,12 @@ export class GameGateway
       };
       this.server.to(roomCode).emit('narrative_acknowledged', ackPayload);
 
-      // If all acknowledged, proceed
+      // If all acknowledged, proceed (await to ensure rewards persist before response)
       if (allAcknowledged) {
-        this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
+        this.logger.debug(
+          `[handleAcknowledgeNarrative] All acknowledged, proceeding to dismiss`,
+        );
+        await this.handleAllNarrativeAcknowledged(roomCode, activeNarrative);
       }
     } catch (error) {
       this.logger.error(
@@ -5354,19 +5588,59 @@ export class GameGateway
   /**
    * Handle when all players have acknowledged a narrative
    */
-  private handleAllNarrativeAcknowledged(
+  private async handleAllNarrativeAcknowledged(
     roomCode: string,
     narrative: import('../../../shared/types/narrative').ActiveNarrative,
-  ): void {
+  ): Promise<void> {
+    this.logger.debug(
+      `[handleAllNarrativeAcknowledged] Processing for room ${roomCode}, narrative type: ${narrative.type}`,
+    );
+
     const room = roomService.getRoom(roomCode);
-    if (!room) return;
+    if (!room) {
+      this.logger.warn(
+        `[handleAllNarrativeAcknowledged] Room ${roomCode} not found`,
+      );
+      return;
+    }
 
     // Apply game effects if any
     if (narrative.gameEffects) {
       this.applyNarrativeGameEffects(roomCode, narrative.gameEffects);
     }
 
-    // Clear the narrative
+    // Apply rewards if any - await to ensure persistence before proceeding
+    // Skip if rewards were already applied elsewhere (e.g., victory/defeat in scenario_completed)
+    // Wrap in try-catch to ensure narrative dismissal proceeds even if reward application fails
+    if (narrative.rewards && !narrative.rewardsAlreadyApplied) {
+      try {
+        await this.applyNarrativeRewards(
+          roomCode,
+          narrative.rewards,
+          narrative.triggeredBy,
+        );
+      } catch (rewardError) {
+        // Log the error but don't block narrative dismissal
+        const errorMessage =
+          rewardError instanceof Error
+            ? rewardError.message
+            : 'Unknown reward error';
+        this.logger.error(
+          `[handleAllNarrativeAcknowledged] Failed to apply rewards for narrative ${narrative.id}: ${errorMessage}`,
+        );
+        // Notify clients of the failure
+        this.server.to(roomCode).emit('narrative_rewards_failed', {
+          narrativeId: narrative.id,
+          error: `Failed to apply rewards: ${errorMessage}`,
+        });
+      }
+    } else if (narrative.rewards && narrative.rewardsAlreadyApplied) {
+      this.logger.debug(
+        `[handleAllNarrativeAcknowledged] Skipping reward application - already applied for ${narrative.type} narrative`,
+      );
+    }
+
+    // Clear the narrative - this should always happen even if rewards failed
     this.narrativeService.clearActiveNarrative(roomCode);
 
     // Emit dismissed event
@@ -5375,13 +5649,23 @@ export class GameGateway
       type: narrative.type,
       gameEffectsApplied: !!narrative.gameEffects,
     };
+    this.logger.debug(
+      `[handleAllNarrativeAcknowledged] Emitting narrative_dismissed for ${narrative.type}`,
+    );
     this.server.to(roomCode).emit('narrative_dismissed', dismissedPayload);
 
     // Check for queued narratives
     const nextNarrative = this.narrativeService.dequeueNarrative(roomCode);
     if (nextNarrative) {
+      this.logger.debug(
+        `[handleAllNarrativeAcknowledged] Found queued narrative, displaying`,
+      );
       this.narrativeService.setActiveNarrative(roomCode, nextNarrative);
       this.emitNarrativeDisplay(roomCode, nextNarrative);
+    } else {
+      this.logger.debug(
+        `[handleAllNarrativeAcknowledged] No queued narratives`,
+      );
     }
   }
 
@@ -5426,6 +5710,9 @@ export class GameGateway
           hex: monster.currentHex,
           health: monster.health,
           maxHealth: monster.maxHealth,
+          movement: monster.movement,
+          attack: monster.attack,
+          range: monster.range,
         });
       }
 
@@ -5478,6 +5765,50 @@ export class GameGateway
   }
 
   /**
+   * Apply rewards from a narrative trigger based on distribution mode.
+   * Delegates to NarrativeRewardService for calculation and persistence,
+   * then emits appropriate WebSocket events.
+   */
+  private async applyNarrativeRewards(
+    roomCode: string,
+    rewards: import('../../../shared/types/narrative').NarrativeRewards,
+    triggeredBy?: string,
+  ): Promise<void> {
+    const room = roomService.getRoom(roomCode);
+    if (!room) return;
+
+    // Map players to the format expected by the reward service
+    const players = room.players.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      characterId: p.characterId,
+    }));
+
+    // Delegate to reward service for calculation and persistence
+    const result = await this.narrativeRewardService.applyRewards(
+      roomCode,
+      rewards,
+      players,
+      triggeredBy,
+    );
+
+    // Emit appropriate WebSocket events based on result
+    if (!result.success) {
+      this.server.to(roomCode).emit('narrative_rewards_failed', {
+        error: result.error,
+      });
+      return;
+    }
+
+    if (result.rewardedPlayers.length > 0) {
+      this.server.to(roomCode).emit('narrative_rewards_granted', {
+        rewards: result.rewardedPlayers,
+        distribution: result.distribution,
+      });
+    }
+  }
+
+  /**
    * Emit narrative display event to all players in a room
    */
   private emitNarrativeDisplay(
@@ -5502,8 +5833,13 @@ export class GameGateway
 
   /**
    * Build game context for narrative condition evaluation
+   * @param roomCode - Room code
+   * @param characterPositionOverride - Optional override for a specific character's position (for checking triggers during movement)
    */
-  private buildNarrativeContext(roomCode: string): NarrativeGameContext | null {
+  private buildNarrativeContext(
+    roomCode: string,
+    characterPositionOverride?: { characterId: string; hex: AxialCoordinates },
+  ): NarrativeGameContext | null {
     const room = roomService.getRoom(roomCode);
     if (!room) return null;
 
@@ -5513,7 +5849,12 @@ export class GameGateway
       .map((char) => ({
         id: char.id,
         characterClass: char.characterClass,
-        hex: char.position || { q: 0, r: 0 },
+        // Use override position if this is the character being checked
+        hex:
+          characterPositionOverride &&
+          char.id === characterPositionOverride.characterId
+            ? characterPositionOverride.hex
+            : char.position || { q: 0, r: 0 },
       }));
 
     // Get monsters from room state
@@ -5627,6 +5968,79 @@ export class GameGateway
       this.narrativeService.setActiveNarrative(roomCode, narrative);
       this.emitNarrativeDisplay(roomCode, narrative);
 
+      this.logger.log(
+        `Narrative trigger ${trigger.triggerId} fired in room ${roomCode}`,
+      );
+    }
+  }
+
+  /**
+   * Check if moving a character to a specific hex would trigger a narrative
+   * Returns the trigger if one would fire, null otherwise
+   * Does NOT mark the trigger as fired - use for preview/interrupt detection
+   * Note: Still checks triggers even if another narrative is active (for movement interruption)
+   */
+  private checkTriggerAtPosition(
+    roomCode: string,
+    characterId: string,
+    hex: AxialCoordinates,
+  ): import('../../../shared/types/narrative').NarrativeTriggerDef | null {
+    const narrativeDef = this.roomNarratives.get(roomCode);
+    if (!narrativeDef || !narrativeDef.triggers) {
+      return null;
+    }
+
+    // Build context with the hypothetical character position
+    const context = this.buildNarrativeContext(roomCode, { characterId, hex });
+    if (!context) {
+      return null;
+    }
+
+    this.logger.log(
+      `[checkTriggerAtPosition] Checking hex (${hex.q}, ${hex.r}) for character ${characterId}, ` +
+        `triggers available: ${narrativeDef.triggers.length}, narrativeActive: ${this.narrativeService.isNarrativeActive(roomCode)}`,
+    );
+
+    // Use the public peekTrigger method - check even if narrative is active
+    // (we want to interrupt movement regardless, then queue the trigger)
+    return this.narrativeService.peekTrigger(roomCode, narrativeDef, context);
+  }
+
+  /**
+   * Fire a narrative trigger (after confirming it should fire)
+   * If another narrative is active, queue this one to display after
+   */
+  private fireNarrativeTrigger(
+    roomCode: string,
+    trigger: import('../../../shared/types/narrative').NarrativeTriggerDef,
+    triggeredBy?: string,
+  ): void {
+    const room = roomService.getRoom(roomCode);
+    if (!room) return;
+
+    // Mark trigger as fired using the public method
+    this.narrativeService.markTriggerFired(roomCode, trigger.triggerId);
+
+    const players = room.players.map((p) => ({
+      id: p.userId,
+      name: p.nickname,
+    }));
+
+    const narrative = this.narrativeService.createTriggerNarrative(
+      trigger,
+      players,
+      triggeredBy,
+    );
+
+    // If another narrative is already active, queue this one
+    if (this.narrativeService.isNarrativeActive(roomCode)) {
+      this.narrativeService.queueNarrative(roomCode, narrative);
+      this.logger.log(
+        `Narrative trigger ${trigger.triggerId} queued (another narrative active) in room ${roomCode}`,
+      );
+    } else {
+      this.narrativeService.setActiveNarrative(roomCode, narrative);
+      this.emitNarrativeDisplay(roomCode, narrative);
       this.logger.log(
         `Narrative trigger ${trigger.triggerId} fired in room ${roomCode}`,
       );

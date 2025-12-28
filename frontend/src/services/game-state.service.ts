@@ -1,4 +1,4 @@
-import { websocketService } from './websocket.service';
+import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
@@ -193,6 +193,7 @@ interface VisualUpdateCallbacks {
   updateCharacterHealth?: (characterId: string, health: number) => void;
   updateMonsterHealth?: (monsterId: string, health: number) => void;
   removeMonster?: (monsterId: string) => void;
+  spawnMonster?: (monsterData: { monsterId: string; monsterType: string; isElite: boolean; hex: Axial; health: number; maxHealth: number }) => void;
   spawnLootToken?: (lootData: LootSpawnedPayload) => void;
   collectLootToken?: (tokenId: string) => void;
 }
@@ -290,8 +291,39 @@ class GameStateManager {
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
 
+  // Store bound handlers for proper cleanup (fixes HMR duplicate registration)
+  // Handler type matches websocketService.on() callback signature
+  private boundHandlers: Map<EventName, (data: unknown) => void> = new Map();
+  private listenersSetup = false;
+
   constructor() {
     this.setupWebSocketListeners();
+    // Check for stored game state from roomSessionManager
+    // This handles the case where game_started event fired before GameStateManager was instantiated
+    this.initializeFromStoredState();
+  }
+
+  /**
+   * Cleanup handlers - call before module hot reload
+   */
+  public cleanup(): void {
+    for (const [event, handler] of this.boundHandlers) {
+      websocketService.off(event as EventName, handler);
+    }
+    this.boundHandlers.clear();
+    this.listenersSetup = false;
+  }
+
+  /**
+   * Initialize from stored game state if available
+   * This handles the race condition where game_started fires during page navigation
+   */
+  private initializeFromStoredState(): void {
+    const storedGameState = roomSessionManager.getStoredGameState();
+    if (storedGameState && !this.state.gameData) {
+      console.log('[GameStateManager] Initializing from stored game state');
+      this.handleGameStarted(storedGameState);
+    }
   }
 
   public registerVisualCallbacks(callbacks: VisualUpdateCallbacks): void {
@@ -308,29 +340,44 @@ class GameStateManager {
   }
 
   private setupWebSocketListeners(): void {
-    websocketService.on('game_started', this.handleGameStarted.bind(this));
-    websocketService.on('character_moved', this.handleCharacterMoved.bind(this));
-    websocketService.on('round_started', this.handleRoundStarted.bind(this));
-    websocketService.on('round_ended', this.handleRoundEnded.bind(this));
-    websocketService.on('turn_started', this.handleTurnStarted.bind(this));
-    websocketService.on('monster_activated', this.handleMonsterActivated.bind(this));
-    websocketService.on('attack_resolved', this.handleAttackResolved.bind(this));
-    websocketService.on('monster_died', this.handleMonsterDied.bind(this));
-    websocketService.on('loot_spawned', this.handleLootSpawned.bind(this));
-    websocketService.on('loot_collected', this.handleLootCollected.bind(this));
-    websocketService.on('rest-event', this.handleRestEvent.bind(this));
-    websocketService.on('ws_connected', () => {
+    // Prevent duplicate registration (fixes HMR issue)
+    if (this.listenersSetup) {
+      return;
+    }
+
+    // Helper to register and track handlers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const register = (event: EventName, handler: (data: any) => void) => {
+      this.boundHandlers.set(event, handler as (data: unknown) => void);
+      websocketService.on(event, handler);
+    };
+
+    register('game_started', this.handleGameStarted.bind(this));
+    register('character_moved', this.handleCharacterMoved.bind(this));
+    register('round_started', this.handleRoundStarted.bind(this));
+    register('round_ended', this.handleRoundEnded.bind(this));
+    register('turn_started', this.handleTurnStarted.bind(this));
+    register('monster_activated', this.handleMonsterActivated.bind(this));
+    register('attack_resolved', this.handleAttackResolved.bind(this));
+    register('monster_died', this.handleMonsterDied.bind(this));
+    register('loot_spawned', this.handleLootSpawned.bind(this));
+    register('loot_collected', this.handleLootCollected.bind(this));
+    register('rest-event', this.handleRestEvent.bind(this));
+    register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
+    register('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
     });
-    websocketService.on('ws_disconnected', () => {
+    register('ws_disconnected', () => {
         this.state.connectionStatus = 'disconnected';
         this.emitStateUpdate();
     });
-    websocketService.on('ws_reconnecting', () => {
+    register('ws_reconnecting', () => {
         this.state.connectionStatus = 'reconnecting';
         this.emitStateUpdate();
     });
+
+    this.listenersSetup = true;
   }
 
   private handleGameStarted(data: GameStartedPayload): void {
@@ -741,6 +788,53 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
+  private handleMonsterSpawned(data: { monsterId: string; monsterType: string; isElite: boolean; hex: Axial; health: number; maxHealth: number; movement: number; attack: number; range: number }): void {
+    console.log('[GameStateManager] Monster spawned:', data);
+
+    // Build full monster object with required fields
+    // roomId is not needed for frontend display, use empty string
+    const newMonster = {
+      id: data.monsterId,
+      roomId: '',
+      monsterType: data.monsterType,
+      isElite: data.isElite,
+      currentHex: data.hex,
+      health: data.health,
+      maxHealth: data.maxHealth,
+      movement: data.movement,
+      attack: data.attack,
+      range: data.range,
+      specialAbilities: [] as string[],
+      conditions: [] as import('../../../shared/types/entities').Condition[],
+      isDead: false,
+    };
+
+    // Trigger visual update to add monster sprite
+    this.visualCallbacks.spawnMonster?.({
+      monsterId: data.monsterId,
+      monsterType: data.monsterType,
+      isElite: data.isElite,
+      hex: data.hex,
+      health: data.health,
+      maxHealth: data.maxHealth,
+    });
+
+    // Add monster to game state
+    if (this.state.gameData) {
+      this.state.gameData.monsters = [...this.state.gameData.monsters, newMonster];
+    }
+
+    // Log the spawn
+    this.addLog([
+      { text: 'A ' },
+      { text: data.isElite ? 'elite ' : '', color: 'gold' },
+      { text: data.monsterType, color: 'red' },
+      { text: ' has appeared!' },
+    ]);
+
+    this.emitStateUpdate();
+  }
+
   private handleLootSpawned(data: LootSpawnedPayload): void {
     this.visualCallbacks.spawnLootToken?.(data);
     this.addLog([{ text: 'Loot dropped!', color: 'gold' }]);
@@ -803,10 +897,12 @@ class GameStateManager {
 
     // Apply updates (either object or function)
     const updatedFields = typeof updates === 'function' ? updates(character) : updates;
-    const updatedCharacter = { ...character, ...updatedFields };
+    // Explicitly type as Character - safe because we spread a full Character with Partial<Character>
+    const updatedCharacter: Character = { ...character, ...updatedFields };
 
     // Create new gameData with updated character
-    // Type assertion needed because updateCharacter merges payload character with Character updates
+    // Type assertion needed because Character has abilityDeck: string[] | AbilityCard[]
+    // but GameStartedPayload expects abilityDeck: AbilityCard[] - at runtime they're AbilityCard[]
     this.state.gameData = {
       ...this.state.gameData,
       characters: this.state.gameData.characters.map(c =>
@@ -1458,3 +1554,10 @@ roomSessionManager.subscribe((roomState) => {
     gameStateManager.reset();
   }
 });
+
+// Vite HMR cleanup to prevent duplicate event handlers
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    gameStateManager.cleanup();
+  });
+}
