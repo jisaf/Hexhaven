@@ -109,6 +109,7 @@ import {
   type CharacterClass,
   type Monster,
 } from '../../../shared/types/entities';
+import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
@@ -2839,8 +2840,12 @@ export class GameGateway
       }
 
       // Check scenario completion after attack (in case last monster died)
+      // Skip primary objective check during attack - victory is only declared at round end
+      // This allows other players to take remaining actions and collect loot
       if (targetDead && isMonsterTarget) {
-        this.checkScenarioCompletion(room.roomCode);
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -3228,7 +3233,10 @@ export class GameGateway
         }
 
         // Check scenario completion after turn advancement
-        this.checkScenarioCompletion(room.roomCode);
+        // Skip primary objective check - victory is only declared at round end
+        this.checkScenarioCompletion(room.roomCode, {
+          checkPrimaryObjective: false,
+        });
       }
     } catch (error) {
       const errorMessage =
@@ -4165,7 +4173,8 @@ export class GameGateway
 
     // Phase 3: Check scenario completion at round boundary BEFORE starting new round
     // This ensures objectives like "survive N rounds" are properly evaluated
-    this.checkScenarioCompletion(roomCode);
+    // Check primary objective completion (which was deferred from attack handlers)
+    this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: true });
 
     // If game completed, don't proceed with new round setup
     if (room.status === RoomStatus.COMPLETED) {
@@ -4532,7 +4541,8 @@ export class GameGateway
       );
 
       // Check if this triggers scenario completion (all players exhausted = defeat)
-      this.checkScenarioCompletion(roomCode);
+      // Skip primary objective check - victory is only declared at round end
+      this.checkScenarioCompletion(roomCode, { checkPrimaryObjective: false });
     } catch (error) {
       this.logger.error(
         `Failed to handle character exhaustion: ${error instanceof Error ? error.message : String(error)}`,
@@ -4544,7 +4554,11 @@ export class GameGateway
    * Check scenario completion and broadcast if complete (Phase 3 Enhanced)
    * Uses ObjectiveEvaluator and ObjectiveContextBuilder for proper objective evaluation
    */
-  private async checkScenarioCompletion(roomCode: string): Promise<void> {
+  private async checkScenarioCompletion(
+    roomCode: string,
+    options: ScenarioCompletionCheckOptions = {},
+  ): Promise<void> {
+    const { checkPrimaryObjective = true } = options;
     try {
       // Get room state
       const room = roomService.getRoom(roomCode);
@@ -4686,11 +4700,18 @@ export class GameGateway
 
       // Determine outcome
       const isDefeat = allPlayersExhausted || failureTriggered;
-      const isVictory = primaryComplete && !isDefeat;
+
+      // NEW: Only check for victory if explicitly requested
+      // When checkPrimaryObjective=false, we still want to check for defeats
+      // but not declare victory (that happens at round end)
+      const isVictory = checkPrimaryObjective && primaryComplete && !isDefeat;
       const isComplete = isDefeat || isVictory;
 
       if (!isComplete) {
         // Scenario still in progress
+        // Progress updates already happened above (lines 4657-4693)
+        // Just check narrative triggers and return
+        this.checkNarrativeTriggers(roomCode);
         return;
       }
 
