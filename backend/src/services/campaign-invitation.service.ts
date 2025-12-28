@@ -12,6 +12,7 @@ import {
 import { PrismaService } from './prisma.service';
 import { randomBytes } from 'crypto';
 import { config } from '../config/env.config';
+import { MIN_TOKEN_USES, MAX_TOKEN_USES } from '../types/campaign.types';
 import type {
   CampaignInvitation,
   CampaignInviteToken,
@@ -40,34 +41,12 @@ export class CampaignInvitationService {
     invitedUsername: string,
     invitingUserId: string,
   ): Promise<CampaignInvitation> {
-    // Validate campaign exists and user is owner
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
-      include: {
-        characters: {
-          include: {
-            user: {
-              select: { id: true, username: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
-
-    // Check if inviting user is a member of the campaign
-    const isMember = campaign.characters.some(
-      (char) => char.userId === invitingUserId,
+    // Validate campaign membership and get campaign with characters
+    const campaign = await this.validateCampaignMembership(
+      campaignId,
+      invitingUserId,
+      true,
     );
-
-    if (!isMember) {
-      throw new ForbiddenException(
-        'You must be a member of the campaign to send invitations',
-      );
-    }
 
     // Validate invited username exists
     const invitedUser = await this.prisma.user.findUnique({
@@ -286,8 +265,8 @@ export class CampaignInvitationService {
     // Validate user is member of campaign
     await this.validateCampaignMembership(campaignId, userId);
 
-    if (maxUses < 1 || maxUses > 100) {
-      throw new BadRequestException('maxUses must be between 1 and 100');
+    if (maxUses < MIN_TOKEN_USES || maxUses > MAX_TOKEN_USES) {
+      throw new BadRequestException(`maxUses must be between ${MIN_TOKEN_USES} and ${MAX_TOKEN_USES}`);
     }
 
     // Generate unique token
@@ -384,34 +363,39 @@ export class CampaignInvitationService {
   ): Promise<string> {
     const { inviteToken } = await this.getAndValidateToken(token, userId);
 
-    // Atomically increment used count only if under max uses
+    // Atomically increment used count and revoke if needed in a transaction
     // This prevents race conditions when multiple users use the token simultaneously
-    const updateResult = await this.prisma.campaignInviteToken.updateMany({
-      where: {
-        id: inviteToken.id,
-        usedCount: { lt: inviteToken.maxUses },
-      },
-      data: {
-        usedCount: { increment: 1 },
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updateResult = await tx.campaignInviteToken.updateMany({
+        where: {
+          id: inviteToken.id,
+          usedCount: { lt: inviteToken.maxUses },
+        },
+        data: {
+          usedCount: { increment: 1 },
+        },
+      });
+
+      // If no rows were updated, the token has reached max uses
+      if (updateResult.count === 0) {
+        throw new BadRequestException(
+          'This invite link has reached its maximum uses',
+        );
+      }
+
+      // Auto-revoke if this was the last use (check after increment)
+      const newUsedCount = inviteToken.usedCount + 1;
+      if (newUsedCount >= inviteToken.maxUses) {
+        await tx.campaignInviteToken.update({
+          where: { id: inviteToken.id },
+          data: { isRevoked: true },
+        });
+      }
+
+      return inviteToken.campaignId;
     });
 
-    // If no rows were updated, the token has reached max uses
-    if (updateResult.count === 0) {
-      throw new BadRequestException(
-        'This invite link has reached its maximum uses',
-      );
-    }
-
-    // Auto-revoke if this was the last use
-    if (inviteToken.usedCount + 1 >= inviteToken.maxUses) {
-      await this.prisma.campaignInviteToken.update({
-        where: { id: inviteToken.id },
-        data: { isRevoked: true },
-      });
-    }
-
-    return inviteToken.campaignId;
+    return result;
   }
 
   /**
@@ -577,17 +561,25 @@ export class CampaignInvitationService {
 
   /**
    * Helper: Validate user is member of campaign
+   * Returns campaign with characters if includeCharacters is true
    */
   private async validateCampaignMembership(
     campaignId: string,
     userId: string,
-  ): Promise<void> {
+    includeCharacters = false,
+  ): Promise<void | any> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {
-        characters: {
-          where: { userId },
-        },
+        characters: includeCharacters
+          ? {
+              include: {
+                user: {
+                  select: { id: true, username: true },
+                },
+              },
+            }
+          : { where: { userId } },
       },
     });
 
@@ -597,10 +589,16 @@ export class CampaignInvitationService {
 
     // Allow campaign creator OR members with characters (Issue #388)
     const isCreator = campaign.createdByUserId === userId;
-    const isMember = campaign.characters.length > 0;
+    const isMember = includeCharacters
+      ? campaign.characters.some((char: any) => char.userId === userId)
+      : campaign.characters.length > 0;
 
     if (!isCreator && !isMember) {
       throw new ForbiddenException('You are not a member of this campaign');
+    }
+
+    if (includeCharacters) {
+      return campaign;
     }
   }
 }

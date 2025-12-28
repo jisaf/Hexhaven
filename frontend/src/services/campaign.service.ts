@@ -54,19 +54,24 @@ export interface CreateCampaignDto {
 
 class CampaignService {
   /**
+   * Helper method to handle API responses consistently
+   */
+  private async handleResponse<T>(response: Response, fallbackError: string): Promise<T> {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || fallbackError);
+    }
+    return response.json();
+  }
+
+  /**
    * Get available campaign templates
    */
   async getTemplates(): Promise<CampaignTemplate[]> {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/templates`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch campaign templates');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignTemplate[]>(response, 'Failed to fetch campaign templates');
   }
 
   /**
@@ -76,13 +81,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch campaigns');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignListItem[]>(response, 'Failed to fetch campaigns');
   }
 
   /**
@@ -99,13 +98,7 @@ class CampaignService {
         body: JSON.stringify(dto),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create campaign');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignWithDetails>(response, 'Failed to create campaign');
   }
 
   /**
@@ -115,13 +108,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/${campaignId}`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch campaign details');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignWithDetails>(response, 'Failed to fetch campaign details');
   }
 
   /**
@@ -138,13 +125,7 @@ class CampaignService {
         body: JSON.stringify({ characterId }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to join campaign');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignWithDetails>(response, 'Failed to join campaign');
   }
 
   /**
@@ -165,13 +146,7 @@ class CampaignService {
         body: JSON.stringify({ classId, name }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create character');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignCharacter>(response, 'Failed to create character');
   }
 
   /**
@@ -184,7 +159,6 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to remove character from campaign');
@@ -198,13 +172,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/${campaignId}/scenarios/available`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch available scenarios');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignScenario[]>(response, 'Failed to fetch available scenarios');
   }
 
   // ========== INVITATION METHODS ==========
@@ -223,13 +191,7 @@ class CampaignService {
         body: JSON.stringify({ invitedUsername }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to send invitation');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignInvitation>(response, 'Failed to send invitation');
   }
 
   /**
@@ -239,13 +201,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/${campaignId}/invitations`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch campaign invitations');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignInvitation[]>(response, 'Failed to fetch campaign invitations');
   }
 
   /**
@@ -255,13 +211,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/invitations/received`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch received invitations');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignInvitation[]>(response, 'Failed to fetch received invitations');
   }
 
   /**
@@ -274,7 +224,6 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to revoke invitation');
@@ -291,7 +240,6 @@ class CampaignService {
         method: 'POST',
       },
     );
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to decline invitation');
@@ -312,13 +260,7 @@ class CampaignService {
         body: JSON.stringify({ maxUses }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to create invite token');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignInviteToken>(response, 'Failed to create invite token');
   }
 
   /**
@@ -328,13 +270,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/${campaignId}/invite-tokens`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch invite tokens');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignInviteToken[]>(response, 'Failed to fetch invite tokens');
   }
 
   /**
@@ -347,7 +283,6 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to revoke invite token');
@@ -361,13 +296,7 @@ class CampaignService {
     const response = await fetch(
       `${getApiUrl()}/campaigns/${campaignId}/public-info`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch campaign info');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignPublicInfo>(response, 'Failed to fetch campaign info');
   }
 
   /**
@@ -387,13 +316,7 @@ class CampaignService {
         body: JSON.stringify({ characterId }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to join campaign');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignWithDetails>(response, 'Failed to join campaign');
   }
 
   /**
@@ -403,13 +326,7 @@ class CampaignService {
     const response = await authService.authenticatedFetch(
       `${getApiUrl()}/campaigns/validate-token/${token}`,
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to validate token');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignPublicInfo>(response, 'Failed to validate token');
   }
 
   /**
@@ -429,13 +346,7 @@ class CampaignService {
         body: JSON.stringify({ characterId }),
       },
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to join campaign');
-    }
-
-    return response.json();
+    return this.handleResponse<CampaignWithDetails>(response, 'Failed to join campaign');
   }
 }
 

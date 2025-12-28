@@ -29,6 +29,8 @@ export function CampaignInvitePanel({
   const [tokens, setTokens] = useState<CampaignInviteToken[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [revokingInvitationId, setRevokingInvitationId] = useState<string | null>(null);
+  const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
 
   // Load invitations and tokens
   const loadData = useCallback(async () => {
@@ -69,12 +71,17 @@ export function CampaignInvitePanel({
   };
 
   const handleRevokeInvitation = async (invitationId: string) => {
+    if (revokingInvitationId) return;
+
+    setRevokingInvitationId(invitationId);
     try {
       await campaignService.revokeInvitation(campaignId, invitationId);
       onSuccess?.('Invitation revoked');
       await loadData();
     } catch (error) {
       onError?.(error instanceof Error ? error.message : 'Failed to revoke invitation');
+    } finally {
+      setRevokingInvitationId(null);
     }
   };
 
@@ -92,12 +99,17 @@ export function CampaignInvitePanel({
   };
 
   const handleRevokeToken = async (tokenId: string) => {
+    if (revokingTokenId) return;
+
+    setRevokingTokenId(tokenId);
     try {
       await campaignService.revokeInviteToken(campaignId, tokenId);
       onSuccess?.('Invite link revoked');
       await loadData();
     } catch (error) {
       onError?.(error instanceof Error ? error.message : 'Failed to revoke invite link');
+    } finally {
+      setRevokingTokenId(null);
     }
   };
 
@@ -170,9 +182,10 @@ export function CampaignInvitePanel({
                   </div>
                   <button
                     onClick={() => handleRevokeInvitation(inv.id)}
+                    disabled={revokingInvitationId === inv.id}
                     className={styles['revoke-button']}
                   >
-                    Revoke
+                    {revokingInvitationId === inv.id ? 'Revoking...' : 'Revoke'}
                   </button>
                 </div>
               ))
@@ -225,9 +238,10 @@ export function CampaignInvitePanel({
                     </button>
                     <button
                       onClick={() => handleRevokeToken(token.id)}
+                      disabled={revokingTokenId === token.id}
                       className={styles['revoke-button']}
                     >
-                      Revoke
+                      {revokingTokenId === token.id ? 'Revoking...' : 'Revoke'}
                     </button>
                   </div>
                 </div>

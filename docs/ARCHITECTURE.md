@@ -1241,6 +1241,10 @@ const socket = io(serverUrl, {
 
 ### Rate Limiting
 
+- **Invitation endpoints**: 5 requests per minute per user (using @nestjs/throttler)
+  - POST /api/campaigns/:id/invitations (direct invites)
+  - POST /api/campaigns/:id/invite-tokens (shareable links)
+- Global rate limiting: 10 requests per 60 seconds (default for all endpoints)
 - Connection rate limiting (future enhancement)
 - Action rate limiting per player (future enhancement)
 

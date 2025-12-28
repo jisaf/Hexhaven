@@ -17,6 +17,7 @@ import {
   ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { CampaignService } from '../services/campaign.service';
 import { CampaignInvitationService } from '../services/campaign-invitation.service';
@@ -337,6 +338,7 @@ export class CampaignsController {
    * POST /api/campaigns/:campaignId/invitations
    */
   @Post(':campaignId/invitations')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute
   @HttpCode(HttpStatus.CREATED)
   async inviteUser(
     @Req() req: AuthenticatedRequest,
@@ -383,6 +385,7 @@ export class CampaignsController {
    * POST /api/campaigns/:campaignId/invite-tokens
    */
   @Post(':campaignId/invite-tokens')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tokens per minute
   @HttpCode(HttpStatus.CREATED)
   async createInviteToken(
     @Req() req: AuthenticatedRequest,

@@ -97,6 +97,8 @@ export const CampaignJoinPage: React.FC = () => {
   }
 
   if (!campaignInfo) {
+    // If campaign info is missing without an error, redirect to campaigns page
+    navigate('/campaigns');
     return null;
   }
 

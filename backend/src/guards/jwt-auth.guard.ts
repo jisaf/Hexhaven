@@ -11,16 +11,14 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from '../services/auth.service';
-import { prisma } from '../db/client';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  private authService: AuthService;
-
-  constructor(private reflector: Reflector) {
-    this.authService = new AuthService(prisma);
-  }
+  constructor(
+    private reflector: Reflector,
+    private authService: AuthService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     // Check if route is marked as public

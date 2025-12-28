@@ -575,7 +575,10 @@ gloomhaven-hex-game/
   - Pending invitations tab in campaigns hub
   - Public campaign preview for join links
   - Host controls: create, revoke invitations and tokens
-  - Atomic token consumption (race-condition safe)
+  - Atomic token consumption with transaction-based auto-revoke (race-condition safe)
+  - Rate limiting on invitation endpoints (5 invitations/tokens per minute)
+  - Proper dependency injection for authentication services
+  - Error handling with consistent response patterns
 
 #### Advanced Features
 - Advanced monster AI (flying, jumping, disadvantage)

@@ -19,6 +19,10 @@ import {
   MaxLength,
 } from 'class-validator';
 
+// Campaign invitation token constraints
+export const MIN_TOKEN_USES = 1;
+export const MAX_TOKEN_USES = 100;
+
 // Re-export shared types for convenience
 export type {
   DeathMode,
@@ -85,8 +89,8 @@ export class CreateInviteTokenDto {
   @IsOptional()
   @IsInt()
   @IsPositive()
-  @Min(1)
-  @Max(100)
+  @Min(MIN_TOKEN_USES)
+  @Max(MAX_TOKEN_USES)
   maxUses?: number; // Default 1
 }
 
