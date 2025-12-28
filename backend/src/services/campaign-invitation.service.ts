@@ -647,7 +647,7 @@ export class CampaignInvitationService {
     }
 
     if (includeCharacters) {
-      return campaign;
+      return campaign as CampaignWithCharacters;
     }
   }
 }
