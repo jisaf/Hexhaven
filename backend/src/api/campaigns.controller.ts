@@ -17,6 +17,7 @@ import {
   ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { ValidateTokenPipe } from '../pipes/validate-token.pipe';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { CampaignService } from '../services/campaign.service';
@@ -138,7 +139,7 @@ export class CampaignsController {
   @Get('validate-token/:token')
   async validateToken(
     @Req() req: AuthenticatedRequest,
-    @Param('token') token: string,
+    @Param('token', ValidateTokenPipe) token: string,
   ): Promise<CampaignPublicInfo> {
     const userId = req.user.userId;
 
@@ -190,7 +191,7 @@ export class CampaignsController {
   @HttpCode(HttpStatus.OK)
   async joinViaToken(
     @Req() req: AuthenticatedRequest,
-    @Param('token') token: string,
+    @Param('token', ValidateTokenPipe) token: string,
     @Body() dto: JoinViaTokenDto,
   ): Promise<CampaignWithDetails> {
     const userId = req.user.userId;
@@ -374,10 +375,11 @@ export class CampaignsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeInvitation(
     @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
     @Param('invitationId', ParseUUIDPipe) invitationId: string,
   ): Promise<void> {
     const userId = req.user.userId;
-    return this.invitationService.revokeInvitation(invitationId, userId);
+    return this.invitationService.revokeInvitation(campaignId, invitationId, userId);
   }
 
   /**
@@ -421,10 +423,11 @@ export class CampaignsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokeInviteToken(
     @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
     @Param('tokenId', ParseUUIDPipe) tokenId: string,
   ): Promise<void> {
     const userId = req.user.userId;
-    return this.invitationService.revokeToken(tokenId, userId);
+    return this.invitationService.revokeToken(campaignId, tokenId, userId);
   }
 
   /**

@@ -49,6 +49,12 @@ export const CampaignJoinPage: React.FC = () => {
     loadCampaignInfo();
   }, [token, navigate, loadCampaignInfo]);
 
+  useEffect(() => {
+    if (!isLoading && !error && !campaignInfo) {
+      navigate('/campaigns');
+    }
+  }, [isLoading, error, campaignInfo, navigate]);
+
   const handleJoin = async () => {
     setShowCharacterSelect(true);
   };
@@ -97,8 +103,6 @@ export const CampaignJoinPage: React.FC = () => {
   }
 
   if (!campaignInfo) {
-    // If campaign info is missing without an error, redirect to campaigns page
-    navigate('/campaigns');
     return null;
   }
 

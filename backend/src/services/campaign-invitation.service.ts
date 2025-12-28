@@ -28,6 +28,19 @@ const INVITATION_STATUS = {
   EXPIRED: 'EXPIRED' as const,
 };
 
+// Type for campaign with characters included
+interface CampaignWithCharacters {
+  id: string;
+  createdByUserId: string;
+  characters: Array<{
+    userId: string;
+    user: {
+      id: string;
+      username: string;
+    };
+  }>;
+}
+
 @Injectable()
 export class CampaignInvitationService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,7 +72,7 @@ export class CampaignInvitationService {
 
     // Check if user is already in campaign
     const alreadyInCampaign = campaign.characters.some(
-      (char: { userId: string }) => char.userId === invitedUser.id,
+      (char) => char.userId === invitedUser.id,
     );
 
     if (alreadyInCampaign) {
@@ -172,12 +185,21 @@ export class CampaignInvitationService {
   /**
    * Revoke a pending invitation
    */
-  async revokeInvitation(invitationId: string, userId: string): Promise<void> {
+  async revokeInvitation(
+    campaignId: string,
+    invitationId: string,
+    userId: string,
+  ): Promise<void> {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     });
 
     if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    // Validate invitation belongs to the specified campaign
+    if (invitation.campaignId !== campaignId) {
       throw new NotFoundException('Invitation not found');
     }
 
@@ -322,12 +344,21 @@ export class CampaignInvitationService {
   /**
    * Revoke token before all uses consumed
    */
-  async revokeToken(tokenId: string, userId: string): Promise<void> {
+  async revokeToken(
+    campaignId: string,
+    tokenId: string,
+    userId: string,
+  ): Promise<void> {
     const token = await this.prisma.campaignInviteToken.findUnique({
       where: { id: tokenId },
     });
 
     if (!token) {
+      throw new NotFoundException('Token not found');
+    }
+
+    // Validate token belongs to the specified campaign
+    if (token.campaignId !== campaignId) {
       throw new NotFoundException('Token not found');
     }
 
@@ -573,8 +604,18 @@ export class CampaignInvitationService {
   private async validateCampaignMembership(
     campaignId: string,
     userId: string,
+    includeCharacters?: false,
+  ): Promise<void>;
+  private async validateCampaignMembership(
+    campaignId: string,
+    userId: string,
+    includeCharacters: true,
+  ): Promise<CampaignWithCharacters>;
+  private async validateCampaignMembership(
+    campaignId: string,
+    userId: string,
     includeCharacters = false,
-  ): Promise<any> {
+  ): Promise<CampaignWithCharacters | void> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {

@@ -65,6 +65,16 @@ class CampaignService {
   }
 
   /**
+   * Helper method to handle API responses with no content (void)
+   */
+  private async handleVoidResponse(response: Response, fallbackError: string): Promise<void> {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || fallbackError);
+    }
+  }
+
+  /**
    * Get available campaign templates
    */
   async getTemplates(): Promise<CampaignTemplate[]> {
@@ -159,10 +169,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to remove character from campaign');
-    }
+    return this.handleVoidResponse(response, 'Failed to remove character from campaign');
   }
 
   /**
@@ -224,10 +231,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to revoke invitation');
-    }
+    return this.handleVoidResponse(response, 'Failed to revoke invitation');
   }
 
   /**
@@ -240,10 +244,7 @@ class CampaignService {
         method: 'POST',
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to decline invitation');
-    }
+    return this.handleVoidResponse(response, 'Failed to decline invitation');
   }
 
   /**
@@ -283,10 +284,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to revoke invite token');
-    }
+    return this.handleVoidResponse(response, 'Failed to revoke invite token');
   }
 
   /**
