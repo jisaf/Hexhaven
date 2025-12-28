@@ -256,8 +256,136 @@
 
 /* Empty State */
 .noCampaigns,
-.noTemplates {
+.noTemplates,
+.noInvitations {
   text-align: center;
   padding: 2rem;
   color: var(--color-text-secondary, #b0b0b0);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-border, #404040);
+}
+
+.tab {
+  position: relative;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-text-secondary, #b0b0b0);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab:hover {
+  color: var(--color-text-primary, #ffffff);
+}
+
+.tab.activeTab {
+  color: var(--color-primary, #4a90d9);
+  border-bottom-color: var(--color-primary, #4a90d9);
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  background: var(--color-primary, #4a90d9);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.tab:not(.activeTab) .tabBadge {
+  background: var(--color-border, #404040);
+}
+
+/* Invitations */
+.invitationsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.invitationCard {
+  background: var(--color-surface, #2a2a2a);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.invitationCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary, #4a90d9);
+}
+
+.invitationHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.invitedBy {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+.invitationDate {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #b0b0b0);
+  margin-bottom: 1rem;
+}
+
+.invitationActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.acceptButton,
+.declineButton {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.acceptButton {
+  background: var(--color-primary, #4a90d9);
+  color: white;
+}
+
+.acceptButton:hover {
+  background: var(--color-primary-hover, #3a7bc0);
+  transform: translateY(-1px);
+}
+
+.declineButton {
+  background: transparent;
+  border: 1px solid var(--color-border, #404040);
+  color: var(--color-text-secondary, #b0b0b0);
+}
+
+.declineButton:hover {
+  background: var(--color-surface-hover, #333333);
+  color: var(--color-text-primary, #ffffff);
 }

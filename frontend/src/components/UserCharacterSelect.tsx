@@ -66,8 +66,10 @@ export function UserCharacterSelect({
   };
 
   const handleSelect = (characterId: string, character: CharacterResponse) => {
-    // Don't allow selecting characters in active games, disabled, or excluded
-    if (character.currentGameId || disabledCharacterIds.includes(characterId) || disabled) {
+    // Only check disabledCharacterIds and disabled flag
+    // Backend validates if character is actually available (#372)
+    // Removed currentGameId check - it's set in lobby before game starts
+    if (disabledCharacterIds.includes(characterId) || disabled) {
       return;
     }
     onSelect(characterId);
@@ -137,8 +139,7 @@ export function UserCharacterSelect({
       <div className="character-grid">
         {displayCharacters.map((character) => {
           const isSelected = selectedCharacterId === character.id;
-          const isInGame = !!character.currentGameId;
-          const isDisabled = disabledCharacterIds.includes(character.id) || isInGame || disabled;
+          const isDisabled = disabledCharacterIds.includes(character.id) || disabled;
 
           return (
             <button
@@ -178,14 +179,9 @@ export function UserCharacterSelect({
               )}
 
               {isSelected && <div className="selected-indicator">✓</div>}
-              {isInGame && (
+              {isDisabled && (
                 <div className="disabled-overlay">
-                  <span>In Game</span>
-                </div>
-              )}
-              {isDisabled && !isInGame && (
-                <div className="disabled-overlay">
-                  <span>Taken</span>
+                  <span>Unavailable</span>
                 </div>
               )}
             </button>

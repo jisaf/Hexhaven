@@ -25,9 +25,12 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   // Relations
-  refreshTokens     RefreshToken[]
-  characters        Character[]
-  playerGameResults PlayerGameResult[]
+  refreshTokens        RefreshToken[]
+  characters           Character[]
+  playerGameResults    PlayerGameResult[]
+  invitationsReceived  CampaignInvitation[] @relation("InvitationsReceived")
+  invitationsSent      CampaignInvitation[] @relation("InvitationsSent")
+  createdInviteTokens  CampaignInviteToken[]
 
   @@index([username])
   @@index([deletedAt])
@@ -483,14 +486,61 @@ model Campaign {
   updatedAt             DateTime @updatedAt
 
   // Relations
-  template      CampaignTemplate?       @relation(fields: [templateId], references: [id])
-  characters    Character[]
-  games         Game[]                  // Games played in this campaign (Issue #244)
-  shopInventory CampaignShopInventory[] // Shop inventory (Issue #328)
-  shopTransactions ShopTransaction[]     // Shop transactions (Issue #328)
+  template         CampaignTemplate?       @relation(fields: [templateId], references: [id])
+  characters       Character[]
+  games            Game[]                  // Games played in this campaign (Issue #244)
+  shopInventory    CampaignShopInventory[] // Shop inventory (Issue #328)
+  shopTransactions ShopTransaction[]       // Shop transactions (Issue #328)
+  invitations      CampaignInvitation[]    @relation("CampaignInvitations")
+  inviteTokens     CampaignInviteToken[]
 
   @@index([templateId])
   @@map("campaigns")
+}
+
+// ========== CAMPAIGN INVITATIONS (Campaign Invite System) ==========
+
+model CampaignInvitation {
+  id              String            @id @default(uuid()) @db.Uuid
+  campaignId      String            @db.Uuid
+  invitedUserId   String            @db.Uuid
+  invitedUsername String            @db.VarChar(20)
+  invitedByUserId String            @db.Uuid
+  status          InvitationStatus  @default(PENDING)
+  expiresAt       DateTime          // 30-day TTL
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  campaign    Campaign @relation("CampaignInvitations", fields: [campaignId], references: [id], onDelete: Cascade)
+  invitedUser User     @relation("InvitationsReceived", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedBy   User     @relation("InvitationsSent", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, invitedUserId]) // Can't invite same user twice to same campaign
+  @@index([campaignId])
+  @@index([invitedUserId, status])
+  @@index([invitedByUserId])
+  @@map("campaign_invitations")
+}
+
+model CampaignInviteToken {
+  id              String    @id @default(uuid()) @db.Uuid
+  campaignId      String    @db.Uuid
+  token           String    @unique @db.VarChar(32)
+  createdByUserId String    @db.Uuid
+  maxUses         Int       @default(1) @db.SmallInt
+  usedCount       Int       @default(0) @db.SmallInt
+  expiresAt       DateTime  // 7-day TTL
+  isRevoked       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  campaign  Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([campaignId, isRevoked, expiresAt])
+  @@map("campaign_invite_tokens")
 }
 
 // ========== SCENARIOS (001 + 002) ==========
@@ -706,4 +756,15 @@ enum TransactionType {
   SELL
 
   @@map("transaction_type")
+}
+
+// ========== CAMPAIGN INVITATIONS ==========
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+
+  @@map("invitation_status")
 }

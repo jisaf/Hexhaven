@@ -11,6 +11,10 @@ import {
   IsUUID,
   IsOptional,
   IsIn,
+  IsInt,
+  IsPositive,
+  Min,
+  Max,
   MinLength,
   MaxLength,
 } from 'class-validator';
@@ -25,6 +29,10 @@ export type {
   CampaignScenarioInfo,
   CampaignScenarioCompletionResult,
   CampaignListItem,
+  CampaignInvitation,
+  CampaignInviteToken,
+  CampaignPublicInfo,
+  InvitationStatus,
 } from '../../../shared/types/campaign';
 
 import type { DeathMode } from '../../../shared/types/campaign';
@@ -61,6 +69,40 @@ export class CreateCampaignCharacterDto {
   classId!: string;
 }
 
+// ========== INVITATION DTOs ==========
+
+// DTO for inviting a user by username
+export class InviteUserDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20)
+  invitedUsername!: string;
+}
+
+// DTO for creating invite token
+export class CreateInviteTokenDto {
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Min(1)
+  @Max(100)
+  maxUses?: number; // Default 1
+}
+
+// DTO for joining via invitation
+export class JoinViaInvitationDto {
+  @IsOptional()
+  @IsUUID()
+  characterId?: string;
+}
+
+// DTO for joining via token
+export class JoinViaTokenDto {
+  @IsOptional()
+  @IsUUID()
+  characterId?: string;
+}
+
 // Campaign event types for event sourcing (backend-specific)
 export enum CampaignEventType {
   CAMPAIGN_CREATED = 'CAMPAIGN_CREATED',
@@ -72,4 +114,9 @@ export enum CampaignEventType {
   CAMPAIGN_CHARACTER_RETIRED = 'CAMPAIGN_CHARACTER_RETIRED',
   CAMPAIGN_COMPLETED = 'CAMPAIGN_COMPLETED',
   CAMPAIGN_SCENARIOS_UNLOCKED = 'CAMPAIGN_SCENARIOS_UNLOCKED',
+  // Invitation events
+  CAMPAIGN_INVITATION_SENT = 'CAMPAIGN_INVITATION_SENT',
+  CAMPAIGN_INVITATION_ACCEPTED = 'CAMPAIGN_INVITATION_ACCEPTED',
+  CAMPAIGN_INVITE_TOKEN_CREATED = 'CAMPAIGN_INVITE_TOKEN_CREATED',
+  CAMPAIGN_JOINED_VIA_INVITE = 'CAMPAIGN_JOINED_VIA_INVITE',
 }

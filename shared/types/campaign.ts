@@ -119,3 +119,67 @@ export interface CreateCampaignCharacterRequest {
   name: string;
   classId: string;
 }
+
+// ========== CAMPAIGN INVITATIONS ==========
+
+// Invitation status
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+
+// Campaign invitation (direct invite by username)
+export interface CampaignInvitation {
+  id: string;
+  campaignId: string;
+  campaignName: string;
+  invitedUserId: string;
+  invitedUsername: string;
+  invitedByUserId: string;
+  invitedByUsername: string;
+  status: InvitationStatus;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// Campaign invite token (shareable link)
+export interface CampaignInviteToken {
+  id: string;
+  campaignId: string;
+  token: string;
+  createdByUserId: string;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: Date | string;
+  isRevoked: boolean;
+  createdAt: Date | string;
+}
+
+// Public campaign info for join link preview
+export interface CampaignPublicInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  deathMode: DeathMode;
+  requireUniqueClasses: boolean;
+  prosperityLevel: number;
+  playerCount: number;
+  completedScenariosCount: number;
+  totalScenariosCount: number;
+  isCompleted: boolean;
+}
+
+// DTO types for invitation API requests
+export interface InviteUserRequest {
+  invitedUsername: string;
+}
+
+export interface CreateInviteTokenRequest {
+  maxUses?: number; // Default 1
+}
+
+export interface JoinViaInvitationRequest {
+  characterId?: string; // Optional - can add character later
+}
+
+export interface JoinViaTokenRequest {
+  characterId?: string; // Optional - can add character later
+}

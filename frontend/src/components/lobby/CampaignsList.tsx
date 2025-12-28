@@ -8,16 +8,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
-import type { CampaignListItem, CampaignTemplate, DeathMode } from '../../services/campaign.service';
+import type { CampaignListItem, CampaignTemplate, DeathMode, CampaignInvitation } from '../../services/campaign.service';
 import styles from './CampaignsList.module.css';
 
 interface CampaignsListProps {
   onSelectCampaign: (campaignId: string) => void;
 }
 
+type TabType = 'campaigns' | 'invitations';
+
 export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
   const { t } = useTranslation('lobby');
+  const [activeTab, setActiveTab] = useState<TabType>('campaigns');
   const [campaigns, setCampaigns] = useState<CampaignListItem[]>([]);
+  const [invitations, setInvitations] = useState<CampaignInvitation[]>([]);
   const [templates, setTemplates] = useState<CampaignTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +34,14 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [campaignsData, templatesData] = await Promise.all([
+      const [campaignsData, templatesData, invitationsData] = await Promise.all([
         campaignService.getMyCampaigns(),
         campaignService.getTemplates(),
+        campaignService.getReceivedInvitations(),
       ]);
       setCampaigns(campaignsData);
       setTemplates(templatesData);
+      setInvitations(invitationsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load campaigns');
     } finally {
@@ -78,6 +84,21 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
     setShowCreateForm(true);
   };
 
+  const handleAcceptInvitation = async (invitation: CampaignInvitation) => {
+    // Navigate to campaign to view details and add character
+    onSelectCampaign(invitation.campaignId);
+  };
+
+  const handleDeclineInvitation = async (invitation: CampaignInvitation) => {
+    try {
+      await campaignService.declineInvitation(invitation.id);
+      // Refresh invitations
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to decline invitation');
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.campaignsList}>
@@ -90,6 +111,28 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
     <div className={styles.campaignsList}>
       <h2 className={styles.title}>{t('campaigns', 'Campaigns')}</h2>
 
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'campaigns' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('campaigns')}
+        >
+          My Campaigns
+          {campaigns.length > 0 && (
+            <span className={styles.tabBadge}>{campaigns.length}</span>
+          )}
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'invitations' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('invitations')}
+        >
+          Invitations
+          {invitations.length > 0 && (
+            <span className={styles.tabBadge}>{invitations.length}</span>
+          )}
+        </button>
+      </div>
+
       {error && (
         <div className={styles.error} role="alert">
           {error}
@@ -99,47 +142,94 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
         </div>
       )}
 
-      {/* Existing Campaigns */}
-      {campaigns.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>{t('myCampaigns', 'My Campaigns')}</h3>
-          <div className={styles.campaignsGrid}>
-            {campaigns.map((campaign) => (
-              <div
-                key={campaign.id}
-                className={`${styles.campaignCard} ${campaign.isCompleted ? styles.completed : ''}`}
-                onClick={() => onSelectCampaign(campaign.id)}
-              >
-                <div className={styles.campaignHeader}>
-                  <span className={styles.campaignName}>{campaign.name}</span>
-                  <span className={styles.campaignStatus}>
-                    {campaign.isCompleted
-                      ? t('completed', 'Completed')
-                      : t('inProgress', 'In Progress')}
-                  </span>
-                </div>
-                <div className={styles.campaignInfo}>
-                  <span className={styles.scenarioCount}>
-                    {t('scenarios', 'Scenarios')}: {campaign.completedScenariosCount}/{campaign.totalScenariosCount}
-                  </span>
-                  <span className={styles.deathMode}>
-                    {campaign.deathMode === 'healing'
-                      ? t('healingMode', 'Healing')
-                      : t('permadeathMode', 'Permadeath')}
-                  </span>
-                </div>
-                <div className={styles.campaignStats}>
-                  <span>Prosperity: {campaign.prosperityLevel}</span>
-                  <span>Reputation: {campaign.reputation}</span>
-                </div>
+      {/* Campaigns Tab */}
+      {activeTab === 'campaigns' && (
+        <>
+          {/* Existing Campaigns */}
+          {campaigns.length > 0 && (
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>{t('myCampaigns', 'My Campaigns')}</h3>
+              <div className={styles.campaignsGrid}>
+                {campaigns.map((campaign) => (
+                  <div
+                    key={campaign.id}
+                    className={`${styles.campaignCard} ${campaign.isCompleted ? styles.completed : ''}`}
+                    onClick={() => onSelectCampaign(campaign.id)}
+                  >
+                    <div className={styles.campaignHeader}>
+                      <span className={styles.campaignName}>{campaign.name}</span>
+                      <span className={styles.campaignStatus}>
+                        {campaign.isCompleted
+                          ? t('completed', 'Completed')
+                          : t('inProgress', 'In Progress')}
+                      </span>
+                    </div>
+                    <div className={styles.campaignInfo}>
+                      <span className={styles.scenarioCount}>
+                        {t('scenarios', 'Scenarios')}: {campaign.completedScenariosCount}/{campaign.totalScenariosCount}
+                      </span>
+                      <span className={styles.deathMode}>
+                        {campaign.deathMode === 'healing'
+                          ? t('healingMode', 'Healing')
+                          : t('permadeathMode', 'Permadeath')}
+                      </span>
+                    </div>
+                    <div className={styles.campaignStats}>
+                      <span>Prosperity: {campaign.prosperityLevel}</span>
+                      <span>Reputation: {campaign.reputation}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Invitations Tab */}
+      {activeTab === 'invitations' && (
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Pending Invitations</h3>
+          {invitations.length === 0 ? (
+            <p className={styles.noInvitations}>
+              You have no pending campaign invitations.
+            </p>
+          ) : (
+            <div className={styles.invitationsGrid}>
+              {invitations.map((invitation) => (
+                <div key={invitation.id} className={styles.invitationCard}>
+                  <div className={styles.invitationHeader}>
+                    <span className={styles.campaignName}>{invitation.campaignName}</span>
+                    <span className={styles.invitedBy}>
+                      from {invitation.invitedByUsername}
+                    </span>
+                  </div>
+                  <div className={styles.invitationDate}>
+                    Invited {new Date(invitation.createdAt).toLocaleDateString()}
+                  </div>
+                  <div className={styles.invitationActions}>
+                    <button
+                      className={styles.acceptButton}
+                      onClick={() => handleAcceptInvitation(invitation)}
+                    >
+                      View Campaign
+                    </button>
+                    <button
+                      className={styles.declineButton}
+                      onClick={() => handleDeclineInvitation(invitation)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Create New Campaign */}
-      {!showCreateForm ? (
+      {/* Create New Campaign - Only shown in campaigns tab */}
+      {activeTab === 'campaigns' && !showCreateForm ? (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>{t('startNewCampaign', 'Start New Campaign')}</h3>
           {templates.length === 0 ? (
@@ -243,7 +333,7 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
         </div>
       )}
 
-      {campaigns.length === 0 && !showCreateForm && (
+      {activeTab === 'campaigns' && campaigns.length === 0 && !showCreateForm && (
         <p className={styles.noCampaigns}>
           {t('noCampaigns', 'You have no campaigns yet. Select a template above to start one!')}
         </p>

@@ -15,16 +15,23 @@ import {
   UseGuards,
   Req,
   ForbiddenException,
+  NotFoundException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { CampaignService } from '../services/campaign.service';
+import { CampaignInvitationService } from '../services/campaign-invitation.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { Public } from '../decorators/public.decorator';
 import { JwtPayload } from '../types/auth.types';
 import {
   CreateCampaignDto,
   JoinCampaignDto,
   CreateCampaignCharacterDto,
+  InviteUserDto,
+  CreateInviteTokenDto,
+  JoinViaInvitationDto,
+  JoinViaTokenDto,
 } from '../types/campaign.types';
 import type {
   CampaignWithDetails,
@@ -32,6 +39,9 @@ import type {
   CampaignScenarioInfo,
   CampaignTemplate,
   CampaignCharacterSummary,
+  CampaignInvitation,
+  CampaignInviteToken,
+  CampaignPublicInfo,
 } from '../types/campaign.types';
 
 // Define locally to avoid decorator metadata issues with imported types
@@ -42,7 +52,10 @@ interface AuthenticatedRequest extends Request {
 @Controller('api/campaigns')
 @UseGuards(JwtAuthGuard)
 export class CampaignsController {
-  constructor(private readonly campaignService: CampaignService) {}
+  constructor(
+    private readonly campaignService: CampaignService,
+    private readonly invitationService: CampaignInvitationService,
+  ) {}
 
   /**
    * Get all available campaign templates
@@ -205,5 +218,203 @@ export class CampaignsController {
       userId,
       campaignId,
     );
+  }
+
+  // ========== INVITATION ENDPOINTS ==========
+
+  /**
+   * Send direct invitation by username
+   * POST /api/campaigns/:campaignId/invitations
+   */
+  @Post(':campaignId/invitations')
+  @HttpCode(HttpStatus.CREATED)
+  async inviteUser(
+    @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
+    @Body() dto: InviteUserDto,
+  ): Promise<CampaignInvitation> {
+    const userId = req.user.userId;
+    return this.invitationService.inviteByUsername(
+      campaignId,
+      dto.invitedUsername,
+      userId,
+    );
+  }
+
+  /**
+   * Get pending invitations for a campaign (host/member view)
+   * GET /api/campaigns/:campaignId/invitations
+   */
+  @Get(':campaignId/invitations')
+  async getCampaignInvitations(
+    @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
+  ): Promise<CampaignInvitation[]> {
+    const userId = req.user.userId;
+    return this.invitationService.getPendingInvitations(campaignId, userId);
+  }
+
+  /**
+   * Get invitations received by current user (all campaigns)
+   * GET /api/campaigns/invitations/received
+   */
+  @Get('invitations/received')
+  async getReceivedInvitations(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<CampaignInvitation[]> {
+    const userId = req.user.userId;
+    return this.invitationService.getReceivedInvitations(userId);
+  }
+
+  /**
+   * Revoke a pending invitation
+   * DELETE /api/campaigns/:campaignId/invitations/:invitationId
+   */
+  @Delete(':campaignId/invitations/:invitationId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeInvitation(
+    @Req() req: AuthenticatedRequest,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
+  ): Promise<void> {
+    const userId = req.user.userId;
+    return this.invitationService.revokeInvitation(invitationId, userId);
+  }
+
+  /**
+   * Decline a received invitation
+   * POST /api/campaigns/invitations/:invitationId/decline
+   */
+  @Post('invitations/:invitationId/decline')
+  @HttpCode(HttpStatus.OK)
+  async declineInvitation(
+    @Req() req: AuthenticatedRequest,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
+  ): Promise<void> {
+    const userId = req.user.userId;
+    return this.invitationService.declineInvitation(invitationId, userId);
+  }
+
+  /**
+   * Create invite token (shareable link)
+   * POST /api/campaigns/:campaignId/invite-tokens
+   */
+  @Post(':campaignId/invite-tokens')
+  @HttpCode(HttpStatus.CREATED)
+  async createInviteToken(
+    @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
+    @Body() dto: CreateInviteTokenDto,
+  ): Promise<CampaignInviteToken> {
+    const userId = req.user.userId;
+    return this.invitationService.createInviteToken(
+      campaignId,
+      userId,
+      dto.maxUses || 1,
+    );
+  }
+
+  /**
+   * Get active invite tokens for a campaign
+   * GET /api/campaigns/:campaignId/invite-tokens
+   */
+  @Get(':campaignId/invite-tokens')
+  async getInviteTokens(
+    @Req() req: AuthenticatedRequest,
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
+  ): Promise<CampaignInviteToken[]> {
+    const userId = req.user.userId;
+    return this.invitationService.getActiveTokens(campaignId, userId);
+  }
+
+  /**
+   * Revoke an invite token
+   * DELETE /api/campaigns/:campaignId/invite-tokens/:tokenId
+   */
+  @Delete(':campaignId/invite-tokens/:tokenId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeInviteToken(
+    @Req() req: AuthenticatedRequest,
+    @Param('tokenId', ParseUUIDPipe) tokenId: string,
+  ): Promise<void> {
+    const userId = req.user.userId;
+    return this.invitationService.revokeToken(tokenId, userId);
+  }
+
+  /**
+   * Get public campaign info (no auth required)
+   * GET /api/campaigns/:campaignId/public-info
+   */
+  @Public()
+  @Get(':campaignId/public-info')
+  async getCampaignPublicInfo(
+    @Param('campaignId', ParseUUIDPipe) campaignId: string,
+  ): Promise<CampaignPublicInfo> {
+    return this.invitationService.getCampaignPublicInfo(campaignId);
+  }
+
+  /**
+   * Join campaign via direct invitation
+   * POST /api/campaigns/join/by-invite/:invitationId
+   */
+  @Post('join/by-invite/:invitationId')
+  @HttpCode(HttpStatus.OK)
+  async joinViaInvitation(
+    @Req() req: AuthenticatedRequest,
+    @Param('invitationId', ParseUUIDPipe) invitationId: string,
+    @Body() dto: JoinViaInvitationDto,
+  ): Promise<CampaignWithDetails> {
+    const userId = req.user.userId;
+
+    // Get invitation to find campaignId
+    const invitation = await this.invitationService.acceptInvitation(
+      invitationId,
+      userId,
+    );
+
+    // Join campaign with character if provided
+    if (dto.characterId) {
+      return this.campaignService.joinCampaign(userId, invitationId, {
+        characterId: dto.characterId,
+      });
+    }
+
+    // Return campaign details without joining yet
+    const invitationRecord = await this.invitationService.getReceivedInvitations(userId);
+    const targetInvite = invitationRecord.find(inv => inv.id === invitationId);
+    if (targetInvite) {
+      return this.campaignService.getCampaignWithDetails(targetInvite.campaignId);
+    }
+
+    throw new NotFoundException('Campaign not found');
+  }
+
+  /**
+   * Join campaign via token
+   * POST /api/campaigns/join/by-token/:token
+   */
+  @Post('join/by-token/:token')
+  @HttpCode(HttpStatus.OK)
+  async joinViaToken(
+    @Req() req: AuthenticatedRequest,
+    @Param('token') token: string,
+    @Body() dto: JoinViaTokenDto,
+  ): Promise<CampaignWithDetails> {
+    const userId = req.user.userId;
+
+    // Validate and consume token
+    const campaignId = await this.invitationService.validateAndConsumeToken(
+      token,
+      userId,
+    );
+
+    // Join campaign with character if provided
+    if (dto.characterId) {
+      return this.campaignService.joinCampaign(userId, campaignId, {
+        characterId: dto.characterId,
+      });
+    }
+
+    // Return campaign details without joining yet
+    return this.campaignService.getCampaignWithDetails(campaignId);
   }
 }

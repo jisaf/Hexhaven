@@ -18,6 +18,10 @@ export type {
   CreateCampaignRequest,
   JoinCampaignRequest,
   CreateCampaignCharacterRequest,
+  CampaignInvitation,
+  CampaignInviteToken,
+  CampaignPublicInfo,
+  InvitationStatus,
 } from '../../../shared/types/campaign';
 
 import type {
@@ -27,6 +31,9 @@ import type {
   CampaignListItem,
   DeathMode,
   CampaignCharacterSummary,
+  CampaignInvitation,
+  CampaignInviteToken,
+  CampaignPublicInfo,
 } from '../../../shared/types/campaign';
 
 // Alias for backwards compatibility
@@ -191,6 +198,221 @@ class CampaignService {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to fetch available scenarios');
+    }
+
+    return response.json();
+  }
+
+  // ========== INVITATION METHODS ==========
+
+  /**
+   * Invite user to campaign by username
+   */
+  async inviteUser(campaignId: string, invitedUsername: string): Promise<CampaignInvitation> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/${campaignId}/invitations`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ invitedUsername }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to send invitation');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get pending invitations for a campaign (host/member view)
+   */
+  async getCampaignInvitations(campaignId: string): Promise<CampaignInvitation[]> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/${campaignId}/invitations`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch campaign invitations');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get invitations received by current user (all campaigns)
+   */
+  async getReceivedInvitations(): Promise<CampaignInvitation[]> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/invitations/received`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch received invitations');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Revoke a pending invitation
+   */
+  async revokeInvitation(invitationId: string): Promise<void> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/invitations/${invitationId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to revoke invitation');
+    }
+  }
+
+  /**
+   * Decline a received invitation
+   */
+  async declineInvitation(invitationId: string): Promise<void> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/invitations/${invitationId}/decline`,
+      {
+        method: 'POST',
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to decline invitation');
+    }
+  }
+
+  /**
+   * Create invite token (shareable link)
+   */
+  async createInviteToken(campaignId: string, maxUses?: number): Promise<CampaignInviteToken> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/${campaignId}/invite-tokens`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ maxUses }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create invite token');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get active invite tokens for a campaign
+   */
+  async getInviteTokens(campaignId: string): Promise<CampaignInviteToken[]> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/${campaignId}/invite-tokens`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch invite tokens');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Revoke an invite token
+   */
+  async revokeInviteToken(tokenId: string): Promise<void> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/invite-tokens/${tokenId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to revoke invite token');
+    }
+  }
+
+  /**
+   * Get public campaign info (no auth required)
+   */
+  async getCampaignPublicInfo(campaignId: string): Promise<CampaignPublicInfo> {
+    const response = await fetch(
+      `${getApiUrl()}/campaigns/${campaignId}/public-info`,
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch campaign info');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Join campaign via direct invitation
+   */
+  async joinViaInvitation(
+    invitationId: string,
+    characterId?: string,
+  ): Promise<CampaignWithDetails> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/join/by-invite/${invitationId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ characterId }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to join campaign');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Join campaign via token
+   */
+  async joinViaToken(
+    token: string,
+    characterId?: string,
+  ): Promise<CampaignWithDetails> {
+    const response = await authService.authenticatedFetch(
+      `${getApiUrl()}/campaigns/join/by-token/${token}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ characterId }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to join campaign');
     }
 
     return response.json();

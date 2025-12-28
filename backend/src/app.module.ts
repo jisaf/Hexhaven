@@ -19,6 +19,7 @@ import { CampaignsController } from './api/campaigns.controller';
 import { UsersController } from './api/users.controller';
 import { ScenarioService } from './services/scenario.service';
 import { CampaignService } from './services/campaign.service';
+import { CampaignInvitationService } from './services/campaign-invitation.service';
 import { InventoryService } from './services/inventory.service';
 import { ItemService } from './services/item.service';
 import { MonsterService } from './services/monster.service';
@@ -89,6 +90,7 @@ import { ShopController } from './api/shop.controller';
     ValidationService, // Issue #220: Action validation
     ElementalStateService, // Issue #220: Element infusion/consumption
     CampaignService, // Issue #244: Campaign mode business logic
+    CampaignInvitationService, // Campaign invitation system
     NarrativeService, // Campaign narrative system
     NarrativeConditionService, // Narrative trigger condition evaluation
     ShopService, // Issue #328: Campaign shop system
