@@ -167,12 +167,22 @@ export function isLeafCondition(
 
 /**
  * Narrative content structure
+ * Note: rewards is optional and primarily used for victory/defeat narratives
  */
 export interface NarrativeContent {
   title?: string;
   text: string;
   imageUrl?: string;
+  rewards?: NarrativeRewards;
 }
+
+/**
+ * How rewards are distributed among players
+ * - triggerer: Only the player who triggered it gets the reward
+ * - collective: Total is split evenly among all players
+ * - everyone: Each player gets the full reward amount (default)
+ */
+export type RewardDistribution = 'triggerer' | 'collective' | 'everyone';
 
 /**
  * Rewards granted when narrative is acknowledged
@@ -181,6 +191,7 @@ export interface NarrativeRewards {
   gold?: number;
   xp?: number;
   items?: string[];
+  distribution?: RewardDistribution; // Defaults to 'everyone'
 }
 
 /**
@@ -268,6 +279,7 @@ export interface ActiveNarrative {
   id: string; // Unique ID for this narrative instance
   type: NarrativeType;
   triggerId?: string; // For trigger type
+  triggeredBy?: string; // Player ID who triggered it (for 'triggerer' distribution)
   content: NarrativeContent;
   rewards?: NarrativeRewards;
   gameEffects?: NarrativeGameEffects;
@@ -275,6 +287,12 @@ export interface ActiveNarrative {
   displayedAt: number;
   timeoutMs: number; // Default 60000
   disconnectedPlayers: string[]; // Players who disconnected during narrative
+  /**
+   * If true, rewards have already been applied elsewhere (e.g., in scenario_completed)
+   * and should NOT be applied again when the narrative is acknowledged.
+   * Used for victory/defeat narratives where rewards are included in the completion payload.
+   */
+  rewardsAlreadyApplied?: boolean;
 }
 
 // ========== GAME CONTEXT FOR EVALUATION ==========

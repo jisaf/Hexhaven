@@ -593,6 +593,9 @@ export interface NarrativeMonsterSpawnedPayload {
   hex: AxialCoordinates;
   health: number;
   maxHealth: number;
+  movement: number;
+  attack: number;
+  range: number;
   narrativeTriggerId?: string;
 }
 

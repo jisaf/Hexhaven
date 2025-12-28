@@ -216,6 +216,10 @@ async function bootstrap() {
     socket.on('rest-action', (payload) => {
       gameGateway.handleRestAction(socket, payload);
     });
+
+    socket.on('acknowledge_narrative', (payload) => {
+      gameGateway.handleAcknowledgeNarrative(socket, payload);
+    });
   });
 
   logger.log('GameGateway handlers wired up to Socket.IO server');
