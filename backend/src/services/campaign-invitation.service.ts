@@ -59,7 +59,7 @@ export class CampaignInvitationService {
 
     // Check if user is already in campaign
     const alreadyInCampaign = campaign.characters.some(
-      (char) => char.userId === invitedUser.id,
+      (char: { userId: string }) => char.userId === invitedUser.id,
     );
 
     if (alreadyInCampaign) {
