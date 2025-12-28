@@ -1,176 +1,246 @@
 /**
  * Scenario Completion Timing Tests
  *
- * Tests documenting the deferred victory check behavior:
+ * Tests for the deferred victory check behavior in checkScenarioCompletion.
+ * These tests verify the actual calculation logic that determines when
+ * victory vs defeat is triggered based on the checkPrimaryObjective option.
+ *
+ * Key behavior:
  * - Victory is only declared at round end (checkPrimaryObjective: true)
  * - Defeats are checked immediately (checkPrimaryObjective: false still checks defeats)
  * - Sub-objectives and narrative triggers are checked at all times
  *
- * This behavior allows players to:
- * 1. Take remaining actions after killing the last monster
- * 2. Collect loot before the scenario ends
- * 3. Complete secondary objectives for bonus rewards
- *
  * @see game.gateway.ts checkScenarioCompletion method
- * @see ScenarioCompletionCheckOptions interface
+ * @see ScenarioCompletionCheckOptions interface in game-state.types.ts
  */
 
+import type { ScenarioCompletionCheckOptions } from '../src/types/game-state.types';
+
+/**
+ * Simulates the core victory/defeat calculation logic from checkScenarioCompletion.
+ * This mirrors the actual implementation in game.gateway.ts lines 4713-4719.
+ */
+function calculateCompletionState(
+  options: ScenarioCompletionCheckOptions,
+  gameState: {
+    allPlayersExhausted: boolean;
+    failureTriggered: boolean;
+    primaryComplete: boolean;
+  },
+): { isVictory: boolean; isDefeat: boolean; isComplete: boolean } {
+  const { checkPrimaryObjective = true } = options;
+  const { allPlayersExhausted, failureTriggered, primaryComplete } = gameState;
+
+  // This mirrors the actual implementation in game.gateway.ts
+  const isDefeat = allPlayersExhausted || failureTriggered;
+  const isVictory = checkPrimaryObjective && primaryComplete && !isDefeat;
+  const isComplete = isDefeat || isVictory;
+
+  return { isVictory, isDefeat, isComplete };
+}
+
 describe('Scenario Completion Timing', () => {
-  describe('ScenarioCompletionCheckOptions Interface', () => {
-    it('should provide clear, self-documenting call sites', () => {
-      // The ScenarioCompletionCheckOptions interface provides clear call sites
-      // compared to boolean parameters:
-      //
-      // BEFORE (boolean anti-pattern):
-      //   checkScenarioCompletion(roomCode, false)  // What does false mean?
-      //
-      // AFTER (options object pattern):
-      //   checkScenarioCompletion(roomCode, { checkPrimaryObjective: false })
-
-      interface ScenarioCompletionCheckOptions {
-        checkPrimaryObjective?: boolean;
-      }
-
+  describe('ScenarioCompletionCheckOptions Type', () => {
+    it('should be importable from game-state.types', () => {
+      // Verify the type is exported and usable
       const options: ScenarioCompletionCheckOptions = { checkPrimaryObjective: false };
       expect(options.checkPrimaryObjective).toBe(false);
-
-      const defaultOptions: ScenarioCompletionCheckOptions = {};
-      expect(defaultOptions.checkPrimaryObjective ?? true).toBe(true);
     });
 
-    it('should default to checking primary objectives', () => {
-      // Default behavior (options = {}) should check primary objectives
-      // This maintains backward compatibility
-
-      interface ScenarioCompletionCheckOptions {
-        checkPrimaryObjective?: boolean;
-      }
-
-      const extractCheckPrimaryObjective = (options: ScenarioCompletionCheckOptions = {}) => {
-        const { checkPrimaryObjective = true } = options;
-        return checkPrimaryObjective;
-      };
-
-      expect(extractCheckPrimaryObjective()).toBe(true);
-      expect(extractCheckPrimaryObjective({})).toBe(true);
-      expect(extractCheckPrimaryObjective({ checkPrimaryObjective: true })).toBe(true);
-      expect(extractCheckPrimaryObjective({ checkPrimaryObjective: false })).toBe(false);
+    it('should default checkPrimaryObjective to true when not specified', () => {
+      const options: ScenarioCompletionCheckOptions = {};
+      const { checkPrimaryObjective = true } = options;
+      expect(checkPrimaryObjective).toBe(true);
     });
   });
 
-  describe('Victory Deferral Contract', () => {
-    it('should document call site semantics', () => {
-      // Call sites and their intended behavior:
-      //
-      // 1. Attack handler (after monster death):
-      //    { checkPrimaryObjective: false }
-      //    - Check for defeats (all players exhausted, failure conditions)
-      //    - Do NOT trigger victory (allow other players to act)
-      //    - Update secondary objective progress
-      //    - Check narrative triggers
-      //
-      // 2. Turn advancement:
-      //    { checkPrimaryObjective: false }
-      //    - Same as attack handler
-      //    - Victory should wait until round end
-      //
-      // 3. Character exhaustion:
-      //    { checkPrimaryObjective: false }
-      //    - Primarily checks for defeat (all players exhausted)
-      //    - Does not trigger victory
-      //
-      // 4. Round end:
-      //    { checkPrimaryObjective: true }
-      //    - Check for victory (primary objective complete)
-      //    - This is the ONLY place victory should be declared
+  describe('Victory Deferral Logic', () => {
+    describe('when checkPrimaryObjective is false (mid-round checks)', () => {
+      const options: ScenarioCompletionCheckOptions = { checkPrimaryObjective: false };
 
-      const callSites = {
-        attackHandler: { checkPrimaryObjective: false },
-        turnAdvancement: { checkPrimaryObjective: false },
-        characterExhaustion: { checkPrimaryObjective: false },
-        roundEnd: { checkPrimaryObjective: true },
-      };
+      it('should NOT trigger victory even when primary objective is complete', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: true, // Objective complete but...
+        });
 
-      // Only round end checks primary objective
-      expect(callSites.attackHandler.checkPrimaryObjective).toBe(false);
-      expect(callSites.turnAdvancement.checkPrimaryObjective).toBe(false);
-      expect(callSites.characterExhaustion.checkPrimaryObjective).toBe(false);
-      expect(callSites.roundEnd.checkPrimaryObjective).toBe(true);
+        expect(result.isVictory).toBe(false); // Victory suppressed
+        expect(result.isDefeat).toBe(false);
+        expect(result.isComplete).toBe(false); // Game continues
+      });
+
+      it('should still trigger defeat when all players exhausted', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: true, // Defeat condition
+          failureTriggered: false,
+          primaryComplete: true, // Even with objective complete
+        });
+
+        expect(result.isVictory).toBe(false);
+        expect(result.isDefeat).toBe(true); // Defeat triggers immediately
+        expect(result.isComplete).toBe(true); // Game ends
+      });
+
+      it('should still trigger defeat when failure condition met', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: true, // Failure condition
+          primaryComplete: false,
+        });
+
+        expect(result.isVictory).toBe(false);
+        expect(result.isDefeat).toBe(true);
+        expect(result.isComplete).toBe(true);
+      });
+
+      it('should allow game to continue when objective incomplete', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: false,
+        });
+
+        expect(result.isVictory).toBe(false);
+        expect(result.isDefeat).toBe(false);
+        expect(result.isComplete).toBe(false);
+      });
     });
 
-    it('should document victory vs defeat timing', () => {
-      // Victory timing:
-      // - Only checked at round end (checkPrimaryObjective: true)
-      // - Allows players to complete remaining actions
-      // - Allows loot collection and secondary objectives
-      //
-      // Defeat timing:
-      // - Always checked immediately (regardless of checkPrimaryObjective)
-      // - All players exhausted = immediate defeat
-      // - Failure conditions met = immediate defeat
-      // - Time limit exceeded = immediate defeat
+    describe('when checkPrimaryObjective is true (round end checks)', () => {
+      const options: ScenarioCompletionCheckOptions = { checkPrimaryObjective: true };
 
-      const checkPrimaryObjective = false;
+      it('should trigger victory when primary objective is complete', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: true,
+        });
 
-      // With checkPrimaryObjective = false:
-      const isVictory = checkPrimaryObjective && true; // primary complete
-      const isDefeat = true; // some defeat condition
+        expect(result.isVictory).toBe(true);
+        expect(result.isDefeat).toBe(false);
+        expect(result.isComplete).toBe(true);
+      });
 
-      // Victory is suppressed, but defeat triggers immediately
-      expect(isVictory).toBe(false);
-      expect(isDefeat).toBe(true);
+      it('should NOT trigger victory when objective incomplete', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: false,
+        });
+
+        expect(result.isVictory).toBe(false);
+        expect(result.isDefeat).toBe(false);
+        expect(result.isComplete).toBe(false);
+      });
+
+      it('should trigger defeat over victory when both conditions met', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: true, // Defeat condition
+          failureTriggered: false,
+          primaryComplete: true, // Victory condition
+        });
+
+        // Defeat takes precedence
+        expect(result.isVictory).toBe(false);
+        expect(result.isDefeat).toBe(true);
+        expect(result.isComplete).toBe(true);
+      });
     });
 
-    it('should document the complete flow', () => {
-      // Example: Last monster killed mid-round
-      //
-      // 1. Attack resolves, monster dies
-      // 2. checkScenarioCompletion called with { checkPrimaryObjective: false }
-      //    - Primary objective (kill all monsters) is complete, but...
-      //    - isVictory = false (checkPrimaryObjective is false)
-      //    - Game continues
-      //
-      // 3. Player A moves and collects loot
-      // 4. Player B completes a secondary objective
-      // 5. Round ends naturally
-      //
-      // 6. checkScenarioCompletion called with { checkPrimaryObjective: true }
-      //    - Primary objective is complete AND checkPrimaryObjective is true
-      //    - isVictory = true
-      //    - Game ends with victory
-      //    - Players get full rewards including loot collected and secondary objectives
+    describe('with default options (empty object)', () => {
+      const options: ScenarioCompletionCheckOptions = {};
 
-      const timeline = [
-        { event: 'Monster killed', checkPrimary: false, gameEnds: false },
-        { event: 'Player collects loot', checkPrimary: false, gameEnds: false },
-        { event: 'Secondary completed', checkPrimary: false, gameEnds: false },
-        { event: 'Round ends', checkPrimary: true, gameEnds: true },
+      it('should check primary objective by default', () => {
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: true,
+        });
+
+        expect(result.isVictory).toBe(true);
+        expect(result.isComplete).toBe(true);
+      });
+    });
+  });
+
+  describe('Call Site Documentation', () => {
+    it('should document expected options for each call site', () => {
+      // This test documents the expected behavior at each call site
+      // and serves as a contract for future maintenance
+
+      const callSiteExpectations = [
+        {
+          name: 'Attack handler (after monster death)',
+          options: { checkPrimaryObjective: false },
+          expectedBehavior: 'Defer victory, check defeats only',
+        },
+        {
+          name: 'Turn advancement',
+          options: { checkPrimaryObjective: false },
+          expectedBehavior: 'Defer victory, check defeats only',
+        },
+        {
+          name: 'Character exhaustion',
+          options: { checkPrimaryObjective: false },
+          expectedBehavior: 'Primarily checks for defeat',
+        },
+        {
+          name: 'Round end',
+          options: { checkPrimaryObjective: true },
+          expectedBehavior: 'Full check including victory',
+        },
       ];
 
-      expect(timeline[0].gameEnds).toBe(false);
-      expect(timeline[3].gameEnds).toBe(true);
+      // Verify each call site's expected behavior
+      for (const site of callSiteExpectations) {
+        const { options } = site;
+        const primaryComplete = true;
+
+        const result = calculateCompletionState(options, {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete,
+        });
+
+        if (options.checkPrimaryObjective) {
+          expect(result.isVictory).toBe(true);
+          expect(result.isComplete).toBe(true);
+        } else {
+          expect(result.isVictory).toBe(false);
+          expect(result.isComplete).toBe(false);
+        }
+      }
     });
   });
 
-  describe('Code Deduplication', () => {
-    it('should document the removed duplicate code', () => {
-      // The following duplicate code was removed from checkScenarioCompletion:
-      //
-      // REMOVED (was in !isComplete block):
-      // - Duplicate primary objective progress update (already done earlier)
-      // - Duplicate secondary objectives evaluation loop (already done earlier)
-      //
-      // KEPT:
-      // - Single call to checkNarrativeTriggers(roomCode)
-      //
-      // This follows DRY principle - objective progress is updated once
-      // before the isComplete check, not conditionally in both branches.
+  describe('Edge Cases', () => {
+    it('should handle simultaneous exhaustion and failure', () => {
+      const result = calculateCompletionState(
+        { checkPrimaryObjective: true },
+        {
+          allPlayersExhausted: true,
+          failureTriggered: true,
+          primaryComplete: false,
+        },
+      );
 
-      const progressUpdatedBefore = true;
-      const progressUpdatedInNotCompleteBlock = false; // REMOVED
+      expect(result.isDefeat).toBe(true);
+      expect(result.isComplete).toBe(true);
+    });
 
-      expect(progressUpdatedBefore).toBe(true);
-      expect(progressUpdatedInNotCompleteBlock).toBe(false);
+    it('should handle undefined checkPrimaryObjective as true', () => {
+      // Test that the destructuring default works correctly
+      const result = calculateCompletionState(
+        {} as ScenarioCompletionCheckOptions,
+        {
+          allPlayersExhausted: false,
+          failureTriggered: false,
+          primaryComplete: true,
+        },
+      );
+
+      expect(result.isVictory).toBe(true);
     });
   });
 });

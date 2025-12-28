@@ -774,8 +774,10 @@ checkScenarioCompletion(roomCode, { checkPrimaryObjective: false })
 - Easy to add new options without breaking existing calls
 - Clear intent at each call site
 
-**Interface**:
+**Interface** (exported from `backend/src/types/game-state.types.ts`):
 ```typescript
+import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
+
 interface ScenarioCompletionCheckOptions {
   /**
    * If false, only checks sub-objectives, defeat conditions, and narrative triggers

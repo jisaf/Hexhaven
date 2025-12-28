@@ -109,18 +109,7 @@ import {
   type CharacterClass,
   type Monster,
 } from '../../../shared/types/entities';
-
-/**
- * Options for scenario completion check
- */
-interface ScenarioCompletionCheckOptions {
-  /**
-   * If false, only checks sub-objectives, defeat conditions, and narrative triggers (used during attack/turns)
-   * If true, also checks primary objective completion for victory (used at round end)
-   * @default true
-   */
-  checkPrimaryObjective?: boolean;
-}
+import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 
 // @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
 // See main.ts lines 48-113 for manual wiring
@@ -4716,7 +4705,7 @@ export class GameGateway
       // When checkPrimaryObjective=false, we still want to check for defeats
       // but not declare victory (that happens at round end)
       const isVictory = checkPrimaryObjective && primaryComplete && !isDefeat;
-      const isComplete = isDefeat || (checkPrimaryObjective && isVictory);
+      const isComplete = isDefeat || isVictory;
 
       if (!isComplete) {
         // Scenario still in progress
