@@ -111,9 +111,13 @@ export const CampaignJoinPage: React.FC = () => {
           <h2>Select a Character</h2>
           <p>Choose a character to join {campaignInfo.name}</p>
           <UserCharacterSelect
-            onSelectCharacter={handleCharacterSelect}
-            onCancel={() => setShowCharacterSelect(false)}
+            onSelect={handleCharacterSelect}
           />
+          <div className="action-buttons">
+            <button onClick={() => setShowCharacterSelect(false)} className="cancel-button">
+              Cancel
+            </button>
+          </div>
         </div>
         <style>{pageStyles}</style>
       </div>
