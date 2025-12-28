@@ -61,7 +61,7 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
       const campaign = await campaignService.createCampaign({
         templateId: selectedTemplate.id,
         name: customName || undefined,
-        deathMode: selectedTemplate.deathMode === 'configurable' ? deathMode : undefined,
+        deathMode: selectedTemplate.deathMode === 'configurable' ? deathMode : selectedTemplate.deathMode as DeathMode,
       });
       setShowCreateForm(false);
       setSelectedTemplate(null);
