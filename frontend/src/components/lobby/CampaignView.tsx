@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
 import { CampaignShop } from '../shop';
+import { CampaignInvitePanel } from '../CampaignInvitePanel';
 import type {
   CampaignWithDetails,
   CampaignScenario,
@@ -44,7 +45,7 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   const [addingCharacter, setAddingCharacter] = useState(false);
 
   // Tab state
-  type CampaignTab = 'characters' | 'shop' | 'scenarios';
+  type CampaignTab = 'characters' | 'shop' | 'scenarios' | 'invites';
   const [activeTab, setActiveTab] = useState<CampaignTab>('characters');
 
   // Handle character gold update from shop transactions
@@ -242,6 +243,12 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
             Scenarios
             <span className={styles.tabBadge}>{scenarios.length}</span>
           </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'invites' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('invites')}
+          >
+            Invites
+          </button>
         </div>
       )}
 
@@ -417,6 +424,20 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
               </button>
             </div>
           </div>
+        )}
+
+        {/* Invites Tab */}
+        {activeTab === 'invites' && (
+          <CampaignInvitePanel
+            campaignId={campaignId}
+            onSuccess={(message) => {
+              // You can add toast notification here if desired
+              console.log('Success:', message);
+            }}
+            onError={(message) => {
+              setError(message);
+            }}
+          />
         )}
       </div>
     </div>
