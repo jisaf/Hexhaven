@@ -10,16 +10,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { InvitationStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import type {
   CampaignInvitation,
   CampaignInviteToken,
   CampaignPublicInfo,
-  InviteUserRequest,
-  CreateInviteTokenRequest,
-  JoinViaInvitationRequest,
-  JoinViaTokenRequest,
 } from '../../../shared/types/campaign';
 
 // Token TTL: 7 days
@@ -136,7 +131,7 @@ export class CampaignInvitationService {
       invitedUsername: invitation.invitedUsername,
       invitedByUserId: invitation.invitedByUserId,
       invitedByUsername: invitation.invitedBy.username,
-      status: invitation.status as InvitationStatus,
+      status: invitation.status,
       expiresAt: invitation.expiresAt,
       createdAt: invitation.createdAt,
       updatedAt: invitation.updatedAt,
@@ -178,7 +173,7 @@ export class CampaignInvitationService {
       invitedUsername: inv.invitedUsername,
       invitedByUserId: inv.invitedByUserId,
       invitedByUsername: inv.invitedBy.username,
-      status: inv.status as InvitationStatus,
+      status: inv.status,
       expiresAt: inv.expiresAt,
       createdAt: inv.createdAt,
       updatedAt: inv.updatedAt,
@@ -188,9 +183,7 @@ export class CampaignInvitationService {
   /**
    * Get invitations received by a user (all campaigns)
    */
-  async getReceivedInvitations(
-    userId: string,
-  ): Promise<CampaignInvitation[]> {
+  async getReceivedInvitations(userId: string): Promise<CampaignInvitation[]> {
     const invitations = await this.prisma.campaignInvitation.findMany({
       where: {
         invitedUserId: userId,
@@ -216,7 +209,7 @@ export class CampaignInvitationService {
       invitedUsername: inv.invitedUsername,
       invitedByUserId: inv.invitedByUserId,
       invitedByUsername: inv.invitedBy.username,
-      status: inv.status as InvitationStatus,
+      status: inv.status,
       expiresAt: inv.expiresAt,
       createdAt: inv.createdAt,
       updatedAt: inv.updatedAt,
@@ -226,10 +219,7 @@ export class CampaignInvitationService {
   /**
    * Revoke a pending invitation
    */
-  async revokeInvitation(
-    invitationId: string,
-    userId: string,
-  ): Promise<void> {
+  async revokeInvitation(invitationId: string, userId: string): Promise<void> {
     const invitation = await this.prisma.campaignInvitation.findUnique({
       where: { id: invitationId },
     });
@@ -417,7 +407,10 @@ export class CampaignInvitationService {
    * Validate and consume invite token
    * Returns campaignId if valid, throws otherwise
    */
-  async validateAndConsumeToken(token: string, userId: string): Promise<string> {
+  async validateAndConsumeToken(
+    token: string,
+    userId: string,
+  ): Promise<string> {
     const inviteToken = await this.prisma.campaignInviteToken.findUnique({
       where: { token },
       include: {
@@ -453,7 +446,9 @@ export class CampaignInvitationService {
     );
 
     if (alreadyInCampaign) {
-      throw new BadRequestException('You are already a member of this campaign');
+      throw new BadRequestException(
+        'You are already a member of this campaign',
+      );
     }
 
     // Increment used count atomically

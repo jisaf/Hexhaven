@@ -365,11 +365,8 @@ export class CampaignsController {
   ): Promise<CampaignWithDetails> {
     const userId = req.user.userId;
 
-    // Get invitation to find campaignId
-    const invitation = await this.invitationService.acceptInvitation(
-      invitationId,
-      userId,
-    );
+    // Accept the invitation
+    await this.invitationService.acceptInvitation(invitationId, userId);
 
     // Join campaign with character if provided
     if (dto.characterId) {
@@ -379,10 +376,15 @@ export class CampaignsController {
     }
 
     // Return campaign details without joining yet
-    const invitationRecord = await this.invitationService.getReceivedInvitations(userId);
-    const targetInvite = invitationRecord.find(inv => inv.id === invitationId);
+    const invitationRecord =
+      await this.invitationService.getReceivedInvitations(userId);
+    const targetInvite = invitationRecord.find(
+      (inv) => inv.id === invitationId,
+    );
     if (targetInvite) {
-      return this.campaignService.getCampaignWithDetails(targetInvite.campaignId);
+      return this.campaignService.getCampaignWithDetails(
+        targetInvite.campaignId,
+      );
     }
 
     throw new NotFoundException('Campaign not found');
