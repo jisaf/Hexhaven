@@ -78,7 +78,10 @@ export class CampaignInvitationService {
       },
     });
 
-    if (existingInvitation && existingInvitation.status === INVITATION_STATUS.PENDING) {
+    if (
+      existingInvitation &&
+      existingInvitation.status === INVITATION_STATUS.PENDING
+    ) {
       throw new BadRequestException(
         `User '${invitedUsername}' already has a pending invitation to this campaign`,
       );
@@ -86,7 +89,9 @@ export class CampaignInvitationService {
 
     // Create invitation
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + config.campaign.directInvitationTtlDays);
+    expiresAt.setDate(
+      expiresAt.getDate() + config.campaign.directInvitationTtlDays,
+    );
 
     const invitation = await this.prisma.campaignInvitation.create({
       data: {
@@ -266,7 +271,9 @@ export class CampaignInvitationService {
     await this.validateCampaignMembership(campaignId, userId);
 
     if (maxUses < MIN_TOKEN_USES || maxUses > MAX_TOKEN_USES) {
-      throw new BadRequestException(`maxUses must be between ${MIN_TOKEN_USES} and ${MAX_TOKEN_USES}`);
+      throw new BadRequestException(
+        `maxUses must be between ${MIN_TOKEN_USES} and ${MAX_TOKEN_USES}`,
+      );
     }
 
     // Generate unique token
@@ -567,7 +574,7 @@ export class CampaignInvitationService {
     campaignId: string,
     userId: string,
     includeCharacters = false,
-  ): Promise<void | any> {
+  ): Promise<any> {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {
