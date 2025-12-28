@@ -48,8 +48,9 @@ export class CreateCampaignDto {
   @MaxLength(100)
   name?: string; // Optional custom name (defaults to template name)
 
+  @IsOptional()
   @IsIn(['healing', 'permadeath'])
-  deathMode!: DeathMode; // Required if template allows configuration
+  deathMode?: DeathMode; // Optional - defaults to template's deathMode
 }
 
 // DTO for joining a campaign with a character (with validation decorators)
