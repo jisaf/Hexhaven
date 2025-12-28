@@ -5,6 +5,22 @@
 
 import { authService } from './auth.service';
 import { getApiUrl } from '../config/api';
+import type {
+  DeathMode,
+  CampaignTemplate,
+  CampaignScenarioTemplate,
+  CampaignWithDetails,
+  CampaignCharacterSummary,
+  CampaignScenarioInfo,
+  CampaignListItem,
+  CreateCampaignRequest,
+  JoinCampaignRequest,
+  CreateCampaignCharacterRequest,
+  CampaignInvitation,
+  CampaignInviteToken,
+  CampaignPublicInfo,
+  InvitationStatus,
+} from '../../../shared/types/campaign';
 
 // Re-export shared types for components that import from this service
 export type {
@@ -22,7 +38,7 @@ export type {
   CampaignInviteToken,
   CampaignPublicInfo,
   InvitationStatus,
-} from '../../../shared/types/campaign';
+};
 
 // Alias for backwards compatibility
 export type CampaignCharacter = CampaignCharacterSummary;
