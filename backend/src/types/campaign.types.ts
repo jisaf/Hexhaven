@@ -28,7 +28,10 @@ export const TOKEN_MIN_LENGTH = 20;
 export const TOKEN_MAX_LENGTH = 50;
 export const TOKEN_GENERATED_LENGTH = 32;
 
-// Re-export shared types and constants for convenience
+// Import and re-export shared types and constants for convenience
+import type { DeathMode } from '../../../shared/types/campaign';
+import { USERNAME_MAX_LENGTH } from '../../../shared/types/campaign';
+
 export type {
   DeathMode,
   CampaignScenarioTemplate,
@@ -44,9 +47,7 @@ export type {
   InvitationStatus,
 } from '../../../shared/types/campaign';
 
-export { USERNAME_MAX_LENGTH } from '../../../shared/types/campaign';
-
-import type { DeathMode } from '../../../shared/types/campaign';
+export { USERNAME_MAX_LENGTH };
 
 // DTO for creating a campaign (with validation decorators)
 export class CreateCampaignDto {
