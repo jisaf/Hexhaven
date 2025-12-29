@@ -8,6 +8,17 @@ thinking: true
 
 Conduct a comprehensive code review of a GitHub pull request, fix all critical/high/medium issues found, update relevant documentation, push changes, and verify CI passes.
 
+## Important: Clarifying Questions
+
+**Before or during ANY step**, the agent may ask clarifying questions to ensure the best outcome. This includes:
+- Confirming the intended fix approach for ambiguous issues
+- Asking about project-specific conventions or patterns
+- Clarifying which documentation files should be updated
+- Confirming whether certain changes should be made or deferred
+- Asking about test coverage expectations
+
+Use the **AskUserQuestion** tool when clarification is needed rather than making assumptions.
+
 ## Execution Steps
 
 ### Step 1: Clear Context and Prepare
@@ -51,7 +62,39 @@ Provide the agent with:
 - List of changed files
 - Request for severity-categorized report
 
-### Step 5: Fix Critical, High, and Medium Issues
+### Step 5: Report Issues Before Fixing
+
+**Before making any changes**, present a detailed report of all issues found to the user:
+
+```markdown
+## Code Quality Review Report - PR #{PROMPT}
+
+### 🔴 CRITICAL Issues (X found)
+
+#### Issue 1: [Title]
+- **Location**: `path/to/file.ts:line-range`
+- **Problem**: What is wrong and why it matters
+- **Root Cause**: Why this issue exists (e.g., missing validation, copy-paste error, architectural oversight)
+- **Proposed Solution**: Specific fix approach with code example if helpful
+- **Risk if not fixed**: Security vulnerability / data loss / etc.
+
+### 🟠 HIGH Issues (X found)
+[Same format for each issue]
+
+### 🟡 MEDIUM Issues (X found)
+[Same format for each issue]
+
+### 📋 LOW/TRIVIAL Issues (X found)
+These will be tracked in a GitHub issue for future cleanup.
+- Brief list of items
+```
+
+**After presenting the report:**
+1. Ask the user if they want to proceed with the proposed fixes
+2. Ask if any issues should be handled differently or deferred
+3. Confirm any ambiguous fix approaches before proceeding
+
+### Step 6: Fix Critical, High, and Medium Issues
 
 Use the **tdd-solid-developer** agent (via Task tool with `subagent_type: tdd-solid-developer`) to fix all identified issues. This agent excels at:
 
@@ -87,7 +130,7 @@ Provide the tdd-solid-developer agent with:
 - File locations and descriptions
 - Expected behavior after fixes
 
-### Step 6: Update Documentation
+### Step 7: Update Documentation
 
 Use the **docs-maintainer** agent (via Task tool with `subagent_type: docs-maintainer`) to synchronize documentation with code changes. This agent specializes in:
 
@@ -109,7 +152,7 @@ Provide the docs-maintainer agent with:
 - List of files modified
 - Any new features or architectural changes
 
-### Step 7: Commit and Push Changes
+### Step 8: Commit and Push Changes
 
 ```bash
 # Stage all changes
@@ -135,7 +178,7 @@ EOF
 git push
 ```
 
-### Step 8: Monitor CI on GitHub
+### Step 9: Monitor CI on GitHub
 
 After pushing, watch the CI workflow results on GitHub:
 
@@ -162,7 +205,7 @@ gh run view --log-failed
 gh run view <run-id> --log
 ```
 
-### Step 9: Report Results
+### Step 10: Report Results
 
 Provide a comprehensive summary:
 
