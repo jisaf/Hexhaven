@@ -27,6 +27,9 @@ The campaign invitation system provides two methods for users to join campaigns:
 - `GET /api/campaigns/validate-token/:token` - Validate token without consuming
 - `POST /api/campaigns/join/by-token/:token` - Join campaign via token
 
+**Maintenance Endpoints:**
+- `POST /api/campaigns/cleanup-expired` - Delete expired invitations and tokens (returns count)
+
 **Security Features:**
 - Token parameter validation using `ValidateTokenPipe` (base64url format, 20-50 char length)
 - UUID validation for all ID parameters using `ParseUUIDPipe`
@@ -41,6 +44,9 @@ The campaign invitation system provides two methods for users to join campaigns:
 - Transaction-based token consumption to prevent race conditions
 - Automatic token revocation when max uses reached
 - Cryptographically secure token generation (24 random bytes, base64url encoded)
+- Reusable helper methods for common validation patterns
+- Input sanitization for user-provided data
+- Automated cleanup mechanism for expired records
 
 **Business Logic:**
 - Users cannot be invited if already in campaign
@@ -48,6 +54,8 @@ The campaign invitation system provides two methods for users to join campaigns:
 - Invitations expire after configurable TTL (default: 7 days for direct, 14 days for tokens)
 - Tokens support 1-100 uses (configurable)
 - Campaign creator OR members can manage invitations (Issue #388)
+- Usernames are trimmed and validated before database queries
+- Expired invitations and tokens can be cleaned up via API endpoint
 
 **Type Safety Improvements:**
 - Removed `Promise<any>` return types
@@ -97,6 +105,7 @@ The campaign invitation system provides two methods for users to join campaigns:
 - Added `handleVoidResponse` helper to eliminate DRY violations
 - All void-returning methods now use consistent error handling
 - Centralized error message parsing and throwing
+- Shared error extraction utility (`extractErrorMessage`) for consistent error handling across components
 
 **Methods:**
 - `inviteUser(campaignId, username)` - Send direct invitation
@@ -111,18 +120,29 @@ The campaign invitation system provides two methods for users to join campaigns:
 - `validateInviteToken(token)` - Validate token without consuming
 - `joinViaToken(token, characterId?)` - Join via shareable link
 
-#### Pages (`frontend/src/pages/CampaignJoinPage.tsx`)
+#### Pages & Components
+
+**CampaignJoinPage (`frontend/src/pages/CampaignJoinPage.tsx`)**
 
 **React Best Practices:**
 - Moved navigation side effects from render to `useEffect`
 - Proper separation of concerns between data fetching and UI rendering
 - No side effects during render phase
+- Consistent error handling with `extractErrorMessage` utility
 
 **User Flow:**
 1. User receives invite link with token
 2. Page validates token and displays campaign preview
 3. User selects character to join with
 4. Token is consumed and user joins campaign
+
+**CampaignInvitePanel (`frontend/src/components/CampaignInvitePanel.tsx`)**
+
+**React Best Practices:**
+- Uses `Promise.allSettled` for parallel data fetching with graceful partial failure handling
+- Invitations and tokens load independently - one can fail while the other succeeds
+- Consistent error handling with `extractErrorMessage` utility
+- Proper loading states for async operations
 
 ## Security Considerations
 
@@ -171,8 +191,10 @@ This ensures zero-downtime deployments and handles edge cases properly.
 
 **Client-Side:**
 - Consistent error message parsing via `handleResponse` and `handleVoidResponse` helpers
+- Shared `extractErrorMessage` utility for standardized error extraction (frontend/src/utils/error.ts)
 - User-friendly error messages displayed in UI
 - Network errors caught and displayed appropriately
+- Partial failure handling with `Promise.allSettled` prevents complete UI failures
 
 **Server-Side:**
 - Validation errors return 400 Bad Request
@@ -186,12 +208,87 @@ This ensures zero-downtime deployments and handles edge cases properly.
 1. **Token Parameter Validation**: Added `ValidateTokenPipe` for format validation
 2. **Type Safety**: Replaced `Promise<any>` with TypeScript function overloads
 
-### Medium Priority Fixes
+### Medium Priority Fixes (Initial PR #381)
 1. **DRY Violations**: Created `handleVoidResponse` helper for consistent error handling
 2. **React Anti-pattern**: Moved navigation side effects to `useEffect`
 3. **Authorization Gap**: Added campaign ID validation for revocation endpoints
 4. **Type Safety**: Removed inline type assertions, improved type inference
 5. **Migration Safety**: Added data migration steps for `createdByUserId` field
+
+### Additional Code Quality Fixes (Post-Review)
+
+Following comprehensive code quality review, the following improvements were implemented:
+
+#### M1: Eliminated Duplicated Campaign Membership Validation
+**Location:** `backend/src/services/campaign-invitation.service.ts:539-544`
+
+Created reusable helper method:
+```typescript
+private isUserInCampaign(
+  characters: { userId: string }[],
+  userId: string,
+): boolean {
+  return characters.some((char) => char.userId === userId);
+}
+```
+- Eliminates code duplication at lines 75-83 and 484-492
+- Ensures consistent validation logic across the service
+- Improves maintainability
+
+#### M2: Added Input Sanitization for Username
+**Location:** `backend/src/services/campaign-invitation.service.ts:65-69`
+
+- Trims whitespace from username before database query
+- Validates non-empty username
+- Prevents confusing errors from trailing spaces
+- Uses sanitized username consistently in error messages
+
+#### M3: Standardized Error Handling in Frontend
+**Location:** `frontend/src/utils/error.ts`
+
+Created shared error extraction utility:
+```typescript
+export function extractErrorMessage(error: unknown, fallback: string): string
+```
+- Eliminates repeated error handling pattern across components
+- Consistent error message extraction from Error objects, strings, or unknown types
+- Used in `CampaignInvitePanel.tsx` and `CampaignJoinPage.tsx`
+- Reduces code duplication and improves maintainability
+
+#### M4: Replaced Type Assertions with Type-Safe Helpers
+**Location:** `backend/src/services/campaign-invitation.service.ts:649`
+
+- Removed `any` type assertion in `validateCampaignMembership`
+- Now uses type-safe `isUserInCampaign()` helper
+- Eliminates TypeScript safety bypass
+- Improves compile-time type checking
+
+#### M5: Implemented Cleanup Mechanism for Expired Records
+**Location:**
+- Service: `backend/src/services/campaign-invitation.service.ts:533-562`
+- Controller: `backend/src/api/campaigns.controller.ts:445-461`
+
+Added `cleanupExpiredRecords()` method that:
+- Deletes expired invitations and tokens
+- Returns count of deleted records
+- Prevents database bloat from stale records
+- Exposed via `POST /api/campaigns/cleanup-expired` endpoint
+- Can be called manually or scheduled via cron job
+
+**Note:** For production deployments, this endpoint should be:
+1. Protected by admin role (when role system is implemented)
+2. Scheduled via cron job or task scheduler
+3. Or called manually by system administrators
+
+#### M6: Improved Partial Failure Handling in Frontend
+**Location:** `frontend/src/components/CampaignInvitePanel.tsx:36-61`
+
+Replaced `Promise.all` with `Promise.allSettled`:
+- Handles partial failures gracefully
+- If invitations API fails, tokens still load successfully
+- If tokens API fails, invitations still load successfully
+- Better user experience when one endpoint has issues
+- Prevents complete failure from single endpoint errors
 
 ## Testing Considerations
 

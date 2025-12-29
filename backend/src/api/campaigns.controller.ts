@@ -379,7 +379,11 @@ export class CampaignsController {
     @Param('invitationId', ParseUUIDPipe) invitationId: string,
   ): Promise<void> {
     const userId = req.user.userId;
-    return this.invitationService.revokeInvitation(campaignId, invitationId, userId);
+    return this.invitationService.revokeInvitation(
+      campaignId,
+      invitationId,
+      userId,
+    );
   }
 
   /**
@@ -440,5 +444,23 @@ export class CampaignsController {
     @Param('campaignId', ParseUUIDPipe) campaignId: string,
   ): Promise<CampaignPublicInfo> {
     return this.invitationService.getCampaignPublicInfo(campaignId);
+  }
+
+  /**
+   * Cleanup expired invitations and tokens
+   * POST /api/campaigns/cleanup-expired
+   *
+   * Note: This endpoint should ideally be:
+   * 1. Protected by admin role (when role system is implemented)
+   * 2. Or scheduled via a cron job/task scheduler
+   * 3. Or called manually by system administrators
+   */
+  @Post('cleanup-expired')
+  @HttpCode(HttpStatus.OK)
+  async cleanupExpiredRecords(): Promise<{
+    deletedInvitations: number;
+    deletedTokens: number;
+  }> {
+    return this.invitationService.cleanupExpiredRecords();
   }
 }

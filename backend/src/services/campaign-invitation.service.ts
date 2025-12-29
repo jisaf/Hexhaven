@@ -62,23 +62,24 @@ export class CampaignInvitationService {
       true,
     );
 
-    // Validate invited username exists
+    // Sanitize and validate invited username
+    const sanitizedUsername = invitedUsername.trim();
+    if (!sanitizedUsername) {
+      throw new BadRequestException('Username cannot be empty');
+    }
+
     const invitedUser = await this.prisma.user.findUnique({
-      where: { username: invitedUsername },
+      where: { username: sanitizedUsername },
     });
 
     if (!invitedUser) {
-      throw new NotFoundException(`User '${invitedUsername}' not found`);
+      throw new NotFoundException(`User '${sanitizedUsername}' not found`);
     }
 
     // Check if user is already in campaign
-    const alreadyInCampaign = campaign.characters.some(
-      (char) => char.userId === invitedUser.id,
-    );
-
-    if (alreadyInCampaign) {
+    if (this.isUserInCampaign(campaign.characters, invitedUser.id)) {
       throw new BadRequestException(
-        `User '${invitedUsername}' is already in this campaign`,
+        `User '${sanitizedUsername}' is already in this campaign`,
       );
     }
 
@@ -97,7 +98,7 @@ export class CampaignInvitationService {
       existingInvitation.status === INVITATION_STATUS.PENDING
     ) {
       throw new BadRequestException(
-        `User '${invitedUsername}' already has a pending invitation to this campaign`,
+        `User '${sanitizedUsername}' already has a pending invitation to this campaign`,
       );
     }
 
@@ -481,11 +482,7 @@ export class CampaignInvitationService {
     }
 
     // Check if user is already in campaign
-    const alreadyInCampaign = inviteToken.campaign.characters.some(
-      (char) => char.userId === userId,
-    );
-
-    if (alreadyInCampaign) {
+    if (this.isUserInCampaign(inviteToken.campaign.characters, userId)) {
       throw new BadRequestException(
         'You are already a member of this campaign',
       );
@@ -531,6 +528,47 @@ export class CampaignInvitationService {
       totalScenariosCount: totalScenarios,
       isCompleted: campaign.isCompleted,
     };
+  }
+
+  /**
+   * Cleanup expired invitations and tokens
+   * This should be called periodically (e.g., via a cron job)
+   * Returns the number of records deleted
+   */
+  async cleanupExpiredRecords(): Promise<{
+    deletedInvitations: number;
+    deletedTokens: number;
+  }> {
+    const now = new Date();
+
+    // Delete expired invitations
+    const deletedInvitations = await this.prisma.campaignInvitation.deleteMany({
+      where: {
+        expiresAt: { lt: now },
+      },
+    });
+
+    // Delete expired tokens
+    const deletedTokens = await this.prisma.campaignInviteToken.deleteMany({
+      where: {
+        expiresAt: { lt: now },
+      },
+    });
+
+    return {
+      deletedInvitations: deletedInvitations.count,
+      deletedTokens: deletedTokens.count,
+    };
+  }
+
+  /**
+   * Helper: Check if user is already a member of campaign
+   */
+  private isUserInCampaign(
+    characters: { userId: string }[],
+    userId: string,
+  ): boolean {
+    return characters.some((char) => char.userId === userId);
   }
 
   /**
@@ -639,7 +677,7 @@ export class CampaignInvitationService {
     // Allow campaign creator OR members with characters (Issue #388)
     const isCreator = campaign.createdByUserId === userId;
     const isMember = includeCharacters
-      ? campaign.characters.some((char: any) => char.userId === userId)
+      ? this.isUserInCampaign(campaign.characters, userId)
       : campaign.characters.length > 0;
 
     if (!isCreator && !isMember) {

@@ -3,11 +3,7 @@
  * Validates invite token format and length
  */
 
-import {
-  PipeTransform,
-  Injectable,
-  BadRequestException,
-} from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class ValidateTokenPipe implements PipeTransform<string, string> {
@@ -21,7 +17,10 @@ export class ValidateTokenPipe implements PipeTransform<string, string> {
       throw new BadRequestException('Token must be a valid string');
     }
 
-    if (value.length < this.TOKEN_MIN_LENGTH || value.length > this.TOKEN_MAX_LENGTH) {
+    if (
+      value.length < this.TOKEN_MIN_LENGTH ||
+      value.length > this.TOKEN_MAX_LENGTH
+    ) {
       throw new BadRequestException(
         `Token length must be between ${this.TOKEN_MIN_LENGTH} and ${this.TOKEN_MAX_LENGTH} characters`,
       );

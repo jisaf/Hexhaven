@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { campaignService, type CampaignPublicInfo } from '../services/campaign.service';
 import { UserCharacterSelect } from '../components/UserCharacterSelect';
+import { extractErrorMessage } from '../utils/error';
 import styles from './CampaignJoinPage.module.css';
 
 export const CampaignJoinPage: React.FC = () => {
@@ -34,7 +35,7 @@ export const CampaignJoinPage: React.FC = () => {
       const info = await campaignService.validateInviteToken(token);
       setCampaignInfo(info);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load campaign');
+      setError(extractErrorMessage(err, 'Failed to load campaign'));
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +71,7 @@ export const CampaignJoinPage: React.FC = () => {
       // Navigate to campaign dashboard
       navigate(`/campaigns/${campaign.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join campaign');
+      setError(extractErrorMessage(err, 'Failed to join campaign'));
     } finally {
       setIsJoining(false);
     }

@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { campaignService, type CampaignInvitation, type CampaignInviteToken } from '../services/campaign.service';
+import { extractErrorMessage } from '../utils/error';
 import styles from './CampaignInvitePanel.module.css';
 
 export interface CampaignInvitePanelProps {
@@ -36,14 +37,24 @@ export function CampaignInvitePanel({
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      const [invs, toks] = await Promise.all([
+      const results = await Promise.allSettled([
         campaignService.getCampaignInvitations(campaignId),
         campaignService.getInviteTokens(campaignId),
       ]);
-      setInvitations(invs);
-      setTokens(toks);
-    } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Failed to load invitations');
+
+      // Handle invitations result
+      if (results[0].status === 'fulfilled') {
+        setInvitations(results[0].value);
+      } else {
+        onError?.(extractErrorMessage(results[0].reason, 'Failed to load invitations'));
+      }
+
+      // Handle tokens result
+      if (results[1].status === 'fulfilled') {
+        setTokens(results[1].value);
+      } else {
+        onError?.(extractErrorMessage(results[1].reason, 'Failed to load invite tokens'));
+      }
     } finally {
       setIsLoadingData(false);
     }
@@ -64,7 +75,7 @@ export function CampaignInvitePanel({
       setUsername('');
       await loadData();
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Failed to send invitation');
+      onError?.(extractErrorMessage(error, 'Failed to send invitation'));
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +90,7 @@ export function CampaignInvitePanel({
       onSuccess?.('Invitation revoked');
       await loadData();
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Failed to revoke invitation');
+      onError?.(extractErrorMessage(error, 'Failed to revoke invitation'));
     } finally {
       setRevokingInvitationId(null);
     }
@@ -92,7 +103,7 @@ export function CampaignInvitePanel({
       onSuccess?.('Invite link created');
       await loadData();
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Failed to create invite link');
+      onError?.(extractErrorMessage(error, 'Failed to create invite link'));
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +118,7 @@ export function CampaignInvitePanel({
       onSuccess?.('Invite link revoked');
       await loadData();
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Failed to revoke invite link');
+      onError?.(extractErrorMessage(error, 'Failed to revoke invite link'));
     } finally {
       setRevokingTokenId(null);
     }
