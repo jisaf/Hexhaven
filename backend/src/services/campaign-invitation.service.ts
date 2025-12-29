@@ -15,7 +15,7 @@ import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { config } from '../config/env.config';
-import { MIN_TOKEN_USES, MAX_TOKEN_USES } from '../types/campaign.types';
+import { MIN_TOKEN_USES, MAX_TOKEN_USES, TOKEN_GENERATED_LENGTH } from '../types/campaign.types';
 import type {
   CampaignInvitation,
   CampaignInviteToken,
@@ -582,8 +582,8 @@ export class CampaignInvitationService {
    * Helper: Generate cryptographically secure random token
    */
   private generateToken(): string {
-    const token = randomBytes(24).toString('base64url').slice(0, 32);
-    if (token.length !== 32) {
+    const token = randomBytes(24).toString('base64url').slice(0, TOKEN_GENERATED_LENGTH);
+    if (token.length !== TOKEN_GENERATED_LENGTH) {
       throw new Error('Token generation failed: unexpected length');
     }
     return token;

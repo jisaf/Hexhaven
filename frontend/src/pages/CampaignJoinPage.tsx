@@ -24,7 +24,7 @@ export const CampaignJoinPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
 
-  const loadCampaignInfo = useCallback(async () => {
+  const loadCampaignInfo = useCallback(async (isMountedRef?: { current: boolean }) => {
     if (!token) return;
 
     setIsLoading(true);
@@ -33,11 +33,15 @@ export const CampaignJoinPage: React.FC = () => {
     try {
       // Validate token without consuming it
       const info = await campaignService.validateInviteToken(token);
+      if (isMountedRef && !isMountedRef.current) return;
       setCampaignInfo(info);
     } catch (err) {
+      if (isMountedRef && !isMountedRef.current) return;
       setError(extractErrorMessage(err, 'Failed to load campaign'));
     } finally {
-      setIsLoading(false);
+      if (!isMountedRef || isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [token]);
 
@@ -47,7 +51,12 @@ export const CampaignJoinPage: React.FC = () => {
       return;
     }
 
-    loadCampaignInfo();
+    const isMountedRef = { current: true };
+    loadCampaignInfo(isMountedRef);
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [token, navigate, loadCampaignInfo]);
 
   useEffect(() => {

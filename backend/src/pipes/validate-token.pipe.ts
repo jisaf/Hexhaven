@@ -4,11 +4,10 @@
  */
 
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { TOKEN_MIN_LENGTH, TOKEN_MAX_LENGTH } from '../types/campaign.types';
 
 @Injectable()
 export class ValidateTokenPipe implements PipeTransform<string, string> {
-  private readonly TOKEN_MIN_LENGTH = 20;
-  private readonly TOKEN_MAX_LENGTH = 50;
   // Base64url charset: A-Z, a-z, 0-9, -, _
   private readonly BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -18,11 +17,11 @@ export class ValidateTokenPipe implements PipeTransform<string, string> {
     }
 
     if (
-      value.length < this.TOKEN_MIN_LENGTH ||
-      value.length > this.TOKEN_MAX_LENGTH
+      value.length < TOKEN_MIN_LENGTH ||
+      value.length > TOKEN_MAX_LENGTH
     ) {
       throw new BadRequestException(
-        `Token length must be between ${this.TOKEN_MIN_LENGTH} and ${this.TOKEN_MAX_LENGTH} characters`,
+        `Token length must be between ${TOKEN_MIN_LENGTH} and ${TOKEN_MAX_LENGTH} characters`,
       );
     }
 

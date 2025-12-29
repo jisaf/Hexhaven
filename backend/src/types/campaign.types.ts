@@ -23,6 +23,11 @@ import {
 export const MIN_TOKEN_USES = 1;
 export const MAX_TOKEN_USES = 100;
 
+// Invite token length constraints
+export const TOKEN_MIN_LENGTH = 20;
+export const TOKEN_MAX_LENGTH = 50;
+export const TOKEN_GENERATED_LENGTH = 32;
+
 // Re-export shared types for convenience
 export type {
   DeathMode,

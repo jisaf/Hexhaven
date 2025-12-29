@@ -34,13 +34,16 @@ export function CampaignInvitePanel({
   const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
 
   // Load invitations and tokens
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isMountedRef?: { current: boolean }) => {
     setIsLoadingData(true);
     try {
       const results = await Promise.allSettled([
         campaignService.getCampaignInvitations(campaignId),
         campaignService.getInviteTokens(campaignId),
       ]);
+
+      // Check if component is still mounted
+      if (isMountedRef && !isMountedRef.current) return;
 
       // Handle invitations result
       if (results[0].status === 'fulfilled') {
@@ -56,49 +59,21 @@ export function CampaignInvitePanel({
         onError?.(extractErrorMessage(results[1].reason, 'Failed to load invite tokens'));
       }
     } finally {
-      setIsLoadingData(false);
+      if (!isMountedRef || isMountedRef.current) {
+        setIsLoadingData(false);
+      }
     }
   }, [campaignId, onError]);
 
   useEffect(() => {
-    let isMounted = true;
+    const isMountedRef = { current: true };
 
-    const fetchData = async () => {
-      setIsLoadingData(true);
-      try {
-        const results = await Promise.allSettled([
-          campaignService.getCampaignInvitations(campaignId),
-          campaignService.getInviteTokens(campaignId),
-        ]);
-
-        if (!isMounted) return;
-
-        // Handle invitations result
-        if (results[0].status === 'fulfilled') {
-          setInvitations(results[0].value);
-        } else {
-          onError?.(extractErrorMessage(results[0].reason, 'Failed to load invitations'));
-        }
-
-        // Handle tokens result
-        if (results[1].status === 'fulfilled') {
-          setTokens(results[1].value);
-        } else {
-          onError?.(extractErrorMessage(results[1].reason, 'Failed to load invite tokens'));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingData(false);
-        }
-      }
-    };
-
-    fetchData();
+    loadData(isMountedRef);
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
     };
-  }, [campaignId, onError]);
+  }, [loadData]);
 
   const handleInviteUser = async (e: FormEvent) => {
     e.preventDefault();
@@ -249,7 +224,11 @@ export function CampaignInvitePanel({
               <input
                 type="number"
                 value={maxUses}
-                onChange={(e) => setMaxUses(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10);
+                  const validValue = isNaN(parsed) ? 1 : Math.max(1, Math.min(100, parsed));
+                  setMaxUses(validValue);
+                }}
                 min={1}
                 max={100}
                 disabled={isLoading}
