@@ -45,6 +45,10 @@ export interface Config {
     maxFileSizeMb: number;
     allowedMimeTypes: string[];
   };
+  campaign: {
+    inviteTokenTtlDays: number;
+    directInvitationTtlDays: number;
+  };
 }
 
 /**
@@ -96,6 +100,16 @@ function loadConfig(): Config {
         process.env.ALLOWED_UPLOAD_MIMES ||
         'image/jpeg,image/png,image/gif,image/webp'
       ).split(','),
+    },
+    campaign: {
+      inviteTokenTtlDays: parseInt(
+        process.env.CAMPAIGN_INVITE_TOKEN_TTL_DAYS || '7',
+        10,
+      ),
+      directInvitationTtlDays: parseInt(
+        process.env.CAMPAIGN_DIRECT_INVITATION_TTL_DAYS || '30',
+        10,
+      ),
     },
   };
 

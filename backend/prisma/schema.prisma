@@ -25,9 +25,13 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   // Relations
-  refreshTokens     RefreshToken[]
-  characters        Character[]
-  playerGameResults PlayerGameResult[]
+  refreshTokens       RefreshToken[]
+  characters          Character[]
+  playerGameResults   PlayerGameResult[]
+  createdCampaigns    Campaign[]            @relation("CreatedCampaigns")
+  invitationsReceived CampaignInvitation[]  @relation("InvitationsReceived")
+  invitationsSent     CampaignInvitation[]  @relation("InvitationsSent")
+  createdInviteTokens CampaignInviteToken[]
 
   @@index([username])
   @@index([deletedAt])
@@ -84,19 +88,19 @@ model CardLayoutTemplate {
 }
 
 model AbilityCard {
-  id               String              @id @default(uuid()) @db.Uuid
-  classId          String              @db.Uuid
-  name             String              @db.VarChar(100)
-  level            Int                 @db.SmallInt // Level X = starting card (level 0 or 1)
-  initiative       Int                 @db.SmallInt // Turn order value
+  id               String   @id @default(uuid()) @db.Uuid
+  classId          String   @db.Uuid
+  name             String   @db.VarChar(100)
+  level            Int      @db.SmallInt // Level X = starting card (level 0 or 1)
+  initiative       Int      @db.SmallInt // Turn order value
   topAction        Json // { type, value, effects, range }
   bottomAction     Json // { type, value, effects }
-  layoutTemplateId String?             @db.Uuid // NULL uses default template
-  createdAt        DateTime            @default(now())
+  layoutTemplateId String?  @db.Uuid // NULL uses default template
+  createdAt        DateTime @default(now())
 
   // Relations
-  class          CharacterClass       @relation(fields: [classId], references: [id], onDelete: Cascade)
-  layoutTemplate CardLayoutTemplate?  @relation(fields: [layoutTemplateId], references: [id], onDelete: SetNull)
+  class          CharacterClass      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  layoutTemplate CardLayoutTemplate? @relation(fields: [layoutTemplateId], references: [id], onDelete: SetNull)
   enhancements   CardEnhancement[]
 
   @@index([classId])
@@ -124,15 +128,15 @@ model Character {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class             CharacterClass       @relation(fields: [classId], references: [id])
-  currentGame       Game?                @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
-  campaign          Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  enhancements      CardEnhancement[]
-  ownedItems        CharacterInventory[] // Items owned by this character (Issue #205)
-  equippedItems     CharacterEquipment[] // Currently equipped items (Issue #205)
-  itemStates        CharacterItemState[] // Runtime state of items during gameplay (Issue #205)
-  shopTransactions  ShopTransaction[]    // Shop purchase/sell history (Issue #328)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class            CharacterClass       @relation(fields: [classId], references: [id])
+  currentGame      Game?                @relation("CharacterCurrentGame", fields: [currentGameId], references: [id], onDelete: SetNull)
+  campaign         Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  enhancements     CardEnhancement[]
+  ownedItems       CharacterInventory[] // Items owned by this character (Issue #205)
+  equippedItems    CharacterEquipment[] // Currently equipped items (Issue #205)
+  itemStates       CharacterItemState[] // Runtime state of items during gameplay (Issue #205)
+  shopTransactions ShopTransaction[] // Shop purchase/sell history (Issue #328)
 
   @@index([userId])
   @@index([classId])
@@ -216,28 +220,28 @@ model CardEnhancement {
 // ========== ITEMS (002, Updated for #205) ==========
 
 model Item {
-  id                  String        @id @default(uuid()) @db.Uuid
-  name                String        @unique @db.VarChar(100)
-  slot                ItemSlot      // HEAD, BODY, LEGS, ONE_HAND, TWO_HAND, SMALL
-  usageType           ItemUsageType // PERSISTENT, SPENT, CONSUMED
-  maxUses             Int?          @db.SmallInt // For multi-use items
-  rarity              Rarity
-  effects             Json          // Array of ItemEffect objects
-  triggers            Json?         // Array of ItemTrigger objects for reactive items
-  modifierDeckImpact  Json?         // { adds: ["-1", "-1"] } for items affecting attack deck
-  cost                Int           // Gold cost
-  description         String?       @db.VarChar(500)
-  imageUrl            String?       @db.VarChar(500) // Icon class (e.g., "ra-potion")
-  createdBy           String?       @db.Uuid // User ID of creator (for role-based creation)
-  createdAt           DateTime      @default(now())
+  id                 String        @id @default(uuid()) @db.Uuid
+  name               String        @unique @db.VarChar(100)
+  slot               ItemSlot // HEAD, BODY, LEGS, ONE_HAND, TWO_HAND, SMALL
+  usageType          ItemUsageType // PERSISTENT, SPENT, CONSUMED
+  maxUses            Int?          @db.SmallInt // For multi-use items
+  rarity             Rarity
+  effects            Json // Array of ItemEffect objects
+  triggers           Json? // Array of ItemTrigger objects for reactive items
+  modifierDeckImpact Json? // { adds: ["-1", "-1"] } for items affecting attack deck
+  cost               Int // Gold cost
+  description        String?       @db.VarChar(500)
+  imageUrl           String?       @db.VarChar(500) // Icon class (e.g., "ra-potion")
+  createdBy          String?       @db.Uuid // User ID of creator (for role-based creation)
+  createdAt          DateTime      @default(now())
 
   // Relations (Issue #205)
-  ownedBy         CharacterInventory[]
-  equippedBy      CharacterEquipment[]
-  states          CharacterItemState[]
+  ownedBy       CharacterInventory[]
+  equippedBy    CharacterEquipment[]
+  states        CharacterItemState[]
   // Relations (Issue #328)
-  shopInventory   CampaignShopInventory[]
-  transactions    ShopTransaction[]
+  shopInventory CampaignShopInventory[]
+  transactions  ShopTransaction[]
 
   @@index([slot])
   @@index([rarity])
@@ -247,14 +251,14 @@ model Item {
 // ========== GAMES & EVENT SOURCING (002) ==========
 
 model Game {
-  id          String      @id @default(uuid()) @db.Uuid
-  roomCode    String      @unique @db.VarChar(6)
-  scenarioId  String?     @db.Uuid
-  campaignId  String?     @db.Uuid // Campaign this game belongs to (Issue #244)
-  difficulty  Int         @default(1) @db.SmallInt
-  status      GameStatus  @default(LOBBY)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id          String     @id @default(uuid()) @db.Uuid
+  roomCode    String     @unique @db.VarChar(6)
+  scenarioId  String?    @db.Uuid
+  campaignId  String?    @db.Uuid // Campaign this game belongs to (Issue #244)
+  difficulty  Int        @default(1) @db.SmallInt
+  status      GameStatus @default(LOBBY)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   startedAt   DateTime?
   completedAt DateTime?
 
@@ -307,28 +311,28 @@ model GameEvent {
 // ========== GAME RESULTS (186 - Game Completion) ==========
 
 model GameResult {
-  id                          String             @id @default(uuid()) @db.Uuid
-  gameId                      String             @unique @db.Uuid
-  roomCode                    String             @db.VarChar(6)
-  scenarioId                  String?            @db.Uuid
-  scenarioName                String?            @db.VarChar(100)
-  victory                     Boolean
-  completedAt                 DateTime           @default(now())
-  roundsCompleted             Int                @db.SmallInt
-  completionTimeMs            Int? // Duration from game start to completion in milliseconds
+  id               String   @id @default(uuid()) @db.Uuid
+  gameId           String   @unique @db.Uuid
+  roomCode         String   @db.VarChar(6)
+  scenarioId       String?  @db.Uuid
+  scenarioName     String?  @db.VarChar(100)
+  victory          Boolean
+  completedAt      DateTime @default(now())
+  roundsCompleted  Int      @db.SmallInt
+  completionTimeMs Int? // Duration from game start to completion in milliseconds
 
   // Objective tracking
-  primaryObjectiveCompleted   Boolean            @default(false)
-  secondaryObjectiveCompleted Boolean            @default(false)
-  objectivesCompletedList     Json               @default("[]") // Array of completed objective IDs
-  objectiveProgress           Json               @default("{}") // { objectiveId: { current, target, completed } }
+  primaryObjectiveCompleted   Boolean @default(false)
+  secondaryObjectiveCompleted Boolean @default(false)
+  objectivesCompletedList     Json    @default("[]") // Array of completed objective IDs
+  objectiveProgress           Json    @default("{}") // { objectiveId: { current, target, completed } }
 
   // Aggregate stats
-  totalLootCollected          Int                @default(0)
-  totalExperience             Int                @default(0)
-  totalGold                   Int                @default(0)
+  totalLootCollected Int @default(0)
+  totalExperience    Int @default(0)
+  totalGold          Int @default(0)
 
-  createdAt                   DateTime           @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
   game          Game               @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -341,31 +345,31 @@ model GameResult {
 }
 
 model PlayerGameResult {
-  id              String      @id @default(uuid()) @db.Uuid
-  gameResultId    String      @db.Uuid
-  userId          String      @db.Uuid
-  characterId     String      @db.Uuid
-  characterClass  String      @db.VarChar(50)
-  characterName   String      @db.VarChar(30)
+  id             String @id @default(uuid()) @db.Uuid
+  gameResultId   String @db.Uuid
+  userId         String @db.Uuid
+  characterId    String @db.Uuid
+  characterClass String @db.VarChar(50)
+  characterName  String @db.VarChar(30)
 
   // Survival stats
-  survived        Boolean     @default(true)
-  wasExhausted    Boolean     @default(false)
+  survived     Boolean @default(true)
+  wasExhausted Boolean @default(false)
 
   // Combat stats
-  damageDealt     Int         @default(0)
-  damageTaken     Int         @default(0)
-  monstersKilled  Int         @default(0)
+  damageDealt    Int @default(0)
+  damageTaken    Int @default(0)
+  monstersKilled Int @default(0)
 
   // Resource stats
-  lootCollected   Int         @default(0)
-  cardsLost       Int         @default(0)
+  lootCollected Int @default(0)
+  cardsLost     Int @default(0)
 
   // Rewards
-  experienceGained Int        @default(0)
-  goldGained       Int        @default(0)
+  experienceGained Int @default(0)
+  goldGained       Int @default(0)
 
-  createdAt       DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
   gameResult GameResult @relation(fields: [gameResultId], references: [id], onDelete: Cascade)
@@ -383,8 +387,8 @@ model CampaignShopInventory {
   id              String   @id @default(uuid()) @db.Uuid
   campaignId      String   @db.Uuid
   itemId          String   @db.Uuid
-  quantity        Int      @db.SmallInt    // Current quantity in stock
-  initialQuantity Int      @db.SmallInt    // Original quantity (for resetting)
+  quantity        Int      @db.SmallInt // Current quantity in stock
+  initialQuantity Int      @db.SmallInt // Original quantity (for resetting)
   lastRestockedAt DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -401,19 +405,19 @@ model CampaignShopInventory {
 }
 
 model ShopTransaction {
-  id             String          @id @default(uuid()) @db.Uuid
-  campaignId     String          @db.Uuid
-  characterId    String          @db.Uuid
-  itemId         String          @db.Uuid
+  id              String          @id @default(uuid()) @db.Uuid
+  campaignId      String          @db.Uuid
+  characterId     String          @db.Uuid
+  itemId          String          @db.Uuid
   transactionType TransactionType
-  goldAmount     Int             // Gold spent (BUY) or received (SELL)
-  quantity       Int             @default(1) @db.SmallInt // For future bulk transactions
-  createdAt      DateTime        @default(now())
+  goldAmount      Int // Gold spent (BUY) or received (SELL)
+  quantity        Int             @default(1) @db.SmallInt // For future bulk transactions
+  createdAt       DateTime        @default(now())
 
   // Relations
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign  Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@index([characterId])
@@ -425,16 +429,16 @@ model ShopTransaction {
 // ========== CAMPAIGN TEMPLATES (Issue #244 - DB-driven campaigns) ==========
 
 model CampaignTemplate {
-  id                    String  @id @default(uuid()) @db.Uuid
-  name                  String  @unique @db.VarChar(100)
-  description           String? @db.VarChar(500)
-  deathMode             String  @default("configurable") @db.VarChar(20) // "healing" | "permadeath" | "configurable"
-  minPlayers            Int     @default(1) @db.SmallInt
-  maxPlayers            Int     @default(4) @db.SmallInt
-  requireUniqueClasses  Boolean @default(false) // Require each player to have unique character classes
-  isActive              Boolean @default(true) // Can be used to create new campaigns
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(uuid()) @db.Uuid
+  name                 String   @unique @db.VarChar(100)
+  description          String?  @db.VarChar(500)
+  deathMode            String   @default("configurable") @db.VarChar(20) // "healing" | "permadeath" | "configurable"
+  minPlayers           Int      @default(1) @db.SmallInt
+  maxPlayers           Int      @default(4) @db.SmallInt
+  requireUniqueClasses Boolean  @default(false) // Require each player to have unique character classes
+  isActive             Boolean  @default(true) // Can be used to create new campaigns
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
   scenarios CampaignTemplateScenario[]
@@ -444,14 +448,14 @@ model CampaignTemplate {
 }
 
 model CampaignTemplateScenario {
-  id               String  @id @default(uuid()) @db.Uuid
-  templateId       String  @db.Uuid
-  scenarioId       String  @db.VarChar(100) // References game scenario ID for both progression and gameplay loading
-  name             String? @db.VarChar(100) // Optional override display name (uses scenario name if null)
-  description      String? @db.VarChar(500) // Optional override description
-  unlocksScenarios Json    @default("[]") // Array of game scenario IDs this unlocks on victory
-  isStarting       Boolean @default(false) // Is this scenario unlocked at campaign start?
-  sequence         Int     @db.SmallInt // Order in the campaign (for display)
+  id               String   @id @default(uuid()) @db.Uuid
+  templateId       String   @db.Uuid
+  scenarioId       String   @db.VarChar(100) // References game scenario ID for both progression and gameplay loading
+  name             String?  @db.VarChar(100) // Optional override display name (uses scenario name if null)
+  description      String?  @db.VarChar(500) // Optional override description
+  unlocksScenarios Json     @default("[]") // Array of game scenario IDs this unlocks on victory
+  isStarting       Boolean  @default(false) // Is this scenario unlocked at campaign start?
+  sequence         Int      @db.SmallInt // Order in the campaign (for display)
   createdAt        DateTime @default(now())
 
   // Relations
@@ -465,32 +469,82 @@ model CampaignTemplateScenario {
 // ========== CAMPAIGNS (Issue #244 - Campaign instances) ==========
 
 model Campaign {
-  id                    String   @id @default(uuid()) @db.Uuid
-  templateId            String?  @db.Uuid // Reference to the template this campaign was created from
-  name                  String   @db.VarChar(100)
-  description           String?  @db.VarChar(500)
-  prosperityLevel       Int      @default(1) @db.SmallInt
-  reputation            Int      @default(0) @db.SmallInt
-  completedScenarios    Json     @default("[]") // Array of scenario IDs
-  deathMode             String   @default("healing") @db.VarChar(20) // "healing" | "permadeath"
-  requireUniqueClasses  Boolean  @default(false) // Require each player to have unique character classes
-  retiredCharacterIds   Json     @default("[]") // Array of retired character IDs (permadeath mode)
-  unlockedScenarios     Json     @default("[]") // Array of unlocked scenario IDs available next
-  isCompleted           Boolean  @default(false)
-  completedAt           DateTime?
-  shopConfig            Json     @default("{}") // CampaignShopConfig JSON (Issue #328)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String    @id @default(uuid()) @db.Uuid
+  createdByUserId      String    @db.Uuid // User who created this campaign (Issue #388)
+  templateId           String?   @db.Uuid // Reference to the template this campaign was created from
+  name                 String    @db.VarChar(100)
+  description          String?   @db.VarChar(500)
+  prosperityLevel      Int       @default(1) @db.SmallInt
+  reputation           Int       @default(0) @db.SmallInt
+  completedScenarios   Json      @default("[]") // Array of scenario IDs
+  deathMode            String    @default("healing") @db.VarChar(20) // "healing" | "permadeath"
+  requireUniqueClasses Boolean   @default(false) // Require each player to have unique character classes
+  retiredCharacterIds  Json      @default("[]") // Array of retired character IDs (permadeath mode)
+  unlockedScenarios    Json      @default("[]") // Array of unlocked scenario IDs available next
+  isCompleted          Boolean   @default(false)
+  completedAt          DateTime?
+  shopConfig           Json      @default("{}") // CampaignShopConfig JSON (Issue #328)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relations
-  template      CampaignTemplate?       @relation(fields: [templateId], references: [id])
-  characters    Character[]
-  games         Game[]                  // Games played in this campaign (Issue #244)
-  shopInventory CampaignShopInventory[] // Shop inventory (Issue #328)
-  shopTransactions ShopTransaction[]     // Shop transactions (Issue #328)
+  createdBy        User                    @relation("CreatedCampaigns", fields: [createdByUserId], references: [id])
+  template         CampaignTemplate?       @relation(fields: [templateId], references: [id])
+  characters       Character[]
+  games            Game[] // Games played in this campaign (Issue #244)
+  shopInventory    CampaignShopInventory[] // Shop inventory (Issue #328)
+  shopTransactions ShopTransaction[] // Shop transactions (Issue #328)
+  invitations      CampaignInvitation[]    @relation("CampaignInvitations")
+  inviteTokens     CampaignInviteToken[]
 
+  @@index([createdByUserId])
   @@index([templateId])
   @@map("campaigns")
+}
+
+// ========== CAMPAIGN INVITATIONS (Campaign Invite System) ==========
+
+model CampaignInvitation {
+  id              String           @id @default(uuid()) @db.Uuid
+  campaignId      String           @db.Uuid
+  invitedUserId   String           @db.Uuid
+  invitedUsername String           @db.VarChar(20)
+  invitedByUserId String           @db.Uuid
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime // 30-day TTL
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  campaign    Campaign @relation("CampaignInvitations", fields: [campaignId], references: [id], onDelete: Cascade)
+  invitedUser User     @relation("InvitationsReceived", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedBy   User     @relation("InvitationsSent", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, invitedUserId]) // Can't invite same user twice to same campaign
+  @@index([campaignId])
+  @@index([invitedUserId, status])
+  @@index([invitedByUserId])
+  @@map("campaign_invitations")
+}
+
+model CampaignInviteToken {
+  id              String   @id @default(uuid()) @db.Uuid
+  campaignId      String   @db.Uuid
+  token           String   @unique @db.VarChar(32)
+  createdByUserId String   @db.Uuid
+  maxUses         Int      @default(1) @db.SmallInt
+  usedCount       Int      @default(0) @db.SmallInt
+  expiresAt       DateTime // 7-day TTL
+  isRevoked       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  // Relations
+  campaign  Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([campaignId, isRevoked, expiresAt])
+  @@map("campaign_invite_tokens")
 }
 
 // ========== SCENARIOS (001 + 002) ==========
@@ -507,12 +561,12 @@ model Scenario {
   createdAt            DateTime @default(now())
 
   // Background image configuration (Issue #191)
-  backgroundImageUrl   String?  @db.VarChar(500) // URL or path to background image
-  backgroundOpacity    Float?   @default(1.0) // Opacity 0.0 to 1.0
-  backgroundOffsetX    Int?     @default(0) // X offset in pixels
-  backgroundOffsetY    Int?     @default(0) // Y offset in pixels
-  backgroundScale      Float?   @default(1.0) // Scale multiplier (0.5 to 3.0)
-  backgroundAnchors    Json?    // Two-anchor alignment data (Issue #191)
+  backgroundImageUrl String? @db.VarChar(500) // URL or path to background image
+  backgroundOpacity  Float?  @default(1.0) // Opacity 0.0 to 1.0
+  backgroundOffsetX  Int?    @default(0) // X offset in pixels
+  backgroundOffsetY  Int?    @default(0) // Y offset in pixels
+  backgroundScale    Float?  @default(1.0) // Scale multiplier (0.5 to 3.0)
+  backgroundAnchors  Json? // Two-anchor alignment data (Issue #191)
 
   // Relations
   games     Game[]
@@ -525,13 +579,13 @@ model Scenario {
 // ========== SCENARIO NARRATIVES (Campaign Narrative Feature) ==========
 
 model ScenarioNarrative {
-  id              String   @id @default(uuid()) @db.Uuid
-  scenarioId      String   @unique @db.Uuid
+  id         String @id @default(uuid()) @db.Uuid
+  scenarioId String @unique @db.Uuid
 
   // Before scenario narrative (intro)
-  introTitle      String?  @db.VarChar(200)
-  introText       String?  @db.Text
-  introImageUrl   String?  @db.VarChar(500)
+  introTitle    String? @db.VarChar(200)
+  introText     String? @db.Text
+  introImageUrl String? @db.VarChar(500)
 
   // After scenario narrative (victory)
   victoryTitle    String?  @db.VarChar(200)
@@ -545,42 +599,42 @@ model ScenarioNarrative {
   defeatImageUrl  String?  @db.VarChar(500)
   defeatRewards   Json?    // { gold?: number, xp?: number, items?: string[], distribution?: string }
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  scenario  Scenario           @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  triggers  NarrativeTrigger[]
+  scenario Scenario           @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  triggers NarrativeTrigger[]
 
   @@map("scenario_narratives")
 }
 
 model NarrativeTrigger {
-  id              String   @id @default(uuid()) @db.Uuid
-  narrativeId     String   @db.Uuid
+  id          String @id @default(uuid()) @db.Uuid
+  narrativeId String @db.Uuid
 
   // Trigger identification
-  triggerId       String   @db.VarChar(100) // Unique identifier per scenario
-  displayOrder    Int      @default(0) @db.SmallInt // Order if multiple triggers fire
+  triggerId    String @db.VarChar(100) // Unique identifier per scenario
+  displayOrder Int    @default(0) @db.SmallInt // Order if multiple triggers fire
 
   // Narrative content
-  title           String?  @db.VarChar(200)
-  text            String   @db.Text
-  imageUrl        String?  @db.VarChar(500)
+  title    String? @db.VarChar(200)
+  text     String  @db.Text
+  imageUrl String? @db.VarChar(500)
 
   // Trigger conditions (JSON - NarrativeCondition structure from shared/types/narrative.ts)
-  conditions      Json
+  conditions Json
 
   // Optional rewards when narrative is acknowledged
-  rewards         Json?    // { gold?: number, xp?: number }
+  rewards Json? // { gold?: number, xp?: number }
 
   // Optional game effects to apply after all players acknowledge
-  gameEffects     Json?    // { spawnMonsters?: [...], unlockDoors?: [...] }
+  gameEffects Json? // { spawnMonsters?: [...], unlockDoors?: [...] }
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
-  narrative  ScenarioNarrative @relation(fields: [narrativeId], references: [id], onDelete: Cascade)
+  narrative ScenarioNarrative @relation(fields: [narrativeId], references: [id], onDelete: Cascade)
 
   @@index([narrativeId])
   @@map("narrative_triggers")
@@ -687,15 +741,15 @@ enum ItemSlot {
 
 enum ItemUsageType {
   PERSISTENT // No usage limits
-  SPENT      // Refresh on long rest
-  CONSUMED   // Refresh between scenarios
+  SPENT // Refresh on long rest
+  CONSUMED // Refresh between scenarios
 
   @@map("item_usage_type")
 }
 
 enum ItemState {
-  READY    // Item is ready to use
-  SPENT    // Item has been used, refreshes on long rest
+  READY // Item is ready to use
+  SPENT // Item has been used, refreshes on long rest
   CONSUMED // Item has been consumed, refreshes between scenarios
 
   @@map("item_state")
@@ -708,4 +762,15 @@ enum TransactionType {
   SELL
 
   @@map("transaction_type")
+}
+
+// ========== CAMPAIGN INVITATIONS ==========
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+
+  @@map("invitation_status")
 }

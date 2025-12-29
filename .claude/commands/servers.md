@@ -31,20 +31,20 @@ lsof -ti:5173 2>/dev/null || echo "Frontend not running"
 
 ### Step 2: Kill Existing Processes (if running)
 
-If any processes are found on ports 3000, 3001, or 5173:
+Thoroughly clean up all existing server processes:
 ```bash
-# Kill processes on backend ports
-pkill -f "npm run dev:backend" || true
-pkill -f "nest start" || true
-lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true
+# Kill all node processes running vite or nest (more thorough cleanup)
+pkill -9 -f "vite" 2>/dev/null || true
+pkill -9 -f "nest start" 2>/dev/null || true
+pkill -9 -f "npm run dev:backend" 2>/dev/null || true
+pkill -9 -f "npm run dev:frontend" 2>/dev/null || true
 
-# Kill processes on frontend port
-pkill -f "npm run dev:frontend" || true
-pkill -f "vite" || true
-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+# Force kill any zombie processes on development ports
+# Includes extra vite ports (5173-5176) to clean up orphaned instances
+lsof -ti:3000,3001,3002,5173,5174,5175,5176 | xargs kill -9 2>/dev/null || true
 
-# Wait for ports to be released
-sleep 2
+# Wait for ports to be fully released
+sleep 3
 ```
 
 ### Step 3: Evaluate Startup Method
@@ -64,7 +64,7 @@ Determine which startup method to use:
 **Decision Logic:**
 ```bash
 # Check if database needs setup
-cd /home/opc/hexhaven/backend
+cd /home/ubuntu/hexhaven/backend
 if npx prisma migrate status 2>&1 | grep -q "pending\|not applied"; then
   echo "Database needs migrations - use start-dev.sh"
   USE_SCRIPT=true
@@ -72,7 +72,7 @@ else
   echo "Database is up to date - use npm run dev"
   USE_SCRIPT=false
 fi
-cd /home/opc/hexhaven
+cd /home/ubuntu/hexhaven
 ```
 
 ### Step 4: Start Servers
@@ -81,21 +81,21 @@ Based on the evaluation:
 
 **If using npm run dev:**
 ```bash
-cd /home/opc/hexhaven
+cd /home/ubuntu/hexhaven
 npm run dev:backend > /tmp/hexhaven-backend.log 2>&1 &
 npm run dev:frontend > /tmp/hexhaven-frontend.log 2>&1 &
 
 # Wait for servers to be ready
-sleep 5
+sleep 8
 
 # Verify servers are running
 curl -s http://localhost:3001/health || curl -s http://localhost:3000/health
-curl -s http://localhost:5173
+curl -s http://localhost:5173 || echo "Frontend may be on alternate port (check 5174-5176)"
 ```
 
 **If using start-dev.sh:**
 ```bash
-cd /home/opc/hexhaven
+cd /home/ubuntu/hexhaven
 bash start-dev.sh > /tmp/hexhaven-startup.log 2>&1 &
 
 # Wait longer for full initialization

@@ -47,6 +47,7 @@ const CampaignsHubPage = lazy(() => import('./pages/CampaignsHubPage').then(m =>
 const CreateCampaignPage = lazy(() => import('./pages/CreateCampaignPage').then(m => ({ default: m.CreateCampaignPage })));
 const CampaignDashboardPage = lazy(() => import('./pages/CampaignDashboardPage').then(m => ({ default: m.CampaignDashboardPage })));
 const CampaignScenarioLobbyPage = lazy(() => import('./pages/CampaignScenarioLobbyPage').then(m => ({ default: m.CampaignScenarioLobbyPage })));
+const CampaignJoinPage = lazy(() => import('./pages/CampaignJoinPage').then(m => ({ default: m.CampaignJoinPage })));
 
 /**
  * Loading Component
@@ -214,6 +215,7 @@ function Layout() {
         <Route path="/rooms/:roomCode/play" element={<GameRoomPage />} />
         <Route path="/campaigns" element={<CampaignsHubPage />} />
         <Route path="/campaigns/create" element={<CreateCampaignPage />} />
+        <Route path="/campaigns/join/:token" element={<CampaignJoinPage />} />
         <Route path="/campaigns/:campaignId" element={<CampaignDashboardPage />} />
         <Route path="/campaigns/:campaignId/scenario/:scenarioId" element={<CampaignScenarioLobbyPage />} />
 

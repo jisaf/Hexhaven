@@ -240,6 +240,7 @@ export class CampaignService {
 
     const campaign = await this.prisma.campaign.create({
       data: {
+        createdByUserId: userId,
         templateId: dto.templateId,
         name: dto.name || template.name,
         description: template.description,
@@ -758,6 +759,20 @@ export class CampaignService {
     userId: string,
     campaignId: string,
   ): Promise<boolean> {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { createdByUserId: true },
+    });
+
+    if (!campaign) {
+      return false;
+    }
+
+    // Check if user is the campaign creator
+    if (campaign.createdByUserId === userId) {
+      return true;
+    }
+
     // Check if user has a character in this campaign
     const userCharCount = await this.prisma.character.count({
       where: {
@@ -766,6 +781,19 @@ export class CampaignService {
       },
     });
     if (userCharCount > 0) {
+      return true;
+    }
+
+    // Check if user has a pending invitation
+    const pendingInvitation = await this.prisma.campaignInvitation.findFirst({
+      where: {
+        campaignId,
+        invitedUserId: userId,
+        status: 'PENDING',
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (pendingInvitation) {
       return true;
     }
 

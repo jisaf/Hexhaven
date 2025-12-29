@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -41,6 +41,16 @@ async function bootstrap() {
   // Apply global exception filter for consistent error responses
   app.useGlobalFilters(new HttpExceptionFilter());
   logger.log('Global exception filter registered');
+
+  // Apply global validation pipe for DTO validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // Automatically transform payloads to DTO instances
+      whitelist: true, // Strip properties that don't have decorators
+      forbidNonWhitelisted: false, // Don't throw errors for extra properties
+    }),
+  );
+  logger.log('Global validation pipe registered');
 
   // Log startup environment info
   logger.log(`Node environment: ${process.env.NODE_ENV || 'development'}`);

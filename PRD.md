@@ -569,6 +569,20 @@ gloomhaven-hex-game/
   - Games store `campaignId` for proper return navigation
   - Victory screen shows "Return to Campaign" button when in campaign
   - Deep-linking support for campaign flow
+- **Campaign Invitation System** (feat/campaign-invite-system)
+  - Direct username-based invitations (30-day TTL)
+  - Shareable invite links with configurable usage limits (7-day TTL)
+  - Pending invitations tab in campaigns hub
+  - Public campaign preview for join links
+  - Host controls: create, revoke invitations and tokens
+  - Atomic token consumption with transaction-based auto-revoke (race-condition safe)
+  - Rate limiting on invitation endpoints (5 invitations/tokens per minute)
+  - Automated cleanup via scheduled cron job (daily at midnight)
+  - Centralized rate limit constants for maintainability
+  - DRY-compliant join flow with shared completion logic
+  - Safe type validation for JSON database columns
+  - Robust error handling for non-JSON responses
+  - React component cleanup to prevent memory leaks
 
 #### Advanced Features
 - Advanced monster AI (flying, jumping, disadvantage)
