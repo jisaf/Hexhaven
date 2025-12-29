@@ -90,9 +90,12 @@ These will be tracked in a GitHub issue for future cleanup.
 ```
 
 **After presenting the report:**
-1. Ask the user if they want to proceed with the proposed fixes
-2. Ask if any issues should be handled differently or deferred
-3. Confirm any ambiguous fix approaches before proceeding
+- **Automatically proceed** with fixes if all proposed solutions are clear and unambiguous
+- **Only ask for confirmation** if:
+  - Multiple valid fix approaches exist and the best choice is unclear
+  - The fix might change public API behavior or break backwards compatibility
+  - Project-specific conventions are unclear
+  - The root cause is uncertain and the fix might be treating symptoms rather than the actual problem
 
 ### Step 6: Fix Critical, High, and Medium Issues
 
