@@ -28,7 +28,7 @@ export const TOKEN_MIN_LENGTH = 20;
 export const TOKEN_MAX_LENGTH = 50;
 export const TOKEN_GENERATED_LENGTH = 32;
 
-// Re-export shared types for convenience
+// Re-export shared types and constants for convenience
 export type {
   DeathMode,
   CampaignScenarioTemplate,
@@ -43,6 +43,8 @@ export type {
   CampaignPublicInfo,
   InvitationStatus,
 } from '../../../shared/types/campaign';
+
+export { USERNAME_MAX_LENGTH } from '../../../shared/types/campaign';
 
 import type { DeathMode } from '../../../shared/types/campaign';
 
@@ -85,7 +87,7 @@ export class CreateCampaignCharacterDto {
 export class InviteUserDto {
   @IsString()
   @MinLength(1)
-  @MaxLength(20)
+  @MaxLength(USERNAME_MAX_LENGTH)
   invitedUsername!: string;
 }
 

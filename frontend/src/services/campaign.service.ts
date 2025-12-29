@@ -55,6 +55,7 @@ export interface CreateCampaignDto {
 class CampaignService {
   /**
    * Helper method to handle API responses consistently
+   * Handles both JSON responses and void responses (204 No Content)
    */
   private async handleResponse<T>(response: Response, fallbackError: string): Promise<T> {
     if (!response.ok) {
@@ -67,23 +68,14 @@ class CampaignService {
       }
       throw new Error(message);
     }
-    return response.json();
-  }
 
-  /**
-   * Helper method to handle API responses with no content (void)
-   */
-  private async handleVoidResponse(response: Response, fallbackError: string): Promise<void> {
-    if (!response.ok) {
-      let message = fallbackError;
-      try {
-        const errorData = await response.json();
-        message = errorData.message || fallbackError;
-      } catch {
-        // Response was not JSON (e.g., proxy error, HTML error page)
-      }
-      throw new Error(message);
+    // Handle void responses (204 No Content or empty response)
+    const contentLength = response.headers.get('content-length');
+    if (response.status === 204 || contentLength === '0') {
+      return undefined as T;
     }
+
+    return response.json();
   }
 
   /**
@@ -181,7 +173,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    return this.handleVoidResponse(response, 'Failed to remove character from campaign');
+    return this.handleResponse<void>(response, 'Failed to remove character from campaign');
   }
 
   /**
@@ -243,7 +235,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    return this.handleVoidResponse(response, 'Failed to revoke invitation');
+    return this.handleResponse<void>(response, 'Failed to revoke invitation');
   }
 
   /**
@@ -256,7 +248,7 @@ class CampaignService {
         method: 'POST',
       },
     );
-    return this.handleVoidResponse(response, 'Failed to decline invitation');
+    return this.handleResponse<void>(response, 'Failed to decline invitation');
   }
 
   /**
@@ -296,7 +288,7 @@ class CampaignService {
         method: 'DELETE',
       },
     );
-    return this.handleVoidResponse(response, 'Failed to revoke invite token');
+    return this.handleResponse<void>(response, 'Failed to revoke invite token');
   }
 
   /**

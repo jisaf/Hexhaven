@@ -31,7 +31,7 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
   const [deathMode, setDeathMode] = useState<DeathMode>('healing');
   const [creating, setCreating] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isMountedRef?: { current: boolean }) => {
     try {
       setLoading(true);
       const [campaignsData, templatesData, invitationsData] = await Promise.all([
@@ -39,18 +39,26 @@ export function CampaignsList({ onSelectCampaign }: CampaignsListProps) {
         campaignService.getTemplates(),
         campaignService.getReceivedInvitations(),
       ]);
+      if (isMountedRef && !isMountedRef.current) return;
       setCampaigns(campaignsData);
       setTemplates(templatesData);
       setInvitations(invitationsData);
     } catch (err) {
+      if (isMountedRef && !isMountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load campaigns');
     } finally {
-      setLoading(false);
+      if (!isMountedRef || isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const isMountedRef = { current: true };
+    fetchData(isMountedRef);
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [fetchData]);
 
   const handleCreateCampaign = async () => {

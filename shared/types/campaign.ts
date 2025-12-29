@@ -3,6 +3,9 @@
  * Types shared between frontend and backend for campaign management
  */
 
+// Username validation constants
+export const USERNAME_MAX_LENGTH = 20;
+
 // Death mode configuration
 export type DeathMode = 'healing' | 'permadeath';
 

@@ -102,10 +102,12 @@ The campaign invitation system provides two methods for users to join campaigns:
 #### Services (`frontend/src/services/campaign.service.ts`)
 
 **Code Quality Improvements:**
-- Added `handleVoidResponse` helper to eliminate DRY violations
+- Refactored `handleResponse` method to handle both JSON and void responses
+- Eliminated duplicate `handleVoidResponse` method (DRY violation)
 - All void-returning methods now use consistent error handling
 - Centralized error message parsing and throwing
 - Shared error extraction utility (`extractErrorMessage`) for consistent error handling across components
+- Added `USERNAME_MAX_LENGTH` constant exported from shared types
 
 **Methods:**
 - `inviteUser(campaignId, username)` - Send direct invitation
@@ -143,6 +145,9 @@ The campaign invitation system provides two methods for users to join campaigns:
 - Invitations and tokens load independently - one can fail while the other succeeds
 - Consistent error handling with `extractErrorMessage` utility
 - Proper loading states for async operations
+- Implements `isMountedRef` cleanup pattern to prevent memory leaks
+- All async operations check mount status before state updates
+- Uses `useRef` to persist mount status across renders for reliable cleanup
 
 ## Security Considerations
 
@@ -289,6 +294,107 @@ Replaced `Promise.all` with `Promise.allSettled`:
 - If tokens API fails, invitations still load successfully
 - Better user experience when one endpoint has issues
 - Prevents complete failure from single endpoint errors
+
+#### MEDIUM Priority Fixes (PR #381 Code Quality Review - December 2025)
+
+Following code quality review of PR #381, the following MEDIUM priority issues were addressed:
+
+##### 1. Missing Cleanup Pattern in CampaignsList Component
+**Location:** `frontend/src/components/lobby/CampaignsList.tsx:34-62`
+
+**Issue:** Component lacked the `isMountedRef` cleanup pattern used in sibling components, potentially causing "setState on unmounted component" warnings and memory leaks.
+
+**Fix:** Implemented the same cleanup pattern as `CampaignInvitePanel` and `CampaignJoinPage`:
+```typescript
+const fetchData = useCallback(async (isMountedRef?: { current: boolean }) => {
+  try {
+    setLoading(true);
+    const data = await Promise.all([...]);
+    if (isMountedRef && !isMountedRef.current) return;
+    // set state...
+  } catch (err) {
+    if (isMountedRef && !isMountedRef.current) return;
+    // handle error...
+  } finally {
+    if (!isMountedRef || isMountedRef.current) {
+      setLoading(false);
+    }
+  }
+}, []);
+
+useEffect(() => {
+  const isMountedRef = { current: true };
+  fetchData(isMountedRef);
+  return () => { isMountedRef.current = false; };
+}, [fetchData]);
+```
+
+**Impact:** Prevents memory leaks and React warnings during unmount scenarios.
+
+##### 2. Duplicate Error Handling Methods in Campaign Service
+**Location:** `frontend/src/services/campaign.service.ts:56-79`
+
+**Issue:** Two nearly identical methods (`handleResponse` and `handleVoidResponse`) differing only in return type violated DRY principles.
+
+**Fix:** Unified into single method that handles both JSON and void responses:
+```typescript
+private async handleResponse<T>(response: Response, fallbackError: string): Promise<T> {
+  if (!response.ok) {
+    // ... error handling
+  }
+
+  // Handle void responses (204 No Content or empty response)
+  const contentLength = response.headers.get('content-length');
+  if (response.status === 204 || contentLength === '0') {
+    return undefined as T;
+  }
+
+  return response.json();
+}
+```
+
+**Impact:** Reduces code duplication and maintenance burden.
+
+##### 3. Magic Number for Username Max Length
+**Location:**
+- `frontend/src/components/CampaignInvitePanel.tsx:184`
+- `backend/src/types/campaign.types.ts:90`
+
+**Issue:** Hardcoded `maxLength={20}` could become out of sync with backend validation.
+
+**Fix:**
+1. Added shared constant in `shared/types/campaign.ts`:
+```typescript
+export const USERNAME_MAX_LENGTH = 20;
+```
+2. Exported from backend types: `export { USERNAME_MAX_LENGTH } from '../../../shared/types/campaign'`
+3. Used in backend DTO: `@MaxLength(USERNAME_MAX_LENGTH)`
+4. Imported and used in frontend: `maxLength={USERNAME_MAX_LENGTH}`
+
+**Impact:** Ensures frontend and backend validation remain synchronized.
+
+##### 4. State Update Race Conditions in CampaignInvitePanel
+**Location:** `frontend/src/components/CampaignInvitePanel.tsx:89,104,117,132`
+
+**Issue:** After operations like `handleInviteUser`, the code called `loadData()` without the `isMountedRef` parameter, potentially causing state updates on unmounted components.
+
+**Fix:**
+1. Added persistent `isMountedRef` using `useRef(true)`
+2. Updated all `loadData()` calls to pass `isMountedRef`:
+```typescript
+const isMountedRef = useRef(true);
+
+useEffect(() => {
+  isMountedRef.current = true;
+  loadData(isMountedRef);
+  return () => { isMountedRef.current = false; };
+}, [loadData]);
+
+// In handlers:
+await loadData(isMountedRef);
+```
+
+**Impact:** Prevents potential memory leaks during rapid user interactions and component unmounting.
 
 ## Testing Considerations
 

@@ -7,8 +7,9 @@
  * - Create and manage shareable invite tokens
  */
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { campaignService, type CampaignInvitation, type CampaignInviteToken } from '../services/campaign.service';
+import { USERNAME_MAX_LENGTH } from '../../../shared/types/campaign';
 import { extractErrorMessage } from '../utils/error';
 import styles from './CampaignInvitePanel.module.css';
 
@@ -32,6 +33,7 @@ export function CampaignInvitePanel({
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [revokingInvitationId, setRevokingInvitationId] = useState<string | null>(null);
   const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   // Load invitations and tokens
   const loadData = useCallback(async (isMountedRef?: { current: boolean }) => {
@@ -66,7 +68,7 @@ export function CampaignInvitePanel({
   }, [campaignId, onError]);
 
   useEffect(() => {
-    const isMountedRef = { current: true };
+    isMountedRef.current = true;
 
     loadData(isMountedRef);
 
@@ -84,7 +86,7 @@ export function CampaignInvitePanel({
       await campaignService.inviteUser(campaignId, username.trim());
       onSuccess?.(`Invitation sent to ${username}`);
       setUsername('');
-      await loadData();
+      await loadData(isMountedRef);
     } catch (error) {
       onError?.(extractErrorMessage(error, 'Failed to send invitation'));
     } finally {
@@ -99,7 +101,7 @@ export function CampaignInvitePanel({
     try {
       await campaignService.revokeInvitation(campaignId, invitationId);
       onSuccess?.('Invitation revoked');
-      await loadData();
+      await loadData(isMountedRef);
     } catch (error) {
       onError?.(extractErrorMessage(error, 'Failed to revoke invitation'));
     } finally {
@@ -112,7 +114,7 @@ export function CampaignInvitePanel({
     try {
       await campaignService.createInviteToken(campaignId, maxUses);
       onSuccess?.('Invite link created');
-      await loadData();
+      await loadData(isMountedRef);
     } catch (error) {
       onError?.(extractErrorMessage(error, 'Failed to create invite link'));
     } finally {
@@ -127,7 +129,7 @@ export function CampaignInvitePanel({
     try {
       await campaignService.revokeInviteToken(campaignId, tokenId);
       onSuccess?.('Invite link revoked');
-      await loadData();
+      await loadData(isMountedRef);
     } catch (error) {
       onError?.(extractErrorMessage(error, 'Failed to revoke invite link'));
     } finally {
@@ -180,7 +182,7 @@ export function CampaignInvitePanel({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
-              maxLength={20}
+              maxLength={USERNAME_MAX_LENGTH}
               disabled={isLoading}
               className={styles['username-input']}
             />
