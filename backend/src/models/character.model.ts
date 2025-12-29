@@ -575,6 +575,13 @@ export class Character {
         attack: 2,
         range: 1,
       },
+      TestIconClass: {
+        health: 20,
+        maxHealth: 20,
+        movement: 3,
+        attack: 3,
+        range: 3,
+      },
     };
 
     return { ...statsMap[characterClass] };

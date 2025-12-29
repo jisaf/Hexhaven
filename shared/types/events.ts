@@ -256,7 +256,7 @@ export interface TurnOrderDeterminedPayload {
 
 export interface TurnStartedPayload {
   entityId: string;
-  entityType: 'character' | 'monster';
+  entityType: 'character' | 'monster' | 'summon';
   turnIndex: number;
 }
 
@@ -356,6 +356,87 @@ export interface LootSpawnedPayload {
   id: string;
   coordinates: AxialCoordinates;
   value: number;
+}
+
+// ========== SUMMON EVENTS (Issue #228) ==========
+
+/**
+ * Client -> Server: Player requests to place a summon on a specific hex
+ */
+export interface RequestSummonPlacementPayload {
+  characterId: string;
+  cardId: string;
+  selectedHex: AxialCoordinates;
+}
+
+/**
+ * Client -> Server: Player gives orders to a player-controlled summon
+ */
+export interface SummonOrderPayload {
+  summonId: string;
+  action: 'move' | 'attack';
+  targetHex?: AxialCoordinates; // For move
+  targetId?: string; // For attack (monster ID)
+}
+
+/**
+ * Server -> Client: A summon has been created
+ */
+export interface SummonCreatedPayload {
+  summonId: string;
+  summonName: string;
+  ownerCharacterId?: string; // undefined for scenario allies
+  placementHex: AxialCoordinates;
+  health: number;
+  maxHealth: number;
+  attack: number;
+  move: number;
+  range: number;
+  typeIcon?: string;
+  playerControlled?: boolean;
+  initiative: number;
+}
+
+/**
+ * Server -> Client: A summon has moved
+ */
+export interface SummonMovedPayload {
+  summonId: string;
+  fromHex: AxialCoordinates;
+  toHex: AxialCoordinates;
+  path: AxialCoordinates[];
+}
+
+/**
+ * Server -> Client: A summon has attacked
+ */
+export interface SummonAttackedPayload {
+  summonId: string;
+  targetId: string;
+  targetType: 'monster';
+  damage: number;
+  targetNewHealth: number;
+  targetDied: boolean;
+}
+
+/**
+ * Server -> Client: A summon has died
+ */
+export interface SummonDiedPayload {
+  summonId: string;
+  summonName: string;
+  reason: 'damage' | 'owner_exhausted' | 'owner_died' | 'scenario_end';
+  hex: AxialCoordinates;
+}
+
+/**
+ * Server -> Client: A player-controlled summon is awaiting orders
+ */
+export interface SummonAwaitingOrdersPayload {
+  summonId: string;
+  summonName: string;
+  validMoveHexes: AxialCoordinates[];
+  validTargets: Array<{ id: string; name: string; hex: AxialCoordinates }>;
 }
 
 export interface PlayerDisconnectedPayload {
@@ -636,6 +717,9 @@ export interface ClientEvents {
   unequip_item: UnequipItemPayload;
   // Narrative system events
   acknowledge_narrative: AcknowledgeNarrativePayload;
+  // Summon events (Issue #228)
+  request_summon_placement: RequestSummonPlacementPayload;
+  summon_order: SummonOrderPayload;
 }
 
 export interface RoundStartedPayload {
@@ -646,8 +730,9 @@ export interface RoundStartedPayload {
 export interface TurnEntity {
   entityId: string;
   name: string;
-  entityType: 'character' | 'monster';
+  entityType: 'character' | 'monster' | 'summon';
   initiative: number;
+  ownerId?: string; // For summons, links to summoner character
 }
 
 export interface ServerEvents {
@@ -696,4 +781,10 @@ export interface ServerEvents {
   narrative_monster_spawned: NarrativeMonsterSpawnedPayload;
   narrative_door_unlocked: NarrativeDoorUnlockedPayload;
   narrative_hexes_revealed: NarrativeHexesRevealedPayload;
+  // Summon events (Issue #228)
+  summon_created: SummonCreatedPayload;
+  summon_moved: SummonMovedPayload;
+  summon_attacked: SummonAttackedPayload;
+  summon_died: SummonDiedPayload;
+  summon_awaiting_orders: SummonAwaitingOrdersPayload;
 }

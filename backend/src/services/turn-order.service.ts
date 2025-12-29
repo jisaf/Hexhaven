@@ -13,12 +13,13 @@ import { CharacterClass } from '../../../shared/types/entities';
 
 export interface TurnEntity {
   entityId: string;
-  entityType: 'character' | 'monster';
+  entityType: 'character' | 'monster' | 'summon';
   initiative: number;
   name: string;
   characterClass?: CharacterClass;
   isDead?: boolean;
   isExhausted?: boolean;
+  ownerId?: string; // For summons: links to owner character for turn order
 }
 
 @Injectable()
@@ -57,16 +58,90 @@ export class TurnOrderService {
   /**
    * Determine turn order from entities with initiatives
    * Sorts by initiative (lowest first), breaks ties with character class order
+   *
+   * Special handling for summons:
+   * - Summons use their own initiative value (typically copies owner's initiative)
+   * - Summons act BEFORE their owner when at the same initiative
    */
   determineTurnOrder(entities: TurnEntity[]): TurnEntity[] {
     if (entities.length === 0) {
       return [];
     }
 
+    // Build a map of character initiative for ordering summons with their owners
+    const characterInitiatives = new Map<string, number>();
+    const characterClasses = new Map<string, CharacterClass>();
+    for (const entity of entities) {
+      if (entity.entityType === 'character') {
+        characterInitiatives.set(entity.entityId, entity.initiative);
+        if (entity.characterClass) {
+          characterClasses.set(entity.entityId, entity.characterClass);
+        }
+      }
+    }
+
     return [...entities].sort((a, b) => {
       // Primary sort: initiative (lower goes first)
       if (a.initiative !== b.initiative) {
         return a.initiative - b.initiative;
+      }
+
+      // Same initiative - apply tie-breakers
+
+      // Summon-before-owner tiebreaker: summon goes before its owner
+      if (a.entityType === 'summon' && a.ownerId === b.entityId) {
+        return -1; // Summon goes before its owner
+      }
+      if (b.entityType === 'summon' && b.ownerId === a.entityId) {
+        return 1; // Owner goes after its summon
+      }
+
+      // For summons of different owners at same initiative, group by owner's class order
+      if (
+        a.entityType === 'summon' &&
+        b.entityType === 'summon' &&
+        a.ownerId &&
+        b.ownerId
+      ) {
+        const aOwnerClass = characterClasses.get(a.ownerId);
+        const bOwnerClass = characterClasses.get(b.ownerId);
+        if (aOwnerClass && bOwnerClass) {
+          return this.compareCharacterClasses(aOwnerClass, bOwnerClass);
+        }
+      }
+
+      // Summon vs character (not owner): summon follows its owner's position
+      if (
+        a.entityType === 'summon' &&
+        a.ownerId &&
+        b.entityType === 'character'
+      ) {
+        const aOwnerClass = characterClasses.get(a.ownerId);
+        if (aOwnerClass && b.characterClass) {
+          const classComparison = this.compareCharacterClasses(
+            aOwnerClass,
+            b.characterClass,
+          );
+          if (classComparison !== 0) return classComparison;
+        }
+        // If owner's class equals b's class, summon goes before (it should be with its owner who follows)
+        return -1;
+      }
+      if (
+        b.entityType === 'summon' &&
+        b.ownerId &&
+        a.entityType === 'character'
+      ) {
+        const bOwnerClass = characterClasses.get(b.ownerId);
+        if (bOwnerClass && a.characterClass) {
+          const classComparison = this.compareCharacterClasses(
+            a.characterClass,
+            bOwnerClass,
+          );
+          if (classComparison !== 0) return classComparison;
+        }
+        // If a's class equals summon's owner class, owner goes after summon
+        return 1;
       }
 
       // Tie-breaker: for characters, use character class order

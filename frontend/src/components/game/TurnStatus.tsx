@@ -25,7 +25,7 @@ interface TurnOrderEntity {
   id: string;
   name: string;
   initiative: number;
-  type: 'character' | 'monster';
+  type: 'character' | 'monster' | 'summon';
   currentHealth?: number;
   maxHealth?: number;
   isExhausted?: boolean;

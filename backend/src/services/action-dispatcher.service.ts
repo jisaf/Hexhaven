@@ -297,22 +297,42 @@ export class ActionDispatcherService {
 
   /**
    * Apply a loot action
+   * Validates the character can loot and returns info for the gateway to execute collection.
+   * The gateway handles actual loot token lookup and collection based on the range.
    */
   private applyLootAction(
     action: CardAction & { type: 'loot' },
-    _source: Character,
-    _gameId?: string,
+    source: Character,
+    gameId?: string,
   ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
       failedModifiers: [],
+      affectedEntities: [],
     };
 
-    // Loot action collects tokens in range (used when implemented)
-    const _lootRange = action.value || 1;
+    // Validate character is not stunned (stun prevents all actions)
+    if (source.isStunned) {
+      result.success = false;
+      return result;
+    }
 
-    // TODO: Implement loot collection logic (Issue #227)
+    // Loot range from action value (default 1 = adjacent hexes)
+    // Range 0 would mean same hex only, range 1 means adjacent, range 2 means 2 hexes away
+    const _lootRange = action.value ?? 1;
+
+    // Apply any modifiers on the loot action (XP, lost, etc.)
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
+
+    result.appliedModifiers = modifierResult.appliedModifiers;
+    result.failedModifiers = modifierResult.failedModifiers;
+    result.affectedEntities = [source.id];
 
     return result;
   }
@@ -348,19 +368,47 @@ export class ActionDispatcherService {
 
   /**
    * Apply a summon action
+   * Validates the character can summon and returns info for the gateway to create the summon.
+   * The gateway handles actual summon creation, placement selection, and turn order integration.
    */
   private applySummonAction(
-    _action: CardAction & { type: 'summon' },
-    _source: Character,
-    _gameId?: string,
+    action: CardAction & { type: 'summon' },
+    source: Character,
+    gameId?: string,
   ): EffectApplicationResult {
     const result: EffectApplicationResult = {
       success: true,
       appliedModifiers: [],
       failedModifiers: [],
+      affectedEntities: [],
     };
 
-    // TODO: Implement summon creation logic (Issue #228)
+    // Validate character is not stunned (stun prevents all actions)
+    if (source.isStunned) {
+      result.success = false;
+      return result;
+    }
+
+    // Summon action does not require movement (can summon while immobilized)
+    // Summon action is not an attack (can summon while disarmed)
+
+    // Apply any modifiers on the summon action (lost, xp, infuse, etc.)
+    const modifierResult = this.applyModifiers(
+      action.modifiers || [],
+      source,
+      undefined,
+      gameId,
+    );
+
+    result.appliedModifiers = modifierResult.appliedModifiers;
+    result.failedModifiers = modifierResult.failedModifiers;
+    result.affectedEntities = [source.id];
+
+    // The gateway will:
+    // 1. Prompt player for placement hex selection
+    // 2. Create the Summon entity using action.summon definition
+    // 3. Add summon to turn order (before owner, same initiative)
+    // 4. Emit summon_created event
 
     return result;
   }

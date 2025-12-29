@@ -152,6 +152,8 @@ export interface SummonDefinition {
   range: number;
   typeIcon?: string;
   modifiers?: Modifier[];
+  playerControlled?: boolean; // If true, player controls instead of AI
+  initiative?: number; // For scenario allies; player summons copy owner's initiative
 }
 
 // ========== CARD ACTION TYPES ==========

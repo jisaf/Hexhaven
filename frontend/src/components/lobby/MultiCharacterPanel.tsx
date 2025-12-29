@@ -12,7 +12,8 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CharacterSelect, type CharacterClass } from '../CharacterSelect';
+import { CharacterSelect } from '../CharacterSelect';
+import { CharacterClass } from '../../../../shared/types/entities';
 import { UserCharacterSelect } from '../UserCharacterSelect';
 import { EquipmentSummary } from '../character/EquipmentSummary';
 import { useBatchInventory } from '../../hooks/useBatchInventory';

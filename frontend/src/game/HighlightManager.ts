@@ -5,84 +5,106 @@
  * Manages different types of highlights:
  * - Movement range (green)
  * - Attack range (red)
+ * - Summon placement (purple)
  * - Selected destination (blue)
  */
 
 import { type Axial, axialKey } from './hex-utils';
 import type { HexTile } from './HexTile';
 
+/**
+ * Standard highlight colors used throughout the game.
+ */
+export const HIGHLIGHT_COLORS = {
+  MOVEMENT: 0x00ff00,  // Green
+  ATTACK: 0xff0000,    // Red
+  SELECTED: 0x0099ff,  // Blue
+  SUMMON: 0x9900ff,    // Purple
+} as const;
+
 export class HighlightManager {
   private tiles: Map<string, HexTile>;
   private highlightedMovementHexes: Set<string>;
   private highlightedAttackHexes: Set<string>;
+  private highlightedSummonHexes: Set<string>;
   private selectedHexKey: string | null = null;
 
   constructor(tiles: Map<string, HexTile>) {
     this.tiles = tiles;
     this.highlightedMovementHexes = new Set();
     this.highlightedAttackHexes = new Set();
+    this.highlightedSummonHexes = new Set();
   }
 
   /**
-   * Highlight valid movement hexes by tinting them.
+   * Generic method to highlight a range of hexes with a specified color.
+   * Clears any existing highlights in the tracking set before applying new ones.
    */
-  public showMovementRange(hexes: Axial[]): void {
-    this.clearMovementRange();
-
-    const color = 0x00ff00; // Green
-
+  private showHighlightedRange(hexes: Axial[], color: number, trackingSet: Set<string>): void {
+    this.clearHighlightedRange(trackingSet);
     for (const hex of hexes) {
       const key = axialKey(hex);
       const tile = this.tiles.get(key);
       if (tile) {
         tile.setHighlight(color);
-        this.highlightedMovementHexes.add(key);
+        trackingSet.add(key);
       }
     }
+  }
+
+  /**
+   * Generic method to clear highlights tracked by a specific set.
+   */
+  private clearHighlightedRange(trackingSet: Set<string>): void {
+    for (const key of trackingSet) {
+      const tile = this.tiles.get(key);
+      if (tile) {
+        tile.setHighlight(null);
+      }
+    }
+    trackingSet.clear();
+  }
+
+  /**
+   * Highlight valid movement hexes by tinting them green.
+   */
+  public showMovementRange(hexes: Axial[]): void {
+    this.showHighlightedRange(hexes, HIGHLIGHT_COLORS.MOVEMENT, this.highlightedMovementHexes);
   }
 
   /**
    * Clear all movement range highlights.
    */
   public clearMovementRange(): void {
-    for (const key of this.highlightedMovementHexes) {
-      const tile = this.tiles.get(key);
-      if (tile) {
-        tile.setHighlight(null);
-      }
-    }
-    this.highlightedMovementHexes.clear();
+    this.clearHighlightedRange(this.highlightedMovementHexes);
   }
 
   /**
    * Highlight valid attack hexes by tinting them red.
    */
   public showAttackRange(hexes: Axial[]): void {
-    this.clearAttackRange();
-
-    const color = 0xff0000; // Red
-
-    for (const hex of hexes) {
-      const key = axialKey(hex);
-      const tile = this.tiles.get(key);
-      if (tile) {
-        tile.setHighlight(color);
-        this.highlightedAttackHexes.add(key);
-      }
-    }
+    this.showHighlightedRange(hexes, HIGHLIGHT_COLORS.ATTACK, this.highlightedAttackHexes);
   }
 
   /**
    * Clear all attack range highlights.
    */
   public clearAttackRange(): void {
-    for (const key of this.highlightedAttackHexes) {
-      const tile = this.tiles.get(key);
-      if (tile) {
-        tile.setHighlight(null);
-      }
-    }
-    this.highlightedAttackHexes.clear();
+    this.clearHighlightedRange(this.highlightedAttackHexes);
+  }
+
+  /**
+   * Highlight valid summon placement hexes by tinting them purple.
+   */
+  public showSummonPlacementRange(hexes: Axial[]): void {
+    this.showHighlightedRange(hexes, HIGHLIGHT_COLORS.SUMMON, this.highlightedSummonHexes);
+  }
+
+  /**
+   * Clear all summon placement highlights.
+   */
+  public clearSummonPlacementRange(): void {
+    this.clearHighlightedRange(this.highlightedSummonHexes);
   }
 
   public setSelectedHex(hex: Axial | null): void {
@@ -93,7 +115,7 @@ export class HighlightManager {
         if (oldTile && !this.highlightedMovementHexes.has(this.selectedHexKey)) {
             oldTile.setHighlight(null);
         } else if (oldTile) {
-            oldTile.setHighlight(0x00ff00); // Back to green
+            oldTile.setHighlight(HIGHLIGHT_COLORS.MOVEMENT);
         }
     }
 
@@ -102,7 +124,7 @@ export class HighlightManager {
     if (this.selectedHexKey) {
         const newTile = this.tiles.get(this.selectedHexKey);
         if (newTile) {
-            newTile.setHighlight(0x0099ff); // Blue
+            newTile.setHighlight(HIGHLIGHT_COLORS.SELECTED);
         }
     }
   }
@@ -113,6 +135,7 @@ export class HighlightManager {
   public clearAll(): void {
     this.clearMovementRange();
     this.clearAttackRange();
+    this.clearSummonPlacementRange();
     this.setSelectedHex(null);
   }
 
