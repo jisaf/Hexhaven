@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
@@ -54,6 +55,7 @@ import { ShopController } from './api/shop.controller';
         limit: 10, // 10 requests per 60 seconds (default for all endpoints)
       },
     ]),
+    ScheduleModule.forRoot(),
   ],
   controllers: [
     HealthController,

@@ -61,8 +61,44 @@ export function CampaignInvitePanel({
   }, [campaignId, onError]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let isMounted = true;
+
+    const fetchData = async () => {
+      setIsLoadingData(true);
+      try {
+        const results = await Promise.allSettled([
+          campaignService.getCampaignInvitations(campaignId),
+          campaignService.getInviteTokens(campaignId),
+        ]);
+
+        if (!isMounted) return;
+
+        // Handle invitations result
+        if (results[0].status === 'fulfilled') {
+          setInvitations(results[0].value);
+        } else {
+          onError?.(extractErrorMessage(results[0].reason, 'Failed to load invitations'));
+        }
+
+        // Handle tokens result
+        if (results[1].status === 'fulfilled') {
+          setTokens(results[1].value);
+        } else {
+          onError?.(extractErrorMessage(results[1].reason, 'Failed to load invite tokens'));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [campaignId, onError]);
 
   const handleInviteUser = async (e: FormEvent) => {
     e.preventDefault();

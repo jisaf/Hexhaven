@@ -8,7 +8,9 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
@@ -44,6 +46,8 @@ type CampaignWithCharacters = Prisma.CampaignGetPayload<{
 
 @Injectable()
 export class CampaignInvitationService {
+  private readonly logger = new Logger(CampaignInvitationService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -513,7 +517,9 @@ export class CampaignInvitationService {
       throw new NotFoundException('Campaign not found');
     }
 
-    const completedScenarios = campaign.completedScenarios as string[];
+    const completedScenarios = Array.isArray(campaign.completedScenarios)
+      ? (campaign.completedScenarios as string[])
+      : [];
     const totalScenarios = campaign.template?.scenarios.length || 0;
 
     return {
@@ -532,33 +538,34 @@ export class CampaignInvitationService {
 
   /**
    * Cleanup expired invitations and tokens
-   * This should be called periodically (e.g., via a cron job)
-   * Returns the number of records deleted
+   * Scheduled to run daily at midnight
    */
-  async cleanupExpiredRecords(): Promise<{
-    deletedInvitations: number;
-    deletedTokens: number;
-  }> {
-    const now = new Date();
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cleanupExpiredRecords(): Promise<void> {
+    try {
+      const now = new Date();
 
-    // Delete expired invitations
-    const deletedInvitations = await this.prisma.campaignInvitation.deleteMany({
-      where: {
-        expiresAt: { lt: now },
-      },
-    });
+      // Delete expired invitations
+      const deletedInvitations =
+        await this.prisma.campaignInvitation.deleteMany({
+          where: {
+            expiresAt: { lt: now },
+          },
+        });
 
-    // Delete expired tokens
-    const deletedTokens = await this.prisma.campaignInviteToken.deleteMany({
-      where: {
-        expiresAt: { lt: now },
-      },
-    });
+      // Delete expired tokens
+      const deletedTokens = await this.prisma.campaignInviteToken.deleteMany({
+        where: {
+          expiresAt: { lt: now },
+        },
+      });
 
-    return {
-      deletedInvitations: deletedInvitations.count,
-      deletedTokens: deletedTokens.count,
-    };
+      this.logger.log(
+        `Cleaned up ${deletedInvitations.count} expired invitations and ${deletedTokens.count} expired tokens`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to cleanup expired records', error);
+    }
   }
 
   /**
@@ -575,7 +582,11 @@ export class CampaignInvitationService {
    * Helper: Generate cryptographically secure random token
    */
   private generateToken(): string {
-    return randomBytes(24).toString('base64url').slice(0, 32);
+    const token = randomBytes(24).toString('base64url').slice(0, 32);
+    if (token.length !== 32) {
+      throw new Error('Token generation failed: unexpected length');
+    }
+    return token;
   }
 
   /**

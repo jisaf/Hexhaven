@@ -25,6 +25,7 @@ import { CampaignInvitationService } from '../services/campaign-invitation.servi
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Public } from '../decorators/public.decorator';
 import { JwtPayload } from '../types/auth.types';
+import { RATE_LIMITS } from '../constants/rate-limits';
 import {
   CreateCampaignDto,
   JoinCampaignDto,
@@ -172,15 +173,7 @@ export class CampaignsController {
       userId,
     );
 
-    // Join campaign with character if provided
-    if (dto.characterId) {
-      return this.campaignService.joinCampaign(userId, campaignId, {
-        characterId: dto.characterId,
-      });
-    }
-
-    // Return campaign details without joining yet
-    return this.campaignService.getCampaignWithDetails(campaignId);
+    return this.completeJoin(userId, campaignId, dto.characterId);
   }
 
   /**
@@ -202,14 +195,23 @@ export class CampaignsController {
       userId,
     );
 
-    // Join campaign with character if provided
-    if (dto.characterId) {
+    return this.completeJoin(userId, campaignId, dto.characterId);
+  }
+
+  /**
+   * Helper: Complete join flow by either joining with a character or returning campaign details
+   */
+  private async completeJoin(
+    userId: string,
+    campaignId: string,
+    characterId?: string,
+  ): Promise<CampaignWithDetails> {
+    if (characterId) {
       return this.campaignService.joinCampaign(userId, campaignId, {
-        characterId: dto.characterId,
+        characterId,
       });
     }
 
-    // Return campaign details without joining yet
     return this.campaignService.getCampaignWithDetails(campaignId);
   }
 
@@ -339,7 +341,7 @@ export class CampaignsController {
    * POST /api/campaigns/:campaignId/invitations
    */
   @Post(':campaignId/invitations')
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute
+  @Throttle({ default: RATE_LIMITS.INVITATION_CREATE })
   @HttpCode(HttpStatus.CREATED)
   async inviteUser(
     @Req() req: AuthenticatedRequest,
@@ -391,7 +393,7 @@ export class CampaignsController {
    * POST /api/campaigns/:campaignId/invite-tokens
    */
   @Post(':campaignId/invite-tokens')
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tokens per minute
+  @Throttle({ default: RATE_LIMITS.INVITE_TOKEN_CREATE })
   @HttpCode(HttpStatus.CREATED)
   async createInviteToken(
     @Req() req: AuthenticatedRequest,
@@ -444,23 +446,5 @@ export class CampaignsController {
     @Param('campaignId', ParseUUIDPipe) campaignId: string,
   ): Promise<CampaignPublicInfo> {
     return this.invitationService.getCampaignPublicInfo(campaignId);
-  }
-
-  /**
-   * Cleanup expired invitations and tokens
-   * POST /api/campaigns/cleanup-expired
-   *
-   * Note: This endpoint should ideally be:
-   * 1. Protected by admin role (when role system is implemented)
-   * 2. Or scheduled via a cron job/task scheduler
-   * 3. Or called manually by system administrators
-   */
-  @Post('cleanup-expired')
-  @HttpCode(HttpStatus.OK)
-  async cleanupExpiredRecords(): Promise<{
-    deletedInvitations: number;
-    deletedTokens: number;
-  }> {
-    return this.invitationService.cleanupExpiredRecords();
   }
 }

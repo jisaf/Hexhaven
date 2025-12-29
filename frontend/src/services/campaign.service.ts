@@ -58,8 +58,14 @@ class CampaignService {
    */
   private async handleResponse<T>(response: Response, fallbackError: string): Promise<T> {
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || fallbackError);
+      let message = fallbackError;
+      try {
+        const errorData = await response.json();
+        message = errorData.message || fallbackError;
+      } catch {
+        // Response was not JSON (e.g., proxy error, HTML error page)
+      }
+      throw new Error(message);
     }
     return response.json();
   }
@@ -69,8 +75,14 @@ class CampaignService {
    */
   private async handleVoidResponse(response: Response, fallbackError: string): Promise<void> {
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || fallbackError);
+      let message = fallbackError;
+      try {
+        const errorData = await response.json();
+        message = errorData.message || fallbackError;
+      } catch {
+        // Response was not JSON (e.g., proxy error, HTML error page)
+      }
+      throw new Error(message);
     }
   }
 

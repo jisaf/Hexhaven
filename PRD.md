@@ -577,8 +577,12 @@ gloomhaven-hex-game/
   - Host controls: create, revoke invitations and tokens
   - Atomic token consumption with transaction-based auto-revoke (race-condition safe)
   - Rate limiting on invitation endpoints (5 invitations/tokens per minute)
-  - Proper dependency injection for authentication services
-  - Error handling with consistent response patterns
+  - Automated cleanup via scheduled cron job (daily at midnight)
+  - Centralized rate limit constants for maintainability
+  - DRY-compliant join flow with shared completion logic
+  - Safe type validation for JSON database columns
+  - Robust error handling for non-JSON responses
+  - React component cleanup to prevent memory leaks
 
 #### Advanced Features
 - Advanced monster AI (flying, jumping, disadvantage)
