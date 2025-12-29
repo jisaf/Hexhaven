@@ -29,6 +29,33 @@ interface FocusTarget {
   initiative: number;
 }
 
+/**
+ * Minimal interface for entities that can move (Monster or adapted Summon).
+ * Used by determineMovement to avoid requiring full Monster interface.
+ */
+export interface MovableEntity {
+  currentHex: AxialCoordinates;
+  conditions: Condition[];
+  range: number;
+  specialAbilities: string[];
+}
+
+/**
+ * Minimal interface for movement targets (Character or adapted Monster).
+ * Used by determineMovement to avoid requiring full Character interface.
+ */
+export interface MovementTarget {
+  currentHex: AxialCoordinates | null;
+}
+
+/**
+ * Minimal interface for attack targets.
+ * Used by shouldAttack to avoid requiring full Character interface.
+ */
+export interface AttackTarget {
+  currentHex: AxialCoordinates | null;
+}
+
 @Injectable()
 export class MonsterAIService {
   /**
@@ -144,11 +171,13 @@ export class MonsterAIService {
   }
 
   /**
-   * Determine optimal movement for monster toward focus target
+   * Determine optimal movement for monster toward focus target.
+   * Accepts MovableEntity and MovementTarget interfaces to allow both
+   * Monster/Character and Summon/Monster adapted pairs.
    */
   determineMovement(
-    monster: Monster,
-    focusTarget: Character,
+    monster: MovableEntity,
+    focusTarget: MovementTarget,
     obstacles: AxialCoordinates[],
     occupiedHexes: AxialCoordinates[],
     hexMap: Map<string, unknown>,
@@ -163,7 +192,7 @@ export class MonsterAIService {
     );
 
     // If already in attack range, don't move
-    if (this.isInRange(monster, focusTarget.currentHex)) {
+    if (this.isInRangeForMovable(monster, focusTarget.currentHex)) {
       return null;
     }
 
@@ -213,9 +242,11 @@ export class MonsterAIService {
   }
 
   /**
-   * Check if monster should attack
+   * Check if monster should attack.
+   * Accepts MovableEntity and AttackTarget interfaces to allow both
+   * Monster/Character and Summon/Monster pairs.
    */
-  shouldAttack(monster: Monster, focusTarget: Character): boolean {
+  shouldAttack(monster: MovableEntity, focusTarget: AttackTarget): boolean {
     // Can't attack if disarmed or stunned
     if (
       monster.conditions.includes(Condition.DISARM) ||
@@ -229,11 +260,30 @@ export class MonsterAIService {
       return false;
     }
 
-    return this.isInRange(monster, focusTarget.currentHex);
+    return this.isInRangeForMovable(monster, focusTarget.currentHex);
+  }
+
+  /**
+   * Check if target is in movable entity's attack range (works with MovableEntity interface)
+   */
+  private isInRangeForMovable(
+    entity: MovableEntity,
+    targetHex: AxialCoordinates,
+  ): boolean {
+    const distance = this.calculateHexDistance(entity.currentHex, targetHex);
+
+    // Melee attack (range 0) requires adjacency
+    if (entity.range === 0) {
+      return distance === 1;
+    }
+
+    // Ranged attack
+    return distance <= entity.range;
   }
 
   /**
    * Check if target is in monster's attack range
+   * @deprecated Use isInRangeForMovable for generic interface support
    */
   private isInRange(monster: Monster, targetHex: AxialCoordinates): boolean {
     const distance = this.calculateHexDistance(monster.currentHex, targetHex);

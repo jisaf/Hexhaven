@@ -32,6 +32,9 @@ export class SummonService {
    * @param ownerId - Character ID of summoner (undefined for scenario allies)
    * @param initiative - Initiative value (copies owner's or uses definition's)
    * @returns Newly created Summon entity
+   * @throws Error if definition is missing required properties
+   * @throws Error if position is invalid
+   * @throws Error if roomId is empty
    */
   createSummon(
     definition: SummonDefinition,
@@ -40,6 +43,44 @@ export class SummonService {
     ownerId?: string,
     initiative?: number,
   ): Summon {
+    // Validate definition
+    if (!definition) {
+      throw new Error('Summon definition is required');
+    }
+    if (!definition.name || definition.name.trim() === '') {
+      throw new Error('Summon definition must have a name');
+    }
+    if (typeof definition.health !== 'number' || definition.health <= 0) {
+      throw new Error('Summon definition must have positive health');
+    }
+    if (typeof definition.attack !== 'number' || definition.attack < 0) {
+      throw new Error('Summon definition must have non-negative attack');
+    }
+    if (typeof definition.move !== 'number' || definition.move < 0) {
+      throw new Error('Summon definition must have non-negative move');
+    }
+    if (typeof definition.range !== 'number' || definition.range < 0) {
+      throw new Error('Summon definition must have non-negative range');
+    }
+
+    // Validate position
+    if (!position) {
+      throw new Error('Summon position is required');
+    }
+    if (typeof position.q !== 'number' || typeof position.r !== 'number') {
+      throw new Error('Summon position must have valid q and r coordinates');
+    }
+
+    // Validate roomId
+    if (!roomId || roomId.trim() === '') {
+      throw new Error('Room ID is required for summon creation');
+    }
+
+    // Validate initiative if provided
+    if (initiative !== undefined && typeof initiative !== 'number') {
+      throw new Error('Initiative must be a number if provided');
+    }
+
     return Summon.create(roomId, definition, position, ownerId, initiative);
   }
 
@@ -58,6 +99,7 @@ export class SummonService {
    * @param occupiedHexes - Hexes occupied by other entities
    * @param maxRange - Maximum placement range from owner
    * @returns true if placement is valid, false otherwise
+   * @throws Error if required parameters are missing or invalid
    */
   validatePlacement(
     hex: AxialCoordinates,
@@ -66,6 +108,27 @@ export class SummonService {
     occupiedHexes: AxialCoordinates[],
     maxRange: number,
   ): boolean {
+    // Input validation
+    if (!hex || typeof hex.q !== 'number' || typeof hex.r !== 'number') {
+      throw new Error('Target hex must have valid q and r coordinates');
+    }
+    if (
+      !ownerHex ||
+      typeof ownerHex.q !== 'number' ||
+      typeof ownerHex.r !== 'number'
+    ) {
+      throw new Error('Owner hex must have valid q and r coordinates');
+    }
+    if (!hexMap) {
+      throw new Error('Hex map is required for placement validation');
+    }
+    if (!Array.isArray(occupiedHexes)) {
+      throw new Error('Occupied hexes must be an array');
+    }
+    if (typeof maxRange !== 'number' || maxRange < 0) {
+      throw new Error('Max range must be a non-negative number');
+    }
+
     // Check 1: Distance from owner must be within range
     const distance = this.monsterAIService.calculateHexDistance(ownerHex, hex);
     if (distance > maxRange) {
@@ -151,12 +214,31 @@ export class SummonService {
    * @param reason - Why the summons are being killed
    * @param summons - Array of all summons to search through
    * @returns Array of summons that were killed
+   * @throws Error if ownerId is empty
+   * @throws Error if reason is invalid
+   * @throws Error if summons is not an array
    */
   killSummonsByOwner(
     ownerId: string,
     reason: 'owner_exhausted' | 'owner_died' | 'scenario_end',
     summons: Summon[],
   ): Summon[] {
+    // Input validation
+    if (!ownerId || ownerId.trim() === '') {
+      throw new Error('Owner ID is required to kill summons');
+    }
+
+    const validReasons = ['owner_exhausted', 'owner_died', 'scenario_end'];
+    if (!validReasons.includes(reason)) {
+      throw new Error(
+        `Invalid death reason: ${reason}. Must be one of: ${validReasons.join(', ')}`,
+      );
+    }
+
+    if (!Array.isArray(summons)) {
+      throw new Error('Summons must be an array');
+    }
+
     const killedSummons: Summon[] = [];
 
     for (const summon of summons) {

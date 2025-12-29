@@ -14,10 +14,8 @@
  */
 
 import { randomUUID } from 'crypto';
-import type {
-  AxialCoordinates,
-  Condition,
-} from '../../../shared/types/entities';
+import type { AxialCoordinates } from '../../../shared/types/entities';
+import { Condition } from '../../../shared/types/entities';
 import { SummonDefinition } from '../../../shared/types/modifiers';
 
 export type SummonDeathReason =
@@ -118,15 +116,15 @@ export class Summon {
   }
 
   get isStunned(): boolean {
-    return this._conditions.has('stun' as Condition);
+    return this._conditions.has(Condition.STUN);
   }
 
   get isImmobilized(): boolean {
-    return this._conditions.has('immobilize' as Condition);
+    return this._conditions.has(Condition.IMMOBILIZE);
   }
 
   get isDisarmed(): boolean {
-    return this._conditions.has('disarm' as Condition);
+    return this._conditions.has(Condition.DISARM);
   }
 
   get canAct(): boolean {

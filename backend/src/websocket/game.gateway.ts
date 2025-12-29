@@ -294,6 +294,49 @@ export class GameGateway
   }
 
   /**
+   * Collect all occupied hex positions for a room.
+   * Used by summon placement validation and summon AI movement.
+   *
+   * @param roomCode - The room to collect occupied hexes for
+   * @param excludeSummonId - Optional summon ID to exclude from the list (for self-movement)
+   * @returns Array of occupied hex coordinates
+   */
+  private collectOccupiedHexes(
+    roomCode: string,
+    excludeSummonId?: string,
+  ): AxialCoordinates[] {
+    const occupiedHexes: AxialCoordinates[] = [];
+
+    // Add character positions
+    const room = roomService.getRoom(roomCode);
+    if (room) {
+      room.players
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
+        .filter((c: any) => c && c.position)
+        .forEach((c: any) => occupiedHexes.push(c.position));
+    }
+
+    // Add monster positions
+    const monsters = this.roomMonsters.get(roomCode) || [];
+    monsters
+      .filter((m) => !m.isDead && m.currentHex)
+      .forEach((m) => occupiedHexes.push(m.currentHex));
+
+    // Add summon positions (optionally excluding a specific summon)
+    const summons = this.roomSummons.get(roomCode) || [];
+    summons
+      .filter(
+        (s) =>
+          !s.isDead &&
+          s.position &&
+          (excludeSummonId === undefined || s.id !== excludeSummonId),
+      )
+      .forEach((s) => occupiedHexes.push(s.position));
+
+    return occupiedHexes;
+  }
+
+  /**
    * Get the attack action from a character's selected cards
    * Returns the attack action (could be from top or bottom of either card)
    */
@@ -3146,26 +3189,8 @@ export class GameGateway
         throw new Error('Hex map not found');
       }
 
-      // Collect occupied hexes
-      const occupiedHexes: AxialCoordinates[] = [];
-
-      // Add character positions
-      room.players
-        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
-        .filter((c: any) => c && c.position)
-        .forEach((c: any) => occupiedHexes.push(c.position));
-
-      // Add monster positions
-      const monsters = this.roomMonsters.get(roomCode) || [];
-      monsters
-        .filter((m) => !m.isDead && m.currentHex)
-        .forEach((m) => occupiedHexes.push(m.currentHex));
-
-      // Add existing summon positions
-      const existingSummons = this.roomSummons.get(roomCode) || [];
-      existingSummons
-        .filter((s) => !s.isDead && s.position)
-        .forEach((s) => occupiedHexes.push(s.position));
+      // Collect occupied hexes using shared helper
+      const occupiedHexes = this.collectOccupiedHexes(roomCode);
 
       // Validate placement
       const placementRange = maxRange ?? 3; // Default range of 3 if not specified
@@ -4480,10 +4505,9 @@ export class GameGateway
       }
 
       // Use SummonAIService to select focus target (closest monster)
-      // Need to import Monster model from monster.model.ts
       const focusTargetId = this.summonAIService.selectFocusTarget(
         summon,
-        aliveMonsters as any,
+        aliveMonsters,
       );
 
       if (!focusTargetId) {
@@ -4518,35 +4542,14 @@ export class GameGateway
         }
       });
 
-      // Collect occupied hexes
-      const occupiedHexes: AxialCoordinates[] = [];
-
-      // Add character positions
-      const room = roomService.getRoom(roomCode);
-      if (room) {
-        room.players
-          .flatMap((p: any) =>
-            characterService.getCharactersByPlayerId(p.userId),
-          )
-          .filter((c: any) => c && c.position)
-          .forEach((c: any) => occupiedHexes.push(c.position));
-      }
-
-      // Add monster positions
-      aliveMonsters
-        .filter((m) => m.currentHex)
-        .forEach((m) => occupiedHexes.push(m.currentHex));
-
-      // Add other summon positions (exclude current summon)
-      summons
-        .filter((s) => s.id !== summonId && !s.isDead && s.position)
-        .forEach((s) => occupiedHexes.push(s.position));
+      // Collect occupied hexes using shared helper (exclude current summon for self-movement)
+      const occupiedHexes = this.collectOccupiedHexes(roomCode, summonId);
 
       // Movement
       const originalHex = { ...summon.position };
       const movementHex = this.summonAIService.determineMovement(
         summon,
-        focusTarget as any,
+        focusTarget,
         obstacles,
         occupiedHexes,
         hexMap,
@@ -4566,7 +4569,7 @@ export class GameGateway
       let damageDealt = 0;
       let targetDied = false;
 
-      if (this.summonAIService.shouldAttack(summon, focusTarget as any)) {
+      if (this.summonAIService.shouldAttack(summon, focusTarget)) {
         // Determine which modifier deck to use for summon attack
         let summonModifierDeck: AttackModifierCard[] | undefined;
 
@@ -4680,7 +4683,11 @@ export class GameGateway
           });
 
           // Spawn loot token at monster's position
-          const lootToken = LootToken.create(roomCode, focusTarget.currentHex, 1);
+          const lootToken = LootToken.create(
+            roomCode,
+            focusTarget.currentHex,
+            1,
+          );
           let lootTokens = this.roomLootTokens.get(roomCode);
           if (!lootTokens) {
             lootTokens = [];

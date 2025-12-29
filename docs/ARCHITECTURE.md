@@ -277,9 +277,9 @@ backend/src/
 │   └── game.gateway.ts  # Socket.io event handlers
 ├── services/            # Business logic
 │   ├── room.service.ts
-│   ├── monster-ai.service.ts
-│   ├── summon-ai.service.ts     # Issue #228: Summon targeting/movement (delegates to monster-ai)
-│   ├── summon.service.ts        # Issue #228: Summon lifecycle management
+│   ├── monster-ai.service.ts    # Monster AI with shared MovableEntity/MovementTarget interfaces
+│   ├── summon-ai.service.ts     # Issue #228: Summon AI using shared interfaces from monster-ai
+│   ├── summon.service.ts        # Issue #228: Summon lifecycle with input validation
 │   ├── turn-order.service.ts
 │   ├── damage-calculation.service.ts
 │   ├── modifier-deck.service.ts # Per-character modifier decks

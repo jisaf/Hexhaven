@@ -10,76 +10,73 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { MonsterAIService } from './monster-ai.service';
+import {
+  MonsterAIService,
+  MovableEntity,
+  MovementTarget,
+} from './monster-ai.service';
 import { Summon } from '../models/summon.model';
-import { Monster } from '../models/monster.model';
 import {
   AxialCoordinates,
   Condition,
   Monster as MonsterInterface,
-  Character as CharacterInterface,
 } from '../../../shared/types/entities';
 
 /**
- * Interface representing a Monster-like object for delegation to MonsterAIService.
- * This allows us to adapt Summon properties to what MonsterAIService expects.
+ * Type alias for monsters that can be targeted by summons.
+ * Uses the shared Monster interface which is what game.gateway.ts provides.
  */
-interface MonsterLike {
-  currentHex: AxialCoordinates;
-  conditions: Condition[];
-  attack: number;
-  movement: number;
-  range: number;
-  specialAbilities: string[];
-}
-
-/**
- * Interface representing a Character-like object for delegation to MonsterAIService.
- * This allows us to adapt Monster properties to what MonsterAIService expects
- * when finding targets (summons target monsters, which we treat like "characters").
- */
-interface CharacterLike {
-  id: string;
-  currentHex: AxialCoordinates | null;
-  isExhausted: boolean;
-  conditions: Condition[];
-}
+type TargetableMonster = MonsterInterface;
 
 @Injectable()
 export class SummonAIService {
   constructor(private monsterAIService: MonsterAIService) {}
 
   /**
-   * Convert a Summon to a Monster-like interface for delegation to MonsterAIService.
+   * Convert a Summon to a MovableEntity interface for delegation to MonsterAIService.
    *
    * Property mappings:
    * - summon.position -> currentHex
    * - summon.conditions (already array) -> conditions
-   * - summon.move -> movement
+   * - summon.move -> (not used by MovableEntity, but range is)
    * - [] -> specialAbilities (summons don't have special abilities)
+   *
+   * Note: Returns a type-safe MovableEntity object that MonsterAIService accepts.
    */
-  private toMonsterLike(summon: Summon): MonsterLike {
+  private toMovableEntity(summon: Summon): MovableEntity {
+    // Validate required properties at runtime
+    if (!summon.position) {
+      throw new Error(
+        'Summon must have a position to convert to MovableEntity',
+      );
+    }
+
     return {
       currentHex: summon.position,
       conditions: summon.conditions,
-      attack: summon.attack,
-      movement: summon.move,
       range: summon.range,
       specialAbilities: [], // Summons don't have special abilities
     };
   }
 
   /**
-   * Convert a Monster to a Character-like interface for target selection.
-   * Summons target monsters, so we adapt monsters to look like characters
-   * for the existing MonsterAIService.selectFocusTarget algorithm.
+   * Convert a Monster (shared interface) to a MovementTarget interface for target selection.
+   * Summons target monsters, so we adapt monsters to the MovementTarget interface
+   * for the existing MonsterAIService.determineMovement algorithm.
+   *
+   * Note: Returns a type-safe MovementTarget object that MonsterAIService accepts.
+   * Accepts the shared Monster interface which uses currentHex (not position).
    */
-  private toCharacterLike(monster: Monster): CharacterLike {
+  private toMovementTarget(monster: TargetableMonster): MovementTarget {
+    // Validate required properties at runtime
+    if (!monster.currentHex) {
+      throw new Error(
+        'Monster must have a currentHex to convert to MovementTarget',
+      );
+    }
+
     return {
-      id: monster.id,
-      currentHex: monster.position,
-      isExhausted: monster.isDead, // Dead monsters are like exhausted characters
-      conditions: monster.conditions,
+      currentHex: monster.currentHex,
     };
   }
 
@@ -91,10 +88,13 @@ export class SummonAIService {
    * - Break ties deterministically by ID (monsters don't have initiative)
    *
    * @param summon The summon entity selecting a target
-   * @param monsters Array of potential target monsters
+   * @param monsters Array of potential target monsters (shared Monster interface)
    * @returns Monster ID of the selected target, or null if no valid targets
    */
-  selectFocusTarget(summon: Summon, monsters: Monster[]): string | null {
+  selectFocusTarget(
+    summon: Summon,
+    monsters: TargetableMonster[],
+  ): string | null {
     // Filter out invalid targets (dead or invisible)
     const validTargets = monsters.filter(
       (monster) =>
@@ -107,12 +107,12 @@ export class SummonAIService {
 
     // Find closest monster(s)
     let closestDistance = Infinity;
-    let closestTargets: Monster[] = [];
+    let closestTargets: TargetableMonster[] = [];
 
     for (const monster of validTargets) {
       const distance = this.monsterAIService.calculateHexDistance(
         summon.position,
-        monster.position,
+        monster.currentHex, // Use currentHex from shared interface
       );
 
       if (distance < closestDistance) {
@@ -138,7 +138,7 @@ export class SummonAIService {
    * Delegates to MonsterAIService after adapting interfaces.
    *
    * @param summon The summon entity to move
-   * @param target The target monster to move toward
+   * @param target The target monster to move toward (shared Monster interface)
    * @param obstacles Coordinates of obstacle hexes
    * @param occupied Coordinates of occupied hexes
    * @param hexMap Map of valid hexes on the board
@@ -146,21 +146,19 @@ export class SummonAIService {
    */
   determineMovement(
     summon: Summon,
-    target: Monster,
+    target: TargetableMonster,
     obstacles: AxialCoordinates[],
     occupied: AxialCoordinates[],
     hexMap: Map<string, unknown>,
   ): AxialCoordinates | null {
-    // Adapt summon to monster-like interface
-    const summonAsMonster = this.toMonsterLike(summon) as MonsterInterface;
-    // Adapt target to character-like interface
-    const targetAsCharacter = this.toCharacterLike(
-      target,
-    ) as CharacterInterface;
+    // Adapt summon to MovableEntity interface (type-safe, no casting needed)
+    const summonAsMovable = this.toMovableEntity(summon);
+    // Adapt target to MovementTarget interface (type-safe, no casting needed)
+    const targetAsMovementTarget = this.toMovementTarget(target);
 
     return this.monsterAIService.determineMovement(
-      summonAsMonster,
-      targetAsCharacter,
+      summonAsMovable,
+      targetAsMovementTarget,
       obstacles,
       occupied,
       hexMap,
@@ -171,17 +169,17 @@ export class SummonAIService {
    * Check if summon should attack the target.
    *
    * @param summon The summon entity considering attack
-   * @param target The target monster
+   * @param target The target monster (shared Monster interface)
    * @returns true if attack should proceed, false otherwise
    */
-  shouldAttack(summon: Summon, target: Monster): boolean {
+  shouldAttack(summon: Summon, target: TargetableMonster): boolean {
     // Check conditions that prevent attacking
     if (summon.isDisarmed || summon.isStunned) {
       return false;
     }
 
-    // Check if in range
-    return this.isInRange(summon, target.position);
+    // Check if in range (use currentHex from shared interface)
+    return this.isInRange(summon, target.currentHex);
   }
 
   /**
