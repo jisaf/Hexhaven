@@ -38,16 +38,29 @@ git pull
 
 ### Step 4: Conduct Code Quality Review
 
-Use the **code-quality-architect** agent (via Task tool) to perform a thorough code review:
+Use the **code-quality-architect** agent (via Task tool with `subagent_type: code-quality-architect`) to perform a thorough code review:
 
 - Analyze all changed files in the PR
 - Evaluate against DRY, SOLID, clean code, and maintainability principles
 - Categorize issues by severity: CRITICAL, HIGH, MEDIUM, LOW, TRIVIAL
 - Generate detailed report with locations, descriptions, impacts, and proposed actions
+- Create GitHub issues for LOW and TRIVIAL items
+
+Provide the agent with:
+- The PR number and diff
+- List of changed files
+- Request for severity-categorized report
 
 ### Step 5: Fix Critical, High, and Medium Issues
 
-For each issue identified in the review:
+Use the **tdd-solid-developer** agent (via Task tool with `subagent_type: tdd-solid-developer`) to fix all identified issues. This agent excels at:
+
+- Finding root causes rather than treating symptoms
+- Following TDD principles (Red-Green-Refactor)
+- Applying SOLID and DRY best practices
+- Running tests before committing
+
+For each issue category:
 
 1. **CRITICAL issues** - Must fix immediately
    - Security vulnerabilities
@@ -68,31 +81,33 @@ For each issue identified in the review:
    - Suboptimal patterns
    - Missing edge cases
    - Incomplete typing
-   - Documentation gaps
 
-Use the **tdd-solid-developer** agent for implementing fixes following TDD principles and SOLID best practices.
+Provide the tdd-solid-developer agent with:
+- The list of issues from the code quality review
+- File locations and descriptions
+- Expected behavior after fixes
 
 ### Step 6: Update Documentation
 
-Review and update relevant documentation based on changes:
+Use the **docs-maintainer** agent (via Task tool with `subagent_type: docs-maintainer`) to synchronize documentation with code changes. This agent specializes in:
 
-```bash
-# Check what documentation files exist
-ls -la PRD.md docs/ARCHITECTURE.md docs/*.md 2>/dev/null
-```
+- Maintaining comprehensive documentation structure
+- Ensuring accuracy between code and docs
+- Following documentation best practices
+- Cross-referencing related sections
 
-**Documentation to update:**
+**Documentation the agent will review and update:**
 - `PRD.md` - If features or requirements changed
 - `docs/ARCHITECTURE.md` - If architectural patterns, components, or data flow changed
+- `docs/API.md` - If API endpoints were added/modified
+- `docs/SERVICES.md` - If services or utilities changed
 - Other `docs/*.md` files - If related systems were modified
 - README files - If setup, usage, or API changed
-- Code comments - Add/update inline documentation for complex logic
 
-When updating documentation:
-- Ensure changes reflect the current state of the code
-- Add new sections for new features
-- Update diagrams or flow descriptions if architecture changed
-- Keep documentation concise and accurate
+Provide the docs-maintainer agent with:
+- Summary of code changes from the PR
+- List of files modified
+- Any new features or architectural changes
 
 ### Step 7: Commit and Push Changes
 
