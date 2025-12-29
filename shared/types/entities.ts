@@ -102,6 +102,7 @@ export enum CharacterClass {
   SCOUNDREL = 'Scoundrel',
   CRAGHEART = 'Cragheart',
   MINDTHIEF = 'Mindthief',
+  TESTICONCLASS = 'TestIconClass',
 }
 
 export enum TerrainType {
@@ -248,6 +249,34 @@ export interface Monster {
   specialAbilities: string[];
   conditions: Condition[];
   isDead: boolean;
+}
+
+/**
+ * Summon entity - allied creatures summoned by players or scenarios (Issue #228)
+ *
+ * Design decisions:
+ * - ownerId is optional: undefined for scenario/narrative allies, set for player-summoned
+ * - playerControlled: if true, player gives orders; otherwise AI-controlled
+ * - initiative: copies owner's initiative (treated as LOWER for tiebreakers)
+ * - Summons act BEFORE their owner in turn order
+ * - Monsters focus summons BEFORE their owner at same distance
+ */
+export interface Summon {
+  id: string;
+  roomId: string;
+  ownerId?: string; // Character ID if player-summoned, undefined for scenario/narrative allies
+  name: string;
+  currentHex: AxialCoordinates;
+  health: number;
+  maxHealth: number;
+  attack: number;
+  move: number;
+  range: number;
+  conditions: Condition[];
+  isDead: boolean;
+  typeIcon?: string;
+  playerControlled?: boolean; // If true, player controls instead of AI
+  initiative: number; // Own initiative for scenario allies, or copies owner's
 }
 
 export interface AbilityCard {
@@ -425,8 +454,9 @@ export interface LogMessage {
 export interface TurnEntity {
   entityId: string;
   name: string;
-  entityType: 'character' | 'monster';
+  entityType: 'character' | 'monster' | 'summon';
   initiative: number;
+  ownerId?: string; // For summons, links to summoner character
 }
 
 // ========== ITEMS & INVENTORY (Issue #205) ==========

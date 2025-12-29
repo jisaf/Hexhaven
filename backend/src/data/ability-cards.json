@@ -738,6 +738,600 @@
         "type": "loot",
         "value": 1
       }
+    },
+
+    {
+      "id": "testiconclass-basic-strike",
+      "characterClass": "TestIconClass",
+      "name": "Basic Strike",
+      "level": 1,
+      "initiative": 10,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "xp", "value": 1 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-healing-touch",
+      "characterClass": "TestIconClass",
+      "name": "Healing Touch",
+      "level": 1,
+      "initiative": 15,
+      "topAction": {
+        "type": "heal",
+        "value": 4,
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "loot",
+        "value": 2
+      }
+    },
+    {
+      "id": "testiconclass-fire-blast",
+      "characterClass": "TestIconClass",
+      "name": "Fire Blast",
+      "level": 1,
+      "initiative": 20,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "infuse", "element": "fire", "state": "generate" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "modifiers": [
+          { "type": "consume", "element": "fire", "bonus": { "effect": "move", "value": 2 } }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-ice-shield",
+      "characterClass": "TestIconClass",
+      "name": "Ice Shield",
+      "level": 1,
+      "initiative": 25,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "infuse", "element": "ice", "state": "generate" },
+          { "type": "shield", "value": 2, "duration": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "consume", "element": "ice", "bonus": { "effect": "damage", "value": 2 } }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-wind-rush",
+      "characterClass": "TestIconClass",
+      "name": "Wind Rush",
+      "level": 1,
+      "initiative": 30,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "infuse", "element": "air", "state": "generate" },
+          { "type": "push", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "modifiers": [
+          { "type": "jump" }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-earth-tremor",
+      "characterClass": "TestIconClass",
+      "name": "Earth Tremor",
+      "level": 1,
+      "initiative": 35,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "infuse", "element": "earth", "state": "generate" },
+          { "type": "aoe", "pattern": "burst", "size": 1 },
+          { "type": "condition", "condition": "immobilize", "duration": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "special": "create-obstacle",
+        "modifiers": []
+      }
+    },
+    {
+      "id": "testiconclass-radiant-blessing",
+      "characterClass": "TestIconClass",
+      "name": "Radiant Blessing",
+      "level": 1,
+      "initiative": 40,
+      "topAction": {
+        "type": "heal",
+        "value": 3,
+        "modifiers": [
+          { "type": "infuse", "element": "light", "state": "generate" },
+          { "type": "range", "distance": 3 }
+        ],
+        "target": "all-allies"
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "condition", "condition": "bless", "duration": "until-consumed", "target": "allies" }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-shadow-strike",
+      "characterClass": "TestIconClass",
+      "name": "Shadow Strike",
+      "level": 1,
+      "initiative": 45,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "modifiers": [
+          { "type": "infuse", "element": "dark", "state": "generate" },
+          { "type": "condition", "condition": "curse", "duration": "until-consumed" }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "condition", "condition": "invisible", "duration": "round" }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-stunning-blow",
+      "characterClass": "TestIconClass",
+      "name": "Stunning Blow",
+      "level": 1,
+      "initiative": 50,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "condition", "condition": "stun", "duration": "round" },
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-toxic-blade",
+      "characterClass": "TestIconClass",
+      "name": "Toxic Blade",
+      "level": 1,
+      "initiative": 55,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "condition", "condition": "poison", "duration": "until-consumed" },
+          { "type": "condition", "condition": "wound", "duration": "until-consumed" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4
+      }
+    },
+    {
+      "id": "testiconclass-confusing-strike",
+      "characterClass": "TestIconClass",
+      "name": "Confusing Strike",
+      "level": 1,
+      "initiative": 60,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "condition", "condition": "muddle", "duration": "round" },
+          { "type": "condition", "condition": "disarm", "duration": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-magnetic-pull",
+      "characterClass": "TestIconClass",
+      "name": "Magnetic Pull",
+      "level": 1,
+      "initiative": 65,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 4 },
+          { "type": "pull", "distance": 3 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2,
+        "modifiers": [
+          { "type": "push", "distance": 1 }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-empowering-aura",
+      "characterClass": "TestIconClass",
+      "name": "Empowering Aura",
+      "level": 1,
+      "initiative": 70,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "condition", "condition": "strengthen", "duration": "round", "target": "allies" },
+          { "type": "range", "distance": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 0 }
+        ],
+        "target": "self"
+      }
+    },
+    {
+      "id": "testiconclass-piercing-strike",
+      "characterClass": "TestIconClass",
+      "name": "Piercing Strike",
+      "level": 1,
+      "initiative": 75,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "modifiers": [
+          { "type": "pierce", "value": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-mystic-ally",
+      "characterClass": "TestIconClass",
+      "name": "Mystic Ally",
+      "level": 1,
+      "initiative": 80,
+      "topAction": {
+        "type": "summon",
+        "modifiers": [
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ],
+        "summon": {
+          "name": "Spirit Guardian",
+          "health": 5,
+          "attack": 2,
+          "move": 3,
+          "range": 2,
+          "typeIcon": "👻"
+        }
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-persistent-shield",
+      "characterClass": "TestIconClass",
+      "name": "Persistent Shield",
+      "level": 1,
+      "initiative": 85,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "shield", "value": 1, "duration": "persistent" },
+          { "type": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "retaliate", "value": 2, "duration": "persistent" },
+          { "type": "persistent" }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-sweeping-attack",
+      "characterClass": "TestIconClass",
+      "name": "Sweeping Attack",
+      "level": 1,
+      "initiative": 90,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "target", "count": 3 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "testiconclass-multi-target",
+      "characterClass": "TestIconClass",
+      "name": "Multi-Target",
+      "level": 1,
+      "initiative": 12,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "target", "count": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-recovery",
+      "characterClass": "TestIconClass",
+      "name": "Recovery",
+      "level": 1,
+      "initiative": 18,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "recover", "cardCount": 2 },
+          { "type": "lost" }
+        ]
+      },
+      "bottomAction": {
+        "type": "heal",
+        "value": 3,
+        "target": "self"
+      }
+    },
+    {
+      "id": "testiconclass-mind-control",
+      "characterClass": "TestIconClass",
+      "name": "Mind Control",
+      "level": 1,
+      "initiative": 22,
+      "topAction": {
+        "type": "special",
+        "special": "control-enemy",
+        "modifiers": [
+          { "type": "range", "distance": 3 },
+          { "type": "lost" },
+          { "type": "xp", "value": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-augmented-power",
+      "characterClass": "TestIconClass",
+      "name": "Augmented Power",
+      "level": 1,
+      "initiative": 28,
+      "topAction": {
+        "type": "text",
+        "title": "AUGMENT",
+        "description": "Add +2 Attack to all your attacks this round.",
+        "quote": "Channel the power within.",
+        "modifiers": [
+          { "type": "persistent" }
+        ]
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2
+      }
+    },
+    {
+      "id": "testiconclass-trap-setter",
+      "characterClass": "TestIconClass",
+      "name": "Trap Setter",
+      "level": 1,
+      "initiative": 32,
+      "topAction": {
+        "type": "attack",
+        "value": 2
+      },
+      "bottomAction": {
+        "type": "special",
+        "special": "create-trap",
+        "modifiers": [
+          { "type": "range", "distance": 2 }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-phase-walk",
+      "characterClass": "TestIconClass",
+      "name": "Phase Walk",
+      "level": 1,
+      "initiative": 38,
+      "topAction": {
+        "type": "attack",
+        "value": 3
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 4,
+        "special": "through-obstacles",
+        "modifiers": [
+          { "type": "jump" }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-ally-support",
+      "characterClass": "TestIconClass",
+      "name": "Ally Support",
+      "level": 1,
+      "initiative": 42,
+      "topAction": {
+        "type": "heal",
+        "value": 3,
+        "modifiers": [
+          { "type": "range", "distance": 3 }
+        ],
+        "target": "ally"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-self-heal",
+      "characterClass": "TestIconClass",
+      "name": "Self Heal",
+      "level": 1,
+      "initiative": 48,
+      "topAction": {
+        "type": "heal",
+        "value": 5,
+        "target": "self"
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2
+      }
+    },
+    {
+      "id": "testiconclass-teleport-strike",
+      "characterClass": "TestIconClass",
+      "name": "Teleport Strike",
+      "level": 1,
+      "initiative": 52,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "modifiers": [
+          { "type": "lost" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3,
+        "modifiers": [
+          { "type": "teleport", "range": 3 }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-line-attack",
+      "characterClass": "TestIconClass",
+      "name": "Line Attack",
+      "level": 1,
+      "initiative": 58,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "aoe", "pattern": "line", "size": 3 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "testiconclass-cone-blast",
+      "characterClass": "TestIconClass",
+      "name": "Cone Blast",
+      "level": 1,
+      "initiative": 62,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "modifiers": [
+          { "type": "aoe", "pattern": "cone", "size": 2 }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "testiconclass-discard-recovery",
+      "characterClass": "TestIconClass",
+      "name": "Discard Recovery",
+      "level": 1,
+      "initiative": 68,
+      "topAction": {
+        "type": "attack",
+        "value": 3
+      },
+      "bottomAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "discard", "cardCount": 1 },
+          { "type": "recover", "cardCount": 1 }
+        ]
+      }
+    },
+    {
+      "id": "testiconclass-round-bonus",
+      "characterClass": "TestIconClass",
+      "name": "Round Bonus",
+      "level": 1,
+      "initiative": 72,
+      "topAction": {
+        "type": "special",
+        "modifiers": [
+          { "type": "shield", "value": 2, "duration": "round" },
+          { "type": "round" }
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
     }
   ]
 }

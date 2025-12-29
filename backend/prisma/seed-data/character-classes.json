@@ -124,5 +124,17 @@
     ],
     "description": "The Mindthief is an agile melee damage dealer who uses psychic powers and augments to control the battlefield. Can summon a rat companion and manipulate enemy positioning with mind control.",
     "imageUrl": null
+  },
+  {
+    "name": "TestIconClass",
+    "startingHealth": 20,
+    "maxHealthByLevel": [20, 22, 24, 26, 28, 30, 32, 34, 36],
+    "handSize": 30,
+    "perks": [
+      "Remove two -1 cards",
+      "Add one +2 card"
+    ],
+    "description": "A test character class with a hand size of 30 cards, designed to showcase every action type and icon in the game. Useful for visual testing and icon reference.",
+    "imageUrl": null
   }
 ]
