@@ -256,7 +256,7 @@ export interface TurnOrderDeterminedPayload {
 
 export interface TurnStartedPayload {
   entityId: string;
-  entityType: 'character' | 'monster';
+  entityType: 'character' | 'monster' | 'summon';
   turnIndex: number;
 }
 

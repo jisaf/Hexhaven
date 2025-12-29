@@ -3158,8 +3158,8 @@ export class GameGateway
       // Add monster positions
       const monsters = this.roomMonsters.get(roomCode) || [];
       monsters
-        .filter((m) => !m.isDead && m.position)
-        .forEach((m) => occupiedHexes.push(m.position));
+        .filter((m) => !m.isDead && m.currentHex)
+        .forEach((m) => occupiedHexes.push(m.currentHex));
 
       // Add existing summon positions
       const existingSummons = this.roomSummons.get(roomCode) || [];
@@ -4028,8 +4028,11 @@ export class GameGateway
           // Map summon properties to match character interface for movement/attack calculations
           focusTargetMapped = {
             id: targetSummon.id,
+            playerId: targetSummon.ownerId ?? 'ai', // Summons don't have a playerId, use ownerId
             currentHex: targetSummon.position,
             classType: targetSummon.name,
+            health: targetSummon.currentHealth,
+            maxHealth: targetSummon.maxHealth,
             conditions: targetSummon.conditions,
             isExhausted: targetSummon.isDead,
           };
@@ -4531,8 +4534,8 @@ export class GameGateway
 
       // Add monster positions
       aliveMonsters
-        .filter((m) => m.position)
-        .forEach((m) => occupiedHexes.push(m.position));
+        .filter((m) => m.currentHex)
+        .forEach((m) => occupiedHexes.push(m.currentHex));
 
       // Add other summon positions (exclude current summon)
       summons
@@ -4628,7 +4631,11 @@ export class GameGateway
           baseDamage,
           summonModifierCard,
         );
-        focusTarget.takeDamage(damageDealt);
+        // Apply damage to monster (shared Monster interface doesn't have takeDamage method)
+        focusTarget.health = Math.max(0, focusTarget.health - damageDealt);
+        if (focusTarget.health <= 0) {
+          focusTarget.isDead = true;
+        }
         attacked = true;
         targetDied = focusTarget.isDead;
 
@@ -4662,18 +4669,18 @@ export class GameGateway
 
           // Update accumulated stats
           if (accumulatedStats) {
-            accumulatedStats.monstersKilled++;
+            accumulatedStats.totalMonstersKilled++;
           }
 
           // Emit monster_died event
           this.server.to(roomCode).emit('monster_died', {
             monsterId: focusTargetId,
             killerId: summonId,
-            hexCoordinates: focusTarget.position,
+            hexCoordinates: focusTarget.currentHex,
           });
 
           // Spawn loot token at monster's position
-          const lootToken = LootToken.create(focusTarget.position, 1);
+          const lootToken = LootToken.create(roomCode, focusTarget.currentHex, 1);
           let lootTokens = this.roomLootTokens.get(roomCode);
           if (!lootTokens) {
             lootTokens = [];
