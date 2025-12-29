@@ -11,8 +11,10 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { CharacterClass } from '../../../shared/types/entities';
 
-export type CharacterClass = 'Brute' | 'Tinkerer' | 'Spellweaver' | 'Scoundrel' | 'Cragheart' | 'Mindthief';
+// Re-export for backward compatibility
+export { CharacterClass };
 
 export interface CharacterSelectProps {
   selectedClass?: CharacterClass;
@@ -22,43 +24,43 @@ export interface CharacterSelectProps {
   compact?: boolean;
 }
 
-const characterColors: Record<CharacterClass, string> = {
-  Brute: '#CC3333',
-  Tinkerer: '#3399CC',
-  Spellweaver: '#9933CC',
-  Scoundrel: '#33CC33',
-  Cragheart: '#CC9933',
-  Mindthief: '#CC33CC',
+const characterColors: Partial<Record<CharacterClass, string>> = {
+  [CharacterClass.BRUTE]: '#CC3333',
+  [CharacterClass.TINKERER]: '#3399CC',
+  [CharacterClass.SPELLWEAVER]: '#9933CC',
+  [CharacterClass.SCOUNDREL]: '#33CC33',
+  [CharacterClass.CRAGHEART]: '#CC9933',
+  [CharacterClass.MINDTHIEF]: '#CC33CC',
 };
 
-const characterDescriptions: Record<CharacterClass, string> = {
-  Brute: 'A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies.',
-  Tinkerer: 'A support specialist who heals allies and summons mechanical contraptions to aid the party.',
-  Spellweaver: 'A powerful mage who controls elemental forces to devastate enemies from range.',
-  Scoundrel: 'An agile rogue who strikes from advantage and uses cunning to outmaneuver foes.',
-  Cragheart: 'A versatile earth elemental who can manipulate terrain and deals area damage.',
-  Mindthief: 'A psionic assassin who augments melee attacks with mind control and illusions.',
+const characterDescriptions: Partial<Record<CharacterClass, string>> = {
+  [CharacterClass.BRUTE]: 'A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies.',
+  [CharacterClass.TINKERER]: 'A support specialist who heals allies and summons mechanical contraptions to aid the party.',
+  [CharacterClass.SPELLWEAVER]: 'A powerful mage who controls elemental forces to devastate enemies from range.',
+  [CharacterClass.SCOUNDREL]: 'An agile rogue who strikes from advantage and uses cunning to outmaneuver foes.',
+  [CharacterClass.CRAGHEART]: 'A versatile earth elemental who can manipulate terrain and deals area damage.',
+  [CharacterClass.MINDTHIEF]: 'A psionic assassin who augments melee attacks with mind control and illusions.',
 };
 
-const characterStats: Record<CharacterClass, { health: number; handSize: number }> = {
-  Brute: { health: 10, handSize: 10 },
-  Tinkerer: { health: 8, handSize: 12 },
-  Spellweaver: { health: 6, handSize: 8 },
-  Scoundrel: { health: 8, handSize: 9 },
-  Cragheart: { health: 10, handSize: 11 },
-  Mindthief: { health: 6, handSize: 10 },
+const characterStats: Partial<Record<CharacterClass, { health: number; handSize: number }>> = {
+  [CharacterClass.BRUTE]: { health: 10, handSize: 10 },
+  [CharacterClass.TINKERER]: { health: 8, handSize: 12 },
+  [CharacterClass.SPELLWEAVER]: { health: 6, handSize: 8 },
+  [CharacterClass.SCOUNDREL]: { health: 8, handSize: 9 },
+  [CharacterClass.CRAGHEART]: { health: 10, handSize: 11 },
+  [CharacterClass.MINDTHIEF]: { health: 6, handSize: 10 },
 };
 
 export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect, compact = false }: CharacterSelectProps) {
   const { t } = useTranslation();
 
   const characters: CharacterClass[] = [
-    'Brute',
-    'Tinkerer',
-    'Spellweaver',
-    'Scoundrel',
-    'Cragheart',
-    'Mindthief',
+    CharacterClass.BRUTE,
+    CharacterClass.TINKERER,
+    CharacterClass.SPELLWEAVER,
+    CharacterClass.SCOUNDREL,
+    CharacterClass.CRAGHEART,
+    CharacterClass.MINDTHIEF,
   ];
 
   const handleSelect = (characterClass: CharacterClass) => {
@@ -107,18 +109,18 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect,
                   <div className="character-description" data-testid="character-description">
                     {t(
                       `characters.${characterClass}.description`,
-                      characterDescriptions[characterClass]
+                      characterDescriptions[characterClass] ?? ''
                     )}
                   </div>
                 )}
                 <div className="character-stats">
                   <div className="stat-item">
                     <span className="stat-label">❤️</span>
-                    <span className="stat-value" data-testid="character-health">{stats.health}</span>
+                    <span className="stat-value" data-testid="character-health">{stats?.health ?? 0}</span>
                   </div>
                   <div className="stat-item">
                     <span className="stat-label">🃏</span>
-                    <span className="stat-value" data-testid="character-hand-size">{stats.handSize}</span>
+                    <span className="stat-value" data-testid="character-hand-size">{stats?.handSize ?? 0}</span>
                   </div>
                 </div>
               </div>
