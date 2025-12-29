@@ -169,6 +169,7 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
     "move": 3,
     "range": 2,
     "typeIcon": "🔮",
+    "playerControlled": false,
     "modifiers": [
       { "type": "push", "distance": 1 }
     ]
@@ -180,6 +181,28 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 - `lost` - Card is consumed
 - `xp` - Experience for summoning
 - Summon entities have their own modifiers
+
+**Summon Lifecycle** (Issue #228):
+
+1. **Placement**: Player selects hex within range (purple highlight), server validates
+2. **Turn Order**: Summons act immediately BEFORE their owner at same initiative
+3. **AI Control**: AI-controlled summons auto-target closest monster, move, and attack
+4. **Modifier Deck**: Summons use owner's character modifier deck for attacks
+5. **Death**: Summons die when owner exhausts or when killed by monsters
+
+**Services**:
+- `SummonService` - Lifecycle management, placement validation
+- `SummonAIService` - Targeting and movement (delegates to MonsterAIService)
+
+**Turn Order Rules**:
+- Summons use owner's initiative value
+- Multiple summons of same owner act in creation order
+- Monsters target summons before owner at same distance (Gloomhaven focus rules)
+
+**Modifier Decks**:
+- Player-summoned: Use owner's character modifier deck
+- Scenario allies (no owner): Use shared ally modifier deck
+- Monsters: Use shared monster modifier deck (separate from ally deck)
 
 ### 7. Text Action
 

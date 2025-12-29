@@ -14,55 +14,120 @@ import {
   Character,
   AxialCoordinates,
   Condition,
+  Summon,
 } from '../../../shared/types/entities';
+
+/**
+ * Internal type for unified target representation during focus selection.
+ * Combines characters and summons into a common format for processing.
+ */
+interface FocusTarget {
+  id: string;
+  hex: AxialCoordinates;
+  type: 'character' | 'summon';
+  ownerId?: string;
+  initiative: number;
+}
 
 @Injectable()
 export class MonsterAIService {
   /**
    * Select the focus target for a monster
-   * Priority: closest character by hex distance, break ties with initiative
+   *
+   * Priority (per Gloomhaven rules):
+   * 1. Find closest entities (characters + summons) by hex distance
+   * 2. At same distance: prefer summons over their owner (summon.ownerId === character.id)
+   * 3. At same distance: prefer any summon over any character
+   * 4. Break remaining ties with initiative (lower goes first)
+   *
+   * @param monster - The monster selecting a target
+   * @param characters - Array of characters to consider
+   * @param summons - Optional array of summons to consider (backward compatible)
+   * @returns ID of the focus target, or null if no valid targets
    */
-  selectFocusTarget(monster: Monster, characters: Character[]): string | null {
-    // Filter out invisible and exhausted characters
-    const validTargets = characters.filter(
+  selectFocusTarget(
+    monster: Monster,
+    characters: Character[],
+    summons?: Summon[],
+  ): string | null {
+    // Filter out invalid characters (invisible, exhausted, or no position)
+    const validCharacters = characters.filter(
       (char) =>
         !char.isExhausted &&
         !char.conditions.includes(Condition.INVISIBLE) &&
         char.currentHex !== null,
     );
 
-    if (validTargets.length === 0) {
+    // Filter out invalid summons (dead, invisible, or no position)
+    const validSummons = (summons || []).filter(
+      (summon) =>
+        !summon.isDead &&
+        !summon.conditions.includes(Condition.INVISIBLE) &&
+        summon.currentHex !== null,
+    );
+
+    // Convert all valid targets to unified format
+    const allTargets: FocusTarget[] = [
+      ...validCharacters.map((char) => ({
+        id: char.id,
+        hex: char.currentHex!,
+        type: 'character' as const,
+        ownerId: undefined,
+        initiative: this.getCharacterInitiative(char),
+      })),
+      ...validSummons.map((summon) => ({
+        id: summon.id,
+        hex: summon.currentHex,
+        type: 'summon' as const,
+        ownerId: summon.ownerId,
+        initiative: summon.initiative,
+      })),
+    ];
+
+    if (allTargets.length === 0) {
       return null;
     }
 
-    // Find closest character(s)
+    // Find minimum distance to any target
     let closestDistance = Infinity;
-    let closestTargets: Character[] = [];
-
-    for (const char of validTargets) {
+    for (const target of allTargets) {
       const distance = this.calculateHexDistance(
         monster.currentHex,
-        char.currentHex!,
+        target.hex,
       );
-
       if (distance < closestDistance) {
         closestDistance = distance;
-        closestTargets = [char];
-      } else if (distance === closestDistance) {
-        closestTargets.push(char);
       }
     }
 
-    // If tie, use initiative (lower goes first, so target them first)
+    // Get all targets at the closest distance
+    const closestTargets = allTargets.filter((target) => {
+      const distance = this.calculateHexDistance(
+        monster.currentHex,
+        target.hex,
+      );
+      return distance === closestDistance;
+    });
+
+    // If only one target at closest distance, return it
     if (closestTargets.length === 1) {
       return closestTargets[0].id;
     }
 
-    // Break tie with initiative - target character with lower initiative
+    // Apply tie-breakers for multiple targets at same distance:
+    // 1. Summons preferred over characters
+    // 2. Lower initiative wins
     const sorted = closestTargets.sort((a, b) => {
-      const initA = this.getCharacterInitiative(a);
-      const initB = this.getCharacterInitiative(b);
-      return initA - initB;
+      // Summons preferred over characters
+      if (a.type === 'summon' && b.type === 'character') {
+        return -1;
+      }
+      if (a.type === 'character' && b.type === 'summon') {
+        return 1;
+      }
+
+      // Both same type, use initiative (lower first)
+      return a.initiative - b.initiative;
     });
 
     return sorted[0].id;

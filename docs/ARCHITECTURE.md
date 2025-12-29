@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.2
-**Last Updated**: 2025-12-27
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System)
+**Version**: 1.3
+**Last Updated**: 2025-12-29
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons)
 
 ---
 
@@ -31,6 +31,7 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 - Mobile-first PWA (offline-capable)
 - 6 character classes, 5 scenarios
 - Turn-based tactical combat with monster AI
+- Summon system with AI-controlled allies (Issue #228)
 - Multi-lingual support (5 languages)
 - Optional account system with progression tracking
 - Campaign mode with scenario progression (Issue #244)
@@ -65,6 +66,7 @@ Hexhaven is a mobile-first multiplayer tactical board game implementing Gloomhav
 │  ├── WebSocket Gateway (Socket.io)                          │
 │  ├── Game Logic Services                                    │
 │  │   ├── Monster AI                                         │
+│  │   ├── Summon AI (Issue #228)                             │
 │  │   ├── Turn Order                                         │
 │  │   ├── Damage Calculation                                 │
 │  │   ├── Pathfinding (A*)                                   │
@@ -276,8 +278,11 @@ backend/src/
 ├── services/            # Business logic
 │   ├── room.service.ts
 │   ├── monster-ai.service.ts
+│   ├── summon-ai.service.ts     # Issue #228: Summon targeting/movement (delegates to monster-ai)
+│   ├── summon.service.ts        # Issue #228: Summon lifecycle management
 │   ├── turn-order.service.ts
 │   ├── damage-calculation.service.ts
+│   ├── modifier-deck.service.ts # Per-character modifier decks
 │   ├── pathfinding.service.ts
 │   ├── account.service.ts
 │   ├── progression.service.ts
@@ -292,6 +297,7 @@ backend/src/
 │   ├── game-room.model.ts
 │   ├── character.model.ts
 │   ├── monster.model.ts
+│   ├── summon.model.ts          # Issue #228: Summon entity with stats and conditions
 │   ├── account.model.ts
 │   └── progression.model.ts
 ├── db/                  # Database
@@ -1133,6 +1139,9 @@ unequip_item     { roomCode, characterId, itemId }
 
 # Narratives
 acknowledge_narrative  { narrativeId }
+
+# Summons (Issue #228)
+request_summon_placement  { roomCode, summonDefinition, targetHex, characterId, maxRange? }
 ```
 
 **Server → Client**:
@@ -1167,6 +1176,11 @@ narrative_acknowledged    { narrativeId, playerId }
 narrative_dismissed       { narrativeId }
 narrative_monster_spawned { monsterId, monsterType, hex, isElite }
 narrative_rewards_granted { rewards[], distribution }
+
+# Summons (Issue #228)
+summon_created            { summonId, name, ownerId?, placementHex, health, attack, move, range }
+summon_activated          { summonId, moved, fromHex, toHex, attacked, targetId?, damageDealt?, targetDied }
+summon_died               { summonId, reason: 'damage' | 'owner_exhausted' | 'owner_died' | 'scenario_end' }
 ```
 
 ---
@@ -1363,4 +1377,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-27 (Updated for Campaign Narrative System)
+**Last Review**: 2025-12-29 (Updated for Summon System - Issue #228)

@@ -562,6 +562,20 @@ export class HexGrid {
   }
 
   /**
+   * Show summon placement range highlights (purple hexes).
+   */
+  public showSummonPlacementRange(hexes: Axial[]): void {
+    this.highlightManager.showSummonPlacementRange(hexes);
+  }
+
+  /**
+   * Clear all summon placement highlights.
+   */
+  public clearSummonPlacementRange(): void {
+    this.highlightManager.clearSummonPlacementRange();
+  }
+
+  /**
    * Update tile data
    */
   public updateTile(hex: Axial, data: Partial<HexTileData>): void {

@@ -34,6 +34,9 @@ import { ObjectiveEvaluatorService } from '../services/objective-evaluator.servi
 import { ObjectiveContextBuilderService } from '../services/objective-context-builder.service';
 import { GameResultService } from '../services/game-result.service';
 import { DeckManagementService } from '../services/deck-management.service';
+import { SummonService } from '../services/summon.service';
+import { SummonAIService } from '../services/summon-ai.service';
+import { Summon } from '../models/summon.model';
 import type { AccumulatedStats } from '../services/objective-context-builder.service';
 import type {
   ScenarioObjectives,
@@ -71,6 +74,8 @@ import type {
   ItemUnequippedPayload,
   ItemsRefreshedPayload,
   CharacterInventoryPayload,
+  SummonCreatedPayload,
+  SummonDiedPayload,
 } from '../../../shared/types/events';
 import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
@@ -98,9 +103,16 @@ import {
   getPierce,
   getXPValue,
 } from '../../../shared/types/modifiers';
-import type { Modifier, CardAction } from '../../../shared/types/modifiers';
+import type {
+  Modifier,
+  CardAction,
+  SummonDefinition,
+} from '../../../shared/types/modifiers';
 import { ElementalStateService } from '../services/elemental-state.service';
-import type { ElementalInfusion } from '../../../shared/types/entities';
+import type {
+  ElementalInfusion,
+  AttackModifierCard,
+} from '../../../shared/types/entities';
 import {
   ConnectionStatus,
   RoomStatus,
@@ -134,6 +146,8 @@ export class GameGateway
     private readonly campaignService: CampaignService, // Issue #244 - Campaign Mode
     private readonly narrativeService: NarrativeService, // Campaign narrative system
     private readonly narrativeRewardService: NarrativeRewardService, // Narrative reward calculation (extracted)
+    private readonly summonService: SummonService, // Issue #228 - Summons
+    private readonly summonAIService: SummonAIService, // Issue #228 - Summon AI
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -179,7 +193,18 @@ export class GameGateway
   private readonly playerToSocket = new Map<string, string>(); // userId (database) -> socketId
 
   // Game state: per-room state
-  private readonly modifierDecks = new Map<string, any[]>(); // roomCode -> modifier deck
+  // Per-character modifier decks: roomCode -> characterId -> deck
+  private readonly characterModifierDecks = new Map<
+    string,
+    Map<string, AttackModifierCard[]>
+  >();
+  // Shared monster deck: roomCode -> deck
+  private readonly monsterModifierDeck = new Map<
+    string,
+    AttackModifierCard[]
+  >();
+  // Shared ally deck for non-owned summons: roomCode -> deck
+  private readonly allyModifierDeck = new Map<string, AttackModifierCard[]>();
   private readonly roomMonsters = new Map<string, Monster[]>(); // roomCode -> monsters array
   private readonly roomTurnOrder = new Map<string, any[]>(); // roomCode -> turn order
   private readonly currentTurnIndex = new Map<string, number>(); // roomCode -> current turn index
@@ -228,6 +253,10 @@ export class GameGateway
       }
     >
   >(); // roomCode -> (playerId -> stats)
+
+  // Issue #228: Summon state tracking per room
+  private readonly roomSummons = new Map<string, Summon[]>(); // roomCode -> summons array
+  private readonly summonsActedThisTurn = new Map<string, Set<string>>(); // roomCode -> Set of summon IDs that have acted
 
   // Narrative system: Track game state for condition evaluation
   private readonly roomOpenedDoors = new Map<string, AxialCoordinates[]>(); // roomCode -> opened door hexes
@@ -1077,7 +1106,10 @@ export class GameGateway
         this.monstersActedThisTurn.delete(roomCode);
         this.roomGameLogs.delete(roomCode);
         this.roomLootTokens.delete(roomCode);
-        this.modifierDecks.delete(roomCode);
+        // Per-character, monster, and ally modifier decks cleanup
+        this.characterModifierDecks.delete(roomCode);
+        this.monsterModifierDeck.delete(roomCode);
+        this.allyModifierDeck.delete(roomCode);
         this.roomMonsterInitiatives.delete(roomCode);
         // Phase 2/3: Clean up objective system state
         this.roomObjectives.delete(roomCode);
@@ -1092,6 +1124,9 @@ export class GameGateway
         this.roomOpenedDoors.delete(roomCode);
         this.roomCollectedTreasures.delete(roomCode);
         this.roomCollectedLootHexes.delete(roomCode);
+        // Issue #228: Summon state cleanup
+        this.roomSummons.delete(roomCode);
+        this.summonsActedThisTurn.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -1556,9 +1591,28 @@ export class GameGateway
         scenario.difficulty,
       );
 
-      // Initialize attack modifier deck for this room
-      const modifierDeck = this.modifierDeckService.initializeStandardDeck();
-      this.modifierDecks.set(room.roomCode, modifierDeck);
+      // Initialize monster modifier deck (shared by all monsters)
+      const monsterDeck = this.modifierDeckService.initializeStandardDeck();
+      this.monsterModifierDeck.set(room.roomCode, monsterDeck);
+
+      // Initialize ally modifier deck (for non-owned summons like scenario allies)
+      const allyDeck = this.modifierDeckService.initializeStandardDeck();
+      this.allyModifierDeck.set(room.roomCode, allyDeck);
+
+      // Initialize per-character modifier decks
+      const characterDecks = new Map<string, AttackModifierCard[]>();
+      for (const player of room.players) {
+        const characters = characterService.getCharactersByPlayerId(
+          player.userId,
+        );
+        for (const char of characters) {
+          if (char) {
+            const charDeck = this.modifierDeckService.initializeStandardDeck();
+            characterDecks.set(char.id, charDeck);
+          }
+        }
+      }
+      this.characterModifierDecks.set(room.roomCode, characterDecks);
 
       // Store monsters for this room
       this.roomMonsters.set(room.roomCode, monsters);
@@ -2250,6 +2304,9 @@ export class GameGateway
     // Get monsters from room state
     const monsters = this.roomMonsters.get(roomCode) || [];
 
+    // Issue #228: Get summons from room state
+    const summons = this.roomSummons.get(roomCode) || [];
+
     // Get monster initiatives for this room
     const monsterInitiatives =
       this.roomMonsterInitiatives.get(roomCode) || new Map();
@@ -2274,6 +2331,18 @@ export class GameGateway
         isDead: m.isDead,
         isExhausted: false,
       })),
+      // Issue #228: Add summons to turn order
+      ...summons
+        .filter((s) => !s.isDead)
+        .map((s) => ({
+          entityId: s.id,
+          entityType: 'summon' as const,
+          initiative: s.initiative,
+          name: s.name,
+          ownerId: s.ownerId,
+          isDead: s.isDead,
+          isExhausted: false,
+        })),
     ];
 
     // Determine turn order
@@ -2284,6 +2353,7 @@ export class GameGateway
     this.roomTurnOrder.set(roomCode, turnOrder);
     this.currentTurnIndex.set(roomCode, 0);
     this.monstersActedThisTurn.set(roomCode, new Set()); // Reset monster action tracking for new round
+    this.summonsActedThisTurn.set(roomCode, new Set()); // Issue #228: Reset summon action tracking for new round
 
     // Increment round number and set phase to active
     const roundNumber = (this.currentRound.get(roomCode) || 0) + 1;
@@ -2336,6 +2406,19 @@ export class GameGateway
         setTimeout(() => {
           this.activateMonster(firstEntity.entityId, roomCode);
         }, 100);
+      }
+
+      // Issue #228: If the first turn is an AI-controlled summon, activate it immediately
+      if (firstEntity.entityType === 'summon') {
+        const summon = summons.find((s) => s.id === firstEntity.entityId);
+        if (summon && !summon.playerControlled) {
+          this.logger.log(
+            `First turn is an AI-controlled summon, activating AI for: ${firstEntity.entityId}`,
+          );
+          setTimeout(() => {
+            this.activateSummon(firstEntity.entityId, roomCode);
+          }, 100);
+        }
       }
     }
   }
@@ -2456,17 +2539,23 @@ export class GameGateway
         }
       }
 
-      // Draw attack modifier card
-      let modifierDeck = this.modifierDecks.get(room.roomCode);
+      // Draw attack modifier card from character's personal deck
+      const characterDecks = this.characterModifierDecks.get(room.roomCode);
+      if (!characterDecks) {
+        throw new Error(
+          `Character modifier decks not found for room ${room.roomCode}`,
+        );
+      }
+      let modifierDeck = characterDecks.get(attacker.id);
       if (!modifierDeck || modifierDeck.length === 0) {
         // Reinitialize if empty
         modifierDeck = this.modifierDeckService.initializeStandardDeck();
-        this.modifierDecks.set(room.roomCode, modifierDeck);
+        characterDecks.set(attacker.id, modifierDeck);
       }
 
       const { card: modifierCard, remainingDeck } =
         this.modifierDeckService.drawCard(modifierDeck);
-      this.modifierDecks.set(room.roomCode, remainingDeck);
+      characterDecks.set(attacker.id, remainingDeck);
 
       // Check if reshuffle needed (x2 or null triggers reshuffle)
       if (this.modifierDeckService.checkReshuffle(modifierCard)) {
@@ -2474,7 +2563,7 @@ export class GameGateway
           remainingDeck,
           [],
         );
-        this.modifierDecks.set(room.roomCode, reshuffled);
+        characterDecks.set(attacker.id, reshuffled);
       }
 
       // Get attack action modifiers for push/pull/conditions (Issue #220)
@@ -2994,6 +3083,204 @@ export class GameGateway
       this.logger.error(`Collect loot error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'COLLECT_LOOT_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Request summon placement (Issue #228 - Phase 6)
+   * Called when a player wants to place a summon on the board
+   */
+  @SubscribeMessage('request_summon_placement')
+  handleRequestSummonPlacement(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      roomCode: string;
+      summonDefinition: SummonDefinition;
+      targetHex: AxialCoordinates;
+      characterId: string;
+      maxRange?: number;
+    },
+  ): void {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      const { roomCode, summonDefinition, targetHex, characterId, maxRange } =
+        payload;
+
+      this.logger.log(
+        `Summon placement request from ${userId} for character ${characterId}`,
+      );
+
+      // Get room
+      const room = roomService.getRoom(roomCode);
+      if (!room) {
+        throw new Error(`Room ${roomCode} not found`);
+      }
+
+      // Get character and verify ownership
+      const character = characterService.getCharacterById(characterId);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      if (character.playerId !== userId) {
+        throw new Error('Character does not belong to this player');
+      }
+
+      // Get character's current position
+      const characterPosition = character.position;
+      if (!characterPosition) {
+        throw new Error('Character has no position');
+      }
+
+      // Get hex map and occupied hexes
+      const hexMap = this.roomMaps.get(roomCode);
+      if (!hexMap) {
+        throw new Error('Hex map not found');
+      }
+
+      // Collect occupied hexes
+      const occupiedHexes: AxialCoordinates[] = [];
+
+      // Add character positions
+      room.players
+        .flatMap((p: any) => characterService.getCharactersByPlayerId(p.userId))
+        .filter((c: any) => c && c.position)
+        .forEach((c: any) => occupiedHexes.push(c.position));
+
+      // Add monster positions
+      const monsters = this.roomMonsters.get(roomCode) || [];
+      monsters
+        .filter((m) => !m.isDead && m.position)
+        .forEach((m) => occupiedHexes.push(m.position));
+
+      // Add existing summon positions
+      const existingSummons = this.roomSummons.get(roomCode) || [];
+      existingSummons
+        .filter((s) => !s.isDead && s.position)
+        .forEach((s) => occupiedHexes.push(s.position));
+
+      // Validate placement
+      const placementRange = maxRange ?? 3; // Default range of 3 if not specified
+      const isValid = this.summonService.validatePlacement(
+        targetHex,
+        characterPosition,
+        hexMap,
+        occupiedHexes,
+        placementRange,
+      );
+
+      if (!isValid) {
+        throw new Error('Invalid summon placement location');
+      }
+
+      // Get character's initiative (summons inherit owner's initiative)
+      const characterInitiative = character.selectedCards?.initiative ?? 99;
+
+      // Create summon
+      const summon = this.summonService.createSummon(
+        summonDefinition,
+        targetHex,
+        roomCode,
+        characterId,
+        characterInitiative,
+      );
+
+      // Add to room summons
+      let summons = this.roomSummons.get(roomCode);
+      if (!summons) {
+        summons = [];
+        this.roomSummons.set(roomCode, summons);
+      }
+      summons.push(summon);
+
+      this.logger.log(
+        `Created summon ${summon.name} (${summon.id}) at (${targetHex.q}, ${targetHex.r}) for character ${characterId}`,
+      );
+
+      // Rebuild turn order to include new summon
+      // Note: Summons are added to current round's turn order, not next round
+      const turnOrder = this.roomTurnOrder.get(roomCode);
+      if (turnOrder) {
+        // Find the right position in turn order (right before owner, with same initiative)
+        const ownerIndex = turnOrder.findIndex(
+          (e) => e.entityId === characterId,
+        );
+        const summonEntry = {
+          entityId: summon.id,
+          entityType: 'summon' as const,
+          initiative: summon.initiative,
+          name: summon.name,
+          ownerId: summon.ownerId,
+          isDead: false,
+          isExhausted: false,
+        };
+
+        if (ownerIndex !== -1) {
+          // Insert summon right before owner in turn order
+          turnOrder.splice(ownerIndex, 0, summonEntry);
+        } else {
+          // Owner not in turn order (might be exhausted), add to end
+          turnOrder.push(summonEntry);
+        }
+
+        this.roomTurnOrder.set(roomCode, turnOrder);
+      }
+
+      // Emit summon_created event
+      const summonCreatedPayload: SummonCreatedPayload = {
+        summonId: summon.id,
+        summonName: summon.name,
+        ownerCharacterId: summon.ownerId,
+        placementHex: summon.position,
+        health: summon.currentHealth,
+        maxHealth: summon.maxHealth,
+        attack: summon.attack,
+        move: summon.move,
+        range: summon.range,
+        typeIcon: summon.typeIcon,
+        playerControlled: summon.playerControlled,
+        initiative: summon.initiative,
+      };
+
+      this.server.to(roomCode).emit('summon_created', summonCreatedPayload);
+
+      // Emit turn_order_updated with new turn order
+      if (turnOrder) {
+        this.server.to(roomCode).emit('round_started', {
+          roundNumber: this.currentRound.get(roomCode) || 1,
+          turnOrder: turnOrder.map(
+            ({ entityId, name, entityType, initiative, ownerId }) => ({
+              entityId,
+              name,
+              entityType,
+              initiative,
+              ownerId,
+            }),
+          ),
+        });
+      }
+
+      // Add log entry
+      this.addGameLogEntry(roomCode, [
+        { text: character.characterClass, color: 'lightblue' },
+        { text: ` summoned ` },
+        { text: summon.name, color: 'lightgreen' },
+        { text: `.` },
+      ]);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Summon placement error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'SUMMON_PLACEMENT_ERROR',
         message: errorMessage,
       };
       client.emit('error', errorPayload);
@@ -3677,10 +3964,30 @@ export class GameGateway
         );
       });
 
-      // Use MonsterAIService to determine focus target
+      // Issue #228: Get summons for targeting
+      const summons = this.roomSummons.get(roomCode) || [];
+      const summonTargets = summons
+        .filter((s) => !s.isDead)
+        .map((s) => ({
+          id: s.id,
+          currentHex: s.position,
+          isDead: s.isDead,
+          conditions: s.conditions,
+          ownerId: s.ownerId,
+        }));
+
+      this.emitDebugLog(
+        roomCode,
+        'info',
+        `Found ${summonTargets.length} summons as potential targets`,
+        'MonsterAI',
+      );
+
+      // Use MonsterAIService to determine focus target (includes summons)
       const focusTargetId = this.monsterAIService.selectFocusTarget(
         monster,
         characters as any,
+        summonTargets as any,
       );
 
       if (!focusTargetId) {
@@ -3702,29 +4009,38 @@ export class GameGateway
         'MonsterAI',
       );
 
-      const focusTargetMapped = characters.find(
+      // Issue #228: Focus target could be a character or a summon
+      let focusTargetMapped = characters.find(
         (c: any) => c.id === focusTargetId,
       );
-      if (!focusTargetMapped) {
-        this.emitDebugLog(
-          roomCode,
-          'error',
-          `Focus target ${focusTargetId} not found in character list`,
-          'MonsterAI',
-        );
-        this.advanceTurnAfterMonsterActivation(roomCode);
-        return;
+      let focusTarget: any = null;
+      let targetIsSummon = false;
+
+      if (focusTargetMapped) {
+        // Target is a character
+        focusTarget = characterModels.find((c: any) => c.id === focusTargetId);
+      } else {
+        // Check if target is a summon
+        const targetSummon = summons.find((s) => s.id === focusTargetId);
+        if (targetSummon) {
+          targetIsSummon = true;
+          focusTarget = targetSummon;
+          // Map summon properties to match character interface for movement/attack calculations
+          focusTargetMapped = {
+            id: targetSummon.id,
+            currentHex: targetSummon.position,
+            classType: targetSummon.name,
+            conditions: targetSummon.conditions,
+            isExhausted: targetSummon.isDead,
+          };
+        }
       }
 
-      // Get the original Character model instance for method calls
-      const focusTarget = characterModels.find(
-        (c: any) => c.id === focusTargetId,
-      );
-      if (!focusTarget) {
+      if (!focusTargetMapped || !focusTarget) {
         this.emitDebugLog(
           roomCode,
           'error',
-          `Focus target model ${focusTargetId} not found`,
+          `Focus target ${focusTargetId} not found in character or summon list`,
           'MonsterAI',
         );
         this.advanceTurnAfterMonsterActivation(roomCode);
@@ -3734,7 +4050,7 @@ export class GameGateway
       this.emitDebugLog(
         roomCode,
         'info',
-        `Focus target found: ${focusTargetMapped.classType} at (${focusTargetMapped.currentHex.q}, ${focusTargetMapped.currentHex.r})`,
+        `Focus target found: ${focusTargetMapped.classType} at (${focusTargetMapped.currentHex.q}, ${focusTargetMapped.currentHex.r})${targetIsSummon ? ' (summon)' : ''}`,
         'MonsterAI',
       );
 
@@ -3861,16 +4177,12 @@ export class GameGateway
           'MonsterAI',
         );
 
-        // Draw attack modifier card
-        const modifierDeck = this.modifierDecks.get(roomCode);
-        if (!modifierDeck) {
-          this.emitDebugLog(
-            roomCode,
-            'error',
-            `Modifier deck not found for room ${roomCode}`,
-            'MonsterAI',
-          );
-          throw new Error(`Modifier deck not found for room ${roomCode}`);
+        // Draw attack modifier card from shared monster deck
+        let modifierDeck = this.monsterModifierDeck.get(roomCode);
+        if (!modifierDeck || modifierDeck.length === 0) {
+          // Reinitialize if empty or missing
+          modifierDeck = this.modifierDeckService.initializeStandardDeck();
+          this.monsterModifierDeck.set(roomCode, modifierDeck);
         }
 
         const modifierDrawResult =
@@ -3878,7 +4190,19 @@ export class GameGateway
         const modifierCard = modifierDrawResult.card;
 
         // Update deck after draw
-        this.modifierDecks.set(roomCode, modifierDrawResult.remainingDeck);
+        this.monsterModifierDeck.set(
+          roomCode,
+          modifierDrawResult.remainingDeck,
+        );
+
+        // Check if reshuffle needed (x2 or null triggers reshuffle)
+        if (this.modifierDeckService.checkReshuffle(modifierCard)) {
+          const reshuffled = this.modifierDeckService.reshuffleDeck(
+            modifierDrawResult.remainingDeck,
+            [],
+          );
+          this.monsterModifierDeck.set(roomCode, reshuffled);
+        }
 
         // Calculate damage
         const baseDamage = monster.attack;
@@ -3953,14 +4277,32 @@ export class GameGateway
 
         // Check if target is dead/exhausted
         if (focusTarget.isDead) {
-          this.emitDebugLog(
-            roomCode,
-            'warn',
-            `Character ${focusTarget.characterClass} was killed`,
-            'MonsterAI',
-          );
-          // Phase 3: Handle character exhaustion from health reaching 0
-          this.handleCharacterExhaustion(roomCode, focusTarget, 'health');
+          if (targetIsSummon) {
+            // Issue #228: Handle summon death
+            this.emitDebugLog(
+              roomCode,
+              'warn',
+              `Summon ${focusTarget.name} was killed`,
+              'MonsterAI',
+            );
+            // Emit summon_died event
+            const summonDiedPayload: SummonDiedPayload = {
+              summonId: focusTarget.id,
+              summonName: focusTarget.name,
+              reason: 'damage',
+              hex: focusTarget.position,
+            };
+            this.server.to(roomCode).emit('summon_died', summonDiedPayload);
+          } else {
+            this.emitDebugLog(
+              roomCode,
+              'warn',
+              `Character ${focusTarget.characterClass} was killed`,
+              'MonsterAI',
+            );
+            // Phase 3: Handle character exhaustion from health reaching 0
+            this.handleCharacterExhaustion(roomCode, focusTarget, 'health');
+          }
         }
       } else {
         this.emitDebugLog(
@@ -3976,15 +4318,20 @@ export class GameGateway
         : monster.monsterType;
 
       // Broadcast monster activation
+      // Issue #228: Handle summon target names
+      const focusTargetName = targetIsSummon
+        ? focusTarget.name
+        : this.getPlayerNickname(
+            roomCode,
+            focusTarget.playerId,
+            focusTarget.characterClass,
+          );
+
       const monsterActivatedPayload: MonsterActivatedPayload = {
         monsterId,
         monsterName,
         focusTarget: focusTargetId,
-        focusTargetName: this.getPlayerNickname(
-          roomCode,
-          focusTarget.playerId,
-          focusTarget.characterClass,
-        ),
+        focusTargetName,
         movement: movementHex || monster.currentHex, // Use current hex if no movement
         movementDistance,
         attack: attackResult,
@@ -4021,15 +4368,24 @@ export class GameGateway
               ? 'x2'
               : 'miss';
         const targetDead = focusTarget.isDead;
+        // Issue #228: Handle summon target in log entry
+        const targetDisplayName = targetIsSummon
+          ? focusTarget.name
+          : focusTarget.characterClass;
+        const targetColor = targetIsSummon ? 'lightgreen' : 'lightblue';
+        const deathMessage = targetIsSummon
+          ? ` - Summon destroyed!`
+          : ` - Player down!`;
+
         this.addGameLogEntry(roomCode, [
           { text: monsterName, color: 'orange' },
           { text: ` attacks ` },
-          { text: focusTarget.characterClass, color: 'lightblue' },
+          { text: targetDisplayName, color: targetColor },
           { text: ` for ` },
           { text: `${attackResult.damage}`, color: 'red' },
           { text: ` damage (${modifierText})` },
           ...(targetDead
-            ? [{ text: ` - Player down!`, color: 'red', isBold: true }]
+            ? [{ text: deathMessage, color: 'red', isBold: true }]
             : []),
         ]);
       }
@@ -4068,6 +4424,349 @@ export class GameGateway
       // Still advance turn even on error to prevent game from hanging
       this.advanceTurnAfterMonsterActivation(roomCode);
     }
+  }
+
+  /**
+   * Activate summon AI (Issue #228 - Phase 6)
+   * Called when it's an AI-controlled summon's turn
+   * Similar to activateMonster but summons target monsters (enemies)
+   */
+  private activateSummon(summonId: string, roomCode: string): void {
+    try {
+      this.logger.log(
+        `[SummonAI] Activating summon ${summonId} in room ${roomCode}`,
+      );
+
+      // Check if summon has already acted this turn
+      const actedSet = this.summonsActedThisTurn.get(roomCode);
+      if (actedSet && actedSet.has(summonId)) {
+        this.logger.log(
+          `[SummonAI] Summon ${summonId} has already acted this turn, advancing turn`,
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Get summon from room state
+      const summons = this.roomSummons.get(roomCode) || [];
+      const summon = summons.find((s) => s.id === summonId);
+      if (!summon) {
+        this.logger.error(`Summon ${summonId} not found in room ${roomCode}`);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Skip dead or stunned summons
+      if (summon.isDead || summon.isStunned) {
+        this.logger.log(
+          `[SummonAI] Summon ${summonId} is dead or stunned, skipping activation`,
+        );
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Get monsters as targets (summons target enemies)
+      const monsters = this.roomMonsters.get(roomCode) || [];
+      const aliveMonsters = monsters.filter((m) => !m.isDead);
+
+      if (aliveMonsters.length === 0) {
+        this.logger.log(`[SummonAI] No valid targets for summon ${summonId}`);
+        this.markSummonActed(roomCode, summonId);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Use SummonAIService to select focus target (closest monster)
+      // Need to import Monster model from monster.model.ts
+      const focusTargetId = this.summonAIService.selectFocusTarget(
+        summon,
+        aliveMonsters as any,
+      );
+
+      if (!focusTargetId) {
+        this.logger.log(
+          `[SummonAI] No valid focus target for summon ${summonId}`,
+        );
+        this.markSummonActed(roomCode, summonId);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      const focusTarget = aliveMonsters.find((m) => m.id === focusTargetId);
+      if (!focusTarget) {
+        this.logger.error(`[SummonAI] Focus target ${focusTargetId} not found`);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Get hex map for movement
+      const hexMap = this.roomMaps.get(roomCode);
+      if (!hexMap) {
+        this.logger.error(`[SummonAI] Hex map not found for room ${roomCode}`);
+        this.advanceTurnAfterMonsterActivation(roomCode);
+        return;
+      }
+
+      // Collect obstacles
+      const obstacles: AxialCoordinates[] = [];
+      hexMap.forEach((tile: any) => {
+        if (tile.terrain === 'obstacle') {
+          obstacles.push(tile.coordinates);
+        }
+      });
+
+      // Collect occupied hexes
+      const occupiedHexes: AxialCoordinates[] = [];
+
+      // Add character positions
+      const room = roomService.getRoom(roomCode);
+      if (room) {
+        room.players
+          .flatMap((p: any) =>
+            characterService.getCharactersByPlayerId(p.userId),
+          )
+          .filter((c: any) => c && c.position)
+          .forEach((c: any) => occupiedHexes.push(c.position));
+      }
+
+      // Add monster positions
+      aliveMonsters
+        .filter((m) => m.position)
+        .forEach((m) => occupiedHexes.push(m.position));
+
+      // Add other summon positions (exclude current summon)
+      summons
+        .filter((s) => s.id !== summonId && !s.isDead && s.position)
+        .forEach((s) => occupiedHexes.push(s.position));
+
+      // Movement
+      const originalHex = { ...summon.position };
+      const movementHex = this.summonAIService.determineMovement(
+        summon,
+        focusTarget as any,
+        obstacles,
+        occupiedHexes,
+        hexMap,
+      );
+
+      let moved = false;
+      if (movementHex) {
+        summon.moveTo(movementHex);
+        moved = true;
+        this.logger.log(
+          `[SummonAI] Summon ${summon.name} moved from (${originalHex.q},${originalHex.r}) to (${movementHex.q},${movementHex.r})`,
+        );
+      }
+
+      // Attack
+      let attacked = false;
+      let damageDealt = 0;
+      let targetDied = false;
+
+      if (this.summonAIService.shouldAttack(summon, focusTarget as any)) {
+        // Determine which modifier deck to use for summon attack
+        let summonModifierDeck: AttackModifierCard[] | undefined;
+
+        if (summon.ownerId) {
+          // Use owner's character deck for player-summoned summons
+          const characterDecks = this.characterModifierDecks.get(roomCode);
+          if (characterDecks) {
+            summonModifierDeck = characterDecks.get(summon.ownerId);
+          }
+        } else {
+          // Non-owned summon (scenario ally) - use shared ally deck
+          summonModifierDeck = this.allyModifierDeck.get(roomCode);
+        }
+
+        // Fallback: initialize if needed
+        if (!summonModifierDeck || summonModifierDeck.length === 0) {
+          summonModifierDeck =
+            this.modifierDeckService.initializeStandardDeck();
+          if (summon.ownerId) {
+            const characterDecks =
+              this.characterModifierDecks.get(roomCode) || new Map();
+            characterDecks.set(summon.ownerId, summonModifierDeck);
+            this.characterModifierDecks.set(roomCode, characterDecks);
+          } else {
+            this.allyModifierDeck.set(roomCode, summonModifierDeck);
+          }
+        }
+
+        // Draw modifier card
+        const { card: summonModifierCard, remainingDeck: summonRemainingDeck } =
+          this.modifierDeckService.drawCard(summonModifierDeck);
+
+        // Update the correct deck
+        if (summon.ownerId) {
+          const characterDecks = this.characterModifierDecks.get(roomCode);
+          if (characterDecks) {
+            characterDecks.set(summon.ownerId, summonRemainingDeck);
+          }
+        } else {
+          this.allyModifierDeck.set(roomCode, summonRemainingDeck);
+        }
+
+        // Handle reshuffle (x2 or null triggers reshuffle)
+        if (this.modifierDeckService.checkReshuffle(summonModifierCard)) {
+          const reshuffled = this.modifierDeckService.reshuffleDeck(
+            summonRemainingDeck,
+            [],
+          );
+          if (summon.ownerId) {
+            const characterDecks = this.characterModifierDecks.get(roomCode);
+            if (characterDecks) {
+              characterDecks.set(summon.ownerId, reshuffled);
+            }
+          } else {
+            this.allyModifierDeck.set(roomCode, reshuffled);
+          }
+        }
+
+        // Calculate damage using modifier
+        const baseDamage = summon.attack;
+        damageDealt = this.damageService.calculateDamage(
+          baseDamage,
+          summonModifierCard,
+        );
+        focusTarget.takeDamage(damageDealt);
+        attacked = true;
+        targetDied = focusTarget.isDead;
+
+        this.logger.log(
+          `[SummonAI] Summon ${summon.name} attacked ${focusTarget.monsterType} for ${damageDealt} damage (base: ${baseDamage}, modifier: ${summonModifierCard.modifier})`,
+        );
+
+        // Track damage dealt for objectives
+        const accumulatedStats = this.roomAccumulatedStats.get(roomCode);
+        if (accumulatedStats) {
+          accumulatedStats.totalDamageDealt += damageDealt;
+        }
+
+        // If monster died, emit monster_died
+        if (targetDied) {
+          this.logger.log(
+            `[SummonAI] Monster ${focusTarget.monsterType} was killed by summon ${summon.name}`,
+          );
+
+          // Update kill count for owner
+          if (summon.ownerId) {
+            const playerStats = this.roomPlayerStats.get(roomCode);
+            const ownerChar = characterService.getCharacterById(summon.ownerId);
+            if (playerStats && ownerChar) {
+              const stats = playerStats.get(ownerChar.playerId);
+              if (stats) {
+                stats.monstersKilled++;
+              }
+            }
+          }
+
+          // Update accumulated stats
+          if (accumulatedStats) {
+            accumulatedStats.monstersKilled++;
+          }
+
+          // Emit monster_died event
+          this.server.to(roomCode).emit('monster_died', {
+            monsterId: focusTargetId,
+            killerId: summonId,
+            hexCoordinates: focusTarget.position,
+          });
+
+          // Spawn loot token at monster's position
+          const lootToken = LootToken.create(focusTarget.position, 1);
+          let lootTokens = this.roomLootTokens.get(roomCode);
+          if (!lootTokens) {
+            lootTokens = [];
+            this.roomLootTokens.set(roomCode, lootTokens);
+          }
+          lootTokens.push(lootToken);
+
+          this.server.to(roomCode).emit('loot_spawned', {
+            id: lootToken.id,
+            coordinates: lootToken.coordinates,
+            value: lootToken.value,
+          });
+        }
+      }
+
+      // Mark summon as having acted this turn
+      this.markSummonActed(roomCode, summonId);
+
+      // Emit summon_activated event
+      this.server.to(roomCode).emit('summon_activated', {
+        summonId,
+        summonName: summon.name,
+        moved,
+        fromHex: originalHex,
+        toHex: summon.position,
+        attacked,
+        targetId: attacked ? focusTargetId : undefined,
+        targetName: attacked ? focusTarget.monsterType : undefined,
+        damageDealt: attacked ? damageDealt : undefined,
+        targetDied,
+      });
+
+      // Add log entry
+      if (moved || attacked) {
+        const logParts: Array<{
+          text: string;
+          color?: string;
+          isBold?: boolean;
+        }> = [{ text: summon.name, color: 'lightgreen' }];
+
+        if (moved) {
+          logParts.push({ text: ` moved` });
+        }
+
+        if (attacked) {
+          if (moved) logParts.push({ text: ` and` });
+          logParts.push(
+            { text: ` attacked ` },
+            { text: focusTarget.monsterType, color: 'orange' },
+            { text: ` for ` },
+            { text: `${damageDealt}`, color: 'red' },
+            { text: ` damage` },
+          );
+
+          if (targetDied) {
+            logParts.push({ text: ` - killed!`, color: 'red', isBold: true });
+          }
+        }
+
+        logParts.push({ text: `.` });
+        this.addGameLogEntry(roomCode, logParts);
+      }
+
+      // Check scenario completion after potential monster kill
+      if (targetDied) {
+        this.checkScenarioCompletion(roomCode, {
+          checkPrimaryObjective: false,
+        });
+      }
+
+      // Advance turn
+      this.advanceTurnAfterMonsterActivation(roomCode);
+
+      this.logger.log(`[SummonAI] Summon ${summon.name} activation complete`);
+    } catch (error) {
+      this.logger.error(
+        `[SummonAI] Error activating summon ${summonId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      // Still advance turn even on error to prevent game from hanging
+      this.advanceTurnAfterMonsterActivation(roomCode);
+    }
+  }
+
+  /**
+   * Mark a summon as having acted this turn
+   */
+  private markSummonActed(roomCode: string, summonId: string): void {
+    let actedSet = this.summonsActedThisTurn.get(roomCode);
+    if (!actedSet) {
+      actedSet = new Set();
+      this.summonsActedThisTurn.set(roomCode, actedSet);
+    }
+    actedSet.add(summonId);
   }
 
   /**
@@ -4141,6 +4840,18 @@ export class GameGateway
             );
           });
         }, 100);
+      }
+
+      // Issue #228: If next entity is an AI-controlled summon, activate it automatically
+      if (nextEntity.entityType === 'summon') {
+        const summons = this.roomSummons.get(roomCode) || [];
+        const summon = summons.find((s) => s.id === nextEntity.entityId);
+        // Only auto-activate AI-controlled summons; player-controlled summons wait for orders
+        if (summon && !summon.playerControlled) {
+          setTimeout(() => {
+            this.activateSummon(nextEntity.entityId, roomCode);
+          }, 100);
+        }
       }
     }
   }
@@ -4511,6 +5222,52 @@ export class GameGateway
         this.logger.log(`Character ${character.id} marked as exhausted`);
       } else {
         this.logger.error(`Could not find character model for ${character.id}`);
+      }
+
+      // Issue #228: Kill all summons owned by this character
+      const summons = this.roomSummons.get(roomCode) || [];
+      const killedSummons = this.summonService.killSummonsByOwner(
+        character.id,
+        reason === 'health' ? 'owner_died' : 'owner_exhausted',
+        summons,
+      );
+
+      // Emit summon_died for each killed summon
+      for (const summon of killedSummons) {
+        const summonDiedPayload: SummonDiedPayload = {
+          summonId: summon.id,
+          summonName: summon.name,
+          reason: reason === 'health' ? 'owner_died' : 'owner_exhausted',
+          hex: summon.position,
+        };
+        this.server.to(roomCode).emit('summon_died', summonDiedPayload);
+
+        this.addGameLogEntry(roomCode, [
+          { text: summon.name, color: 'lightgreen' },
+          { text: ` vanished when ` },
+          {
+            text: character.characterClass || character.classType,
+            color: 'lightblue',
+          },
+          { text: ` was exhausted.` },
+        ]);
+      }
+
+      if (killedSummons.length > 0) {
+        this.logger.log(
+          `Killed ${killedSummons.length} summons owned by exhausted character ${character.id}`,
+        );
+
+        // Rebuild turn order to remove dead summons
+        const turnOrder = this.roomTurnOrder.get(roomCode);
+        if (turnOrder) {
+          const filteredOrder = turnOrder.filter(
+            (entry) =>
+              entry.entityType !== 'summon' ||
+              !killedSummons.some((s) => s.id === entry.entityId),
+          );
+          this.roomTurnOrder.set(roomCode, filteredOrder);
+        }
       }
 
       // Emit character exhausted event
