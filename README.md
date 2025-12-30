@@ -214,20 +214,31 @@ npm test -- --coverage
 
 ## 📚 Documentation
 
-- **[Architecture](docs/ARCHITECTURE.md)** - System design, data flow, component architecture
-- **[Quickstart Guide](specs/001-gloomhaven-multiplayer/quickstart.md)** - 5-minute setup
-- **[Specification](specs/001-gloomhaven-multiplayer/spec.md)** - Feature requirements
-- **[Implementation Plan](specs/001-gloomhaven-multiplayer/plan.md)** - Technical approach
-- **[Tasks](specs/001-gloomhaven-multiplayer/tasks.md)** - Task breakdown
-- **[API Contracts](specs/001-gloomhaven-multiplayer/contracts/)** - WebSocket & REST API specs
+### Complete Documentation Index
+**[📖 Full Documentation →](docs/README.md)** - Complete documentation navigation and guides
 
-### Game Completion System
+### Quick Links
 
-- **[Game Completion System](docs/game-completion-system.md)** - Complete architecture and flow
-- **[Objective System Guide](docs/objective-system-guide.md)** - Creating and managing objectives
-- **[Scenario Migration Guide](docs/scenario-migration-guide.md)** - Migrating scenarios to new format
-- **[API Reference](docs/api-reference.md)** - Match history REST API documentation
-- **[Development Todos](docs/todos.md)** - Feature roadmap and completed work
+**Getting Started**
+- **[Setup Guide](SETUP.md)** - Development environment setup
+- **[Quickstart](specs/001-gloomhaven-multiplayer/quickstart.md)** - 5-minute walkthrough
+
+**Architecture**
+- **[System Architecture](docs/ARCHITECTURE.md)** - Complete system design and patterns
+- **[API Reference](docs/api-reference.md)** - REST and WebSocket API documentation
+- **[Data Model](specs/001-gloomhaven-multiplayer/data-model.md)** - Database schema
+
+**Game Systems**
+- **[Game Completion System](docs/game-completion-system.md)** - Victory/defeat detection
+- **[Objective System](docs/objective-system-guide.md)** - Creating objectives
+- **[Narrative System](docs/narrative-system.md)** - Story triggers and campaigns
+- **[Action System](docs/action-system.md)** - Card actions and combat
+
+**Development**
+- **[Agents & Commands](AGENTS.md)** - Claude Code slash commands
+- **[Testing Guide](docs/testing/README.md)** - Testing documentation
+- **[Deployment Guide](docs/deployment/README.md)** - Production deployment
+- **[Development Todos](docs/todos.md)** - Feature roadmap
 
 ---
 
