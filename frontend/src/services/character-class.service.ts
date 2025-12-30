@@ -111,10 +111,18 @@ class CharacterClassService {
    * Fetch character classes from API
    */
   private async fetchCharacterClasses(): Promise<CharacterClass[]> {
-    const response = await fetch(`${getApiUrl()}/character-classes`);
+    let response: Response;
+
+    try {
+      response = await fetch(`${getApiUrl()}/character-classes`);
+    } catch (error) {
+      // Network error (no connection, DNS failure, etc.)
+      const message = error instanceof Error ? error.message : 'Unknown network error';
+      throw new Error(`Network error fetching character classes: ${message}`);
+    }
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch character classes: ${response.statusText}`);
+      throw new Error(`Failed to fetch character classes: ${response.status} ${response.statusText}`);
     }
 
     return await response.json();

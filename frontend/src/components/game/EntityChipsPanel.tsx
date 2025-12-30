@@ -12,13 +12,9 @@
  * Character colors are now fetched from the database via the character class service.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Character, Monster } from '../../../../shared/types/entities';
 import { characterClassService } from '../../services/character-class.service';
-
-// Character colors are now loaded from the database
-// This map is populated on component mount and used for synchronous access
-const characterColorCache: Record<string, string> = {};
 
 // Monster type colors
 const monsterColors: Record<string, string> = {
@@ -57,15 +53,18 @@ export function EntityChipsPanel({
   onMonsterClick,
 }: EntityChipsPanelProps) {
   const [expandedSection, setExpandedSection] = useState<'characters' | 'monsters' | null>(null);
+  const [characterColors, setCharacterColors] = useState<Record<string, string>>({});
 
   // Load character colors from database on mount
   useEffect(() => {
     const loadColors = async () => {
       try {
         const classes = await characterClassService.getCharacterClasses();
+        const colorMap: Record<string, string> = {};
         classes.forEach((c) => {
-          characterColorCache[c.name] = c.color;
+          colorMap[c.name] = c.color;
         });
+        setCharacterColors(colorMap);
       } catch (err) {
         // Fall back to default colors on error
         console.warn('Failed to load character colors from database:', err);
@@ -74,9 +73,9 @@ export function EntityChipsPanel({
     loadColors();
   }, []);
 
-  const getCharacterColor = (classType: string): string => {
-    return characterColorCache[classType] || '#666666';
-  };
+  const getCharacterColor = useCallback((classType: string): string => {
+    return characterColors[classType] || '#666666';
+  }, [characterColors]);
 
   const getMonsterColor = (monsterTypeName: string): string => {
     return monsterColors[monsterTypeName] || monsterColors.default;
