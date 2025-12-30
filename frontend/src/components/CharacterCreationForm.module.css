@@ -1,0 +1,206 @@
+.formContainer {
+  width: 100%;
+}
+
+.pageContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-top: calc(2rem + 64px);
+}
+
+.modalContainer {
+  padding: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.errorMessage {
+  background-color: rgba(255, 69, 69, 0.1);
+  border: 1px solid rgba(255, 69, 69, 0.3);
+  border-radius: 4px;
+  color: #ff4545;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.formGroup input {
+  padding: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 1rem;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #4a9eff;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.formGroup input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inputHint {
+  font-size: 0.85rem;
+  color: #b0b0b0;
+}
+
+.classGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.classCard {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.classCard:hover {
+  border-color: rgba(74, 158, 255, 0.5);
+  transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.classCard.selected {
+  border-color: #4a9eff;
+  background-color: rgba(74, 158, 255, 0.1);
+}
+
+.classCard h3 {
+  margin: 0 0 0.75rem 0;
+  color: #4a9eff;
+  font-size: 1rem;
+}
+
+.classStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.classStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.classStat span:first-child {
+  font-size: 0.75rem;
+  color: #b0b0b0;
+}
+
+.classStat span:last-child {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.classDescription {
+  font-size: 0.8rem;
+  color: #b0b0b0;
+  margin: 0;
+}
+
+.selectedClassInfo {
+  background-color: rgba(74, 158, 255, 0.1);
+  border: 1px solid #4a9eff;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.selectedClassInfo h3 {
+  margin: 0 0 0.5rem 0;
+  color: #4a9eff;
+}
+
+.selectedClassInfo p {
+  margin: 0.5rem 0;
+  color: #b0b0b0;
+}
+
+.startingStats {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.startingStats div {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.cancelButton,
+.submitButton {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.cancelButton {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButton {
+  background-color: #4a9eff;
+  color: white;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #3a8eef;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  color: #b0b0b0;
+  padding: 2rem;
+}

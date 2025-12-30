@@ -15,6 +15,7 @@ import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
 import { CampaignShop } from '../shop';
 import { CampaignInvitePanel } from '../CampaignInvitePanel';
+import { CreateCharacterModal } from '../CreateCharacterModal';
 import type {
   CampaignWithDetails,
   CampaignScenario,
@@ -43,6 +44,9 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   const [availableCharacters, setAvailableCharacters] = useState<CharacterResponse[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   const [addingCharacter, setAddingCharacter] = useState(false);
+
+  // Character creation modal state
+  const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false);
 
   // Tab state
   type CampaignTab = 'characters' | 'shop' | 'scenarios' | 'invites';
@@ -133,6 +137,23 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
       setError(err instanceof Error ? err.message : 'Failed to add character');
     } finally {
       setAddingCharacter(false);
+    }
+  };
+
+  const handleCharacterCreated = async (character: CharacterResponse) => {
+    try {
+      // Close the modal
+      setShowCreateCharacterModal(false);
+      setError(null);
+
+      // Automatically add the newly created character to the campaign
+      await campaignService.joinCampaign(campaignId, character.id);
+
+      // Refresh campaign data to show the new character
+      await fetchCampaignData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add character to campaign');
+      // Modal is closed but character was created, user can manually add it
     }
   };
 
@@ -290,10 +311,18 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                 {loadingCharacters ? (
                   <p className={styles.loadingText}>Loading your characters...</p>
                 ) : availableCharacters.length === 0 ? (
-                  <p className={styles.noAvailableCharacters}>
-                    No available characters. All your characters are either in campaigns or retired.
-                    Create a new character first.
-                  </p>
+                  <div className={styles.noAvailableCharacters}>
+                    <p>No available characters. All your characters are either in campaigns or retired.</p>
+                    <button
+                      className={styles.createNewCharacterButton}
+                      onClick={() => {
+                        setShowAddCharacter(false);
+                        setShowCreateCharacterModal(true);
+                      }}
+                    >
+                      + Create New Character
+                    </button>
+                  </div>
                 ) : (
                   <div className={styles.availableCharactersList}>
                     {availableCharacters.map((char) => (
@@ -350,6 +379,14 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Create Character Modal */}
+            {showCreateCharacterModal && (
+              <CreateCharacterModal
+                onSuccess={handleCharacterCreated}
+                onCancel={() => setShowCreateCharacterModal(false)}
+              />
             )}
           </div>
         )}
