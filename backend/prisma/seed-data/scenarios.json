@@ -860,5 +860,54 @@
       { "q": 0, "r": 0 },
       { "q": 1, "r": 0 }
     ]
+  },
+  {
+    "name": "Sparring Arena",
+    "difficulty": 1,
+    "mapLayout": [
+      { "id": "SA1", "coordinates": { "q": 0, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "SA2", "coordinates": { "q": 1, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "SA3", "coordinates": { "q": 2, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "SA4", "coordinates": { "q": 3, "r": 0 }, "terrain": "normal", "features": [] },
+      { "id": "SA5", "coordinates": { "q": 0, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "SA6", "coordinates": { "q": 1, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "SA7", "coordinates": { "q": 2, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "SA8", "coordinates": { "q": 3, "r": 1 }, "terrain": "normal", "features": [] },
+      { "id": "SA9", "coordinates": { "q": 0, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "SA10", "coordinates": { "q": 1, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "SA11", "coordinates": { "q": 2, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "SA12", "coordinates": { "q": 3, "r": 2 }, "terrain": "normal", "features": [] },
+      { "id": "SA13", "coordinates": { "q": 0, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "SA14", "coordinates": { "q": 1, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "SA15", "coordinates": { "q": 2, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "SA16", "coordinates": { "q": 3, "r": 3 }, "terrain": "normal", "features": [] },
+      { "id": "SA17", "coordinates": { "q": 0, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "SA18", "coordinates": { "q": 1, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "SA19", "coordinates": { "q": 2, "r": 4 }, "terrain": "normal", "features": [] },
+      { "id": "SA20", "coordinates": { "q": 3, "r": 4 }, "terrain": "normal", "features": [] }
+    ],
+    "monsterGroups": [
+      {
+        "type": "sparring-dummy",
+        "positions": [{ "q": 2, "r": 2 }],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat the sparring dummy",
+        "trackProgress": true,
+        "milestones": [25, 50, 75, 100]
+      }
+    },
+    "treasures": [],
+    "playerStartPositions": [
+      { "q": 0, "r": 0 },
+      { "q": 1, "r": 0 },
+      { "q": 0, "r": 1 },
+      { "q": 1, "r": 1 }
+    ]
   }
 ]
