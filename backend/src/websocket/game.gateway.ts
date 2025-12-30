@@ -574,10 +574,10 @@ export class GameGateway
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private buildGameStatePayload(
+  private async buildGameStatePayload(
     room: any,
     roomCode: string,
-  ): GameStartedPayload {
+  ): Promise<GameStartedPayload> {
     // Get current scenario and game state (including all characters for multi-character players)
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -915,7 +915,7 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -2164,10 +2164,10 @@ export class GameGateway
    * Select two ability cards for the round (US2 - T097)
    */
   @SubscribeMessage('select_cards')
-  handleSelectCards(
+  async handleSelectCards(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCardsPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
