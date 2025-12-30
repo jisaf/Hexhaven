@@ -55,6 +55,10 @@ export interface CharacterClass {
   perks: string[];
   description: string;
   imageUrl: string | null;
+  baseMovement: number;
+  baseAttack: number;
+  baseRange: number;
+  color: string;
 }
 
 export interface AbilityCard {

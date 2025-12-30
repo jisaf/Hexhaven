@@ -148,6 +148,7 @@ export class GameGateway
     private readonly narrativeRewardService: NarrativeRewardService, // Narrative reward calculation (extracted)
     private readonly summonService: SummonService, // Issue #228 - Summons
     private readonly summonAIService: SummonAIService, // Issue #228 - Summon AI
+    private readonly abilityCardService: AbilityCardService, // DB-driven ability cards
   ) {
     // Initialization logging removed for performance
     this.gameResultService = new GameResultService(this.prisma);
@@ -179,7 +180,7 @@ export class GameGateway
     return room?.getPlayer(playerId)?.nickname || fallback;
   }
 
-  private readonly abilityCardService = new AbilityCardService();
+  // Note: abilityCardService is now injected via constructor (DB-driven)
   private readonly turnOrderService = new TurnOrderService();
   private readonly damageService = new DamageCalculationService();
   private readonly modifierDeckService = new ModifierDeckService();
@@ -340,14 +341,16 @@ export class GameGateway
    * Get the attack action from a character's selected cards
    * Returns the attack action (could be from top or bottom of either card)
    */
-  private getAttackActionFromSelectedCards(character: any): CardAction | null {
+  private async getAttackActionFromSelectedCards(
+    character: any,
+  ): Promise<CardAction | null> {
     if (!character.selectedCards) {
       return null;
     }
 
     const { topCardId, bottomCardId } = character.selectedCards;
-    const topCard = this.abilityCardService.getCardById(topCardId);
-    const bottomCard = this.abilityCardService.getCardById(bottomCardId);
+    const topCard = await this.abilityCardService.getCardById(topCardId);
+    const bottomCard = await this.abilityCardService.getCardById(bottomCardId);
 
     // Check for attack action in order of preference
     if (topCard?.topAction?.type === 'attack') {
@@ -571,10 +574,10 @@ export class GameGateway
    * Build game state payload for an active game
    * Helper method to construct GameStartedPayload with current game state
    */
-  private buildGameStatePayload(
+  private async buildGameStatePayload(
     room: any,
     roomCode: string,
-  ): GameStartedPayload {
+  ): Promise<GameStartedPayload> {
     // Get current scenario and game state (including all characters for multi-character players)
     const monsters = this.roomMonsters.get(roomCode) || [];
     const characters = room.players
@@ -591,64 +594,66 @@ export class GameGateway
     }
 
     // Load ability decks for all characters (using hybrid approach)
-    const charactersWithDecks = characters.map((c: any) => {
-      const charData = c.toJSON();
+    const charactersWithDecks = await Promise.all(
+      characters.map(async (c: any) => {
+        const charData = c.toJSON();
 
-      // Get all cards for this class using CardTemplateCache (efficient)
-      const classCards = this.abilityCardService.getCardsByClass(
-        charData.characterClass,
-      );
-      const abilityDeckIds = classCards.map((card) => card.id);
+        // Get all cards for this class from database
+        const classCards = await this.abilityCardService.getCardsByClass(
+          charData.characterClass,
+        );
+        const abilityDeckIds = classCards.map((card) => card.id);
 
-      // Use current card pile state from character (for rejoin), or initialize if new game
-      // charData contains the actual current state of hand/discard/lost piles
-      // Only fallback to full deck if this is a NEW game (no cards in any pile)
-      const discardPile = charData.discardPile || [];
-      const lostPile = charData.lostPile || [];
-      const isNewGame =
-        discardPile.length === 0 &&
-        lostPile.length === 0 &&
-        (!charData.hand || charData.hand.length === 0);
-      const hand = isNewGame ? abilityDeckIds : charData.hand || [];
+        // Use current card pile state from character (for rejoin), or initialize if new game
+        // charData contains the actual current state of hand/discard/lost piles
+        // Only fallback to full deck if this is a NEW game (no cards in any pile)
+        const discardPile = charData.discardPile || [];
+        const lostPile = charData.lostPile || [];
+        const isNewGame =
+          discardPile.length === 0 &&
+          lostPile.length === 0 &&
+          (!charData.hand || charData.hand.length === 0);
+        const hand = isNewGame ? abilityDeckIds : charData.hand || [];
 
-      // Get database character ID from player (Issue #205)
-      const player = room.players.find(
-        (p: any) => p.userId === charData.playerId,
-      );
-      const userCharacterId = player?.characterId || undefined;
+        // Get database character ID from player (Issue #205)
+        const player = room.players.find(
+          (p: any) => p.userId === charData.playerId,
+        );
+        const userCharacterId = player?.characterId || undefined;
 
-      return {
-        id: charData.id,
-        playerId: charData.playerId,
-        userCharacterId, // Database character ID for inventory API
-        classType: charData.characterClass,
-        health: charData.currentHealth,
-        maxHealth: charData.stats.maxHealth,
-        currentHex: charData.position,
-        conditions: charData.conditions,
-        isExhausted: charData.exhausted,
+        return {
+          id: charData.id,
+          playerId: charData.playerId,
+          userCharacterId, // Database character ID for inventory API
+          classType: charData.characterClass,
+          health: charData.currentHealth,
+          maxHealth: charData.stats.maxHealth,
+          currentHex: charData.position,
+          conditions: charData.conditions,
+          isExhausted: charData.exhausted,
 
-        // Deck management fields (hybrid approach: store IDs, hydrate on demand)
-        abilityDeck: classCards, // Full card objects for initial hand selection
-        hand, // Card IDs in hand
-        discardPile, // Card IDs in discard pile
-        lostPile, // Card IDs in lost pile
-        activeCards: null, // Currently selected card pair
-        activeEffects: [], // Cards with persistent effects
-        isResting: false,
-        restType: 'none' as const,
-        shortRestState: null,
-        exhaustionReason: null,
+          // Deck management fields (hybrid approach: store IDs, hydrate on demand)
+          abilityDeck: classCards, // Full card objects for initial hand selection
+          hand, // Card IDs in hand
+          discardPile, // Card IDs in discard pile
+          lostPile, // Card IDs in lost pile
+          activeCards: null, // Currently selected card pair
+          activeEffects: [], // Cards with persistent effects
+          isResting: false,
+          restType: 'none' as const,
+          shortRestState: null,
+          exhaustionReason: null,
 
-        // Include selected cards and action state for game rejoin
-        selectedCards: c.selectedCards, // { topCardId, bottomCardId, initiative }
-        effectiveMovement: c.effectiveMovementThisTurn,
-        effectiveAttack: c.effectiveAttackThisTurn,
-        effectiveRange: c.effectiveRangeThisTurn,
-        hasAttackedThisTurn: c.hasAttackedThisTurn,
-        movementUsedThisTurn: c.movementUsedThisTurn,
-      };
-    });
+          // Include selected cards and action state for game rejoin
+          selectedCards: c.selectedCards, // { topCardId, bottomCardId, initiative }
+          effectiveMovement: c.effectiveMovementThisTurn,
+          effectiveAttack: c.effectiveAttackThisTurn,
+          effectiveRange: c.effectiveRangeThisTurn,
+          hasAttackedThisTurn: c.hasAttackedThisTurn,
+          movementUsedThisTurn: c.movementUsedThisTurn,
+        };
+      }),
+    );
 
     // Build game state payload
     // Get objectives for this room
@@ -910,7 +915,7 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -1609,7 +1614,7 @@ export class GameGateway
           // Update character's hand with correct card IDs from ability card service
           // (Character.create uses deprecated getStarterDeck with random IDs)
           const classCards =
-            this.abilityCardService.getCardsByClass(characterClass);
+            await this.abilityCardService.getCardsByClass(characterClass);
           const starterCardIds = classCards
             .filter((card) => card.level === 1)
             .map((card) => card.id);
@@ -1717,41 +1722,43 @@ export class GameGateway
       );
 
       // Load ability cards for each character
-      const charactersWithDecks = characters.map((c: any) => {
-        const charData = c.toJSON();
-        this.logger.log(`🃏 Loading ability deck for character:`, {
-          id: charData.id,
-          playerId: charData.playerId,
-          characterClass: charData.characterClass,
-        });
+      const charactersWithDecks = await Promise.all(
+        characters.map(async (c: any) => {
+          const charData = c.toJSON();
+          this.logger.log(`🃏 Loading ability deck for character:`, {
+            id: charData.id,
+            playerId: charData.playerId,
+            characterClass: charData.characterClass,
+          });
 
-        // Get ability deck for this character class
-        const abilityDeck = this.abilityCardService.getCardsByClass(
-          charData.characterClass,
-        );
+          // Get ability deck for this character class from database
+          const abilityDeck = await this.abilityCardService.getCardsByClass(
+            charData.characterClass,
+          );
 
-        this.logger.log(`🃏 Ability deck loaded:`, {
-          characterClass: charData.characterClass,
-          deckSize: abilityDeck.length,
-          firstCard: abilityDeck[0]?.name || 'NO CARDS',
-        });
+          this.logger.log(`🃏 Ability deck loaded:`, {
+            characterClass: charData.characterClass,
+            deckSize: abilityDeck.length,
+            firstCard: abilityDeck[0]?.name || 'NO CARDS',
+          });
 
-        return {
-          id: charData.id,
-          playerId: charData.playerId,
-          userCharacterId: charData.userCharacterId, // Database character ID for inventory API
-          classType: charData.characterClass,
-          health: charData.currentHealth,
-          maxHealth: charData.stats.maxHealth,
-          currentHex: charData.position,
-          conditions: charData.conditions,
-          isExhausted: charData.exhausted,
-          hand: charData.hand || [],
-          discardPile: charData.discardPile || [],
-          lostPile: charData.lostPile || [],
-          abilityDeck, // Include ability deck for card selection
-        };
-      });
+          return {
+            id: charData.id,
+            playerId: charData.playerId,
+            userCharacterId: charData.userCharacterId, // Database character ID for inventory API
+            classType: charData.characterClass,
+            health: charData.currentHealth,
+            maxHealth: charData.stats.maxHealth,
+            currentHex: charData.position,
+            conditions: charData.conditions,
+            isExhausted: charData.exhausted,
+            hand: charData.hand || [],
+            discardPile: charData.discardPile || [],
+            lostPile: charData.lostPile || [],
+            abilityDeck, // Include ability deck for card selection
+          };
+        }),
+      );
 
       // Broadcast game started to all players
       // Get objectives that were initialized above
@@ -2157,10 +2164,10 @@ export class GameGateway
    * Select two ability cards for the round (US2 - T097)
    */
   @SubscribeMessage('select_cards')
-  handleSelectCards(
+  async handleSelectCards(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCardsPayload,
-  ): void {
+  ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -2196,7 +2203,7 @@ export class GameGateway
       }
 
       // Validate cards are in player's hand (belong to character class)
-      const validation = this.abilityCardService.validateCardSelection(
+      const validation = await this.abilityCardService.validateCardSelection(
         payload.topCardId,
         payload.bottomCardId,
         character.characterClass,
@@ -2610,7 +2617,8 @@ export class GameGateway
       }
 
       // Get attack action modifiers for push/pull/conditions (Issue #220)
-      const attackAction = this.getAttackActionFromSelectedCards(attacker);
+      const attackAction =
+        await this.getAttackActionFromSelectedCards(attacker);
       const attackModifiers = attackAction?.modifiers || [];
 
       // Process element consumption for bonuses (Issue #220 - Phase 3)

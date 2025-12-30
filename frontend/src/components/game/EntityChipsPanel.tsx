@@ -8,20 +8,13 @@
  * - Health indicators on each chip
  * - Turn indicator (glow/highlight)
  * - Always visible during gameplay
+ *
+ * Character colors are now fetched from the database via the character class service.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Character, Monster } from '../../../../shared/types/entities';
-
-// Character class colors
-const characterColors: Record<string, string> = {
-  Brute: '#CC3333',
-  Tinkerer: '#3399CC',
-  Spellweaver: '#9933CC',
-  Scoundrel: '#33CC33',
-  Cragheart: '#CC9933',
-  Mindthief: '#CC33CC',
-};
+import { characterClassService } from '../../services/character-class.service';
 
 // Monster type colors
 const monsterColors: Record<string, string> = {
@@ -60,10 +53,29 @@ export function EntityChipsPanel({
   onMonsterClick,
 }: EntityChipsPanelProps) {
   const [expandedSection, setExpandedSection] = useState<'characters' | 'monsters' | null>(null);
+  const [characterColors, setCharacterColors] = useState<Record<string, string>>({});
 
-  const getCharacterColor = (classType: string): string => {
-    return characterColors[classType] || '#666';
-  };
+  // Load character colors from database on mount
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const classes = await characterClassService.getCharacterClasses();
+        const colorMap: Record<string, string> = {};
+        classes.forEach((c) => {
+          colorMap[c.name] = c.color;
+        });
+        setCharacterColors(colorMap);
+      } catch (err) {
+        // Fall back to default colors on error
+        console.warn('Failed to load character colors from database:', err);
+      }
+    };
+    loadColors();
+  }, []);
+
+  const getCharacterColor = useCallback((classType: string): string => {
+    return characterColors[classType] || '#666666';
+  }, [characterColors]);
 
   const getMonsterColor = (monsterTypeName: string): string => {
     return monsterColors[monsterTypeName] || monsterColors.default;

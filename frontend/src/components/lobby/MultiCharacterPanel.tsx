@@ -9,7 +9,7 @@
  * - Supports both authenticated (persistent) and anonymous (session) users
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CharacterSelect } from '../CharacterSelect';
@@ -19,12 +19,19 @@ import { EquipmentSummary } from '../character/EquipmentSummary';
 import { useBatchInventory } from '../../hooks/useBatchInventory';
 import { authService } from '../../services/auth.service';
 import { MAX_CHARACTERS_PER_PLAYER } from '../../../../shared/constants/game';
-import { getCharacterColor } from '../../../../shared/utils/character-colors';
+import { characterClassService } from '../../services/character-class.service';
 import styles from './MultiCharacterPanel.module.css';
 
 // Re-export for backward compatibility
 export { MAX_CHARACTERS_PER_PLAYER } from '../../../../shared/constants/game';
-export { getCharacterColor } from '../../../../shared/utils/character-colors';
+
+/**
+ * Get character color from cached data
+ * @deprecated Use characterClassService instead
+ */
+export function getCharacterColor(classType: string, fallback: string = '#666666'): string {
+  return characterClassService.getCharacterColorSync(classType, fallback);
+}
 
 export interface SelectedCharacter {
   id: string; // Character UUID for persistent, class name for anonymous
@@ -106,6 +113,14 @@ export function MultiCharacterPanel({
   const { t } = useTranslation('lobby');
   const isAuthenticated = authService.isAuthenticated();
   const [showSelection, setShowSelection] = useState(false);
+  const [colorsLoaded, setColorsLoaded] = useState(characterClassService.isCached());
+
+  // Preload character colors from database
+  useEffect(() => {
+    if (!colorsLoaded) {
+      characterClassService.preload().then(() => setColorsLoaded(true));
+    }
+  }, [colorsLoaded]);
 
   // Batch fetch inventories for all authenticated characters to avoid N+1 API calls
   const characterIds = useMemo(

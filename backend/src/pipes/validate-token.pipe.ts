@@ -16,10 +16,7 @@ export class ValidateTokenPipe implements PipeTransform<string, string> {
       throw new BadRequestException('Token must be a valid string');
     }
 
-    if (
-      value.length < TOKEN_MIN_LENGTH ||
-      value.length > TOKEN_MAX_LENGTH
-    ) {
+    if (value.length < TOKEN_MIN_LENGTH || value.length > TOKEN_MAX_LENGTH) {
       throw new BadRequestException(
         `Token length must be between ${TOKEN_MIN_LENGTH} and ${TOKEN_MAX_LENGTH} characters`,
       );

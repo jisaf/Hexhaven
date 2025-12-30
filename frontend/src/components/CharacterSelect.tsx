@@ -1,17 +1,20 @@
 /**
  * CharacterSelect Component
  *
- * Displays 6 character classes for selection in the lobby.
+ * Displays character classes for selection in the lobby.
  * Features:
  * - Grid layout with character cards
  * - Visual feedback for selected character
  * - Disabled state for already-selected characters
- * - Character class descriptions
+ * - Character class descriptions and stats from database
  * - Touch-optimized selection
+ * - Loading and error states
  */
 
 import { useTranslation } from 'react-i18next';
 import { CharacterClass } from '../../../shared/types/entities';
+import { useCharacterClasses } from '../hooks/useCharacterClasses';
+import type { CharacterClass as CharacterClassData } from '../types/character.types';
 
 // Re-export for backward compatibility
 export { CharacterClass };
@@ -24,36 +27,27 @@ export interface CharacterSelectProps {
   compact?: boolean;
 }
 
-const characterColors: Partial<Record<CharacterClass, string>> = {
-  [CharacterClass.BRUTE]: '#CC3333',
-  [CharacterClass.TINKERER]: '#3399CC',
-  [CharacterClass.SPELLWEAVER]: '#9933CC',
-  [CharacterClass.SCOUNDREL]: '#33CC33',
-  [CharacterClass.CRAGHEART]: '#CC9933',
-  [CharacterClass.MINDTHIEF]: '#CC33CC',
-};
+/**
+ * Map CharacterClass enum to the name string used in the database
+ */
+function getClassName(enumValue: CharacterClass): string {
+  // The enum values are already the class names (e.g., CharacterClass.BRUTE = 'Brute')
+  return enumValue;
+}
 
-const characterDescriptions: Partial<Record<CharacterClass, string>> = {
-  [CharacterClass.BRUTE]: 'A tanky melee fighter who excels at absorbing damage and dealing heavy blows to adjacent enemies.',
-  [CharacterClass.TINKERER]: 'A support specialist who heals allies and summons mechanical contraptions to aid the party.',
-  [CharacterClass.SPELLWEAVER]: 'A powerful mage who controls elemental forces to devastate enemies from range.',
-  [CharacterClass.SCOUNDREL]: 'An agile rogue who strikes from advantage and uses cunning to outmaneuver foes.',
-  [CharacterClass.CRAGHEART]: 'A versatile earth elemental who can manipulate terrain and deals area damage.',
-  [CharacterClass.MINDTHIEF]: 'A psionic assassin who augments melee attacks with mind control and illusions.',
-};
-
-const characterStats: Partial<Record<CharacterClass, { health: number; handSize: number }>> = {
-  [CharacterClass.BRUTE]: { health: 10, handSize: 10 },
-  [CharacterClass.TINKERER]: { health: 8, handSize: 12 },
-  [CharacterClass.SPELLWEAVER]: { health: 6, handSize: 8 },
-  [CharacterClass.SCOUNDREL]: { health: 8, handSize: 9 },
-  [CharacterClass.CRAGHEART]: { health: 10, handSize: 11 },
-  [CharacterClass.MINDTHIEF]: { health: 6, handSize: 10 },
-};
+/**
+ * Find character class data by enum value
+ */
+function findClassData(classes: CharacterClassData[], enumValue: CharacterClass): CharacterClassData | undefined {
+  const name = getClassName(enumValue);
+  return classes.find((c) => c.name === name);
+}
 
 export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect, compact = false }: CharacterSelectProps) {
   const { t } = useTranslation();
+  const { classes: characterClassData, isLoading, error } = useCharacterClasses();
 
+  // List of character classes to display (excluding TestIconClass)
   const characters: CharacterClass[] = [
     CharacterClass.BRUTE,
     CharacterClass.TINKERER,
@@ -69,6 +63,48 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect,
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className={`character-select ${compact ? 'compact' : ''}`} data-testid="character-select">
+        <div className="character-select-loading" data-testid="character-select-loading">
+          {t('common:loading', 'Loading...')}
+        </div>
+        <style>{`
+          .character-select-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #aaa;
+            font-size: 16px;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className={`character-select ${compact ? 'compact' : ''}`} data-testid="character-select">
+        <div className="character-select-error" data-testid="character-select-error">
+          {t('common:error', 'Error')}: {error}
+        </div>
+        <style>{`
+          .character-select-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #ef4444;
+            font-size: 16px;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className={`character-select ${compact ? 'compact' : ''}`} data-testid="character-select">
       {!compact && (
@@ -81,8 +117,8 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect,
         {characters.map((characterClass) => {
           const isSelected = selectedClass === characterClass;
           const isDisabled = disabledClasses.includes(characterClass);
-          const color = characterColors[characterClass];
-          const stats = characterStats[characterClass];
+          const classData = findClassData(characterClassData, characterClass);
+          const color = classData?.color ?? '#666666';
 
           return (
             <button
@@ -109,23 +145,23 @@ export function CharacterSelect({ selectedClass, disabledClasses = [], onSelect,
                   <div className="character-description" data-testid="character-description">
                     {t(
                       `characters.${characterClass}.description`,
-                      characterDescriptions[characterClass] ?? ''
+                      classData?.description ?? ''
                     )}
                   </div>
                 )}
                 <div className="character-stats">
                   <div className="stat-item">
-                    <span className="stat-label">❤️</span>
-                    <span className="stat-value" data-testid="character-health">{stats?.health ?? 0}</span>
+                    <span className="stat-label">HP</span>
+                    <span className="stat-value" data-testid="character-health">{classData?.startingHealth ?? 0}</span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-label">🃏</span>
-                    <span className="stat-value" data-testid="character-hand-size">{stats?.handSize ?? 0}</span>
+                    <span className="stat-label">Cards</span>
+                    <span className="stat-value" data-testid="character-hand-size">{classData?.handSize ?? 0}</span>
                   </div>
                 </div>
               </div>
 
-              {isSelected && <div className="selected-indicator">✓</div>}
+              {isSelected && <div className="selected-indicator">+</div>}
               {isDisabled && (
                 <div className="disabled-overlay">
                   <span>{t('lobby:taken', 'Taken')}</span>
