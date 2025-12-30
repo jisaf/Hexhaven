@@ -64,6 +64,10 @@ model CharacterClass {
   perks            Json // Array of available perks ["Remove two -1 cards", ...]
   description      String   @db.VarChar(500)
   imageUrl         String?  @db.VarChar(255)
+  baseMovement     Int      @default(2) @db.SmallInt // Base movement value
+  baseAttack       Int      @default(2) @db.SmallInt // Base attack value
+  baseRange        Int      @default(1) @db.SmallInt // Base attack range (1 = melee)
+  color            String   @default("#666666") @db.VarChar(7) // Hex color for UI
   createdAt        DateTime @default(now())
 
   // Relations

@@ -25,7 +25,7 @@ export class AbilityCardsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
-  getCards(@Query('characterClass') characterClass?: string) {
+  async getCards(@Query('characterClass') characterClass?: string) {
     if (characterClass) {
       // Return cards for specific class
       return this.abilityCardService.getCardsByClass(
@@ -42,8 +42,8 @@ export class AbilityCardsController {
    */
   @Get(':cardId')
   @HttpCode(HttpStatus.OK)
-  getCardById(@Param('cardId') cardId: string) {
-    const card = this.abilityCardService.getCardById(cardId);
+  async getCardById(@Param('cardId') cardId: string) {
+    const card = await this.abilityCardService.getCardById(cardId);
     if (!card) {
       return { error: `Card not found: ${cardId}` };
     }

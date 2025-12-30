@@ -46,6 +46,9 @@ import { NarrativeConditionService } from './services/narrative-condition.servic
 import { NarrativeRewardService } from './services/narrative-reward.service';
 import { ShopService } from './services/shop.service';
 import { ShopController } from './api/shop.controller';
+import { SummonService } from './services/summon.service';
+import { SummonAIService } from './services/summon-ai.service';
+import { MonsterAIService } from './services/monster-ai.service';
 
 @Module({
   imports: [
@@ -106,6 +109,9 @@ import { ShopController } from './api/shop.controller';
     NarrativeConditionService, // Narrative trigger condition evaluation
     NarrativeRewardService, // Narrative reward calculation and persistence (extracted from GameGateway)
     ShopService, // Issue #328: Campaign shop system
+    MonsterAIService, // Monster AI behavior
+    SummonService, // Issue #228: Summon lifecycle management
+    SummonAIService, // Issue #228: Summon AI behavior
     // TODO: Re-enable once Prisma connection issue is resolved
     // AccountService,
     // ProgressionService,

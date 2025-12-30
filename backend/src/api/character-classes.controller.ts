@@ -30,6 +30,10 @@ export class CharacterClassesController {
       perks: c.perks,
       description: c.description,
       imageUrl: c.imageUrl,
+      baseMovement: c.baseMovement,
+      baseAttack: c.baseAttack,
+      baseRange: c.baseRange,
+      color: c.color,
     }));
   }
 }

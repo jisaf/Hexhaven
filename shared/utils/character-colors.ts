@@ -1,6 +1,18 @@
 /**
  * Character Colors Utility
  *
+ * @deprecated This file is deprecated in favor of database-driven character class data.
+ * Character colors are now stored in the database and should be fetched via:
+ * - Frontend: `frontend/src/services/character-class.service.ts`
+ * - Backend: Query CharacterClass model directly
+ *
+ * This file is kept for backward compatibility only and will be removed in a future version.
+ *
+ * Migration guide:
+ * - Frontend components should use `useCharacterClasses` hook or `characterClassService`
+ * - Backend code should query the CharacterClass table for color data
+ *
+ * Original description:
  * Centralized color definitions for each character class.
  * Used for consistent UI representation across the application.
  *
@@ -17,6 +29,7 @@ export type CharacterClassName = 'Brute' | 'Tinkerer' | 'Spellweaver' | 'Scoundr
 /**
  * Color mapping for each character class
  * Colors are chosen to match the official Gloomhaven aesthetic
+ * @deprecated Use database-driven color data instead
  */
 export const CHARACTER_COLORS: Record<CharacterClassName, string> = {
   Brute: '#CC3333',
@@ -29,6 +42,7 @@ export const CHARACTER_COLORS: Record<CharacterClassName, string> = {
 
 /**
  * Get the color for a character class
+ * @deprecated Use characterClassService.getCharacterColor() or useCharacterClasses hook instead
  * @param classType - The character class name (string or enum value)
  * @param fallback - Fallback color if class not found (default: '#666')
  * @returns Hex color string
@@ -39,6 +53,7 @@ export function getCharacterColor(classType: string, fallback: string = '#666'):
 
 /**
  * Get a lighter version of the character color (for backgrounds)
+ * @deprecated Use database-driven color data instead
  * @param classType - The character class name (string or enum value)
  * @param opacity - Opacity value 0-1 (default: 0.2)
  * @returns RGBA color string

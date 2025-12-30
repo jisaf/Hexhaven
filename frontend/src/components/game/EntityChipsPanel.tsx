@@ -8,20 +8,17 @@
  * - Health indicators on each chip
  * - Turn indicator (glow/highlight)
  * - Always visible during gameplay
+ *
+ * Character colors are now fetched from the database via the character class service.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Character, Monster } from '../../../../shared/types/entities';
+import { characterClassService } from '../../services/character-class.service';
 
-// Character class colors
-const characterColors: Record<string, string> = {
-  Brute: '#CC3333',
-  Tinkerer: '#3399CC',
-  Spellweaver: '#9933CC',
-  Scoundrel: '#33CC33',
-  Cragheart: '#CC9933',
-  Mindthief: '#CC33CC',
-};
+// Character colors are now loaded from the database
+// This map is populated on component mount and used for synchronous access
+const characterColorCache: Record<string, string> = {};
 
 // Monster type colors
 const monsterColors: Record<string, string> = {
@@ -61,8 +58,24 @@ export function EntityChipsPanel({
 }: EntityChipsPanelProps) {
   const [expandedSection, setExpandedSection] = useState<'characters' | 'monsters' | null>(null);
 
+  // Load character colors from database on mount
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const classes = await characterClassService.getCharacterClasses();
+        classes.forEach((c) => {
+          characterColorCache[c.name] = c.color;
+        });
+      } catch (err) {
+        // Fall back to default colors on error
+        console.warn('Failed to load character colors from database:', err);
+      }
+    };
+    loadColors();
+  }, []);
+
   const getCharacterColor = (classType: string): string => {
-    return characterColors[classType] || '#666';
+    return characterColorCache[classType] || '#666666';
   };
 
   const getMonsterColor = (monsterTypeName: string): string => {

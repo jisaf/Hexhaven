@@ -14,6 +14,10 @@ interface CharacterClassSeed {
   perks: string[];
   description: string;
   imageUrl: string | null;
+  baseMovement: number;
+  baseAttack: number;
+  baseRange: number;
+  color: string;
 }
 
 interface AbilityCardSeed {
@@ -88,6 +92,10 @@ async function seedCharacterClasses() {
         perks: classData.perks,
         description: classData.description,
         imageUrl: classData.imageUrl,
+        baseMovement: classData.baseMovement,
+        baseAttack: classData.baseAttack,
+        baseRange: classData.baseRange,
+        color: classData.color,
       },
       create: {
         name: classData.name,
@@ -97,6 +105,10 @@ async function seedCharacterClasses() {
         perks: classData.perks,
         description: classData.description,
         imageUrl: classData.imageUrl,
+        baseMovement: classData.baseMovement,
+        baseAttack: classData.baseAttack,
+        baseRange: classData.baseRange,
+        color: classData.color,
       },
     });
   }

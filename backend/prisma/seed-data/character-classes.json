@@ -18,7 +18,11 @@
       "Ignore negative item effects and add one +1 card"
     ],
     "description": "The Brute is a tanky melee fighter who excels at absorbing damage and dealing consistent physical attacks. High health pool and straightforward combat abilities make this class ideal for beginners.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 2,
+    "baseAttack": 3,
+    "baseRange": 1,
+    "color": "#CC3333"
   },
   {
     "name": "Tinkerer",
@@ -39,7 +43,11 @@
       "Ignore negative scenario effects"
     ],
     "description": "The Tinkerer is a versatile support class capable of healing allies, buffing, and controlling enemies with gadgets and inventions. Large hand size allows for flexible tactical options.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 2,
+    "baseAttack": 2,
+    "baseRange": 2,
+    "color": "#3399CC"
   },
   {
     "name": "Spellweaver",
@@ -60,7 +68,11 @@
       "Add one rolling LIGHT and one rolling DARK card"
     ],
     "description": "The Spellweaver is a powerful elemental mage who channels Fire, Ice, Earth, Air, Light, and Dark elements. Low health but devastating area-of-effect spells make careful positioning critical.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 2,
+    "baseAttack": 3,
+    "baseRange": 3,
+    "color": "#9933CC"
   },
   {
     "name": "Scoundrel",
@@ -80,7 +92,11 @@
       "Ignore negative scenario effects"
     ],
     "description": "The Scoundrel is a melee rogue specializing in single-target damage from advantageous positions. Gains bonus damage when attacking adjacent enemies, rewarding tactical movement and positioning.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 3,
+    "baseAttack": 3,
+    "baseRange": 1,
+    "color": "#33CC33"
   },
   {
     "name": "Cragheart",
@@ -101,7 +117,11 @@
       "Ignore negative scenario effects"
     ],
     "description": "The Cragheart is a ranged/melee hybrid who manipulates obstacles and terrain. Deals damage to both enemies and allies, requiring careful positioning. Earth-focused abilities create and destroy obstacles.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 2,
+    "baseAttack": 3,
+    "baseRange": 2,
+    "color": "#CC9933"
   },
   {
     "name": "Mindthief",
@@ -123,7 +143,11 @@
       "Ignore negative scenario effects"
     ],
     "description": "The Mindthief is an agile melee damage dealer who uses psychic powers and augments to control the battlefield. Can summon a rat companion and manipulate enemy positioning with mind control.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 3,
+    "baseAttack": 2,
+    "baseRange": 1,
+    "color": "#CC33CC"
   },
   {
     "name": "TestIconClass",
@@ -135,6 +159,10 @@
       "Add one +2 card"
     ],
     "description": "A test character class with a hand size of 30 cards, designed to showcase every action type and icon in the game. Useful for visual testing and icon reference.",
-    "imageUrl": null
+    "imageUrl": null,
+    "baseMovement": 3,
+    "baseAttack": 3,
+    "baseRange": 3,
+    "color": "#888888"
   }
 ]

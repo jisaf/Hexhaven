@@ -1,99 +1,107 @@
 /**
  * Ability Card Service
  *
- * Manages ability card data:
- * - Load ability cards from JSON file
+ * Manages ability card data from database:
  * - Get cards by character class
  * - Get card by ID
  * - Validate card selections
+ *
+ * All ability cards are stored in the database (seeded from seed-data/ability-cards.json).
+ * This service queries the database instead of loading from a local JSON file.
  */
 
 import { Injectable } from '@nestjs/common';
+import {
+  AbilityCard as PrismaAbilityCard,
+  CharacterClass as PrismaCharacterClass,
+} from '@prisma/client';
 import { AbilityCard, CharacterClass } from '../../../shared/types/entities';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PrismaService } from './prisma.service';
+
+// Type for ability card with class relation included
+type AbilityCardWithClass = PrismaAbilityCard & {
+  class: PrismaCharacterClass;
+};
 
 @Injectable()
 export class AbilityCardService {
-  private abilityCards: AbilityCard[] | null = null;
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Load all ability cards from JSON file (lazy load)
+   * Map a database ability card to the shared AbilityCard type
    */
-  private loadAbilityCardsFromFile(): AbilityCard[] {
-    if (this.abilityCards) {
-      return this.abilityCards;
-    }
-
-    try {
-      // Construct path relative to the service file location
-      // __dirname will be backend/dist/backend/src/services when compiled
-      // Need to go up 3 levels to reach backend/dist/
-      const dataFilePath = path.resolve(
-        __dirname,
-        '../../..',
-        'data',
-        'ability-cards.json',
-      );
-
-      if (!fs.existsSync(dataFilePath)) {
-        throw new Error(`Ability cards data file not found at ${dataFilePath}`);
-      }
-
-      const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
-
-      // Raw type for JSON data where characterClass is a string
-      type RawAbilityCard = Omit<AbilityCard, 'characterClass'> & {
-        characterClass: string;
-      };
-
-      const rawData = JSON.parse(fileContent) as {
-        abilityCards: RawAbilityCard[];
-      };
-
-      // Convert string to CharacterClass enum at the JSON boundary
-      this.abilityCards = rawData.abilityCards.map((card) => ({
-        ...card,
-        characterClass: card.characterClass as CharacterClass,
-      }));
-      console.log(
-        `✅ Loaded ${this.abilityCards.length} ability cards from ${dataFilePath}`,
-      );
-      return this.abilityCards;
-    } catch (error) {
-      console.error('Failed to load ability-cards.json:', error);
-      return [];
-    }
+  private mapDbCardToAbilityCard(dbCard: AbilityCardWithClass): AbilityCard {
+    return {
+      id: dbCard.id,
+      characterClass: dbCard.class.name as CharacterClass,
+      name: dbCard.name,
+      level: dbCard.level,
+      initiative: dbCard.initiative,
+      topAction: dbCard.topAction as AbilityCard['topAction'],
+      bottomAction: dbCard.bottomAction as AbilityCard['bottomAction'],
+    };
   }
 
   /**
    * Get ability card by ID
    */
-  getCardById(cardId: string): AbilityCard | null {
-    const cards = this.loadAbilityCardsFromFile();
-    return cards.find((c) => c.id === cardId) || null;
+  async getCardById(cardId: string): Promise<AbilityCard | null> {
+    const dbCard = await this.prisma.abilityCard.findFirst({
+      where: { id: cardId },
+      include: { class: true },
+    });
+
+    if (!dbCard) {
+      return null;
+    }
+
+    return this.mapDbCardToAbilityCard(dbCard);
   }
 
   /**
    * Get all ability cards for a character class
    */
-  getCardsByClass(characterClass: CharacterClass): AbilityCard[] {
-    const cards = this.loadAbilityCardsFromFile();
-    return cards.filter((c) => c.characterClass === characterClass);
+  async getCardsByClass(
+    characterClass: CharacterClass | string,
+  ): Promise<AbilityCard[]> {
+    // First, find the character class to get its ID
+    const charClass = await this.prisma.characterClass.findUnique({
+      where: { name: characterClass },
+    });
+
+    if (!charClass) {
+      console.warn(`Character class "${characterClass}" not found in database`);
+      return [];
+    }
+
+    const dbCards = await this.prisma.abilityCard.findMany({
+      where: { classId: charClass.id },
+      include: { class: true },
+      orderBy: [{ level: 'asc' }, { initiative: 'asc' }],
+    });
+
+    return dbCards.map((card) => this.mapDbCardToAbilityCard(card));
   }
 
   /**
    * Get all ability cards grouped by class
    */
-  getAllCardsGroupedByClass(): Record<string, AbilityCard[]> {
-    const cards = this.loadAbilityCardsFromFile();
+  async getAllCardsGroupedByClass(): Promise<Record<string, AbilityCard[]>> {
+    const dbCards = await this.prisma.abilityCard.findMany({
+      include: { class: true },
+      orderBy: [{ level: 'asc' }, { initiative: 'asc' }],
+    });
+
     const grouped: Record<string, AbilityCard[]> = {};
 
-    for (const card of cards) {
-      if (!grouped[card.characterClass]) {
-        grouped[card.characterClass] = [];
+    for (const dbCard of dbCards) {
+      const card = this.mapDbCardToAbilityCard(dbCard);
+      const className = card.characterClass;
+
+      if (!grouped[className]) {
+        grouped[className] = [];
       }
-      grouped[card.characterClass].push(card);
+      grouped[className].push(card);
     }
 
     return grouped;
@@ -102,63 +110,81 @@ export class AbilityCardService {
   /**
    * Get cards by class and level (cards available at or below character level)
    */
-  getCardsByClassAndLevel(
-    characterClass: CharacterClass,
+  async getCardsByClassAndLevel(
+    characterClass: CharacterClass | string,
     level: number,
-  ): AbilityCard[] {
-    const cards = this.getCardsByClass(characterClass);
-    return cards.filter(
-      (c) => c.level === 1 || (typeof c.level === 'number' && c.level <= level),
-    );
+  ): Promise<AbilityCard[]> {
+    // First, find the character class to get its ID
+    const charClass = await this.prisma.characterClass.findUnique({
+      where: { name: characterClass },
+    });
+
+    if (!charClass) {
+      console.warn(`Character class "${characterClass}" not found in database`);
+      return [];
+    }
+
+    const dbCards = await this.prisma.abilityCard.findMany({
+      where: {
+        classId: charClass.id,
+        level: { lte: level },
+      },
+      include: { class: true },
+      orderBy: [{ level: 'asc' }, { initiative: 'asc' }],
+    });
+
+    return dbCards.map((card) => this.mapDbCardToAbilityCard(card));
   }
 
   /**
    * Validate that a card belongs to a character class
    */
-  validateCardForClass(
+  async validateCardForClass(
     cardId: string,
-    characterClass: CharacterClass,
-  ): boolean {
-    const card = this.getCardById(cardId);
+    characterClass: CharacterClass | string,
+  ): Promise<boolean> {
+    const card = await this.getCardById(cardId);
     if (!card) {
       return false;
     }
-    return card.characterClass === characterClass;
+    // Compare as strings to handle both enum and string inputs
+    return String(card.characterClass) === String(characterClass);
   }
 
   /**
    * Validate that both cards are valid and belong to the character
    */
-  validateCardSelection(
+  async validateCardSelection(
     topCardId: string,
     bottomCardId: string,
-    characterClass: CharacterClass,
-  ): {
+    characterClass: CharacterClass | string,
+  ): Promise<{
     valid: boolean;
     errors: string[];
     topCard?: AbilityCard;
     bottomCard?: AbilityCard;
-  } {
+  }> {
     const errors: string[] = [];
 
     // Check top card exists
-    const topCard = this.getCardById(topCardId);
+    const topCard = await this.getCardById(topCardId);
     if (!topCard) {
       errors.push(`Top card not found: ${topCardId}`);
     }
 
     // Check bottom card exists
-    const bottomCard = this.getCardById(bottomCardId);
+    const bottomCard = await this.getCardById(bottomCardId);
     if (!bottomCard) {
       errors.push(`Bottom card not found: ${bottomCardId}`);
     }
 
-    // Check both cards belong to character class
-    if (topCard && topCard.characterClass !== characterClass) {
+    // Check both cards belong to character class (compare as strings)
+    const classStr = String(characterClass);
+    if (topCard && String(topCard.characterClass) !== classStr) {
       errors.push(`Top card ${topCardId} does not belong to ${characterClass}`);
     }
 
-    if (bottomCard && bottomCard.characterClass !== characterClass) {
+    if (bottomCard && String(bottomCard.characterClass) !== classStr) {
       errors.push(
         `Bottom card ${bottomCardId} does not belong to ${characterClass}`,
       );
@@ -180,8 +206,8 @@ export class AbilityCardService {
   /**
    * Get initiative value from a card
    */
-  getCardInitiative(cardId: string): number | null {
-    const card = this.getCardById(cardId);
+  async getCardInitiative(cardId: string): Promise<number | null> {
+    const card = await this.getCardById(cardId);
     return card ? card.initiative : null;
   }
 }
