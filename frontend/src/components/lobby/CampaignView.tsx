@@ -310,9 +310,36 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                 </div>
                 {loadingCharacters ? (
                   <p className={styles.loadingText}>Loading your characters...</p>
-                ) : availableCharacters.length === 0 ? (
-                  <div className={styles.noAvailableCharacters}>
-                    <p>No available characters. All your characters are either in campaigns or retired.</p>
+                ) : (
+                  <div className={styles.availableCharactersSection}>
+                    {availableCharacters.length === 0 ? (
+                      <p className={styles.noAvailableText}>
+                        No available characters. All your characters are either in campaigns or retired.
+                      </p>
+                    ) : (
+                      <div className={styles.availableCharactersList}>
+                        {availableCharacters.map((char) => (
+                          <div
+                            key={char.id}
+                            className={styles.availableCharacterCard}
+                            onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
+                          >
+                            <div className={styles.availableCharacterInfo}>
+                              <span className={styles.availableCharacterName}>{char.name}</span>
+                              <span className={styles.availableCharacterClass}>
+                                {char.className} Lv.{char.level}
+                              </span>
+                            </div>
+                            <button
+                              className={styles.addButton}
+                              disabled={addingCharacter}
+                            >
+                              {addingCharacter ? 'Adding...' : 'Add'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <button
                       className={styles.createNewCharacterButton}
                       onClick={() => {
@@ -322,29 +349,6 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                     >
                       + Create New Character
                     </button>
-                  </div>
-                ) : (
-                  <div className={styles.availableCharactersList}>
-                    {availableCharacters.map((char) => (
-                      <div
-                        key={char.id}
-                        className={styles.availableCharacterCard}
-                        onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
-                      >
-                        <div className={styles.availableCharacterInfo}>
-                          <span className={styles.availableCharacterName}>{char.name}</span>
-                          <span className={styles.availableCharacterClass}>
-                            {char.className} Lv.{char.level}
-                          </span>
-                        </div>
-                        <button
-                          className={styles.addButton}
-                          disabled={addingCharacter}
-                        >
-                          {addingCharacter ? 'Adding...' : 'Add'}
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 )}
               </div>
