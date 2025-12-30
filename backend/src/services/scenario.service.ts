@@ -304,6 +304,7 @@ export class ScenarioService {
       'stone-golem': { health: 10, movement: 1, attack: 3, range: 0 },
       // Training monsters
       'training-dummy': { health: 1, movement: 0, attack: 0, range: 0 },
+      'sparring-dummy': { health: 100, movement: 0, attack: 0, range: 0 },
     };
 
     // Normalize monster type to kebab-case for lookup
