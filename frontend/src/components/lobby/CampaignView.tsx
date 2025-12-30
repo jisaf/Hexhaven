@@ -9,7 +9,7 @@
  * - Ability to start a game in the campaign
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
@@ -47,6 +47,15 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
 
   // Character creation modal state
   const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false);
+
+  // Track mounted state for async operations
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Tab state
   type CampaignTab = 'characters' | 'shop' | 'scenarios' | 'invites';
@@ -141,19 +150,25 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   };
 
   const handleCharacterCreated = async (character: CharacterResponse) => {
-    try {
-      // Close the modal
-      setShowCreateCharacterModal(false);
-      setError(null);
+    // Close the modal immediately
+    setShowCreateCharacterModal(false);
+    setError(null);
 
+    try {
       // Automatically add the newly created character to the campaign
       await campaignService.joinCampaign(campaignId, character.id);
 
-      // Refresh campaign data to show the new character
-      await fetchCampaignData();
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        // Refresh campaign data to show the new character
+        await fetchCampaignData();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add character to campaign');
-      // Modal is closed but character was created, user can manually add it
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to add character to campaign');
+        // Modal is closed but character was created, user can manually add it
+      }
     }
   };
 

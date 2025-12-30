@@ -66,8 +66,8 @@ export function CharacterCreationForm({
       return;
     }
 
-    if (/[<>]/.test(trimmedName)) {
-      setError('Character name cannot contain < or > characters');
+    if (/[<>"'&]/.test(trimmedName)) {
+      setError('Character name cannot contain special characters (<, >, ", \', &)');
       return;
     }
 
@@ -95,6 +95,22 @@ export function CharacterCreationForm({
     }
   };
 
+  // Show error with retry option if loading failed and no classes loaded
+  if (!loading && error && characterClasses.length === 0) {
+    return (
+      <div className={styles.formContainer}>
+        <div className={styles.errorMessage} role="alert">{error}</div>
+        <button
+          type="button"
+          className={styles.retryButton}
+          onClick={loadCharacterClasses}
+        >
+          Retry Loading
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className={styles.formContainer}>
@@ -110,7 +126,11 @@ export function CharacterCreationForm({
   return (
     <div className={containerClass}>
       <form onSubmit={handleSubmit} className={styles.form}>
-        {error && <div className={styles.errorMessage}>{error}</div>}
+        {error && (
+          <div id="form-error" className={styles.errorMessage} role="alert">
+            {error}
+          </div>
+        )}
 
         <div className={styles.formGroup}>
           <label htmlFor="name">Character Name</label>
@@ -124,13 +144,15 @@ export function CharacterCreationForm({
             maxLength={30}
             required
             disabled={submitting}
+            aria-describedby={error ? 'form-error name-hint' : 'name-hint'}
+            aria-invalid={error ? 'true' : undefined}
           />
-          <span className={styles.inputHint}>1-30 characters</span>
+          <span id="name-hint" className={styles.inputHint}>1-30 characters</span>
         </div>
 
         <div className={styles.formGroup}>
-          <label>Select Character Class</label>
-          <div className={styles.classGrid}>
+          <label id="class-selection-label">Select Character Class</label>
+          <div className={styles.classGrid} role="radiogroup" aria-labelledby="class-selection-label">
             {characterClasses.map((charClass) => (
               <div
                 key={charClass.id}
@@ -138,6 +160,15 @@ export function CharacterCreationForm({
                   formData.classId === charClass.id ? styles.selected : ''
                 }`}
                 onClick={() => setFormData({ ...formData, classId: charClass.id })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setFormData({ ...formData, classId: charClass.id });
+                  }
+                }}
+                role="radio"
+                aria-checked={formData.classId === charClass.id}
+                tabIndex={0}
               >
                 <h3>{charClass.name}</h3>
                 <div className={styles.classStats}>

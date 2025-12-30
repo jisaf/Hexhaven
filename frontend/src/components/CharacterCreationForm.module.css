@@ -23,7 +23,7 @@
   background-color: rgba(255, 69, 69, 0.1);
   border: 1px solid rgba(255, 69, 69, 0.3);
   border-radius: 4px;
-  color: #ff4545;
+  color: var(--color-error, #ff4545);
   padding: 1rem;
   margin-bottom: 1rem;
 }
@@ -35,7 +35,7 @@
 }
 
 .formGroup label {
-  color: #e0e0e0;
+  color: var(--color-text-primary, #e0e0e0);
   font-weight: 500;
 }
 
@@ -44,13 +44,13 @@
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
-  color: #e0e0e0;
+  color: var(--color-text-primary, #e0e0e0);
   font-size: 1rem;
 }
 
 .formGroup input:focus {
   outline: none;
-  border-color: #4a9eff;
+  border-color: var(--color-primary, #4a9eff);
   background-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -61,7 +61,7 @@
 
 .inputHint {
   font-size: 0.85rem;
-  color: #b0b0b0;
+  color: var(--color-text-secondary, #b0b0b0);
 }
 
 .classGrid {
@@ -86,13 +86,13 @@
 }
 
 .classCard.selected {
-  border-color: #4a9eff;
+  border-color: var(--color-primary, #4a9eff);
   background-color: rgba(74, 158, 255, 0.1);
 }
 
 .classCard h3 {
   margin: 0 0 0.75rem 0;
-  color: #4a9eff;
+  color: var(--color-primary, #4a9eff);
   font-size: 1rem;
 }
 
@@ -110,36 +110,36 @@
 
 .classStat span:first-child {
   font-size: 0.75rem;
-  color: #b0b0b0;
+  color: var(--color-text-secondary, #b0b0b0);
 }
 
 .classStat span:last-child {
   font-size: 1.1rem;
-  color: #e0e0e0;
+  color: var(--color-text-primary, #e0e0e0);
   font-weight: 600;
 }
 
 .classDescription {
   font-size: 0.8rem;
-  color: #b0b0b0;
+  color: var(--color-text-secondary, #b0b0b0);
   margin: 0;
 }
 
 .selectedClassInfo {
   background-color: rgba(74, 158, 255, 0.1);
-  border: 1px solid #4a9eff;
+  border: 1px solid var(--color-primary, #4a9eff);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
 .selectedClassInfo h3 {
   margin: 0 0 0.5rem 0;
-  color: #4a9eff;
+  color: var(--color-primary, #4a9eff);
 }
 
 .selectedClassInfo p {
   margin: 0.5rem 0;
-  color: #b0b0b0;
+  color: var(--color-text-secondary, #b0b0b0);
 }
 
 .startingStats {
@@ -150,7 +150,7 @@
 }
 
 .startingStats div {
-  color: #e0e0e0;
+  color: var(--color-text-primary, #e0e0e0);
   font-size: 0.95rem;
 }
 
@@ -173,7 +173,7 @@
 
 .cancelButton {
   background-color: rgba(255, 255, 255, 0.1);
-  color: #e0e0e0;
+  color: var(--color-text-primary, #e0e0e0);
 }
 
 .cancelButton:hover:not(:disabled) {
@@ -186,12 +186,12 @@
 }
 
 .submitButton {
-  background-color: #4a9eff;
+  background-color: var(--color-primary, #4a9eff);
   color: white;
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: #3a8eef;
+  background-color: var(--color-primary-hover, #3a8eef);
 }
 
 .submitButton:disabled {
@@ -201,6 +201,23 @@
 
 .loading {
   text-align: center;
-  color: #b0b0b0;
+  color: var(--color-text-secondary, #b0b0b0);
   padding: 2rem;
+}
+
+.retryButton {
+  display: block;
+  margin: 1rem auto;
+  padding: 0.75rem 2rem;
+  background-color: var(--color-primary, #4a9eff);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retryButton:hover {
+  background-color: var(--color-primary-hover, #3a8eef);
 }
