@@ -803,7 +803,7 @@ executeLongRest(...) {
 
 ### Questions?
 
-- Check [Gloomhaven rules](game-rules.md) for mechanics clarification
+- Check [Gloomhaven rules](game-rules/index.md) for mechanics clarification
 - Review [API reference](#api-reference) for integration
 - See [troubleshooting](#troubleshooting) for common issues
 

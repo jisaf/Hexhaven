@@ -1052,6 +1052,6 @@ npm test -- --coverage
 
 ## See Also
 
-- [Game Rules](./game-rules.md)
+- [Game Rules](./game-rules/index.md)
 - [Character System](./character-system.md)
 - [Element System](./element-system.md)
