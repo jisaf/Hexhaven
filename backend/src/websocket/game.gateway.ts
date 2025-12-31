@@ -915,7 +915,10 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(
+            room,
+            roomCode,
+          );
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -3317,6 +3320,98 @@ export class GameGateway
         message: errorMessage,
       };
       client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Use a card action during player's turn (Issue #411)
+   * Player clicks top/bottom of a card to execute that action
+   */
+  @SubscribeMessage('use_card_action')
+  handleUseCardAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: {
+      characterId: string;
+      cardId: string;
+      position: 'top' | 'bottom';
+      targetId?: string;
+      targetHex?: { q: number; r: number };
+    },
+  ): void {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(
+        `Use card action request from ${userId}: card=${payload.cardId} position=${payload.position}`,
+      );
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room } = roomData;
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // Get character and validate ownership
+      const character = this.characterService.getCharacterById(
+        payload.characterId,
+      );
+      if (!character) {
+        throw new Error('Character not found');
+      }
+      if (character.playerId !== userId) {
+        throw new Error('Not your character');
+      }
+
+      // Verify it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      if (turnOrder?.[currentIndex]?.entityId !== character.id) {
+        throw new Error("Not this character's turn");
+      }
+
+      // Validate action is available
+      if (!character.isActionAvailable(payload.cardId, payload.position)) {
+        throw new Error(
+          'Invalid action selection - this action is not available',
+        );
+      }
+
+      // TODO (Phase 3): Full implementation
+      // 1. Get the card and action
+      // 2. Execute action based on type (move, attack, heal, etc.)
+      // 3. Record the action (first or second)
+      // 4. Move card to appropriate pile
+      // 5. Emit card_action_executed event
+
+      // For now, emit error that feature is not fully implemented
+      this.logger.warn(
+        'use_card_action handler stub called - full implementation pending Phase 3',
+      );
+
+      client.emit('error', {
+        code: 'NOT_IMPLEMENTED',
+        message:
+          'Card action selection is not fully implemented yet. Use move_character and attack_target for now.',
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error using card action: ${errorMessage}`);
+      client.emit('error', {
+        code: 'USE_CARD_ACTION_FAILED',
+        message: errorMessage,
+      });
     }
   }
 

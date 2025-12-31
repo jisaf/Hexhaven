@@ -51,6 +51,7 @@ export interface SelectCardsPayload {
   characterId?: string; // Which character's cards (for multi-character control)
   topCardId: string;
   bottomCardId: string;
+  initiativeCardId?: string; // Issue #411: Which card determines initiative (topCardId or bottomCardId)
 }
 
 export interface AttackTargetPayload {
@@ -110,6 +111,39 @@ export interface EquipItemPayload {
 export interface UnequipItemPayload {
   characterId: string; // Required: which character is unequipping (multi-character support)
   itemId: string; // Unequip by item ID - backend finds the slot
+}
+
+// ========== CARD ACTION SELECTION EVENTS (Issue #411) ==========
+
+/**
+ * Client -> Server: Execute a card action during player's turn
+ * Player clicks top/bottom of a card to execute that action
+ */
+export interface UseCardActionPayload {
+  characterId: string;
+  cardId: string;
+  position: 'top' | 'bottom';
+  targetId?: string; // For attack/heal targeting
+  targetHex?: AxialCoordinates; // For movement/summon placement
+}
+
+/**
+ * Tracks which card actions have been used during a turn
+ * Sent with turn_started to inform client of available actions
+ */
+export interface TurnActionState {
+  firstAction?: {
+    cardId: string;
+    position: 'top' | 'bottom';
+  };
+  secondAction?: {
+    cardId: string;
+    position: 'top' | 'bottom';
+  };
+  availableActions: Array<{
+    cardId: string;
+    position: 'top' | 'bottom';
+  }>;
 }
 
 // ========== SERVER -> CLIENT EVENTS ==========
@@ -258,6 +292,12 @@ export interface TurnStartedPayload {
   entityId: string;
   entityType: 'character' | 'monster' | 'summon';
   turnIndex: number;
+  // Issue #411: Card action selection state (only for characters)
+  turnActionState?: TurnActionState;
+  selectedCards?: {
+    card1: AbilityCard;
+    card2: AbilityCard;
+  };
 }
 
 export interface CharacterMovedPayload {
@@ -280,6 +320,25 @@ export interface AttackResolvedPayload {
   effects: string[];
   targetHealth: number;
   targetDead: boolean;
+}
+
+/**
+ * Server -> Client: Card action has been executed (Issue #411)
+ * Sent after a player uses a top/bottom card action
+ */
+export interface CardActionExecutedPayload {
+  characterId: string;
+  cardId: string;
+  position: 'top' | 'bottom';
+  actionType: 'move' | 'attack' | 'heal' | 'loot' | 'special' | 'summon' | 'text';
+  success: boolean;
+  cardDestination: 'discard' | 'lost' | 'active'; // Where card went after execution
+  // Action-specific results
+  movementPath?: AxialCoordinates[];
+  damageDealt?: number;
+  healAmount?: number;
+  targetId?: string;
+  error?: string; // Error message if success is false
 }
 
 export interface MonsterActivatedPayload {
@@ -720,6 +779,8 @@ export interface ClientEvents {
   // Summon events (Issue #228)
   request_summon_placement: RequestSummonPlacementPayload;
   summon_order: SummonOrderPayload;
+  // Card action selection (Issue #411)
+  use_card_action: UseCardActionPayload;
 }
 
 export interface RoundStartedPayload {
@@ -787,4 +848,6 @@ export interface ServerEvents {
   summon_attacked: SummonAttackedPayload;
   summon_died: SummonDiedPayload;
   summon_awaiting_orders: SummonAwaitingOrdersPayload;
+  // Card action selection (Issue #411)
+  card_action_executed: CardActionExecutedPayload;
 }
