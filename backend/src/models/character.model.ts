@@ -11,6 +11,7 @@ import type {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { Condition } from '../../../shared/types/entities';
+import type { TurnAction } from '../../../shared/types/events';
 import { AbilityCard } from './ability-card.model';
 
 export interface CharacterStats {
@@ -65,8 +66,8 @@ export class Character {
   private _hasAttackedThisTurn: boolean = false;
   // Issue #411: Track which card actions have been used this turn
   private _turnActions: {
-    firstAction?: { cardId: string; position: 'top' | 'bottom' };
-    secondAction?: { cardId: string; position: 'top' | 'bottom' };
+    firstAction?: TurnAction;
+    secondAction?: TurnAction;
   } = {};
   private _userCharacterId?: string; // Database character ID for persistent characters (002)
   private readonly _createdAt: Date;
@@ -217,8 +218,8 @@ export class Character {
 
   // Issue #411: Turn action tracking getters
   get turnActions(): {
-    firstAction?: { cardId: string; position: 'top' | 'bottom' };
-    secondAction?: { cardId: string; position: 'top' | 'bottom' };
+    firstAction?: TurnAction;
+    secondAction?: TurnAction;
   } {
     return {
       firstAction: this._turnActions.firstAction
@@ -439,6 +440,8 @@ export class Character {
     this._effectiveAttackThisTurn = 0; // Reset card attack value for next turn
     this._effectiveRangeThisTurn = 0; // Reset card range value for next turn
     this._hasAttackedThisTurn = false;
+    // Issue #411: Also reset turn action tracking
+    this._turnActions = {};
     this._updatedAt = new Date();
   }
 
@@ -487,7 +490,7 @@ export class Character {
    * - Second action: Only the opposite section of the other card
    * @returns Array of available action options
    */
-  getAvailableActions(): Array<{ cardId: string; position: 'top' | 'bottom' }> {
+  getAvailableActions(): TurnAction[] {
     if (!this._selectedCards) {
       return [];
     }

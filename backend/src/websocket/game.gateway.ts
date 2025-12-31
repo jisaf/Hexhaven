@@ -3363,9 +3363,7 @@ export class GameGateway
       }
 
       // Get character and validate ownership
-      const character = this.characterService.getCharacterById(
-        payload.characterId,
-      );
+      const character = characterService.getCharacterById(payload.characterId);
       if (!character) {
         throw new Error('Character not found');
       }
@@ -3380,7 +3378,19 @@ export class GameGateway
         throw new Error("Not this character's turn");
       }
 
-      // Validate action is available
+      // Validate card belongs to character's selected cards (security check)
+      const selectedCards = character.selectedCards;
+      if (!selectedCards) {
+        throw new Error('No cards selected for this turn');
+      }
+      if (
+        payload.cardId !== selectedCards.topCardId &&
+        payload.cardId !== selectedCards.bottomCardId
+      ) {
+        throw new Error('Card is not one of the selected cards for this turn');
+      }
+
+      // Validate action is available based on Gloomhaven rules
       if (!character.isActionAvailable(payload.cardId, payload.position)) {
         throw new Error(
           'Invalid action selection - this action is not available',

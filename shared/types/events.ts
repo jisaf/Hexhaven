@@ -128,22 +128,22 @@ export interface UseCardActionPayload {
 }
 
 /**
+ * Represents a card action selection (Issue #411)
+ * Reusable type for tracking card action choices during a turn
+ */
+export interface TurnAction {
+  cardId: string;
+  position: 'top' | 'bottom';
+}
+
+/**
  * Tracks which card actions have been used during a turn
  * Sent with turn_started to inform client of available actions
  */
 export interface TurnActionState {
-  firstAction?: {
-    cardId: string;
-    position: 'top' | 'bottom';
-  };
-  secondAction?: {
-    cardId: string;
-    position: 'top' | 'bottom';
-  };
-  availableActions: Array<{
-    cardId: string;
-    position: 'top' | 'bottom';
-  }>;
+  firstAction?: TurnAction;
+  secondAction?: TurnAction;
+  availableActions: TurnAction[];
 }
 
 // ========== SERVER -> CLIENT EVENTS ==========
