@@ -199,31 +199,29 @@ class RoomSessionManager {
 
   /**
    * Cleanup handlers - call before module hot reload
-   * Issue #419 MEDIUM-4: Refactored to use handler-to-event mapping for maintainability
    */
   public cleanup(): void {
-    // Handler-to-event mapping for cleaner cleanup pattern
-    const handlerEventMapping: Array<{
-      handler: keyof typeof this.boundHandlers;
-      event: Parameters<typeof websocketService.off>[0];
-    }> = [
-      { handler: 'roomJoined', event: 'room_joined' },
-      { handler: 'gameStarted', event: 'game_started' },
-      { handler: 'disconnected', event: 'ws_disconnected' },
-      { handler: 'reconnected', event: 'ws_reconnected' },
-      { handler: 'playerJoined', event: 'player_joined' },
-      { handler: 'playerLeft', event: 'player_left' },
-      { handler: 'characterSelected', event: 'character_selected' },
-    ];
-
-    for (const { handler, event } of handlerEventMapping) {
-      const boundHandler = this.boundHandlers[handler];
-      if (boundHandler) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        websocketService.off(event, boundHandler as any);
-      }
+    if (this.boundHandlers.roomJoined) {
+      websocketService.off('room_joined', this.boundHandlers.roomJoined);
     }
-
+    if (this.boundHandlers.gameStarted) {
+      websocketService.off('game_started', this.boundHandlers.gameStarted);
+    }
+    if (this.boundHandlers.disconnected) {
+      websocketService.off('ws_disconnected', this.boundHandlers.disconnected);
+    }
+    if (this.boundHandlers.reconnected) {
+      websocketService.off('ws_reconnected', this.boundHandlers.reconnected);
+    }
+    if (this.boundHandlers.playerJoined) {
+      websocketService.off('player_joined', this.boundHandlers.playerJoined);
+    }
+    if (this.boundHandlers.playerLeft) {
+      websocketService.off('player_left', this.boundHandlers.playerLeft);
+    }
+    if (this.boundHandlers.characterSelected) {
+      websocketService.off('character_selected', this.boundHandlers.characterSelected);
+    }
     this.boundHandlers = {};
     this.listenersSetup = false;
   }
