@@ -141,6 +141,122 @@ As part of the refactoring, several redundant pieces of code were identified and
 
 Following the successful centralization of room session management, the game state was further centralized with the implementation of `GameStateManager`.
 
+## 9. Connection Resilience Improvements (December 2025 - Issue #419)
+
+Building on the centralized architecture, connection resilience was significantly improved to handle slow networks and reconnection scenarios.
+
+### 9.1. Centralized WebSocket Configuration
+
+All WebSocket timeout and reconnection values were centralized in `/frontend/src/config/websocket.ts`:
+
+```typescript
+export const WS_CONNECTION_TIMEOUT_MS = 15000;           // Increased from 5s
+export const WS_CONNECTION_WAIT_TIMEOUT_MS = 15000;      // Room join wait timeout
+export const WS_RECONNECT_DEBOUNCE_MS = 500;             // Reconnection debounce
+export const WS_RECONNECTION_DELAY_MS = 1000;            // Initial reconnection delay
+export const WS_RECONNECTION_DELAY_MAX_MS = 10000;       // Max delay (exponential backoff)
+export const WS_MAX_RECONNECT_ATTEMPTS = 5;              // Max reconnection attempts
+```
+
+**Benefits**:
+- ✅ Single source of truth for all timeout/reconnection values
+- ✅ No magic numbers scattered across codebase
+- ✅ Easy to adjust connection parameters for different network conditions
+- ✅ Self-documenting with inline comments
+
+### 9.2. Immediate Socket-to-Player Mapping
+
+The backend gateway now populates socket-to-player mappings immediately on connection:
+
+```typescript
+// game.gateway.ts - handleConnection()
+handleConnection(client: Socket): void {
+  const userId = client.data.userId;  // From JWT auth
+
+  // Clean up stale mappings (reconnection scenario)
+  const oldSocketId = this.playerToSocket.get(userId);
+  if (oldSocketId && oldSocketId !== client.id) {
+    this.socketToPlayer.delete(oldSocketId);
+  }
+
+  // Populate mapping immediately (don't wait for join_room)
+  this.socketToPlayer.set(client.id, userId);
+  this.playerToSocket.set(userId, client.id);
+}
+```
+
+**Benefits**:
+- ✅ Game events can identify users immediately after connection
+- ✅ Prevents race conditions where events arrive before `join_room` completes
+- ✅ Automatic stale socket cleanup for reconnection scenarios
+- ✅ No duplicate socket IDs lingering in memory
+
+### 9.3. Automatic Room Rejoin with Debouncing
+
+The frontend `RoomSessionManager` automatically rejoins rooms after reconnection, with debouncing to prevent rapid-fire reconnects:
+
+```typescript
+// room-session.service.ts
+public onReconnected(): void {
+  this.state.error = null;  // Clear error state
+
+  // Debounce rapid reconnects
+  if (this.reconnectDebounceTimer) {
+    clearTimeout(this.reconnectDebounceTimer);
+  }
+
+  this.reconnectDebounceTimer = setTimeout(() => {
+    this.hasJoinedInSession = false;  // Allow rejoin
+    if (this.state.roomCode) {
+      this.ensureJoined('rejoin');
+    }
+  }, WS_RECONNECT_DEBOUNCE_MS);  // 500ms debounce
+}
+```
+
+**Benefits**:
+- ✅ Seamless recovery from temporary disconnects
+- ✅ Prevents rapid-fire reconnects from overwhelming the server
+- ✅ Error state automatically cleared on successful reconnection
+- ✅ No manual user intervention required
+
+### 9.4. Connection Timeout Increase
+
+The connection timeout was increased from the Socket.IO default of 5 seconds to 15 seconds:
+
+```typescript
+// websocket.service.ts
+const socket = io(serverUrl, {
+  timeout: WS_CONNECTION_TIMEOUT_MS,  // 15000ms (was 5000ms)
+  // ... other config
+});
+```
+
+**Rationale**:
+- Mobile networks and high-latency connections can take longer to establish WebSocket connections
+- 5-second timeout was too aggressive, causing unnecessary connection failures
+- 15 seconds provides reasonable buffer while still failing fast enough for genuinely unreachable servers
+
+### 9.5. Impact on System Stability
+
+These improvements have eliminated several classes of bugs:
+
+**Before Issue #419**:
+- ❌ Connection timeouts on slow networks
+- ❌ Race conditions where game events arrived before socket mapping completed
+- ❌ Stale socket IDs lingering after reconnection
+- ❌ Rapid-fire reconnection attempts overwhelming server
+- ❌ Users manually refreshing after temporary network issues
+
+**After Issue #419**:
+- ✅ Reliable connections on slow/mobile networks
+- ✅ Immediate socket-to-player mapping prevents race conditions
+- ✅ Automatic cleanup of stale socket mappings
+- ✅ Debounced reconnection prevents server overload
+- ✅ Automatic room rejoin provides seamless recovery
+
+This completes the evolution of the WebSocket system from fragile component-coupled connections to a robust, centralized, self-healing architecture.
+
 ### 8.1. GameStateManager Architecture
 
 The `GameStateManager` is a singleton service that manages all in-game state and WebSocket event handling:

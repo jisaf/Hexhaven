@@ -24,6 +24,10 @@ import { websocketService } from './websocket.service';
 import { narrativeStateService } from './narrative-state.service';
 import { authService } from './auth.service';
 import {
+  WS_CONNECTION_WAIT_TIMEOUT_MS,
+  WS_RECONNECT_DEBOUNCE_MS,
+} from '../config/websocket';
+import {
   getLastRoomCode,
   getPlayerUUID,
   getOrCreatePlayerUUID,
@@ -171,6 +175,9 @@ class RoomSessionManager {
   private hasJoinedInSession = false;
   private joinInProgress = false;
 
+  // Issue #419: Debounce timer for reconnection handling to prevent rapid-fire rejoins
+  private reconnectDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Subscription callbacks
   private subscribers: Set<StateUpdateCallback> = new Set();
 
@@ -179,6 +186,7 @@ class RoomSessionManager {
     roomJoined?: (data: RoomJoinedPayload) => void;
     gameStarted?: (data: GameStartedPayload) => void;
     disconnected?: () => void;
+    reconnected?: () => void; // Issue #419: Handle socket reconnection
     playerJoined?: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
     playerLeft?: (data: { playerId: string }) => void;
     characterSelected?: (data: CharacterSelectedPayload) => void;
@@ -191,26 +199,31 @@ class RoomSessionManager {
 
   /**
    * Cleanup handlers - call before module hot reload
+   * Issue #419 MEDIUM-4: Refactored to use handler-to-event mapping for maintainability
    */
   public cleanup(): void {
-    if (this.boundHandlers.roomJoined) {
-      websocketService.off('room_joined', this.boundHandlers.roomJoined);
+    // Handler-to-event mapping for cleaner cleanup pattern
+    const handlerEventMapping: Array<{
+      handler: keyof typeof this.boundHandlers;
+      event: Parameters<typeof websocketService.off>[0];
+    }> = [
+      { handler: 'roomJoined', event: 'room_joined' },
+      { handler: 'gameStarted', event: 'game_started' },
+      { handler: 'disconnected', event: 'ws_disconnected' },
+      { handler: 'reconnected', event: 'ws_reconnected' },
+      { handler: 'playerJoined', event: 'player_joined' },
+      { handler: 'playerLeft', event: 'player_left' },
+      { handler: 'characterSelected', event: 'character_selected' },
+    ];
+
+    for (const { handler, event } of handlerEventMapping) {
+      const boundHandler = this.boundHandlers[handler];
+      if (boundHandler) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        websocketService.off(event, boundHandler as any);
+      }
     }
-    if (this.boundHandlers.gameStarted) {
-      websocketService.off('game_started', this.boundHandlers.gameStarted);
-    }
-    if (this.boundHandlers.disconnected) {
-      websocketService.off('ws_disconnected', this.boundHandlers.disconnected);
-    }
-    if (this.boundHandlers.playerJoined) {
-      websocketService.off('player_joined', this.boundHandlers.playerJoined);
-    }
-    if (this.boundHandlers.playerLeft) {
-      websocketService.off('player_left', this.boundHandlers.playerLeft);
-    }
-    if (this.boundHandlers.characterSelected) {
-      websocketService.off('character_selected', this.boundHandlers.characterSelected);
-    }
+
     this.boundHandlers = {};
     this.listenersSetup = false;
   }
@@ -251,6 +264,7 @@ class RoomSessionManager {
     this.boundHandlers.roomJoined = this.onRoomJoined.bind(this);
     this.boundHandlers.gameStarted = this.onGameStarted.bind(this);
     this.boundHandlers.disconnected = this.onDisconnected.bind(this);
+    this.boundHandlers.reconnected = this.onReconnected.bind(this); // Issue #419
     this.boundHandlers.playerJoined = (data: { player: { id: string; nickname: string; isHost: boolean } }) => this.onPlayerJoined({
       id: data.player.id,
       nickname: data.player.nickname,
@@ -272,6 +286,7 @@ class RoomSessionManager {
     websocketService.on('character_selected', this.boundHandlers.characterSelected);
     websocketService.on('game_started', this.boundHandlers.gameStarted);
     websocketService.on('ws_disconnected', this.boundHandlers.disconnected);
+    websocketService.on('ws_reconnected', this.boundHandlers.reconnected); // Issue #419
 
     this.listenersSetup = true;
   }
@@ -312,7 +327,7 @@ class RoomSessionManager {
 
   /**
    * Wait for WebSocket connection to be established
-   * Times out after 5 seconds
+   * Issue #419: Increased timeout from 5 to 15 seconds for slow networks
    */
   private async waitForConnection(): Promise<void> {
     if (websocketService.isConnected()) {
@@ -325,8 +340,8 @@ class RoomSessionManager {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         websocketService.off('ws_connected', handleConnected);
-        reject(new Error('WebSocket connection timeout (5 seconds)'));
-      }, 5000);
+        reject(new Error(`WebSocket connection timeout (${WS_CONNECTION_WAIT_TIMEOUT_MS / 1000} seconds)`));
+      }, WS_CONNECTION_WAIT_TIMEOUT_MS);
 
       const handleConnected = () => {
         clearTimeout(timeout);
@@ -606,6 +621,42 @@ class RoomSessionManager {
     this.hasJoinedInSession = false; // Allow rejoin after disconnect
 
     this.emitStateUpdate();
+  }
+
+  /**
+   * Handle WebSocket reconnection (Socket.IO automatic reconnect)
+   * Issue #419: Automatically rejoins the room if we have a room code stored
+   * Uses debouncing to prevent rapid-fire reconnection handling
+   */
+  public onReconnected(): void {
+    console.log('[RoomSessionManager] WebSocket reconnected (automatic)');
+
+    // Issue #419 MEDIUM-3: Clear any previous error state on successful reconnection
+    this.state.error = null;
+    this.emitStateUpdate();
+
+    // Issue #419 HIGH-2: Debounce to prevent rapid-fire reconnection handling
+    if (this.reconnectDebounceTimer) {
+      clearTimeout(this.reconnectDebounceTimer);
+    }
+
+    this.reconnectDebounceTimer = setTimeout(() => {
+      this.reconnectDebounceTimer = null;
+
+      // Reset join flag to allow rejoin
+      this.hasJoinedInSession = false;
+
+      // If we have a room code stored, automatically rejoin
+      // This handles the case where socket disconnected/reconnected during gameplay
+      if (this.state.roomCode) {
+        console.log(
+          `[RoomSessionManager] Auto-rejoining room ${this.state.roomCode} after reconnection`
+        );
+        this.ensureJoined('rejoin').catch((error) => {
+          console.error('[RoomSessionManager] Failed to rejoin after reconnection:', error);
+        });
+      }
+    }, WS_RECONNECT_DEBOUNCE_MS);
   }
 
   /**

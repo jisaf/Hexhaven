@@ -883,8 +883,12 @@ export class GameGateway
       }
 
       // Associate socket with player (using database userId)
-      this.socketToPlayer.set(client.id, userId);
-      this.playerToSocket.set(userId, client.id);
+      // Issue #419: Only update mapping if not already set (handleConnection may have set it)
+      // This prevents overwriting mappings unnecessarily and maintains DRY principle
+      if (!this.socketToPlayer.has(client.id)) {
+        this.socketToPlayer.set(client.id, userId);
+        this.playerToSocket.set(userId, client.id);
+      }
 
       // IMPORTANT: Leave all other game rooms before joining the new one
       // This ensures getRoomFromSocket() always returns the correct current room

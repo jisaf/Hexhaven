@@ -9,6 +9,12 @@
 import { io, Socket } from 'socket.io-client';
 import { saveLastRoomCode } from '../utils/storage';
 import { authService } from './auth.service';
+import {
+  WS_CONNECTION_TIMEOUT_MS,
+  WS_RECONNECTION_DELAY_MS,
+  WS_RECONNECTION_DELAY_MAX_MS,
+  WS_MAX_RECONNECT_ATTEMPTS,
+} from '../config/websocket';
 import type {
   RoomJoinedPayload,
   GameStartedPayload,
@@ -159,7 +165,7 @@ class WebSocketService {
   private eventHandlers: Map<string, Set<any>> = new Map();
   private registeredEvents: Set<string> = new Set(); // Track which events are registered with Socket.IO
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = WS_MAX_RECONNECT_ATTEMPTS;
   private authFailed = false; // Flag to prevent reconnection after auth failure
 
   /**
@@ -194,10 +200,10 @@ class WebSocketService {
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionDelay: 1000, // Start at 1 second
-      reconnectionDelayMax: 10000, // Max 10 seconds (exponential backoff)
+      reconnectionDelay: WS_RECONNECTION_DELAY_MS,
+      reconnectionDelayMax: WS_RECONNECTION_DELAY_MAX_MS,
       reconnectionAttempts: this.maxReconnectAttempts,
-      timeout: 5000, // Connection timeout
+      timeout: WS_CONNECTION_TIMEOUT_MS, // Issue #419: increased for slow networks
       auth: {
         token: accessToken, // JWT token for server-side user identification
       },

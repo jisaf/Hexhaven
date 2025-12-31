@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.3
-**Last Updated**: 2025-12-29
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons)
+**Version**: 1.4
+**Last Updated**: 2025-12-31
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + WebSocket Improvements)
 
 ---
 
@@ -242,6 +242,8 @@ frontend/src/
 │   ├── Lobby.tsx        # Room creation/join
 │   ├── GameBoard.tsx    # Main game view
 │   └── Profile.tsx      # Account & progression
+├── config/              # Configuration constants
+│   └── websocket.ts     # WebSocket timeouts and reconnection config (Issue #419)
 ├── services/            # Centralized state management & external communication
 │   ├── websocket.service.ts               # Socket.io client
 │   ├── room-session.service.ts            # Room session state manager
@@ -1189,8 +1191,26 @@ summon_died               { summonId, reason: 'damage' | 'owner_exhausted' | 'ow
 
 ### Socket.io Configuration
 
+**Centralized Configuration** (Issue #419):
+All WebSocket timeout and reconnection values are centralized in `/frontend/src/config/websocket.ts`:
+
 ```typescript
-// Server
+// Shared WebSocket configuration constants
+export const WS_CONNECTION_TIMEOUT_MS = 15000;           // Connection timeout (increased from 5s for slow networks)
+export const WS_CONNECTION_WAIT_TIMEOUT_MS = 15000;      // Room join wait timeout
+export const WS_RECONNECT_DEBOUNCE_MS = 500;             // Reconnection debounce delay (prevents rapid-fire reconnects)
+export const WS_RECONNECTION_DELAY_MS = 1000;            // Initial reconnection delay
+export const WS_RECONNECTION_DELAY_MAX_MS = 10000;       // Max reconnection delay (exponential backoff)
+export const WS_MAX_RECONNECT_ATTEMPTS = 5;              // Maximum reconnection attempts
+```
+
+**Rationale**:
+- **15-second timeout** (increased from default 5s): Accommodates slow mobile networks and high-latency connections
+- **500ms debounce**: Prevents rapid-fire reconnection handling when Socket.IO performs multiple quick reconnect attempts
+- **Centralized constants**: Single source of truth prevents inconsistencies and magic numbers across the codebase
+
+**Server Configuration**:
+```typescript
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL,
@@ -1198,15 +1218,103 @@ const io = new Server(httpServer, {
   },
   transports: ['websocket', 'polling'],
 });
+```
 
-// Client
+**Client Configuration**:
+```typescript
 const socket = io(serverUrl, {
   autoConnect: true,
   reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionAttempts: 5,
+  reconnectionDelay: WS_RECONNECTION_DELAY_MS,          // 1000ms
+  reconnectionDelayMax: WS_RECONNECTION_DELAY_MAX_MS,   // 10000ms
+  reconnectionAttempts: WS_MAX_RECONNECT_ATTEMPTS,      // 5 attempts
+  timeout: WS_CONNECTION_TIMEOUT_MS,                     // 15000ms (increased from 5000ms)
+  auth: {
+    token: accessToken,  // JWT for server-side user identification
+  },
 });
 ```
+
+### Socket-to-Player Mapping (Issue #419)
+
+**Immediate Mapping on Connection**:
+The backend gateway populates socket-to-player mappings immediately when a socket connects, not waiting for `join_room`:
+
+```typescript
+// game.gateway.ts - handleConnection()
+handleConnection(client: Socket): void {
+  const userId = client.data.userId;  // From JWT auth in main.ts
+
+  // Clean up stale mappings (handles reconnection with new socket ID)
+  const oldSocketId = this.playerToSocket.get(userId);
+  if (oldSocketId && oldSocketId !== client.id) {
+    this.socketToPlayer.delete(oldSocketId);
+  }
+
+  // Populate mapping immediately
+  this.socketToPlayer.set(client.id, userId);
+  this.playerToSocket.set(userId, client.id);
+}
+```
+
+**Benefits**:
+- ✅ Game events can identify users immediately after connection
+- ✅ Prevents race conditions where events arrive before `join_room` completes
+- ✅ Automatic stale socket cleanup for reconnection scenarios
+
+**Guard in join_room** (Issue #419):
+The `handleJoinRoom` handler checks if mapping already exists to prevent duplicate work:
+
+```typescript
+// Only update mapping if not already set (DRY principle)
+if (!this.socketToPlayer.has(client.id)) {
+  this.socketToPlayer.set(client.id, userId);
+  this.playerToSocket.set(userId, client.id);
+}
+```
+
+### Reconnection Handling (Issue #419)
+
+**Automatic Room Rejoin**:
+The frontend `RoomSessionManager` automatically rejoins the room after WebSocket reconnection:
+
+```typescript
+// room-session.service.ts - onReconnected()
+public onReconnected(): void {
+  // Clear error state on successful reconnection
+  this.state.error = null;
+
+  // Debounce to prevent rapid-fire reconnection handling
+  if (this.reconnectDebounceTimer) {
+    clearTimeout(this.reconnectDebounceTimer);
+  }
+
+  this.reconnectDebounceTimer = setTimeout(() => {
+    // Reset join flag to allow rejoin
+    this.hasJoinedInSession = false;
+
+    // Auto-rejoin if we have a room code stored
+    if (this.state.roomCode) {
+      this.ensureJoined('rejoin');
+    }
+  }, WS_RECONNECT_DEBOUNCE_MS);  // 500ms debounce
+}
+```
+
+**Reconnection Flow**:
+1. Socket.IO detects disconnect and attempts reconnection (up to 5 attempts with exponential backoff)
+2. On successful reconnect, Socket.IO emits `connect` event
+3. `WebSocketService` emits `ws_reconnected` event
+4. `RoomSessionManager.onReconnected()` is called
+5. After 500ms debounce, manager resets join state and calls `ensureJoined('rejoin')`
+6. Client rejoins room via `join_room` WebSocket event
+7. Backend remaps socket ID to player via `handleJoinRoom()`
+
+**Benefits**:
+- ✅ **Seamless recovery**: Users automatically rejoin rooms after temporary disconnects
+- ✅ **Debounced handling**: Prevents rapid-fire reconnects from overwhelming the system
+- ✅ **Error state cleared**: Connection errors are automatically cleared on successful reconnect
+- ✅ **User-friendly**: No manual intervention required for transient network issues
 
 ### Room Management
 
@@ -1214,6 +1322,12 @@ const socket = io(serverUrl, {
 - Players join/leave rooms dynamically
 - Server broadcasts state updates to room members
 - Disconnect handling with 10-minute grace period
+
+**Reconnection Features** (Issue #419):
+- **Automatic room rejoin**: Frontend automatically rejoins room after Socket.IO reconnects (500ms debounced)
+- **Immediate socket mapping**: Backend populates socket-to-player mappings on connection, not on room join
+- **Stale socket cleanup**: Backend removes old socket mappings when user reconnects with new socket ID
+- **Connection timeout**: 15-second timeout accommodates slow networks (increased from 5s default)
 
 ### State Synchronization
 
@@ -1381,4 +1495,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-29 (Updated for Summon System - Issue #228)
+**Last Review**: 2025-12-31 (Updated for WebSocket Connection Improvements - Issue #419)
