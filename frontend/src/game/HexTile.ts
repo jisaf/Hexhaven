@@ -273,7 +273,8 @@ export class HexTile extends PIXI.Container {
     }
 
     // Clear existing feature icons
-    this.children.filter(child => child.name === 'feature').forEach(child => {
+    const featuresToRemove = this.children.filter(child => child.name === 'feature');
+    featuresToRemove.forEach(child => {
         this.removeChild(child);
         child.destroy();
     });

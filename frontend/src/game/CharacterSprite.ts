@@ -140,8 +140,18 @@ export class CharacterSprite extends PIXI.Container {
    * Create character body (SVG avatar sprite)
    */
   private createBody(): PIXI.Sprite {
-    // Load SVG avatar based on class type
-    const avatarPath = `/avatars/characters/${this.classType.toLowerCase()}.svg`;
+    // Validate classType against known character classes
+    const validClasses = ['brute', 'tinkerer', 'spellweaver', 'scoundrel', 'cragheart', 'mindthief'];
+    const classTypeLower = this.classType.toLowerCase();
+    const safeClassType = validClasses.includes(classTypeLower) ? classTypeLower : 'brute';
+
+    // Log warning if using fallback
+    if (safeClassType !== classTypeLower) {
+      console.warn(`[CharacterSprite] Unknown character class "${this.classType}", using fallback "brute"`);
+    }
+
+    // Load SVG avatar based on validated class type
+    const avatarPath = `/avatars/characters/${safeClassType}.svg`;
     const sprite = PIXI.Sprite.from(avatarPath);
 
     // Size the avatar to match the hex size
