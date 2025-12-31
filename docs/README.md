@@ -16,9 +16,10 @@ Complete documentation for the Hexhaven Multiplayer tactical board game.
 - [WebSocket Analysis](./websocket_analysis.md) - Real-time communication patterns
 
 ### Game Systems
+- [Game Rules Index](./game-rules/index.md) - **Gloomhaven rules reference** (split into manageable sections)
 - [Game Completion System](./game-completion-system.md) - Victory/defeat detection and match history
 - [Objective System Guide](./objective-system-guide.md) - Creating and managing objectives
-- [Action System](./action-system.md) - Card actions and combat mechanics
+- [Action System](./action-system.md) - Card actions and combat implementation
 - [Deck Management System](./deck-management-system.md) - Player deck mechanics
 - [Narrative System](./narrative-system.md) - Story triggers and campaign narratives
 - [Campaign Invitation Architecture](./campaign-invitation-architecture.md) - Campaign invitation system
@@ -166,6 +167,7 @@ Only essential developer-facing files:
 ## Documentation Health
 
 ### Recent Updates
+- 2025-12-31: Game rules split into manageable sections (docs/game-rules/)
 - 2025-12-29: Complete documentation reorganization
 - 2025-12-27: Campaign narrative system added
 - 2025-12-25: Campaign invitation architecture
@@ -189,6 +191,6 @@ Only essential developer-facing files:
 
 ---
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2025-12-31
 **Maintained By**: Hexhaven Development Team
 **Version**: 2.0.0

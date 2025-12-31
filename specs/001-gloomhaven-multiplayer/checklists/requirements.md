@@ -35,6 +35,6 @@
 
 The specification successfully avoids implementation details and focuses on user needs and business value. All user stories are independently testable with clear priorities (P1, P2, P3). Functional requirements are specific and verifiable. Success criteria are technology-agnostic and measurable (e.g., "30 seconds from opening app", "60 FPS on mid-range devices", "200ms latency").
 
-The spec clearly defines out-of-scope items and documents reasonable assumptions. Edge cases are well-considered. No clarifications needed - the PRD.md and game-rules.md provided sufficient context for a complete specification.
+The spec clearly defines out-of-scope items and documents reasonable assumptions. Edge cases are well-considered. No clarifications needed - the PRD.md and docs/game-rules/index.md provided sufficient context for a complete specification.
 
 **Specification is ready for planning phase** - proceed with `/speckit.plan` to create implementation plan.

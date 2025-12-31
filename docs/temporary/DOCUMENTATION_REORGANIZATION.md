@@ -76,7 +76,7 @@ hexhaven/
 ├── AGENTS.md                      # CLI commands (EXISTING)
 ├── bugs.md                        # Current bugs (EXISTING)
 ├── PRD.md                         # Product requirements (EXISTING)
-├── game-rules.md                  # Game rules reference (EXISTING)
+├── docs/game-rules/index.md                  # Game rules reference (EXISTING)
 │
 ├── specs/                         # Feature specifications (EXISTING)
 │   └── NNN-feature-name/
@@ -345,7 +345,7 @@ These docs were created for specific implementations and may become outdated:
 - ✅ AGENTS.md - CLI commands
 - ✅ bugs.md - Active bug tracking
 - ✅ PRD.md - Product requirements
-- ✅ game-rules.md - Game rules reference
+- ✅ docs/game-rules/index.md - Game rules reference
 
 ### Frontend Tests
 - ✅ /frontend/tests/QUICK_START.md - Quick test guide

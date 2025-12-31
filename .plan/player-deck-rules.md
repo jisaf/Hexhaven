@@ -30,7 +30,7 @@ This plan implements the complete player deck management system for Hexhaven, co
 
 ## 1. Requirements Summary
 
-### From Gloomhaven Rules (game-rules.md)
+### From Gloomhaven Rules (docs/game-rules/index.md)
 
 **Card Piles:**
 - **Hand:** Cards available to play this round
