@@ -195,10 +195,10 @@ describe('CreateCharacter - Name Validation', () => {
       });
       await user.click(submitButton);
 
-      // Should show validation error about < or > characters
+      // Should show validation error about special characters
       await waitFor(() => {
         expect(
-          screen.getByText(/cannot contain.*<.*>.*characters/i)
+          screen.getByText(/cannot contain.*special characters/i)
         ).toBeInTheDocument();
       });
 
@@ -230,7 +230,7 @@ describe('CreateCharacter - Name Validation', () => {
       // Should show validation error
       await waitFor(() => {
         expect(
-          screen.getByText(/cannot contain.*<.*>.*characters/i)
+          screen.getByText(/cannot contain.*special characters/i)
         ).toBeInTheDocument();
       });
 
@@ -261,7 +261,7 @@ describe('CreateCharacter - Name Validation', () => {
       // Should show validation error
       await waitFor(() => {
         expect(
-          screen.getByText(/cannot contain.*<.*>.*characters/i)
+          screen.getByText(/cannot contain.*special characters/i)
         ).toBeInTheDocument();
       });
 

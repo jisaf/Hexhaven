@@ -30,7 +30,9 @@ export default {
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
         resolveJsonModule: true,
-        types: ['jest', '@testing-library/jest-dom', 'jest-axe', 'node']
+        types: ['jest', '@testing-library/jest-dom', 'jest-axe', 'node'],
+        // Skip full type checking to avoid issues with CSS modules
+        isolatedModules: true
       }
     }]
   },

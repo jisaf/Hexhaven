@@ -9,12 +9,13 @@
  * - Ability to start a game in the campaign
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { campaignService } from '../../services/campaign.service';
 import { characterService } from '../../services/character.service';
 import { CampaignShop } from '../shop';
 import { CampaignInvitePanel } from '../CampaignInvitePanel';
+import { CreateCharacterModal } from '../CreateCharacterModal';
 import type {
   CampaignWithDetails,
   CampaignScenario,
@@ -43,6 +44,18 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
   const [availableCharacters, setAvailableCharacters] = useState<CharacterResponse[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(false);
   const [addingCharacter, setAddingCharacter] = useState(false);
+
+  // Character creation modal state
+  const [showCreateCharacterModal, setShowCreateCharacterModal] = useState(false);
+
+  // Track mounted state for async operations
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Tab state
   type CampaignTab = 'characters' | 'shop' | 'scenarios' | 'invites';
@@ -133,6 +146,29 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
       setError(err instanceof Error ? err.message : 'Failed to add character');
     } finally {
       setAddingCharacter(false);
+    }
+  };
+
+  const handleCharacterCreated = async (character: CharacterResponse) => {
+    // Close the modal immediately
+    setShowCreateCharacterModal(false);
+    setError(null);
+
+    try {
+      // Automatically add the newly created character to the campaign
+      await campaignService.joinCampaign(campaignId, character.id);
+
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        // Refresh campaign data to show the new character
+        await fetchCampaignData();
+      }
+    } catch (err) {
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to add character to campaign');
+        // Modal is closed but character was created, user can manually add it
+      }
     }
   };
 
@@ -289,33 +325,45 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                 </div>
                 {loadingCharacters ? (
                   <p className={styles.loadingText}>Loading your characters...</p>
-                ) : availableCharacters.length === 0 ? (
-                  <p className={styles.noAvailableCharacters}>
-                    No available characters. All your characters are either in campaigns or retired.
-                    Create a new character first.
-                  </p>
                 ) : (
-                  <div className={styles.availableCharactersList}>
-                    {availableCharacters.map((char) => (
-                      <div
-                        key={char.id}
-                        className={styles.availableCharacterCard}
-                        onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
-                      >
-                        <div className={styles.availableCharacterInfo}>
-                          <span className={styles.availableCharacterName}>{char.name}</span>
-                          <span className={styles.availableCharacterClass}>
-                            {char.className} Lv.{char.level}
-                          </span>
-                        </div>
-                        <button
-                          className={styles.addButton}
-                          disabled={addingCharacter}
-                        >
-                          {addingCharacter ? 'Adding...' : 'Add'}
-                        </button>
+                  <div className={styles.availableCharactersSection}>
+                    {availableCharacters.length === 0 ? (
+                      <p className={styles.noAvailableText}>
+                        No available characters. All your characters are either in campaigns or retired.
+                      </p>
+                    ) : (
+                      <div className={styles.availableCharactersList}>
+                        {availableCharacters.map((char) => (
+                          <div
+                            key={char.id}
+                            className={styles.availableCharacterCard}
+                            onClick={() => !addingCharacter && handleAddCharacterToCampaign(char.id)}
+                          >
+                            <div className={styles.availableCharacterInfo}>
+                              <span className={styles.availableCharacterName}>{char.name}</span>
+                              <span className={styles.availableCharacterClass}>
+                                {char.className} Lv.{char.level}
+                              </span>
+                            </div>
+                            <button
+                              className={styles.addButton}
+                              disabled={addingCharacter}
+                            >
+                              {addingCharacter ? 'Adding...' : 'Add'}
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    <button
+                      className={styles.createNewCharacterButton}
+                      onClick={() => {
+                        setShowAddCharacter(false);
+                        setShowCreateCharacterModal(true);
+                      }}
+                    >
+                      + Create New Character
+                    </button>
                   </div>
                 )}
               </div>
@@ -350,6 +398,14 @@ export function CampaignView({ campaignId, onBack, onStartGame }: CampaignViewPr
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Create Character Modal */}
+            {showCreateCharacterModal && (
+              <CreateCharacterModal
+                onSuccess={handleCharacterCreated}
+                onCancel={() => setShowCreateCharacterModal(false)}
+              />
             )}
           </div>
         )}
