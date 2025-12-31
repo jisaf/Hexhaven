@@ -10,9 +10,13 @@ Start a new feature with fresh context by clearing previous conversation history
 
 ## Execution Steps
 
-1. **Clear Context**: Execute `/clear` to remove all previous conversation history and start fresh
+1. **Switch to Main and Pull**:
+   - Checkout main branch: `git checkout main`
+   - Pull latest changes: `git pull origin main`
 
-2. **Load Essential Context**: Read these critical documents to understand the project:
+2. **Clear Context**: Execute `/clear` to remove all previous conversation history and start fresh
+
+3. **Load Essential Context**: Read these critical documents to understand the project:
 
    **Core Context (Always Read)**:
    - `/home/ubuntu/hexhaven/README.md` - Project overview, structure, tech stack
@@ -24,18 +28,16 @@ Start a new feature with fresh context by clearing previous conversation history
    - `/home/ubuntu/hexhaven/docs/action-system.md` - Card actions, combat implementation
    - `/home/ubuntu/hexhaven/docs/api-reference.md` - REST and WebSocket APIs
 
-3. **Parse Task**: Extract the feature description from the prompt to generate a branch name
+4. **Parse Task**: Extract the feature description from the prompt to generate a branch name
 
-4. **Create Branch**:
-   - Ensure we're on main: `git checkout main`
-   - Pull latest changes: `git pull origin main`
+5. **Create Branch**:
    - Create descriptive branch name from the task (e.g., "add-user-auth" or "fix-login-bug")
    - Prefix with `feat/` for features, `fix/` for bugs, `refactor/` for refactoring
    - Create and checkout new branch: `git checkout -b <prefix>/<branch-name>`
 
-5. **Plan with Opus**: Use Opus model to create a detailed implementation plan by entering plan mode and analyzing the codebase to design the implementation approach
+6. **Plan with Opus**: Use Opus model to create a detailed implementation plan by entering plan mode and analyzing the codebase to design the implementation approach
 
-6. **Implement with Opus**: Continue with Opus to implement the planned changes
+7. **Implement with Opus**: Continue with Opus to implement the planned changes
 
 ## Key Patterns to Follow
 
