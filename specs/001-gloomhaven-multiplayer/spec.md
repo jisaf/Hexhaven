@@ -3,7 +3,7 @@
 **Feature Branch**: `001-hexhaven-multiplayer`
 **Created**: 2025-11-07
 **Status**: Draft
-**Input**: User description: "build a mobile-first multiplayer game modeled on the game hexhaven. Read PRD.md and game-rules.md first to understand the product, underlying rules, and goals."
+**Input**: User description: "build a mobile-first multiplayer game modeled on the game hexhaven. Read PRD.md and docs/game-rules/index.md first to understand the product, underlying rules, and goals."
 
 ## Clarifications
 
