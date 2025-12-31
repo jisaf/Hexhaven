@@ -725,9 +725,33 @@ export class GameGateway
 
   /**
    * Handle client connection
+   * Issue #419: Populate socketToPlayer mapping immediately on connection
+   * This ensures game events can identify the user even before join_room is called
    */
-  handleConnection(_client: Socket): void {
-    // Verbose connection log removed
+  handleConnection(client: Socket): void {
+    const userId = client.data.userId;
+    if (userId) {
+      // Clean up any stale mapping for this user (handles reconnection with new socket ID)
+      const oldSocketId = this.playerToSocket.get(userId);
+      if (oldSocketId && oldSocketId !== client.id) {
+        this.socketToPlayer.delete(oldSocketId);
+        this.logger.log(
+          `Cleaned up stale socket mapping: ${oldSocketId} for user ${userId}`,
+        );
+      }
+
+      // Populate socket mapping immediately on connection
+      this.socketToPlayer.set(client.id, userId);
+      this.playerToSocket.set(userId, client.id);
+      this.logger.log(
+        `Socket ${client.id} mapped to user ${userId} on connection`,
+      );
+    } else {
+      // This should not happen as main.ts rejects connections without valid JWT
+      this.logger.warn(
+        `Socket ${client.id} connected without userId in socket.data`,
+      );
+    }
   }
 
   /**
@@ -915,7 +939,10 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(
+            room,
+            roomCode,
+          );
 
           // Send game_started event with acknowledgment pattern
           client.emit(
