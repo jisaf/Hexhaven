@@ -126,6 +126,33 @@
   background: rgba(46, 204, 113, 0.12);
 }
 
+/* Issue #411: Clickable action sections for card action selection */
+.card2-top-section.clickable,
+.card2-bottom-section.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  border-radius: 0.3em;
+}
+
+.card2-top-section.clickable:hover:not(.section-disabled),
+.card2-bottom-section.clickable:hover:not(.section-disabled) {
+  background: rgba(201, 164, 68, 0.25);
+}
+
+.card2-top-section.clickable:active:not(.section-disabled),
+.card2-bottom-section.clickable:active:not(.section-disabled) {
+  transform: scale(0.98);
+  background: rgba(201, 164, 68, 0.35);
+}
+
+/* Disabled section styling */
+.card2-top-section.section-disabled,
+.card2-bottom-section.section-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ========== RIGHT COLUMN ========== */
 
 .card2-right-column {

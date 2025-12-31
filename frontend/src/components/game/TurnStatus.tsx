@@ -10,6 +10,8 @@
  * - Objectives tracker (collapsible)
  *
  * Replaces and combines: TurnOrder, ActionButtons, and parts of GameHUD
+ *
+ * Issue #411: CardActionSelectionPanel moved to InfoPanel as "Actions" tab.
  */
 
 import { useState } from 'react';
@@ -51,6 +53,8 @@ interface TurnStatusProps {
   onShortRest?: () => void;
   canShortRest?: boolean;
   objectivesSlot?: ReactNode;
+  /** Issue #411: When true, hide legacy Move/Attack buttons (use card action panel instead) */
+  cardActionMode?: boolean;
 }
 
 export function TurnStatus({
@@ -71,6 +75,7 @@ export function TurnStatus({
   onShortRest,
   canShortRest = false,
   objectivesSlot,
+  cardActionMode = false,
 }: TurnStatusProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const statusClassName = styles[connectionStatus] || '';
@@ -208,8 +213,8 @@ export function TurnStatus({
         </div>
       )}
 
-      {/* Action buttons - only show when it's player's turn */}
-      {isMyTurn && (hasAttack || hasMove || canShortRest) && (
+      {/* Action buttons - show when it's player's turn AND not in card action mode (Issue #411) */}
+      {isMyTurn && !cardActionMode && (hasAttack || hasMove || canShortRest) && (
         <div className={styles.actionButtons}>
           {hasMove && (
             <button

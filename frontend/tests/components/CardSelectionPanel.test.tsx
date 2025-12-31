@@ -138,10 +138,11 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your TOP action/i)).toBeInTheDocument();
+      // Issue #411: Text changed from "Select a card for your TOP action" to "Select your first card"
+      expect(screen.getByText(/Select your first card/i)).toBeInTheDocument();
     });
 
-    it('should show instruction to select bottom action after top is selected', () => {
+    it('should show instruction to select second card after first is selected', () => {
       render(
         <CardSelectionPanel
           cards={mockCards}
@@ -153,10 +154,11 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your BOTTOM action/i)).toBeInTheDocument();
+      // Issue #411: Text changed from "Select a card for your BOTTOM action" to "Select your second card"
+      expect(screen.getByText(/Select your second card/i)).toBeInTheDocument();
     });
 
-    it('should show ready to confirm message when both cards are selected', () => {
+    it('should show initiative info when both cards are selected', () => {
       render(
         <CardSelectionPanel
           cards={mockCards}
@@ -168,7 +170,10 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Cards selected! Ready to confirm/i)).toBeInTheDocument();
+      // Issue #411: Now shows initiative info instead of "Ready to confirm"
+      // Card with lower initiative (Eye for an Eye, init 18) should be auto-selected
+      // The instruction paragraph should show the initiative info with card name
+      expect(screen.getByText(/Initiative: 18 \(Eye for an Eye\)/i)).toBeInTheDocument();
     });
   });
 
@@ -508,7 +513,8 @@ describe('CardSelectionPanel', () => {
       );
 
       // Should still render without crashing
-      expect(screen.getByText(/Select Your Actions/i)).toBeInTheDocument();
+      // Issue #411: Text changed from "Select Your Actions" to "Select Your Cards"
+      expect(screen.getByText(/Select Your Cards/i)).toBeInTheDocument();
     });
 
     it('should pass onClick handler to AbilityCard2', () => {

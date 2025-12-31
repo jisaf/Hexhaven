@@ -117,6 +117,39 @@
   }
 }
 
+/* Actions Button (Issue #411) */
+.actionsPile {
+  flex: 0 0 auto;
+  min-width: 44px;
+  max-width: 44px;
+  background: rgba(201, 164, 68, 0.2);
+  border-left: 1px solid rgba(201, 164, 68, 0.4);
+}
+
+.actionsPile:hover {
+  background: rgba(201, 164, 68, 0.4);
+}
+
+.actionsPile.selected {
+  background: rgba(201, 164, 68, 0.4);
+  border-bottom: 3px solid rgba(201, 164, 68, 0.8);
+}
+
+.actionsBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: linear-gradient(135deg, #c9a444 0%, #a88a3a 100%);
+  color: #0d1a2e;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 0.1rem 0.25rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  min-width: 14px;
+  text-align: center;
+}
+
 /* Inventory Button (Issue #205) */
 .inventoryPile {
   flex: 0 0 auto;

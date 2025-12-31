@@ -122,7 +122,50 @@
 /* Ensure children fill their containers */
 .turnStatusContainer > *,
 .gameLogContainer > *,
-.cardPileBarContainer > *,
-.cardSelectionOverlay > * {
+.cardPileBarContainer > * {
   height: 100%;
+}
+
+/* Issue #411: Content panel without tabs */
+.contentPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(13, 26, 46, 0.98);
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f0e6d2;
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contentArea {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.contentArea > * {
+  flex: 1;
+  min-height: 0;
 }

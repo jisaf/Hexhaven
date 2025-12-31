@@ -434,6 +434,13 @@
   text-transform: uppercase;
 }
 
+/* Issue #411: Card Action Panel container - now handled by InfoPanel BottomSheet */
+.cardActionPanel {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid rgba(201, 164, 68, 0.3);
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .actionButtons {
@@ -443,5 +450,9 @@
   .turnEntity {
     min-width: 70px;
     padding: 6px 10px;
+  }
+
+  .cardActionPanel {
+    padding: 4px;
   }
 }

@@ -35,6 +35,13 @@ export interface CharacterData {
   lostPile: string[]; // Card IDs in lost pile
   experience: number; // Issue #220: XP earned this scenario
   userCharacterId?: string; // Database character ID for persistent characters (002)
+  // Issue #411: New card action selection fields
+  selectedCardIds?: string[]; // Array of 2 card IDs selected for the round
+  selectedInitiativeCardId?: string; // Which card determines initiative
+  executedActionsThisTurn?: {
+    cardId: string;
+    actionPosition: 'top' | 'bottom';
+  }[]; // Track executed actions
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +70,13 @@ export class Character {
   private _effectiveAttackThisTurn: number = 0; // Attack value from selected card (Gloomhaven: attack comes from cards, not base stats)
   private _effectiveRangeThisTurn: number = 0; // Attack range from selected card
   private _hasAttackedThisTurn: boolean = false;
+  // Issue #411: New card action selection fields
+  private _selectedCardIds?: string[]; // Array of 2 card IDs selected for the round
+  private _selectedInitiativeCardId?: string; // Which card determines initiative
+  private _executedActionsThisTurn: {
+    cardId: string;
+    actionPosition: 'top' | 'bottom';
+  }[] = []; // Track executed actions
   private _userCharacterId?: string; // Database character ID for persistent characters (002)
   private readonly _createdAt: Date;
   private _updatedAt: Date;
@@ -167,6 +181,132 @@ export class Character {
       | undefined,
   ) {
     this._selectedCards = cards ? { ...cards } : undefined;
+    this._updatedAt = new Date();
+  }
+
+  // Issue #411: New card action selection getters/setters
+  get selectedCardIds(): string[] | undefined {
+    return this._selectedCardIds ? [...this._selectedCardIds] : undefined;
+  }
+
+  set selectedCardIds(cardIds: string[] | undefined) {
+    this._selectedCardIds = cardIds ? [...cardIds] : undefined;
+    this._updatedAt = new Date();
+  }
+
+  get selectedInitiativeCardId(): string | undefined {
+    return this._selectedInitiativeCardId;
+  }
+
+  set selectedInitiativeCardId(cardId: string | undefined) {
+    this._selectedInitiativeCardId = cardId;
+    this._updatedAt = new Date();
+  }
+
+  get executedActionsThisTurn(): {
+    cardId: string;
+    actionPosition: 'top' | 'bottom';
+  }[] {
+    return this._executedActionsThisTurn.map((action) => ({ ...action }));
+  }
+
+  /**
+   * Add an executed action to track during the turn (Issue #411)
+   */
+  addExecutedAction(cardId: string, actionPosition: 'top' | 'bottom'): void {
+    this._executedActionsThisTurn.push({ cardId, actionPosition });
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Check if a specific action can be executed based on Gloomhaven rules (Issue #411)
+   * - First action: any of 4 options (2 cards x 2 positions)
+   * - Second action: must be opposite card AND opposite position from first
+   * - No third action allowed
+   */
+  canExecuteAction(cardId: string, actionPosition: 'top' | 'bottom'): boolean {
+    // Must have selected cards
+    if (!this._selectedCardIds || this._selectedCardIds.length !== 2) {
+      return false;
+    }
+
+    // Card must be one of the selected cards
+    if (!this._selectedCardIds.includes(cardId)) {
+      return false;
+    }
+
+    const executedCount = this._executedActionsThisTurn.length;
+
+    // No third action allowed
+    if (executedCount >= 2) {
+      return false;
+    }
+
+    // Check if this exact action was already executed
+    const alreadyExecuted = this._executedActionsThisTurn.some(
+      (action) =>
+        action.cardId === cardId && action.actionPosition === actionPosition,
+    );
+    if (alreadyExecuted) {
+      return false;
+    }
+
+    // First action: any of the 4 options is valid
+    if (executedCount === 0) {
+      return true;
+    }
+
+    // Second action: must be opposite card AND opposite position (Gloomhaven rule)
+    const firstAction = this._executedActionsThisTurn[0];
+    const isOppositeCard = cardId !== firstAction.cardId;
+    const isOppositePosition = actionPosition !== firstAction.actionPosition;
+
+    return isOppositeCard && isOppositePosition;
+  }
+
+  /**
+   * Check if the character has actions remaining this turn (Issue #411)
+   */
+  get hasActionsRemaining(): boolean {
+    if (!this._selectedCardIds || this._selectedCardIds.length !== 2) {
+      return false;
+    }
+    return this._executedActionsThisTurn.length < 2;
+  }
+
+  /**
+   * Get all available actions the character can take (Issue #411)
+   * Returns actions that can still be legally executed
+   */
+  getAvailableActions(): {
+    cardId: string;
+    actionPosition: 'top' | 'bottom';
+  }[] {
+    if (!this._selectedCardIds || this._selectedCardIds.length !== 2) {
+      return [];
+    }
+
+    const allPossibleActions: {
+      cardId: string;
+      actionPosition: 'top' | 'bottom';
+    }[] = [];
+    for (const cardId of this._selectedCardIds) {
+      allPossibleActions.push({ cardId, actionPosition: 'top' });
+      allPossibleActions.push({ cardId, actionPosition: 'bottom' });
+    }
+
+    return allPossibleActions.filter((action) =>
+      this.canExecuteAction(action.cardId, action.actionPosition),
+    );
+  }
+
+  /**
+   * Clear all card selection state for a new round (Issue #411)
+   */
+  clearCardSelection(): void {
+    this._selectedCardIds = undefined;
+    this._selectedInitiativeCardId = undefined;
+    this._executedActionsThisTurn = [];
     this._updatedAt = new Date();
   }
 
@@ -419,6 +559,7 @@ export class Character {
     this._effectiveAttackThisTurn = 0; // Reset card attack value for next turn
     this._effectiveRangeThisTurn = 0; // Reset card range value for next turn
     this._hasAttackedThisTurn = false;
+    this._executedActionsThisTurn = []; // Issue #411: Clear executed actions
     this._updatedAt = new Date();
   }
 
@@ -448,6 +589,14 @@ export class Character {
       lostPile: [...this._lostPile],
       experience: this._experience,
       userCharacterId: this._userCharacterId,
+      // Issue #411: New card action selection fields
+      selectedCardIds: this._selectedCardIds
+        ? [...this._selectedCardIds]
+        : undefined,
+      selectedInitiativeCardId: this._selectedInitiativeCardId,
+      executedActionsThisTurn: this._executedActionsThisTurn.map((a) => ({
+        ...a,
+      })),
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };

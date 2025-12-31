@@ -11,7 +11,7 @@ import React from 'react';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import styles from './CardPileIndicator.module.css';
 
-export type PileType = 'hand' | 'discard' | 'lost';
+export type PileType = 'hand' | 'discard' | 'lost' | 'actions';
 
 interface CardPileIndicatorProps {
   handCount: number;
@@ -26,6 +26,14 @@ interface CardPileIndicatorProps {
   onInventoryClick?: () => void;
   /** Whether inventory is currently selected */
   inventorySelected?: boolean;
+  /** Issue #411: Show actions button when it's player's turn with cards selected */
+  showActions?: boolean;
+  /** Issue #411: Number of actions remaining (0-2) */
+  actionsRemaining?: number;
+  /** Issue #411: Click handler for actions button */
+  onActionsClick?: () => void;
+  /** Issue #411: Whether actions is currently selected */
+  actionsSelected?: boolean;
 }
 
 export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
@@ -38,6 +46,10 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   inventoryCount = 0,
   onInventoryClick,
   inventorySelected = false,
+  showActions = false,
+  actionsRemaining = 0,
+  onActionsClick,
+  actionsSelected = false,
 }) => {
   return (
     <div className={styles.indicator} data-testid="card-pile-indicator">
@@ -71,6 +83,21 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         <span className={styles.label}>Lost</span>
         <span className={styles.count}>{lostCount}</span>
       </button>
+
+      {/* Actions Button (Issue #411) */}
+      {showActions && onActionsClick && (
+        <button
+          className={`${styles.pile} ${styles.actionsPile} ${actionsSelected ? styles.selected : ''}`}
+          title="Execute card actions"
+          data-testid="actions-button"
+          onClick={onActionsClick}
+        >
+          <i className="ra ra-crossed-swords" style={{ fontSize: '16px' }} />
+          {actionsRemaining > 0 && (
+            <span className={styles.actionsBadge}>{actionsRemaining}</span>
+          )}
+        </button>
+      )}
 
       {/* Inventory Button (Issue #205) */}
       {onInventoryClick && (

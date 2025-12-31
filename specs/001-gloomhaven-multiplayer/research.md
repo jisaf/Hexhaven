@@ -279,7 +279,7 @@ function hexRange(center: Axial, range: number): Axial[] {
 - Performance: A* on 50-hex board completes in <10ms (well under 500ms monster AI budget, SC-014).
 - Handles obstacles, difficult terrain (movement cost modifiers).
 
-**Hexhaven Monster AI Rules** (from game-rules.md and PRD.md):
+**Hexhaven Monster AI Rules** (from docs/game-rules/index.md and PRD.md):
 1. **Focus target**: Closest enemy by shortest path distance (not line-of-sight).
 2. **Movement**: Move toward focus target, prioritize hexes that enable attack.
 3. **Attack**: If in range, attack focus target (or closest if tied).

@@ -53,6 +53,38 @@ export interface SelectCardsPayload {
   bottomCardId: string;
 }
 
+// Issue #411: New card selection payload with initiative card selection
+export interface SelectCardsNewPayload {
+  characterId?: string; // Which character's cards (for multi-character control)
+  cardIds: [string, string]; // Exactly 2 card IDs
+  initiativeCardId: string; // Which of the 2 cards determines initiative
+}
+
+// Issue #411: Execute a card action during the player's turn
+export interface ExecuteCardActionPayload {
+  characterId?: string; // Which character (for multi-character control)
+  cardId: string; // Card A or Card B from selected cards
+  actionPosition: 'top' | 'bottom'; // Which half of the card
+  targetId?: string; // For attack actions
+  targetHex?: AxialCoordinates; // For movement or targeted actions
+}
+
+// Issue #411: Card action executed broadcast
+export interface CardActionExecutedPayload {
+  characterId: string;
+  playerId: string;
+  cardId: string;
+  actionPosition: 'top' | 'bottom';
+  actionType: string; // 'move', 'attack', 'heal', 'loot', 'summon', 'special', etc.
+  actionValue?: number;
+  success: boolean;
+  error?: string;
+  affectedEntities?: string[];
+  // For summon actions
+  summonId?: string;
+  summonName?: string;
+}
+
 export interface AttackTargetPayload {
   characterId: string; // Required: which character is attacking (multi-character support)
   targetId: string; // Monster or Character UUID

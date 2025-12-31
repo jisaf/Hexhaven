@@ -7,8 +7,10 @@ interface CardSelectionPanelProps {
   cards: AbilityCardType[];
   onCardSelect: (card: AbilityCardType) => void;
   onClearSelection: () => void;
-  onConfirmSelection: () => void;
+  onConfirmSelection: (initiativeCardId?: string) => void;
   onLongRest?: () => void;
+  // Issue #411: Renamed from selectedTopAction/selectedBottomAction to selectedCards
+  // These represent the 2 cards selected for the round (no longer tied to top/bottom)
   selectedTopAction: AbilityCardType | null;
   selectedBottomAction: AbilityCardType | null;
   disabled?: boolean;
@@ -40,7 +42,26 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   charactersWithSelections = 0,
 }) => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  // Issue #411: Track which card determines initiative (defaults to lower initiative card)
+  const [selectedInitiativeCardId, setSelectedInitiativeCardId] = useState<string | null>(null);
   const isPortrait = useMediaQuery('(orientation: portrait)');
+
+  // Issue #411: Get the two selected cards as an array
+  const selectedCards = [selectedTopAction, selectedBottomAction].filter(
+    (card): card is AbilityCardType => card !== null
+  );
+
+  // Issue #411: When both cards are selected, auto-select the one with lower initiative
+  React.useEffect(() => {
+    if (selectedCards.length === 2 && !selectedInitiativeCardId) {
+      const lowerInitiativeCard = selectedCards[0].initiative <= selectedCards[1].initiative
+        ? selectedCards[0]
+        : selectedCards[1];
+      setSelectedInitiativeCardId(lowerInitiativeCard.id);
+    } else if (selectedCards.length < 2) {
+      setSelectedInitiativeCardId(null);
+    }
+  }, [selectedCards.length, selectedCards, selectedInitiativeCardId]);
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
   const mustRest = cards.length < 2 && canLongRest;
@@ -53,19 +74,24 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
     ? (charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)) >= totalCharacters
     : canConfirm;
 
-  // Build instruction text
+  // Issue #411: Build instruction text - now focused on card selection (not top/bottom designation)
   const getInstructionText = () => {
     if (waiting) return 'Waiting for other players...';
     if (mustRest) return `Cannot play 2 cards (${cards.length} in hand). Must rest.`;
-    if (!selectedTopAction) return 'Select a card for your TOP action';
-    if (!selectedBottomAction) return 'Select a card for your BOTTOM action';
+    if (selectedCards.length === 0) return 'Select your first card';
+    if (selectedCards.length === 1) return 'Select your second card';
     if (totalCharacters > 1 && !allCharactersReady) {
       return `Cards selected! Click confirm to select for next character.`;
+    }
+    // Show initiative info when both cards are selected
+    const initiativeCard = selectedCards.find(c => c.id === selectedInitiativeCardId);
+    if (initiativeCard) {
+      return `Initiative: ${initiativeCard.initiative} (${initiativeCard.name})`;
     }
     return 'Cards selected! Ready to confirm.';
   };
 
-  // Build confirm button text
+  // Issue #411: Build confirm button text
   const getConfirmText = () => {
     if (waiting) return 'Waiting...';
     if (totalCharacters > 1) {
@@ -74,7 +100,12 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
       }
       return `Next Character (${charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/${totalCharacters})`;
     }
-    return 'Confirm';
+    return 'Confirm Cards';
+  };
+
+  // Issue #411: Handle confirm with initiative card
+  const handleConfirm = () => {
+    onConfirmSelection(selectedInitiativeCardId || undefined);
   };
 
   return (
@@ -82,8 +113,8 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
       <div className="selection-instructions">
         <h3>
           {activeCharacterName && totalCharacters > 1
-            ? `Select Actions: ${activeCharacterName}`
-            : 'Select Your Actions'}
+            ? `Select Cards: ${activeCharacterName}`
+            : 'Select Your Cards'}
         </h3>
         {totalCharacters > 1 && (
           <span className="character-progress">
@@ -97,8 +128,10 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
         {cards.map((card) => {
           const isSelected = card.id === selectedTopAction?.id || card.id === selectedBottomAction?.id;
           const isFocused = card.id === focusedId;
+          // Issue #411: Check if this card is the initiative card
+          const isInitiativeCard = isSelected && card.id === selectedInitiativeCardId;
 
-          const wrapperClassName = `card-wrapper ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
+          const wrapperClassName = `card-wrapper ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''} ${isInitiativeCard ? 'initiative-card' : ''}`;
 
           return (
             <div
@@ -121,6 +154,19 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                 disabled={disabled || waiting}
                 onClick={() => !waiting && onCardSelect(card)}
               />
+              {/* Issue #411: Initiative selection buttons for selected cards */}
+              {isSelected && selectedCards.length === 2 && !waiting && (
+                <button
+                  className={`initiative-selector ${isInitiativeCard ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedInitiativeCardId(card.id);
+                  }}
+                  title={`Use ${card.name}'s initiative (${card.initiative})`}
+                >
+                  {isInitiativeCard ? `Initiative: ${card.initiative}` : `Set Initiative (${card.initiative})`}
+                </button>
+              )}
             </div>
           );
         })}
@@ -141,14 +187,17 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
           <>
             <button
               className="btn-clear"
-              onClick={onClearSelection}
+              onClick={() => {
+                onClearSelection();
+                setSelectedInitiativeCardId(null);
+              }}
               disabled={!selectedTopAction && !selectedBottomAction || disabled || waiting}
             >
               Clear
             </button>
             <button
               className={`btn-confirm ${allCharactersReady ? 'all-ready' : ''}`}
-              onClick={onConfirmSelection}
+              onClick={handleConfirm}
               disabled={!canConfirm || disabled || waiting}
             >
               {getConfirmText()}

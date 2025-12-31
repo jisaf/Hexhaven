@@ -38,6 +38,7 @@ import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
 import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
 import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
+import { CardActionSelectionPanel } from '../components/game/CardActionSelectionPanel';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
 import { NarrativeOverlay } from '../components/narrative';
 import { useHexGrid } from '../hooks/useHexGrid';
@@ -415,6 +416,28 @@ export function GameBoard() {
     gameStateManager.enterMoveMode();
   };
 
+  // Issue #411: Handle card action clicks during turn
+  const handleCardActionClick = useCallback((cardId: string, actionPosition: 'top' | 'bottom') => {
+    gameStateManager.executeCardAction(cardId, actionPosition);
+  }, []);
+
+  // Issue #411: Get selected cards and executed actions for card action mode
+  const selectedCards = gameStateManager.getSelectedCards();
+  const executedActions = gameStateManager.getExecutedActionsThisTurn();
+  // Enable card action mode when player has selected cards and it's their turn
+  const cardActionMode = gameState.isMyTurn && selectedCards.length === 2;
+
+  // Issue #411: Auto-open actions tab when it's the player's turn and they have cards selected
+  useEffect(() => {
+    if (cardActionMode && !gameState.showCardSelection) {
+      // Auto-switch to actions tab when turn starts
+      setActiveSheetTab('actions');
+      setSelectedPile('actions');
+      setShowPileView(false);
+      setShowInventory(false);
+    }
+  }, [cardActionMode, gameState.showCardSelection]);
+
   const attackAction = gameStateManager.getAttackAction();
   const moveAction = gameStateManager.getMoveAction();
 
@@ -449,6 +472,15 @@ export function GameBoard() {
       return;
     }
 
+    // Issue #411: Handle 'actions' pile separately - shows action selection panel
+    if (pile === 'actions') {
+      setShowPileView(false);
+      setPileViewCards([]);
+      setShowInventory(false);
+      setActiveSheetTab('actions');
+      return;
+    }
+
     let cardIds: string[] = [];
     switch (pile) {
       case 'hand':
@@ -469,6 +501,7 @@ export function GameBoard() {
 
     setPileViewCards(cardObjects);
     setShowPileView(true);
+    setActiveSheetTab('cards');
   };
 
   // Transform TurnEntity[] to TurnOrderEntity[] with health information
@@ -528,28 +561,28 @@ export function GameBoard() {
         />
       )}
 
-      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory/Actions */}
       <InfoPanel
-        showCardSelection={gameState.showCardSelection || showPileView || showInventory}
+        showCardSelection={gameState.showCardSelection || showPileView || showInventory || (cardActionMode && activeSheetTab === 'actions')}
         activeTab={activeSheetTab}
-        onTabChange={(tab) => setActiveSheetTab(tab)}
         onSheetClose={
           // Only allow closing if it's not mandatory card selection
           // Card selection is controlled by game state, not closed manually
-          (!gameState.showCardSelection && (showInventory || showPileView)) ? () => {
+          // Issue #411: Also allow closing actions panel
+          (!gameState.showCardSelection && (showInventory || showPileView || activeSheetTab === 'actions')) ? () => {
             // Set closing flag to prevent click-through to pile buttons
             closingRef.current = true;
             setTimeout(() => {
               closingRef.current = false;
             }, 300);
-            // Clear both states
+            // Clear all states
             setShowInventory(false);
             setShowPileView(false);
             setSelectedPile(null);
             setPileViewCards([]);
+            setActiveSheetTab('cards');
           } : undefined
         }
-        inventoryCount={ownedItems.length}
         turnStatus={
           <TurnStatus
             turnOrder={turnOrderWithHealth}
@@ -573,6 +606,7 @@ export function GameBoard() {
                 : false
             }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
+            cardActionMode={cardActionMode}
           />
         }
         gameLog={<GameLog logs={gameState.logs} />}
@@ -590,6 +624,14 @@ export function GameBoard() {
               setActiveSheetTab('inventory');
             }}
             inventorySelected={showInventory && activeSheetTab === 'inventory'}
+            // Issue #411: Actions button
+            showActions={cardActionMode}
+            actionsRemaining={2 - executedActions.length}
+            onActionsClick={() => {
+              setSelectedPile('actions');
+              setActiveSheetTab('actions');
+            }}
+            actionsSelected={activeSheetTab === 'actions'}
           />
         }
         cardSelection={
@@ -638,6 +680,16 @@ export function GameBoard() {
               waiting={true} // Disable interaction in view mode
               canLongRest={false}
               discardPileCount={discardCount}
+            />
+          ) : undefined
+        }
+        actionSelection={
+          cardActionMode && selectedCards.length === 2 ? (
+            <CardActionSelectionPanel
+              card1={selectedCards[0]}
+              card2={selectedCards[1]}
+              executedActions={executedActions}
+              onActionClick={handleCardActionClick}
             />
           ) : undefined
         }

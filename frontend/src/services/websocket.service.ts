@@ -86,6 +86,9 @@ export interface WebSocketEvents {
   // Cards
   cards_selected: (data: { playerId: string; topCardId: string; bottomCardId: string }) => void;
 
+  // Issue #411: Card action execution during turn
+  card_action_executed: (data: import('../../../shared/types/events').CardActionExecutedPayload) => void;
+
   // Scenario
   scenario_completed: (data: ScenarioCompletedPayload) => void;
 
@@ -538,9 +541,34 @@ class WebSocketService {
    * @param topCardId - Card ID for top action
    * @param bottomCardId - Card ID for bottom action
    * @param characterId - Optional: which character's cards (for multi-character support)
+   * @param initiativeCardId - Optional: which card determines initiative (Issue #411)
    */
-  selectCards(topCardId: string, bottomCardId: string, characterId?: string): void {
-    this.emit('select_cards', { topCardId, bottomCardId, characterId });
+  selectCards(topCardId: string, bottomCardId: string, characterId?: string, initiativeCardId?: string): void {
+    this.emit('select_cards', { topCardId, bottomCardId, characterId, initiativeCardId });
+  }
+
+  /**
+   * Issue #411: Execute a card action during the player's turn
+   * @param characterId - Which character is executing the action
+   * @param cardId - Card ID (one of the selected cards)
+   * @param actionPosition - 'top' or 'bottom' half of the card
+   * @param targetId - Optional: target for attack actions
+   * @param targetHex - Optional: target hex for movement or targeted actions
+   */
+  executeCardAction(
+    characterId: string,
+    cardId: string,
+    actionPosition: 'top' | 'bottom',
+    targetId?: string,
+    targetHex?: { q: number; r: number }
+  ): void {
+    this.emit('execute_card_action', {
+      characterId,
+      cardId,
+      actionPosition,
+      targetId,
+      targetHex,
+    });
   }
 
   /**

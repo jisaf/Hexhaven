@@ -29,6 +29,8 @@ export class TurnOrderService {
    * Returns the lower initiative value (lower goes first)
    *
    * Long Rest: Per Gloomhaven rules, long rest has initiative 99 (always goes last)
+   *
+   * @deprecated Use calculateInitiativeFromSelectedCard for Issue #411 flow
    */
   calculateInitiative(
     topCardInitiative: number | null,
@@ -53,6 +55,28 @@ export class TurnOrderService {
     }
 
     return Math.min(topCardInitiative, bottomCardInitiative);
+  }
+
+  /**
+   * Calculate initiative from a specifically selected initiative card (Issue #411)
+   *
+   * In the new flow, the player explicitly selects which of their two cards
+   * determines their initiative, rather than automatically using the minimum.
+   *
+   * @param selectedCardInitiative - The initiative value of the selected initiative card
+   * @param isLongRest - Whether the character is taking a long rest
+   * @returns The initiative value to use for turn order
+   */
+  calculateInitiativeFromSelectedCard(
+    selectedCardInitiative: number,
+    isLongRest: boolean = false,
+  ): number {
+    // Long rest always has initiative 99 (goes last in round)
+    if (isLongRest) {
+      return 99;
+    }
+
+    return selectedCardInitiative;
   }
 
   /**

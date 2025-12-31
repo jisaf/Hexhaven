@@ -235,4 +235,31 @@ describe('TurnOrderService', () => {
       expect(result).toBe(0);
     });
   });
+
+  describe('calculateInitiativeFromSelectedCard (Issue #411)', () => {
+    it('should return the selected card initiative directly', () => {
+      const result = service.calculateInitiativeFromSelectedCard(25);
+      expect(result).toBe(25);
+    });
+
+    it('should return low initiative correctly', () => {
+      const result = service.calculateInitiativeFromSelectedCard(5);
+      expect(result).toBe(5);
+    });
+
+    it('should return high initiative correctly', () => {
+      const result = service.calculateInitiativeFromSelectedCard(85);
+      expect(result).toBe(85);
+    });
+
+    it('should return 99 for long rest even with selected card', () => {
+      const result = service.calculateInitiativeFromSelectedCard(25, true);
+      expect(result).toBe(99);
+    });
+
+    it('should return selected initiative when not long resting', () => {
+      const result = service.calculateInitiativeFromSelectedCard(15, false);
+      expect(result).toBe(15);
+    });
+  });
 });

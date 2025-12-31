@@ -31,6 +31,14 @@ export interface AbilityCard2Props {
   isSelected?: boolean;
   isTop?: boolean;
   onClick?: () => void;
+  /** Issue #411: Separate click handler for top action half */
+  onTopClick?: () => void;
+  /** Issue #411: Separate click handler for bottom action half */
+  onBottomClick?: () => void;
+  /** Issue #411: Disable only the top half */
+  topDisabled?: boolean;
+  /** Issue #411: Disable only the bottom half */
+  bottomDisabled?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -98,10 +106,18 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
   isSelected = false,
   isTop,
   onClick,
+  onTopClick,
+  onBottomClick,
+  topDisabled = false,
+  bottomDisabled = false,
   disabled = false,
   className = '',
 }) => {
+  // Issue #411: Determine if we're in split-click mode (separate top/bottom handlers)
+  const splitClickMode = !!(onTopClick || onBottomClick);
   const cardData = abilityCardToCardData(card);
+  const topSectionRef = useRef<HTMLDivElement>(null);
+  const bottomSectionRef = useRef<HTMLDivElement>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress = useRef(false);
@@ -168,12 +184,47 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
       cancelLongPress();
+      const touchEndPos = touchStartPos.current;
       touchStartPos.current = null;
 
       if (isZoomed) {
         setTimeout(closeZoom, 50);
-      } else if (!isLongPress.current && !disabled && onClick) {
-        onClick();
+      } else if (!isLongPress.current && !disabled) {
+        // Issue #411: In split-click mode, detect which section was touched
+        if (splitClickMode && touchEndPos && e.changedTouches[0]) {
+          const touch = e.changedTouches[0];
+          const topSection = topSectionRef.current;
+          const bottomSection = bottomSectionRef.current;
+
+          if (topSection) {
+            const topRect = topSection.getBoundingClientRect();
+            if (touch.clientX >= topRect.left && touch.clientX <= topRect.right &&
+                touch.clientY >= topRect.top && touch.clientY <= topRect.bottom) {
+              if (onTopClick && !topDisabled) {
+                onTopClick();
+              }
+              clearSelection();
+              return;
+            }
+          }
+
+          if (bottomSection) {
+            const bottomRect = bottomSection.getBoundingClientRect();
+            if (touch.clientX >= bottomRect.left && touch.clientX <= bottomRect.right &&
+                touch.clientY >= bottomRect.top && touch.clientY <= bottomRect.bottom) {
+              if (onBottomClick && !bottomDisabled) {
+                onBottomClick();
+              }
+              clearSelection();
+              return;
+            }
+          }
+        }
+
+        // Fall back to main onClick if not in split-click mode or touch was outside sections
+        if (onClick) {
+          onClick();
+        }
       }
       clearSelection();
     };
@@ -205,7 +256,7 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
       card.removeEventListener('touchcancel', handleTouchCancel);
       card.removeEventListener('contextmenu', handleContextMenu, { capture: true });
     };
-  }, [disabled, onClick, isZoomed, cancelLongPress, clearSelection, closeZoom]);
+  }, [disabled, onClick, isZoomed, cancelLongPress, clearSelection, closeZoom, splitClickMode, onTopClick, onBottomClick, topDisabled, bottomDisabled]);
 
   // Mouse event handlers for desktop
   const handleMouseDown = useCallback(() => {
@@ -263,7 +314,13 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
           </div>
 
           {/* Top action section */}
-          <div className={`card2-top-section ${isTop === true ? 'highlighted' : ''}`}>
+          <div
+            ref={topSectionRef}
+            className={`card2-top-section ${isTop === true ? 'highlighted' : ''} ${splitClickMode ? 'clickable' : ''} ${topDisabled ? 'section-disabled' : ''}`}
+            onClick={splitClickMode && onTopClick && !topDisabled ? (e) => { e.stopPropagation(); onTopClick(); } : undefined}
+            role={splitClickMode ? 'button' : undefined}
+            tabIndex={splitClickMode && !topDisabled ? 0 : undefined}
+          >
             <ActionSection
               action={card.topAction}
               position="top"
@@ -275,7 +332,13 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
           <SplitDivider />
 
           {/* Bottom action section */}
-          <div className={`card2-bottom-section ${isTop === false ? 'highlighted' : ''}`}>
+          <div
+            ref={bottomSectionRef}
+            className={`card2-bottom-section ${isTop === false ? 'highlighted' : ''} ${splitClickMode ? 'clickable' : ''} ${bottomDisabled ? 'section-disabled' : ''}`}
+            onClick={splitClickMode && onBottomClick && !bottomDisabled ? (e) => { e.stopPropagation(); onBottomClick(); } : undefined}
+            role={splitClickMode ? 'button' : undefined}
+            tabIndex={splitClickMode && !bottomDisabled ? 0 : undefined}
+          >
             <ActionSection
               action={card.bottomAction}
               position="bottom"

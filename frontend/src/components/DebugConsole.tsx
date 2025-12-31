@@ -339,16 +339,17 @@ export function DebugConsole() {
       <style>{`
         .debug-toggle-button {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
-          min-width: 80px;
-          height: 50px;
-          padding: 0 12px;
+          bottom: 60px; /* Moved up to avoid card pile bar */
+          right: 8px;
+          width: 40px;
+          height: 40px;
+          min-width: 40px;
+          padding: 0;
           border-radius: 8px;
           background: #1f2937;
           color: white;
           border: 2px solid #3b82f6;
-          font-size: 10px;
+          font-size: 8px;
           font-weight: bold;
           cursor: pointer;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -595,17 +596,18 @@ export function DebugConsole() {
         /* Mobile responsive */
         @media (max-width: 640px) {
           .debug-toggle-button {
-            min-width: 70px;
-            height: 44px;
-            bottom: 16px;
-            right: 16px;
-            font-size: 9px;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            bottom: 60px;
+            right: 8px;
+            font-size: 8px;
           }
 
           .debug-console {
-            bottom: 70px;
-            right: 16px;
-            width: calc(100vw - 32px);
+            bottom: 110px;
+            right: 8px;
+            width: calc(100vw - 16px);
           }
 
           .debug-logs {

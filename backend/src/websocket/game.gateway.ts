@@ -76,9 +76,13 @@ import type {
   CharacterInventoryPayload,
   SummonCreatedPayload,
   SummonDiedPayload,
+  // Issue #411: New card action selection events
+  ExecuteCardActionPayload,
+  CardActionExecutedPayload,
 } from '../../../shared/types/events';
 import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
+import { ActionExecutionService } from '../services/action-execution.service';
 import { ConditionService } from '../services/condition.service';
 import { ForcedMovementService } from '../services/forced-movement.service';
 import { CampaignService } from '../services/campaign.service';
@@ -140,6 +144,7 @@ export class GameGateway
     private readonly deckManagement: DeckManagementService,
     private readonly inventoryService: InventoryService,
     private readonly actionDispatcher: ActionDispatcherService,
+    private readonly actionExecutionService: ActionExecutionService, // Issue #411 - Unified action execution
     private readonly conditionService: ConditionService,
     private readonly forcedMovementService: ForcedMovementService,
     private readonly elementalStateService: ElementalStateService,
@@ -915,7 +920,10 @@ export class GameGateway
           );
 
           // Build game state payload using helper method
-          const gameStartedPayload = await this.buildGameStatePayload(room, roomCode);
+          const gameStartedPayload = await this.buildGameStatePayload(
+            room,
+            roomCode,
+          );
 
           // Send game_started event with acknowledgment pattern
           client.emit(
@@ -2230,6 +2238,9 @@ export class GameGateway
         initiative,
       };
 
+      // Issue #411: Also set selectedCardIds for new card action execution system
+      character.selectedCardIds = [payload.topCardId, payload.bottomCardId];
+
       // Extract and set effective movement and attack for this turn from the selected cards
       // In Gloomhaven, you typically use: top action for attack, bottom action for movement
       const topCard = validation.topCard!;
@@ -2331,6 +2342,136 @@ export class GameGateway
       this.logger.error(`Select cards error: ${errorMessage}`);
       const errorPayload: ErrorPayload = {
         code: 'SELECT_CARDS_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
+   * Execute a card action during the player's turn (Issue #411)
+   *
+   * This new event allows players to select which card actions (top/bottom) to use
+   * during their turn rather than during the card selection phase.
+   *
+   * @param payload - ExecuteCardActionPayload with cardId and actionPosition
+   */
+  @SubscribeMessage('execute_card_action')
+  async handleExecuteCardAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: ExecuteCardActionPayload,
+  ): Promise<void> {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room, roomCode } = roomData;
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // Get player's character by ID from payload (multi-character support)
+      if (!payload.characterId) {
+        throw new Error('characterId is required');
+      }
+      const character = characterService.getCharacterById(payload.characterId);
+      if (!character) {
+        throw new Error('Character not found');
+      }
+
+      // Verify this character belongs to the player
+      if (character.playerId !== userId) {
+        throw new Error('Character does not belong to this player');
+      }
+
+      // Validate it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(roomCode) || [];
+      const currentTurnIdx = this.currentTurnIndex.get(roomCode) || 0;
+      const currentTurnEntity = turnOrder[currentTurnIdx];
+
+      if (
+        !currentTurnEntity ||
+        currentTurnEntity.entityType !== 'character' ||
+        currentTurnEntity.entityId !== character.id
+      ) {
+        throw new Error("It's not this character's turn");
+      }
+
+      // Use the ActionExecutionService to execute the action
+      const result = await this.actionExecutionService.executeAction(
+        character,
+        payload.cardId,
+        payload.actionPosition,
+        {
+          roomCode,
+          targetId: payload.targetId,
+          targetHex: payload.targetHex,
+        },
+      );
+
+      // Build the broadcast payload
+      const executedPayload: CardActionExecutedPayload = {
+        characterId: character.id,
+        playerId: userId,
+        cardId: payload.cardId,
+        actionPosition: payload.actionPosition,
+        actionType: result.actionType,
+        actionValue: result.actionValue,
+        success: result.success,
+        error: result.error,
+        affectedEntities: result.affectedEntities,
+      };
+
+      // If it's a summon action with success, include summon info
+      if (
+        result.success &&
+        result.actionType === 'summon' &&
+        result.summonDefinition
+      ) {
+        // For now, just indicate summon was created - actual summon creation
+        // would be handled separately with placement selection
+        executedPayload.summonName = result.summonDefinition.name;
+      }
+
+      // Broadcast the action execution result
+      this.server.to(roomCode).emit('card_action_executed', executedPayload);
+
+      this.logger.log(
+        `Player ${userId} executed ${payload.actionPosition} action from card ${payload.cardId} - ${result.success ? 'success' : 'failed'}`,
+      );
+
+      // If action was successful, handle any follow-up game state changes
+      if (result.success) {
+        // For move actions, we would also need to update character position
+        // This would integrate with existing movement validation
+        if (result.actionType === 'move' && payload.targetHex) {
+          // Movement would be validated and applied here
+          // For now, this is a placeholder - actual integration with
+          // pathfinding and position updates would be added
+        }
+
+        // For attack actions, damage calculation would happen
+        if (result.actionType === 'attack' && payload.targetId) {
+          // Attack resolution would happen here
+          // This would integrate with existing attack_target logic
+        }
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Execute card action error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'EXECUTE_CARD_ACTION_ERROR',
         message: errorMessage,
       };
       client.emit('error', errorPayload);

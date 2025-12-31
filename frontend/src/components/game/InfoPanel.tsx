@@ -1,18 +1,17 @@
 /**
- * InfoPanel Component (Updated for Issue #205)
+ * InfoPanel Component (Updated for Issue #411)
  *
  * Container that manages:
  * 1. Always visible: TurnStatus + GameLog + CardPileBar (44px at bottom)
- * 2. Overlay when active: BottomSheet with tabs (Cards | Inventory)
+ * 2. Overlay when active: Content panel (no tabs - navigation via pile bar)
  *
- * BottomSheet can be swiped down to dismiss.
+ * Issue #411: Tabs removed - use pile bar at bottom for navigation.
  */
 
 import type { ReactNode } from 'react';
-import { BottomSheet, type BottomSheetTab } from '../BottomSheet';
 import styles from './InfoPanel.module.css';
 
-export type SheetTab = 'cards' | 'inventory';
+export type SheetTab = 'cards' | 'inventory' | 'actions';
 
 interface InfoPanelProps {
   /** Upper section: TurnStatus component */
@@ -24,26 +23,23 @@ interface InfoPanelProps {
   /** Bottom section: CardPileIndicator (44px fixed height) */
   cardPileBar: ReactNode;
 
-  /** Optional: CardSelectionPanel content (displayed in Cards tab) */
+  /** Optional: CardSelectionPanel content */
   cardSelection?: ReactNode;
 
-  /** Optional: Inventory content (displayed in Inventory tab) */
+  /** Optional: Inventory content */
   inventoryContent?: ReactNode;
 
-  /** Whether the bottom sheet is open */
+  /** Optional: CardActionSelectionPanel content - Issue #411 */
+  actionSelection?: ReactNode;
+
+  /** Whether the overlay is open */
   showCardSelection: boolean;
 
-  /** Currently active tab */
+  /** Currently active content type */
   activeTab?: SheetTab;
-
-  /** Callback when tab changes */
-  onTabChange?: (tab: SheetTab) => void;
 
   /** Callback when sheet is closed */
   onSheetClose?: () => void;
-
-  /** Count of items (for badge on inventory tab) */
-  inventoryCount?: number;
 }
 
 export function InfoPanel({
@@ -52,44 +48,25 @@ export function InfoPanel({
   cardPileBar,
   cardSelection,
   inventoryContent,
+  actionSelection,
   showCardSelection,
   activeTab = 'cards',
-  onTabChange,
   onSheetClose,
-  inventoryCount,
 }: InfoPanelProps) {
-  // Build tabs array
-  const tabs: BottomSheetTab[] = [];
-
-  // Cards tab (always present when there's card selection content)
-  if (cardSelection) {
-    tabs.push({
-      id: 'cards',
-      label: 'Cards',
-      icon: 'ra ra-scroll-unfurled',
-      content: cardSelection,
-    });
-  }
-
-  // Inventory tab (always present when there's inventory content)
-  if (inventoryContent) {
-    tabs.push({
-      id: 'inventory',
-      label: 'Inventory',
-      icon: 'ra ra-knapsack',
-      content: inventoryContent,
-      badge: inventoryCount,
-    });
-  }
-
-  const handleTabChange = (tabId: string) => {
-    onTabChange?.(tabId as SheetTab);
+  // Determine which content to show based on activeTab
+  const getActiveContent = (): ReactNode => {
+    switch (activeTab) {
+      case 'actions':
+        return actionSelection;
+      case 'inventory':
+        return inventoryContent;
+      case 'cards':
+      default:
+        return cardSelection;
+    }
   };
 
-  const handleClose = () => {
-    console.log('[InfoPanel] handleClose called, onSheetClose defined:', !!onSheetClose);
-    onSheetClose?.();
-  };
+  const activeContent = getActiveContent();
 
   return (
     <div className={styles.infoPanel}>
@@ -104,17 +81,24 @@ export function InfoPanel({
         {cardPileBar}
       </div>
 
-      {/* Bottom sheet overlay: slides in on top when active */}
-      {showCardSelection && tabs.length > 0 && (
+      {/* Content overlay: slides in on top when active - no tabs */}
+      {showCardSelection && activeContent && (
         <div className={styles.cardSelectionOverlay}>
-          <BottomSheet
-            tabs={tabs}
-            activeTabId={activeTab}
-            onTabChange={handleTabChange}
-            isOpen={showCardSelection}
-            onClose={handleClose}
-            showCloseButton={!!onSheetClose}
-          />
+          <div className={styles.contentPanel}>
+            {/* Close button if closeable */}
+            {onSheetClose && (
+              <button
+                className={styles.closeButton}
+                onClick={onSheetClose}
+                aria-label="Close panel"
+              >
+                ×
+              </button>
+            )}
+            <div className={styles.contentArea}>
+              {activeContent}
+            </div>
+          </div>
         </div>
       )}
     </div>
