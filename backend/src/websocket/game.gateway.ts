@@ -3768,13 +3768,8 @@ export class GameGateway
       return { success: false, error: 'Room not found' };
     }
 
-    // Check if character has already attacked this turn
-    if (character.hasAttackedThisTurn) {
-      return {
-        success: false,
-        error: 'Character has already attacked this turn',
-      };
-    }
+    // Note: hasAttackedThisTurn check removed for card-based actions (Issue #411)
+    // In Gloomhaven, you can attack multiple times if both card actions are attacks
 
     // Check if character is disarmed
     if (character.isDisarmed) {

@@ -1393,28 +1393,76 @@ class GameStateManager {
 
     console.log('[GameStateManager] Confirming action type:', action.type, 'value:', action.value);
 
+    // Get character for hex calculations
+    const character = this.state.gameData?.characters.find(c => c.id === this.state.myCharacterId);
+    if (!character?.currentHex) {
+      console.warn('[GameStateManager] Cannot find character position');
+      return;
+    }
+
     // Handle action based on type
     switch (action.type) {
-      case 'move':
+      case 'move': {
         // Enter move targeting mode - user must select a hex
+        const moveRange = action.value || 0;
         this.state.cardActionTargetingMode = 'move';
-        this.state.cardActionRange = action.value || 0;
-        // Set effective movement for the character
-        this.state.currentMovementPoints = action.value || 0;
-        // TODO: Calculate valid movement hexes based on character position and range
-        this.emitStateUpdate();
-        console.log('[GameStateManager] Entered move targeting mode, range:', action.value);
-        break;
+        this.state.cardActionRange = moveRange;
+        this.state.currentMovementPoints = moveRange;
 
-      case 'attack':
-        // Enter attack targeting mode - user must select a target
-        this.state.cardActionTargetingMode = 'attack';
-        this.state.cardActionRange = action.range || 1;
-        this.state.attackMode = true;
-        // TODO: Calculate valid attack targets based on range
+        // Calculate valid movement hexes
+        const occupiedHexes = new Set<string>();
+        // Add monster positions
+        this.state.gameData?.monsters.forEach(m => {
+          if (m.health > 0 && m.currentHex) {
+            occupiedHexes.add(`${m.currentHex.q},${m.currentHex.r}`);
+          }
+        });
+        // Add other character positions
+        this.state.gameData?.characters.forEach(c => {
+          if (c.id !== this.state.myCharacterId && c.currentHex) {
+            occupiedHexes.add(`${c.currentHex.q},${c.currentHex.r}`);
+          }
+        });
+
+        this.state.validMovementHexes = hexRangeReachable(
+          character.currentHex,
+          moveRange,
+          occupiedHexes
+        );
+        this.state.selectedCharacterId = this.state.myCharacterId;
         this.emitStateUpdate();
-        console.log('[GameStateManager] Entered attack targeting mode, range:', action.range);
+        console.log('[GameStateManager] Entered move targeting mode, range:', moveRange, 'valid hexes:', this.state.validMovementHexes.length);
         break;
+      }
+
+      case 'attack': {
+        // Get attack range from modifiers (defaults to 1 for melee)
+        const attackRange = getRange(action.modifiers) || 1;
+        this.state.cardActionTargetingMode = 'attack';
+        this.state.cardActionRange = attackRange;
+        this.state.attackMode = true;
+
+        // Calculate valid attack hexes and targets
+        this.state.validAttackHexes = hexAttackRange(character.currentHex, attackRange);
+
+        // Find attackable monsters within range
+        const attackableMonsters: string[] = [];
+        this.state.gameData?.monsters.forEach(m => {
+          if (m.health > 0 && m.currentHex) {
+            const inRange = this.state.validAttackHexes.some(
+              h => h.q === m.currentHex.q && h.r === m.currentHex.r
+            );
+            if (inRange) {
+              attackableMonsters.push(m.id);
+            }
+          }
+        });
+        this.state.attackableTargets = attackableMonsters;
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered attack targeting mode, range:', attackRange, 'targets:', attackableMonsters.length);
+        break;
+      }
 
       case 'heal':
       case 'loot':
@@ -1449,10 +1497,13 @@ class GameStateManager {
     console.log('[GameStateManager] Emitting use_card_action:', payload);
     websocketService.emit('use_card_action', payload);
 
-    // Clear targeting mode
+    // Clear targeting mode and highlighting
     this.state.cardActionTargetingMode = null;
     this.state.cardActionRange = 0;
     this.state.attackMode = false;
+    this.state.validMovementHexes = [];
+    this.state.validAttackHexes = [];
+    this.state.attackableTargets = [];
 
     // The pendingAction will be cleared when we receive card_action_executed
   }
@@ -1486,6 +1537,9 @@ class GameStateManager {
     this.state.cardActionTargetingMode = null;
     this.state.cardActionRange = 0;
     this.state.attackMode = false;
+    this.state.validMovementHexes = [];
+    this.state.validAttackHexes = [];
+    this.state.attackableTargets = [];
     this.state.pendingAction = null;
     this.emitStateUpdate();
   }
