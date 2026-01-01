@@ -46,6 +46,10 @@ export interface TurnActionPanelProps {
   onActionConfirm: () => void;
   /** Callback when selection is cancelled */
   onActionCancel: () => void;
+  /** Issue #411: Current targeting mode (move/attack need target selection) */
+  targetingMode?: 'move' | 'attack' | null;
+  /** Issue #411: Cancel targeting mode */
+  onCancelTargeting?: () => void;
 }
 
 /**
@@ -87,6 +91,8 @@ export function TurnActionPanel({
   onActionSelect,
   onActionConfirm,
   onActionCancel,
+  targetingMode,
+  onCancelTargeting,
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
@@ -399,7 +405,25 @@ export function TurnActionPanel({
 
       {/* Help text */}
       <div className={styles.helpText}>
-        {pendingAction ? (
+        {targetingMode === 'move' ? (
+          <>
+            <span className={styles.targetingHint}>Tap a hex on the map to move there</span>
+            {onCancelTargeting && (
+              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
+                Cancel Move
+              </button>
+            )}
+          </>
+        ) : targetingMode === 'attack' ? (
+          <>
+            <span className={styles.targetingHint}>Tap an enemy to attack</span>
+            {onCancelTargeting && (
+              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
+                Cancel Attack
+              </button>
+            )}
+          </>
+        ) : pendingAction ? (
           <span>Tap Confirm to execute this action, or Cancel to choose another</span>
         ) : actionsUsed < 2 ? (
           <span>Tap an action to select it. Long-press to enlarge.</span>

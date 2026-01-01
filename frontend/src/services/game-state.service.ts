@@ -173,6 +173,9 @@ interface GameState {
   turnActionState: TurnActionState | null;
   selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
   pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
+  // Issue #411: Targeting mode for move/attack actions from cards
+  cardActionTargetingMode: 'move' | 'attack' | null;
+  cardActionRange: number; // The range/value from the card action
 }
 
 interface ExhaustionState {
@@ -299,6 +302,8 @@ class GameStateManager {
     turnActionState: null,
     selectedTurnCards: null,
     pendingAction: null,
+    cardActionTargetingMode: null,
+    cardActionRange: 0,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -952,8 +957,10 @@ class GameStateManager {
       }
     }
 
-    // Clear pending action
+    // Clear pending action and targeting mode
     this.state.pendingAction = null;
+    this.state.cardActionTargetingMode = null;
+    this.state.cardActionRange = 0;
 
     // Log the action
     const card = this.state.selectedTurnCards?.card1.id === data.cardId
@@ -1181,9 +1188,28 @@ class GameStateManager {
   }
 
   public selectHex(hex: Axial): void {
+      // Issue #411: Card action targeting mode takes priority
+      if (this.state.cardActionTargetingMode === 'move' && this.state.isMyTurn) {
+        console.log('[GameStateManager] Move targeting mode - hex selected:', hex);
+        this.completeCardMoveAction({ q: hex.q, r: hex.r });
+        return;
+      }
+
+      if (this.state.cardActionTargetingMode === 'attack' && this.state.isMyTurn) {
+        // In attack targeting mode, check if clicking on a monster
+        const monster = this.state.gameData?.monsters.find(m =>
+          m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0
+        );
+        if (monster) {
+          console.log('[GameStateManager] Attack targeting mode - target selected:', monster.id);
+          this.completeCardAttackAction(monster.id);
+        }
+        return;
+      }
+
       if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
 
-      // ATTACK MODE: Check if clicking on a valid attack target
+      // ATTACK MODE: Check if clicking on a valid attack target (legacy)
       if (this.state.attackMode) {
         if (!this.state.myCharacterId) {
           console.error('[GameStateManager] Cannot attack: no active character');
@@ -1333,11 +1359,82 @@ class GameStateManager {
 
   /**
    * Issue #411: Confirm the pending card action
-   * Emits use_card_action to the backend
+   * For move/attack actions, enters targeting mode first
+   * For other actions, emits use_card_action immediately
    */
   public confirmCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
     if (!this.state.isMyTurn || !this.state.pendingAction || !this.state.myCharacterId) {
       console.warn('[GameStateManager] Cannot confirm card action: invalid state');
+      return;
+    }
+
+    // If we already have a target, emit immediately (called from targeting callback)
+    if (targetId !== undefined || targetHex !== undefined) {
+      this.emitCardAction(targetId, targetHex);
+      return;
+    }
+
+    // Get the card and action to determine type
+    const { cardId, position } = this.state.pendingAction;
+    const card = this.state.selectedTurnCards?.card1.id === cardId
+      ? this.state.selectedTurnCards?.card1
+      : this.state.selectedTurnCards?.card2;
+
+    if (!card) {
+      console.warn('[GameStateManager] Cannot find card for pending action');
+      return;
+    }
+
+    const action = position === 'top' ? card.topAction : card.bottomAction;
+    if (!action) {
+      console.warn('[GameStateManager] Card has no action at position:', position);
+      return;
+    }
+
+    console.log('[GameStateManager] Confirming action type:', action.type, 'value:', action.value);
+
+    // Handle action based on type
+    switch (action.type) {
+      case 'move':
+        // Enter move targeting mode - user must select a hex
+        this.state.cardActionTargetingMode = 'move';
+        this.state.cardActionRange = action.value || 0;
+        // Set effective movement for the character
+        this.state.currentMovementPoints = action.value || 0;
+        // TODO: Calculate valid movement hexes based on character position and range
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered move targeting mode, range:', action.value);
+        break;
+
+      case 'attack':
+        // Enter attack targeting mode - user must select a target
+        this.state.cardActionTargetingMode = 'attack';
+        this.state.cardActionRange = action.range || 1;
+        this.state.attackMode = true;
+        // TODO: Calculate valid attack targets based on range
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered attack targeting mode, range:', action.range);
+        break;
+
+      case 'heal':
+      case 'loot':
+      case 'shield':
+      case 'summon':
+      case 'special':
+      case 'text':
+      default:
+        // Non-targeting actions - emit immediately
+        this.emitCardAction();
+        break;
+    }
+  }
+
+  /**
+   * Issue #411: Internal method to emit the card action to backend
+   */
+  private emitCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+    if (!this.state.pendingAction || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot emit card action: missing pending action or character');
       return;
     }
 
@@ -1352,8 +1449,45 @@ class GameStateManager {
     console.log('[GameStateManager] Emitting use_card_action:', payload);
     websocketService.emit('use_card_action', payload);
 
+    // Clear targeting mode
+    this.state.cardActionTargetingMode = null;
+    this.state.cardActionRange = 0;
+    this.state.attackMode = false;
+
     // The pendingAction will be cleared when we receive card_action_executed
-    // Don't clear here to maintain UI state while waiting for response
+  }
+
+  /**
+   * Issue #411: Complete a move action with the selected hex
+   */
+  public completeCardMoveAction(targetHex: { q: number; r: number }): void {
+    if (this.state.cardActionTargetingMode !== 'move' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in move targeting mode');
+      return;
+    }
+    this.emitCardAction(undefined, targetHex);
+  }
+
+  /**
+   * Issue #411: Complete an attack action with the selected target
+   */
+  public completeCardAttackAction(targetId: string): void {
+    if (this.state.cardActionTargetingMode !== 'attack' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in attack targeting mode');
+      return;
+    }
+    this.emitCardAction(targetId, undefined);
+  }
+
+  /**
+   * Issue #411: Cancel targeting mode and clear pending action
+   */
+  public cancelCardActionTargeting(): void {
+    this.state.cardActionTargetingMode = null;
+    this.state.cardActionRange = 0;
+    this.state.attackMode = false;
+    this.state.pendingAction = null;
+    this.emitStateUpdate();
   }
 
   /**
@@ -1671,6 +1805,8 @@ class GameStateManager {
         turnActionState: null,
         selectedTurnCards: null,
         pendingAction: null,
+        cardActionTargetingMode: null,
+        cardActionRange: 0,
     };
     this.emitStateUpdate();
   }

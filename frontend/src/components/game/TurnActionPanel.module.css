@@ -40,20 +40,34 @@
   color: rgba(240, 230, 210, 0.8);
 }
 
-/* Cards container - side by side by default */
+/* Cards container - horizontal scroll like CardSelectionPanel */
 .cardsContainer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
   gap: 16px;
+  padding: 10px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+/* Hide scrollbar */
+.cardsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.cardsContainer {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Individual card wrapper - contains AbilityCard2 and overlay */
 .cardWrapper {
   position: relative;
-  /* Card aspect ratio approximately 2:3 */
-  aspect-ratio: 2 / 3;
-  min-height: 200px;
-  max-height: 400px;
+  flex: 0 0 auto;
+  /* Use CSS variables like CardSelectionPanel */
+  width: var(--card-width, 180px);
+  height: var(--card-height, 260px);
 }
 
 /* The actual ability card */
@@ -211,49 +225,101 @@
   color: rgba(240, 230, 210, 0.6);
   padding-top: 8px;
   min-height: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Mobile: Stack cards vertically */
-@media (max-width: 500px) {
-  .cardsContainer {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .cardWrapper {
-    max-height: 300px;
-  }
-
-  .actionCard {
-    font-size: clamp(9px, 2.5vw, 12px);
-  }
+/* Targeting mode hint - more prominent */
+.targetingHint {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c9a444;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-/* Very small screens */
-@media (max-width: 360px) {
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Cancel targeting button */
+.cancelTargetingButton {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(231, 76, 60, 0.8);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cancelTargetingButton:hover {
+  background: rgba(192, 57, 43, 1);
+}
+
+/* Portrait mode - horizontal scroll with smaller cards */
+@media (orientation: portrait) {
   .panel {
     padding: 8px;
     gap: 8px;
   }
 
   .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    padding-bottom: 4px;
   }
 
+  .title {
+    font-size: 12px;
+  }
+
+  .actionCount {
+    font-size: 11px;
+  }
+
+  .cardsContainer {
+    padding: 0;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  /* Smaller cards in portrait - match CardSelectionPanel */
   .cardWrapper {
-    max-height: 250px;
+    --card-width: 120px;
+    --card-height: 170px;
+    width: var(--card-width);
+    height: var(--card-height);
+  }
+
+  .actionCard {
+    font-size: clamp(8px, 2vw, 11px);
   }
 
   .helpText {
     font-size: 10px;
+    padding-top: 4px;
   }
 
   .confirmButton,
   .cancelButton {
     padding: 6px 10px;
     font-size: 11px;
+  }
+}
+
+/* Very small portrait screens */
+@media (orientation: portrait) and (max-height: 600px) {
+  .cardWrapper {
+    --card-width: 100px;
+    --card-height: 145px;
+  }
+
+  .header {
+    flex-direction: row;
+    gap: 8px;
   }
 }
 

@@ -621,6 +621,8 @@ export function GameBoard() {
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
               onActionCancel={() => gameStateManager.cancelCardAction()}
+              targetingMode={gameState.cardActionTargetingMode}
+              onCancelTargeting={() => gameStateManager.cancelCardActionTargeting()}
             />
           ) : showPileView ? (
             <CardSelectionPanel
