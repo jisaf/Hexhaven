@@ -376,6 +376,16 @@ class GameStateManager {
         this.state.connectionStatus = 'reconnecting';
         this.emitStateUpdate();
     });
+    // Issue #419: Reset waitingForRoundStart on reconnection to prevent stuck "waiting" state
+    // This handles the case where the round_started event was missed during disconnection
+    register('ws_reconnected', () => {
+        this.state.connectionStatus = 'connected';
+        // Reset waiting state - the backend will send round_ended or round_started
+        // events on rejoin which will set the correct state
+        this.state.waitingForRoundStart = false;
+        console.log('[GameStateManager] WebSocket reconnected, reset waitingForRoundStart');
+        this.emitStateUpdate();
+    });
 
     this.listenersSetup = true;
   }
