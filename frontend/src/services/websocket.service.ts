@@ -211,6 +211,40 @@ class WebSocketService {
 
     this.setupConnectionHandlers();
     this.setupReconnectionHandlers();
+    this.setupVisibilityHandler();
+  }
+
+  /**
+   * Issue #419: Handle page visibility changes to ensure reconnection
+   * When user defocuses the window and returns, the WebSocket may be disconnected
+   * but Socket.IO's automatic reconnection might not trigger properly
+   */
+  private setupVisibilityHandler(): void {
+    if (typeof document === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[WebSocketService] Page became visible, checking connection...');
+
+        // If socket exists but is disconnected, force reconnection
+        if (this.socket && !this.socket.connected && !this.authFailed) {
+          console.log('[WebSocketService] Socket disconnected, forcing reconnection...');
+
+          // Listen for successful connection after manual reconnect
+          const onConnect = () => {
+            console.log('[WebSocketService] Manual reconnection successful');
+            this.socket?.off('connect', onConnect);
+            // Emit ws_reconnected since this is a reconnection, not initial connect
+            this.emit('ws_reconnected');
+          };
+          this.socket.on('connect', onConnect);
+
+          this.socket.connect();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
   /**
