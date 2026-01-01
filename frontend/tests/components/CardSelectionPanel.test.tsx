@@ -43,6 +43,51 @@ jest.mock('../../src/hooks/useMediaQuery', () => ({
   useMediaQuery: jest.fn(() => false), // Default to landscape
 }));
 
+// Mock the InitiativeSelector component for testing (Issue #411)
+jest.mock('../../src/components/InitiativeSelector', () => ({
+  InitiativeSelector: ({
+    card1,
+    card2,
+    selectedCardId,
+    onChange,
+    disabled,
+  }: {
+    card1: AbilityCard;
+    card2: AbilityCard;
+    selectedCardId: string | null;
+    onChange: (cardId: string) => void;
+    disabled?: boolean;
+  }) => (
+    <div role="radiogroup" aria-label="Select initiative card">
+      <span>Choose Initiative:</span>
+      <label className={`initiative-option ${selectedCardId === card1.id ? 'selected' : ''}`}>
+        <input
+          type="radio"
+          name="initiative-card"
+          value={card1.id}
+          checked={selectedCardId === card1.id}
+          disabled={disabled}
+          onChange={() => onChange(card1.id)}
+        />
+        <span>{card1.initiative}</span>
+        <span>{card1.name}</span>
+      </label>
+      <label className={`initiative-option ${selectedCardId === card2.id ? 'selected' : ''}`}>
+        <input
+          type="radio"
+          name="initiative-card"
+          value={card2.id}
+          checked={selectedCardId === card2.id}
+          disabled={disabled}
+          onChange={() => onChange(card2.id)}
+        />
+        <span>{card2.initiative}</span>
+        <span>{card2.name}</span>
+      </label>
+    </div>
+  ),
+}));
+
 describe('CardSelectionPanel', () => {
   // Sample ability cards for testing
   const mockCards: AbilityCard[] = [
@@ -533,6 +578,159 @@ describe('CardSelectionPanel', () => {
       expect(mockOnCardSelect).toHaveBeenCalledWith(mockCards[0]);
     });
   });
+
+  describe('Initiative Selection (Issue #411)', () => {
+    const mockOnInitiativeChange = jest.fn();
+
+    beforeEach(() => {
+      mockOnInitiativeChange.mockClear();
+    });
+
+    it('should show InitiativeSelector when both cards are selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // InitiativeSelector should be visible
+      expect(screen.getByRole('radiogroup')).toBeInTheDocument();
+      expect(screen.getByText(/choose initiative/i)).toBeInTheDocument();
+    });
+
+    it('should not show InitiativeSelector when only one card is selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={null}
+        />
+      );
+
+      expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    });
+
+    it('should not show InitiativeSelector when no cards are selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={null}
+          selectedBottomAction={null}
+        />
+      );
+
+      expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    });
+
+    it('should display initiative values for both selected cards', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Check that initiative values are shown (Trample: 72, Eye for an Eye: 18)
+      expect(screen.getByText('72')).toBeInTheDocument();
+      expect(screen.getByText('18')).toBeInTheDocument();
+    });
+
+    it('should call onInitiativeChange when initiative card is selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Click on the first radio option
+      const radioInputs = screen.getAllByRole('radio');
+      fireEvent.click(radioInputs[0]);
+
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-1');
+    });
+
+    it('should show selected initiative card when selectedInitiativeCardId is provided', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          selectedInitiativeCardId="card-2"
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      const radioInputs = screen.getAllByRole('radio');
+      expect(radioInputs[1]).toBeChecked();
+    });
+
+    it('should disable InitiativeSelector when waiting', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          waiting={true}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      const radioInputs = screen.getAllByRole('radio');
+      expect(radioInputs[0]).toBeDisabled();
+      expect(radioInputs[1]).toBeDisabled();
+    });
+
+    it('should auto-select lower initiative card by default', () => {
+      // When both cards are selected and no initiative chosen yet,
+      // the component should auto-select the card with lower initiative
+
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]} // initiative 72
+          selectedBottomAction={mockCards[1]} // initiative 18
+          onInitiativeChange={mockOnInitiativeChange}
+          selectedInitiativeCardId={null}
+        />
+      );
+
+      // Card 2 has initiative 18 (lower = faster = default selection)
+      // The auto-select should have been called
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-2');
+    });
+  });
 });
 
 /**
@@ -550,6 +748,13 @@ describe('CardSelectionPanel', () => {
  * ✅ Must rest scenario handling
  * ✅ Empty cards edge case
  * ✅ Issue #220 regression test (onClick passed to AbilityCard2)
+ * ✅ Issue #411 - Initiative Selection:
+ *   - InitiativeSelector visibility based on card selection state
+ *   - Initiative value display
+ *   - onInitiativeChange callback
+ *   - selectedInitiativeCardId prop handling
+ *   - Disabled state during waiting
+ *   - Auto-select lower initiative card
  *
  * Coverage: ~100% of CardSelectionPanel component functionality
  */

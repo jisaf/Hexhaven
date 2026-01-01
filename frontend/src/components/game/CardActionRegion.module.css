@@ -1,0 +1,307 @@
+/**
+ * CardActionRegion Styles (Issue #411 - Phase 4.1)
+ *
+ * Styling for the clickable card action regions with visual states:
+ * - Available: Normal clickable appearance
+ * - Selected: Highlighted with confirm/cancel overlay
+ * - Used: Grayed out
+ * - Disabled: Not interactive
+ */
+
+.region {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 80px; /* Touch-friendly minimum */
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Position-specific styling */
+.top {
+  background: linear-gradient(135deg, rgba(74, 171, 247, 0.15) 0%, rgba(74, 171, 247, 0.05) 100%);
+  border: 2px solid rgba(74, 171, 247, 0.4);
+}
+
+.bottom {
+  background: linear-gradient(135deg, rgba(201, 164, 68, 0.15) 0%, rgba(201, 164, 68, 0.05) 100%);
+  border: 2px solid rgba(201, 164, 68, 0.4);
+}
+
+/* State: Available */
+.available {
+  opacity: 1;
+}
+
+.available:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.available.top:hover {
+  border-color: rgba(74, 171, 247, 0.8);
+  background: linear-gradient(135deg, rgba(74, 171, 247, 0.25) 0%, rgba(74, 171, 247, 0.1) 100%);
+}
+
+.available.bottom:hover {
+  border-color: rgba(201, 164, 68, 0.8);
+  background: linear-gradient(135deg, rgba(201, 164, 68, 0.25) 0%, rgba(201, 164, 68, 0.1) 100%);
+}
+
+/* State: Selected */
+.selected {
+  transform: scale(1.02);
+}
+
+.selected.top {
+  border-color: #4dabf7;
+  background: linear-gradient(135deg, rgba(74, 171, 247, 0.3) 0%, rgba(74, 171, 247, 0.15) 100%);
+  box-shadow: 0 0 20px rgba(74, 171, 247, 0.4);
+}
+
+.selected.bottom {
+  border-color: #c9a444;
+  background: linear-gradient(135deg, rgba(201, 164, 68, 0.3) 0%, rgba(201, 164, 68, 0.15) 100%);
+  box-shadow: 0 0 20px rgba(201, 164, 68, 0.4);
+}
+
+/* State: Used */
+.used {
+  opacity: 0.4;
+  filter: grayscale(80%);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* State: Disabled */
+.disabled {
+  opacity: 0.5;
+  filter: grayscale(60%);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Header: Card name and initiative */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.cardName {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(240, 230, 210, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.initiative {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9a444;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Content: Action icon and details */
+.content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.actionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  color: #f0e6d2;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.top .actionIcon {
+  color: #4dabf7;
+}
+
+.bottom .actionIcon {
+  color: #c9a444;
+}
+
+.actionDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.actionType {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0e6d2;
+}
+
+.actionValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.top .actionValue {
+  color: #4dabf7;
+}
+
+.bottom .actionValue {
+  color: #c9a444;
+}
+
+.actionModifier {
+  font-size: 11px;
+  color: rgba(240, 230, 210, 0.7);
+}
+
+/* Lost action indicator */
+.lostIndicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.2);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 107, 107, 0.5);
+}
+
+/* Position label */
+.positionLabel {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.5;
+}
+
+.top .positionLabel {
+  color: #4dabf7;
+}
+
+.bottom .positionLabel {
+  color: #c9a444;
+}
+
+/* Confirm/Cancel overlay */
+.confirmOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.confirmButton,
+.cancelButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.confirmButton {
+  background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+  border: 1px solid #51cf66;
+  color: #0d1a2e;
+}
+
+.confirmButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(81, 207, 102, 0.4);
+}
+
+.cancelButton {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  color: #ff6b6b;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 107, 107, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Used overlay */
+.usedOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(240, 230, 210, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Responsive: Stack vertically on very small screens */
+@media (max-width: 360px) {
+  .region {
+    min-height: 60px;
+    padding: 6px 8px;
+  }
+
+  .actionIcon {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .actionType {
+    font-size: 12px;
+  }
+
+  .actionValue {
+    font-size: 16px;
+  }
+
+  .confirmButton,
+  .cancelButton {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}

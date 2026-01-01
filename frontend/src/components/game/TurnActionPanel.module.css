@@ -1,0 +1,105 @@
+/**
+ * TurnActionPanel Styles (Issue #411 - Phase 4.2)
+ *
+ * Responsive layout for displaying two selected cards during turn execution.
+ * Cards are side-by-side on wider screens, stacked on mobile.
+ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actionCount {
+  font-size: 12px;
+  color: rgba(240, 230, 210, 0.8);
+}
+
+/* Cards container - side by side by default */
+.cardsContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Individual card column */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border: 1px solid rgba(201, 164, 68, 0.2);
+}
+
+/* Help text at bottom */
+.helpText {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(240, 230, 210, 0.6);
+  padding-top: 8px;
+  min-height: 16px;
+}
+
+/* Mobile: Stack cards vertically */
+@media (max-width: 500px) {
+  .cardsContainer {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    /* In stacked mode, show top and bottom side by side */
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .card > * {
+    flex: 1;
+  }
+}
+
+/* Very small screens: stack everything */
+@media (max-width: 360px) {
+  .panel {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .card {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .helpText {
+    font-size: 10px;
+  }
+}

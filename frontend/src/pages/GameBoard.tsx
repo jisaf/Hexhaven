@@ -404,20 +404,6 @@ export function GameBoard() {
     }
   }, [roomCode, navigate, gameState.campaignId]);
 
-  const handleAttackClick = () => {
-    const attackAction = gameStateManager.getAttackAction();
-    if (attackAction && gameState.myCharacterId) {
-      gameStateManager.enterAttackMode(gameState.myCharacterId, attackAction.range);
-    }
-  };
-
-  const handleMoveClick = () => {
-    gameStateManager.enterMoveMode();
-  };
-
-  const attackAction = gameStateManager.getAttackAction();
-  const moveAction = gameStateManager.getMoveAction();
-
   // Get my character's card pile counts
   const myCharacter = gameState.myCharacterId
     ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)
@@ -559,11 +545,6 @@ export function GameBoard() {
             monsters={(gameState.gameData?.monsters || []) as Monster[]}
             connectionStatus={gameState.connectionStatus}
             isMyTurn={gameState.isMyTurn}
-            hasAttack={attackAction !== null}
-            hasMove={moveAction !== null}
-            attackMode={gameState.attackMode}
-            onAttackClick={handleAttackClick}
-            onMoveClick={handleMoveClick}
             onEndTurn={() => gameStateManager.endTurn()}
             onBackToLobby={handleBackToLobby}
             onShortRest={() => gameStateManager.executeRest('short')}
@@ -573,6 +554,12 @@ export function GameBoard() {
                 : false
             }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
+            // Issue #411: Card action selection props
+            turnActionState={gameState.turnActionState}
+            selectedTurnCards={gameState.selectedTurnCards}
+            onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
+            onActionConfirm={() => gameStateManager.confirmCardAction()}
+            onActionCancel={() => gameStateManager.cancelCardAction()}
           />
         }
         gameLog={<GameLog logs={gameState.logs} />}

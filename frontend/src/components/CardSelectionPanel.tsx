@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard2 } from './AbilityCard2';
+import { InitiativeSelector } from './InitiativeSelector';
 import './CardSelectionPanel.css';
 
 interface CardSelectionPanelProps {
@@ -19,6 +20,9 @@ interface CardSelectionPanelProps {
   activeCharacterName?: string;
   totalCharacters?: number;
   charactersWithSelections?: number;
+  // Issue #411 - Initiative selection
+  selectedInitiativeCardId?: string | null;
+  onInitiativeChange?: (cardId: string) => void;
 }
 
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -38,9 +42,26 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   activeCharacterName,
   totalCharacters = 1,
   charactersWithSelections = 0,
+  // Issue #411 - Initiative selection
+  selectedInitiativeCardId,
+  onInitiativeChange,
 }) => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const isPortrait = useMediaQuery('(orientation: portrait)');
+
+  // Issue #411: Auto-select initiative card when both cards are selected
+  // Default to the card with lower initiative (faster)
+  const bothCardsSelected = selectedTopAction !== null && selectedBottomAction !== null;
+
+  useEffect(() => {
+    if (bothCardsSelected && selectedInitiativeCardId === null && onInitiativeChange) {
+      // Auto-select the card with lower initiative (faster turn)
+      const fasterCardId = selectedTopAction!.initiative <= selectedBottomAction!.initiative
+        ? selectedTopAction!.id
+        : selectedBottomAction!.id;
+      onInitiativeChange(fasterCardId);
+    }
+  }, [bothCardsSelected, selectedTopAction, selectedBottomAction, selectedInitiativeCardId, onInitiativeChange]);
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
   const mustRest = cards.length < 2 && canLongRest;
@@ -125,6 +146,19 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
           );
         })}
       </div>
+
+      {/* Issue #411: Initiative Selection - Show when both cards are selected */}
+      {bothCardsSelected && onInitiativeChange && (
+        <div className="initiative-selector-container">
+          <InitiativeSelector
+            card1={selectedTopAction!}
+            card2={selectedBottomAction!}
+            selectedCardId={selectedInitiativeCardId ?? null}
+            onChange={onInitiativeChange}
+            disabled={disabled || waiting}
+          />
+        </div>
+      )}
 
       <div className="action-buttons">
         {!mustRest && canLongRest && (

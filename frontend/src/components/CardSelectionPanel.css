@@ -124,6 +124,14 @@
   opacity: 0.9;
 }
 
+/* Issue #411: Initiative selector positioning */
+.initiative-selector-container {
+  position: absolute;
+  bottom: 70px;
+  right: 16px;
+  z-index: 20;
+}
+
 .action-buttons {
   position: absolute;
   bottom: 16px;
@@ -249,5 +257,18 @@
     /* Make cards smaller in portrait */
     --card-width: 120px;
     --card-height: 170px;
+  }
+
+  /* Issue #411: Initiative selector in portrait mode */
+  .initiative-selector-container {
+    position: static;
+    margin: 8px 0;
+  }
+
+  .action-buttons {
+    position: static;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 8px;
   }
 }

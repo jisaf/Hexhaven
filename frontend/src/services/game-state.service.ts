@@ -1,6 +1,6 @@
 import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
 import { getRange } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
@@ -115,6 +115,7 @@ const hasAttackTarget = (hex: Axial, state: GameState, attackerId: string): bool
 interface CharacterCardSelection {
   topCardId: string | null;
   bottomCardId: string | null;
+  initiativeCardId: string | null; // Issue #411: Which card determines initiative
 }
 
 interface GameState {
@@ -141,6 +142,7 @@ interface GameState {
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
   selectedBottomAction: AbilityCard | null;
+  selectedInitiativeCardId: string | null; // Issue #411: Which card determines initiative
   characterCardSelections: Map<string, CharacterCardSelection>; // Per-character card selections
 
   // Movement state
@@ -166,6 +168,11 @@ interface GameState {
 
   // Exhaustion state
   exhaustionState: ExhaustionState | null;
+
+  // Issue #411: Card action selection during turn
+  turnActionState: TurnActionState | null;
+  selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
+  pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
 }
 
 interface ExhaustionState {
@@ -272,6 +279,7 @@ class GameStateManager {
     playerHand: [],
     selectedTopAction: null,
     selectedBottomAction: null,
+    selectedInitiativeCardId: null, // Issue #411: Initiative card selection
     characterCardSelections: new Map(), // Per-character card selections
     selectedCharacterId: null,
     selectedHex: null,
@@ -287,6 +295,10 @@ class GameStateManager {
     waitingForRoundStart: false,
     restState: null,
     exhaustionState: null,
+    // Issue #411: Card action selection during turn
+    turnActionState: null,
+    selectedTurnCards: null,
+    pendingAction: null,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -364,6 +376,8 @@ class GameStateManager {
     register('loot_collected', this.handleLootCollected.bind(this));
     register('rest-event', this.handleRestEvent.bind(this));
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
+    // Issue #411: Card action execution event
+    register('card_action_executed', this.handleCardActionExecuted.bind(this));
     register('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -410,6 +424,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(char.id, {
         topCardId: characterWithDeck.selectedCards?.topCardId || null,
         bottomCardId: characterWithDeck.selectedCards?.bottomCardId || null,
+        initiativeCardId: null, // Issue #411: Will be set when player chooses
       });
 
       // Store ability deck for this character
@@ -599,12 +614,14 @@ class GameStateManager {
       this.state.characterCardSelections.set(charId, {
         topCardId: null,
         bottomCardId: null,
+        initiativeCardId: null,
       });
     }
 
     // Clear currently displayed selections
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+    this.state.selectedInitiativeCardId = null; // Issue #411: Clear initiative selection
 
     // Reset to first character for card selection
     if (this.state.myCharacterIds.length > 0) {
@@ -628,7 +645,7 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
-  private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
+  private handleTurnStarted(data: TurnStartedPayload): void {
     // Check if this turn belongs to ANY of the player's characters (multi-character support)
     const isMyCharacter = data.entityType === 'character' && this.state.myCharacterIds.includes(data.entityId);
     this.state.isMyTurn = isMyCharacter;
@@ -641,6 +658,24 @@ class GameStateManager {
         console.log(`[GameStateManager] Auto-switching to character ${charIndex} for their turn`);
         this.switchActiveCharacter(charIndex);
       }
+
+      // Issue #411: Set turnActionState and selectedCards from turn_started payload
+      if (data.turnActionState) {
+        this.state.turnActionState = data.turnActionState;
+        console.log(`[GameStateManager] Turn action state set:`, data.turnActionState);
+      }
+      if (data.selectedCards) {
+        this.state.selectedTurnCards = data.selectedCards;
+        console.log(`[GameStateManager] Selected turn cards set:`, data.selectedCards.card1.name, data.selectedCards.card2.name);
+      }
+
+      // Clear any pending action from previous turn
+      this.state.pendingAction = null;
+    } else {
+      // Not my turn - clear turn action state
+      this.state.turnActionState = null;
+      this.state.selectedTurnCards = null;
+      this.state.pendingAction = null;
     }
 
     const turnOrderEntry = this.state.turnOrder.find(t => t.entityId === data.entityId);
@@ -873,6 +908,89 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
+  /**
+   * Issue #411: Handle card action executed event from backend
+   * Updates turnActionState with the executed action
+   */
+  private handleCardActionExecuted(data: CardActionExecutedPayload): void {
+    console.log(`[GameStateManager] Card action executed:`, data);
+
+    // Only update state if this is our character
+    if (!this.state.myCharacterIds.includes(data.characterId)) {
+      // Log for other players
+      const character = this.state.gameData?.characters.find(c => c.id === data.characterId);
+      const characterName = character?.classType || 'Character';
+      this.addLog([
+        { text: characterName, color: 'lightblue' },
+        { text: ` used ` },
+        { text: data.position, color: 'gold' },
+        { text: ` action` },
+      ]);
+      this.emitStateUpdate();
+      return;
+    }
+
+    // Update turnActionState to reflect the executed action
+    if (this.state.turnActionState) {
+      const executedAction = { cardId: data.cardId, position: data.position };
+
+      if (!this.state.turnActionState.firstAction) {
+        // This was the first action
+        this.state.turnActionState = {
+          ...this.state.turnActionState,
+          firstAction: executedAction,
+          // Recalculate available actions: only opposite section of other card
+          availableActions: this.calculateAvailableActionsAfterFirst(executedAction),
+        };
+      } else if (!this.state.turnActionState.secondAction) {
+        // This was the second action
+        this.state.turnActionState = {
+          ...this.state.turnActionState,
+          secondAction: executedAction,
+          availableActions: [], // No more actions available
+        };
+      }
+    }
+
+    // Clear pending action
+    this.state.pendingAction = null;
+
+    // Log the action
+    const card = this.state.selectedTurnCards?.card1.id === data.cardId
+      ? this.state.selectedTurnCards?.card1
+      : this.state.selectedTurnCards?.card2;
+    const cardName = card?.name || 'Card';
+
+    if (data.success) {
+      this.addLog([
+        { text: `Used ` },
+        { text: cardName, color: 'lightblue' },
+        { text: ` ${data.position} action (${data.actionType})` },
+      ]);
+    } else {
+      this.addLog([
+        { text: `Failed to use ` },
+        { text: cardName, color: 'red' },
+        { text: `: ${data.error || 'Unknown error'}` },
+      ]);
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Calculate available actions after first action is used
+   * Rules: Must use opposite section (top/bottom) of the other card
+   */
+  private calculateAvailableActionsAfterFirst(firstAction: { cardId: string; position: 'top' | 'bottom' }): Array<{ cardId: string; position: 'top' | 'bottom' }> {
+    if (!this.state.selectedTurnCards) return [];
+
+    const { card1, card2 } = this.state.selectedTurnCards;
+    const otherCardId = firstAction.cardId === card1.id ? card2.id : card1.id;
+    const oppositePosition = firstAction.position === 'top' ? 'bottom' : 'top';
+
+    return [{ cardId: otherCardId, position: oppositePosition }];
+  }
 
   private emitStateUpdate(): void {
     this.subscribers.forEach(callback => callback({ ...this.state }));
@@ -935,9 +1053,31 @@ class GameStateManager {
 
     // Update characterCardSelections for multi-character tracking
     if (this.state.myCharacterId) {
+      const existingSelection = this.state.characterCardSelections.get(this.state.myCharacterId);
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: this.state.selectedTopAction?.id || null,
         bottomCardId: this.state.selectedBottomAction?.id || null,
+        initiativeCardId: existingSelection?.initiativeCardId || null, // Preserve existing initiative selection
+      });
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Set the initiative card for the current character
+   * Called when player selects which card determines their turn order
+   */
+  public setInitiativeCard(cardId: string): void {
+    this.state.selectedInitiativeCardId = cardId;
+
+    // Update characterCardSelections for multi-character tracking
+    if (this.state.myCharacterId) {
+      const existingSelection = this.state.characterCardSelections.get(this.state.myCharacterId);
+      this.state.characterCardSelections.set(this.state.myCharacterId, {
+        topCardId: existingSelection?.topCardId || null,
+        bottomCardId: existingSelection?.bottomCardId || null,
+        initiativeCardId: cardId,
       });
     }
 
@@ -950,6 +1090,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: this.state.selectedTopAction.id,
         bottomCardId: this.state.selectedBottomAction.id,
+        initiativeCardId: this.state.selectedInitiativeCardId, // Issue #411: Save initiative selection
       });
     }
 
@@ -973,7 +1114,13 @@ class GameStateManager {
     for (const charId of this.state.myCharacterIds) {
       const selection = this.state.characterCardSelections.get(charId);
       if (selection?.topCardId && selection?.bottomCardId) {
-        websocketService.selectCards(selection.topCardId, selection.bottomCardId, charId);
+        // Issue #411: Include initiativeCardId in the payload
+        websocketService.selectCards(
+          selection.topCardId,
+          selection.bottomCardId,
+          charId,
+          selection.initiativeCardId || undefined
+        );
       }
     }
 
@@ -989,12 +1136,14 @@ class GameStateManager {
   public clearCardSelection(): void {
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+    this.state.selectedInitiativeCardId = null; // Issue #411: Clear initiative selection
 
     // Clear from characterCardSelections too
     if (this.state.myCharacterId) {
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: null,
         bottomCardId: null,
+        initiativeCardId: null,
       });
     }
 
@@ -1154,6 +1303,65 @@ class GameStateManager {
       };
     }
     return null;
+  }
+
+  // ============== ISSUE #411: CARD ACTION SELECTION ==============
+
+  /**
+   * Issue #411: Select a card action (sets pendingAction)
+   * Called when player taps on a card action region
+   */
+  public selectCardAction(cardId: string, position: 'top' | 'bottom'): void {
+    if (!this.state.isMyTurn || !this.state.turnActionState) {
+      console.warn('[GameStateManager] Cannot select card action: not my turn or no turn action state');
+      return;
+    }
+
+    // Check if this action is available
+    const isAvailable = this.state.turnActionState.availableActions.some(
+      (action) => action.cardId === cardId && action.position === position
+    );
+
+    if (!isAvailable) {
+      console.warn('[GameStateManager] Cannot select card action: action not available');
+      return;
+    }
+
+    this.state.pendingAction = { cardId, position };
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Confirm the pending card action
+   * Emits use_card_action to the backend
+   */
+  public confirmCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+    if (!this.state.isMyTurn || !this.state.pendingAction || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot confirm card action: invalid state');
+      return;
+    }
+
+    const payload: UseCardActionPayload = {
+      characterId: this.state.myCharacterId,
+      cardId: this.state.pendingAction.cardId,
+      position: this.state.pendingAction.position,
+      targetId,
+      targetHex,
+    };
+
+    console.log('[GameStateManager] Emitting use_card_action:', payload);
+    websocketService.emit('use_card_action', payload);
+
+    // The pendingAction will be cleared when we receive card_action_executed
+    // Don't clear here to maintain UI state while waiting for response
+  }
+
+  /**
+   * Issue #411: Cancel the pending card action selection
+   */
+  public cancelCardAction(): void {
+    this.state.pendingAction = null;
+    this.emitStateUpdate();
   }
 
   public selectAttackTarget(targetId: string): void {
@@ -1441,6 +1649,7 @@ class GameStateManager {
         playerHand: [],
         selectedTopAction: null,
         selectedBottomAction: null,
+        selectedInitiativeCardId: null, // Issue #411: Initiative card selection
         characterCardSelections: new Map(), // Per-character card selections
         selectedCharacterId: null,
         selectedHex: null,
@@ -1458,6 +1667,10 @@ class GameStateManager {
         exhaustionState: null,
         abilityDeck: [],
         abilityDecks: new Map(), // Per-character ability decks
+        // Issue #411: Card action selection during turn
+        turnActionState: null,
+        selectedTurnCards: null,
+        pendingAction: null,
     };
     this.emitStateUpdate();
   }
@@ -1478,6 +1691,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(currentCharId, {
         topCardId: this.state.selectedTopAction?.id || null,
         bottomCardId: this.state.selectedBottomAction?.id || null,
+        initiativeCardId: this.state.selectedInitiativeCardId, // Issue #411
       });
     }
 
@@ -1504,9 +1718,11 @@ class GameStateManager {
           this.state.selectedBottomAction = savedSelections.bottomCardId
             ? characterDeck.find(card => card.id === savedSelections.bottomCardId) || null
             : null;
+          this.state.selectedInitiativeCardId = savedSelections.initiativeCardId; // Issue #411
         } else {
           this.state.selectedTopAction = null;
           this.state.selectedBottomAction = null;
+          this.state.selectedInitiativeCardId = null; // Issue #411
         }
       }
     }

@@ -3,20 +3,22 @@
  *
  * Full status panel combining:
  * - Horizontal scrolling turn order
- * - Action buttons (Attack/Move)
  * - Round counter
  * - Connection status
  * - End Turn and Back to Lobby buttons
  * - Objectives tracker (collapsible)
+ * - Issue #411: TurnActionPanel for card action selection during turn
  *
- * Replaces and combines: TurnOrder, ActionButtons, and parts of GameHUD
+ * Note: Legacy Action buttons (Attack/Move) removed in Phase 6 of Issue #411.
+ * Actions are now selected via TurnActionPanel card regions.
  */
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { FaSignOutAlt } from 'react-icons/fa';
-import { GiCrossedSwords, GiBootPrints } from 'react-icons/gi';
-import type { Character, Monster } from '../../../../shared/types/entities';
+import type { Character, Monster, AbilityCard } from '../../../../shared/types/entities';
+import type { TurnActionState } from '../../../../shared/types/events';
+import { TurnActionPanel } from './TurnActionPanel';
 import styles from './TurnStatus.module.css';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
@@ -41,16 +43,17 @@ interface TurnStatusProps {
   monsters: Monster[];
   connectionStatus: ConnectionStatus;
   isMyTurn: boolean;
-  hasAttack: boolean;
-  hasMove: boolean;
-  attackMode: boolean;
-  onAttackClick: () => void;
-  onMoveClick: () => void;
   onEndTurn: () => void;
   onBackToLobby: () => void;
   onShortRest?: () => void;
   canShortRest?: boolean;
   objectivesSlot?: ReactNode;
+  // Issue #411: Card action selection props
+  turnActionState?: TurnActionState | null;
+  selectedTurnCards?: { card1: AbilityCard; card2: AbilityCard } | null;
+  onActionSelect?: (cardId: string, position: 'top' | 'bottom') => void;
+  onActionConfirm?: () => void;
+  onActionCancel?: () => void;
 }
 
 export function TurnStatus({
@@ -61,16 +64,17 @@ export function TurnStatus({
   monsters,
   connectionStatus,
   isMyTurn,
-  hasAttack,
-  hasMove,
-  attackMode,
-  onAttackClick,
-  onMoveClick,
   onEndTurn,
   onBackToLobby,
   onShortRest,
   canShortRest = false,
   objectivesSlot,
+  // Issue #411: Card action selection props
+  turnActionState,
+  selectedTurnCards,
+  onActionSelect,
+  onActionConfirm,
+  onActionCancel,
 }: TurnStatusProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const statusClassName = styles[connectionStatus] || '';
@@ -208,39 +212,29 @@ export function TurnStatus({
         </div>
       )}
 
-      {/* Action buttons - only show when it's player's turn */}
-      {isMyTurn && (hasAttack || hasMove || canShortRest) && (
+      {/* Issue #411: TurnActionPanel - show when it's player's turn with turn action state */}
+      {isMyTurn && turnActionState && selectedTurnCards && onActionSelect && onActionConfirm && onActionCancel && (
+        <TurnActionPanel
+          card1={selectedTurnCards.card1}
+          card2={selectedTurnCards.card2}
+          turnActionState={turnActionState}
+          onActionSelect={onActionSelect}
+          onActionConfirm={onActionConfirm}
+          onActionCancel={onActionCancel}
+        />
+      )}
+
+      {/* Short Rest button - only show when not using TurnActionPanel and rest is available */}
+      {isMyTurn && !turnActionState && canShortRest && onShortRest && (
         <div className={styles.actionButtons}>
-          {hasMove && (
-            <button
-              onClick={onMoveClick}
-              className={styles.moveButton}
-              aria-label="Move"
-            >
-              <GiBootPrints />
-              <span>Move</span>
-            </button>
-          )}
-          {hasAttack && (
-            <button
-              onClick={onAttackClick}
-              className={`${styles.attackButton} ${attackMode ? styles.active : ''}`}
-              aria-label="Attack"
-            >
-              <GiCrossedSwords />
-              <span>Attack</span>
-            </button>
-          )}
-          {canShortRest && onShortRest && (
-            <button
-              onClick={onShortRest}
-              className={styles.restButton}
-              aria-label="Short Rest"
-              title="Short Rest: Randomly lose 1 card from discard, return rest to hand"
-            >
-              <span>Short Rest</span>
-            </button>
-          )}
+          <button
+            onClick={onShortRest}
+            className={styles.restButton}
+            aria-label="Short Rest"
+            title="Short Rest: Randomly lose 1 card from discard, return rest to hand"
+          >
+            <span>Short Rest</span>
+          </button>
         </div>
       )}
     </div>

@@ -1,0 +1,156 @@
+/**
+ * InitiativeSelector Styles (Issue #411 - Phase 2)
+ *
+ * Styling for the initiative card selector component.
+ * Follows the existing design system with gold accents and dark theme.
+ */
+
+.initiative-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(13, 26, 46, 0.95);
+  border: 1px solid #c9a444;
+  border-radius: 8px;
+}
+
+.initiative-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #c9a444;
+  font-family: 'MedievalSharp', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.initiative-options {
+  display: flex;
+  gap: 12px;
+}
+
+.initiative-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0; /* Allow flex items to shrink below content size */
+}
+
+.initiative-option:hover:not(.disabled) {
+  background: rgba(201, 164, 68, 0.15);
+  border-color: rgba(201, 164, 68, 0.5);
+}
+
+.initiative-option.selected {
+  background: rgba(201, 164, 68, 0.25);
+  border-color: #c9a444;
+}
+
+.initiative-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.initiative-option input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #88c0d0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.initiative-option input[type="radio"]:checked {
+  border-color: #c9a444;
+}
+
+.initiative-option input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: #c9a444;
+  border-radius: 50%;
+}
+
+.initiative-option input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
+.initiative-option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.initiative-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f0e6d2;
+  font-family: 'MedievalSharp', serif;
+  min-width: 32px;
+  text-align: center;
+}
+
+.card-name {
+  font-size: 14px;
+  color: #f0e6d2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.faster-badge {
+  font-size: 11px;
+  font-weight: bold;
+  color: #a3be8c;
+  background: rgba(163, 190, 140, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 768px) {
+  .initiative-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .initiative-option {
+    padding: 12px 16px;
+    /* Ensure minimum touch target size (44x44px per WCAG) */
+    min-height: 48px;
+  }
+}
+
+/* Portrait orientation adjustments */
+@media (orientation: portrait) {
+  .initiative-selector {
+    padding: 8px;
+  }
+
+  .initiative-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
