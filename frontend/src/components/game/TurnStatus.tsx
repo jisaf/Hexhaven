@@ -16,9 +16,8 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { FaSignOutAlt } from 'react-icons/fa';
-import type { Character, Monster, AbilityCard } from '../../../../shared/types/entities';
+import type { Character, Monster } from '../../../../shared/types/entities';
 import type { TurnActionState } from '../../../../shared/types/events';
-import { TurnActionPanel } from './TurnActionPanel';
 import styles from './TurnStatus.module.css';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
@@ -48,12 +47,8 @@ interface TurnStatusProps {
   onShortRest?: () => void;
   canShortRest?: boolean;
   objectivesSlot?: ReactNode;
-  // Issue #411: Card action selection props
+  // Issue #411: Turn action state for End Turn button logic
   turnActionState?: TurnActionState | null;
-  selectedTurnCards?: { card1: AbilityCard; card2: AbilityCard } | null;
-  onActionSelect?: (cardId: string, position: 'top' | 'bottom') => void;
-  onActionConfirm?: () => void;
-  onActionCancel?: () => void;
 }
 
 export function TurnStatus({
@@ -69,12 +64,8 @@ export function TurnStatus({
   onShortRest,
   canShortRest = false,
   objectivesSlot,
-  // Issue #411: Card action selection props
+  // Issue #411: Turn action state for End Turn button logic
   turnActionState,
-  selectedTurnCards,
-  onActionSelect,
-  onActionConfirm,
-  onActionCancel,
 }: TurnStatusProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const statusClassName = styles[connectionStatus] || '';
@@ -117,8 +108,18 @@ export function TurnStatus({
           <button
             onClick={onEndTurn}
             className={styles.endTurnButton}
-            disabled={!isMyTurn}
+            disabled={
+              !isMyTurn ||
+              // Issue #411: Disable End Turn until both actions are complete
+              (turnActionState != null &&
+                turnActionState.availableActions.length > 0)
+            }
             aria-label="End Turn"
+            title={
+              isMyTurn && turnActionState && turnActionState.availableActions.length > 0
+                ? 'Complete both card actions before ending turn'
+                : undefined
+            }
           >
             End Turn
           </button>
@@ -212,19 +213,9 @@ export function TurnStatus({
         </div>
       )}
 
-      {/* Issue #411: TurnActionPanel - show when it's player's turn with turn action state */}
-      {isMyTurn && turnActionState && selectedTurnCards && onActionSelect && onActionConfirm && onActionCancel && (
-        <TurnActionPanel
-          card1={selectedTurnCards.card1}
-          card2={selectedTurnCards.card2}
-          turnActionState={turnActionState}
-          onActionSelect={onActionSelect}
-          onActionConfirm={onActionConfirm}
-          onActionCancel={onActionCancel}
-        />
-      )}
+      {/* Issue #411: TurnActionPanel now rendered in BottomSheet via GameBoard.tsx */}
 
-      {/* Short Rest button - only show when not using TurnActionPanel and rest is available */}
+      {/* Short Rest button - only show when not in turn action mode and rest is available */}
       {isMyTurn && !turnActionState && canShortRest && onShortRest && (
         <div className={styles.actionButtons}>
           <button

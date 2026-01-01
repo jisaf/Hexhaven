@@ -296,6 +296,28 @@ export class Character {
     this._updatedAt = new Date();
   }
 
+  /**
+   * Move a card to the specified destination pile (Issue #411)
+   * Removes the card from hand (if present) and adds to the appropriate pile.
+   * @param cardId - The ID of the card to move
+   * @param destination - Where to move the card: 'discard' or 'lost'
+   * @returns true if the card was successfully moved, false if card wasn't found
+   */
+  moveCardToPile(cardId: string, destination: 'discard' | 'lost'): boolean {
+    // First, try to remove from hand
+    const wasInHand = this.removeFromHand(cardId);
+
+    // Add to the appropriate pile regardless of whether it was in hand
+    // (it might already be in play from selected cards)
+    if (destination === 'lost') {
+      this.addToLost(cardId);
+    } else {
+      this.addToDiscard(cardId);
+    }
+
+    return wasInHand;
+  }
+
   removeFromDiscard(cardId: string): boolean {
     const index = this._discardPile.indexOf(cardId);
     if (index === -1) return false;

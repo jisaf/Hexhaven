@@ -2,29 +2,36 @@
  * TurnActionPanel Component (Issue #411 - Phase 4.2)
  *
  * Displays the player's two selected cards side-by-side during their turn.
- * Each card shows its top and bottom action regions that the player can
- * click to execute.
+ * Each card shows its actual card content using AbilityCard2 with clickable
+ * overlay regions for top and bottom actions.
  *
  * Features:
- * - Displays 2 cards side-by-side (stacked on mobile)
- * - Each card has 2 CardActionRegion components (top/bottom)
+ * - Displays 2 AbilityCard2 cards side-by-side (stacked on mobile)
+ * - Clickable overlay divs positioned over top/bottom halves of each card
  * - Manages selected action state internally
  * - Shows which actions are available based on turnActionState
+ * - Visual states: available (golden border), selected (highlighted), used (grayed), disabled
  * - Responsive layout
  *
  * Turn execution flow:
- * 1. Player sees their 2 selected cards
- * 2. Click top or bottom of either card to select that action
+ * 1. Player sees their 2 selected cards with full card content
+ * 2. Click top or bottom half of either card to select that action
  * 3. First action: any of 4 options available
  * 4. After first action: only opposite section of other card available
  * 5. Tap-to-select, tap-to-confirm flow
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { FaCheck, FaTimes } from 'react-icons/fa';
 import type { AbilityCard } from '../../../../shared/types/entities';
 import type { TurnActionState, TurnAction } from '../../../../shared/types/events';
-import { CardActionRegion, type CardActionState } from './CardActionRegion';
+import { AbilityCard2 } from '../AbilityCard2';
 import styles from './TurnActionPanel.module.css';
+
+const LONG_PRESS_DURATION = 350; // ms before zoom activates
+
+export type CardActionState = 'available' | 'selected' | 'used' | 'disabled';
 
 export interface TurnActionPanelProps {
   /** First selected card for the turn */
@@ -83,6 +90,8 @@ export function TurnActionPanel({
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
+  // Track which card is zoomed for long-press viewing
+  const [zoomedCard, setZoomedCard] = useState<AbilityCard | null>(null);
 
   // Calculate number of actions used
   const actionsUsed = useMemo(() => {
@@ -124,6 +133,203 @@ export function TurnActionPanel({
   const card2TopState = getActionRegionState(card2.id, 'top', turnActionState, pendingAction);
   const card2BottomState = getActionRegionState(card2.id, 'bottom', turnActionState, pendingAction);
 
+  /**
+   * ActionOverlay Component - handles long-press for card zoom
+   * Separated into a component to properly manage refs and effects per overlay
+   */
+  const ActionOverlay = ({
+    card,
+    cardId,
+    position,
+    state,
+    actionLabel,
+  }: {
+    card: AbilityCard;
+    cardId: string;
+    position: 'top' | 'bottom';
+    state: CardActionState;
+    actionLabel: string;
+  }) => {
+    const isInteractive = state === 'available' || state === 'selected';
+    const overlayRef = useRef<HTMLDivElement>(null);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLongPress = useRef(false);
+    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+    const cancelLongPress = useCallback(() => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }, []);
+
+    const handleOverlayClick = useCallback(() => {
+      // Cancel any pending long press timer (for safety)
+      cancelLongPress();
+
+      // Don't trigger click if it was a long press
+      if (isLongPress.current) {
+        isLongPress.current = false;
+        return;
+      }
+      if (isInteractive) {
+        handleActionClick(cardId, position);
+      }
+    }, [isInteractive, cardId, position, cancelLongPress, handleActionClick]);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        handleActionClick(cardId, position);
+      }
+    };
+
+    const handleConfirmClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleConfirm();
+    };
+
+    const handleCancelClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleCancel();
+    };
+
+    // Native touch event handlers for long-press detection
+    useEffect(() => {
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+
+      const handleTouchStart = (e: TouchEvent) => {
+        // Store touch position to detect movement
+        const touch = e.touches[0];
+        touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+        isLongPress.current = false;
+
+        longPressTimer.current = setTimeout(() => {
+          isLongPress.current = true;
+          setZoomedCard(card);
+        }, LONG_PRESS_DURATION);
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        // If user moves finger significantly, cancel long press
+        if (touchStartPos.current && e.touches[0]) {
+          const touch = e.touches[0];
+          const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+          const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+          if (dx > 10 || dy > 10) {
+            cancelLongPress();
+            touchStartPos.current = null;
+          }
+        }
+      };
+
+      const handleTouchEnd = (e: TouchEvent) => {
+        cancelLongPress();
+        touchStartPos.current = null;
+
+        if (zoomedCard) {
+          // Close zoom modal on touch end
+          e.preventDefault();
+          setTimeout(() => setZoomedCard(null), 50);
+        }
+      };
+
+      const handleTouchCancel = () => {
+        cancelLongPress();
+        touchStartPos.current = null;
+        setZoomedCard(null);
+      };
+
+      const handleContextMenu = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      };
+
+      overlay.addEventListener('touchstart', handleTouchStart, { passive: false });
+      overlay.addEventListener('touchmove', handleTouchMove, { passive: false });
+      overlay.addEventListener('touchend', handleTouchEnd, { passive: false });
+      overlay.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+      overlay.addEventListener('contextmenu', handleContextMenu, { capture: true });
+
+      return () => {
+        overlay.removeEventListener('touchstart', handleTouchStart);
+        overlay.removeEventListener('touchmove', handleTouchMove);
+        overlay.removeEventListener('touchend', handleTouchEnd);
+        overlay.removeEventListener('touchcancel', handleTouchCancel);
+        overlay.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+        cancelLongPress();
+      };
+    }, [card, cancelLongPress, zoomedCard]);
+
+    // Mouse long-press handlers for desktop
+    const handleMouseDown = useCallback(() => {
+      isLongPress.current = false;
+      longPressTimer.current = setTimeout(() => {
+        isLongPress.current = true;
+        setZoomedCard(card);
+      }, LONG_PRESS_DURATION);
+    }, [card]);
+
+    const handleMouseUp = useCallback(() => {
+      cancelLongPress();
+      // Close zoom if it was open - setZoomedCard is stable so we don't need it in deps
+      setTimeout(() => setZoomedCard(null), 50);
+    }, [cancelLongPress]);
+
+    const handleMouseLeave = useCallback(() => {
+      cancelLongPress();
+    }, [cancelLongPress]);
+
+    return (
+      <div
+        ref={overlayRef}
+        className={`${styles.actionOverlay} ${styles[position]} ${styles[state]}`}
+        onClick={handleOverlayClick}
+        onKeyDown={handleKeyDown}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        role="button"
+        tabIndex={isInteractive ? 0 : -1}
+        aria-label={`${position} action: ${actionLabel}`}
+        aria-disabled={!isInteractive}
+      >
+        {/* Used overlay label */}
+        {state === 'used' && (
+          <div className={styles.usedOverlay}>
+            <span>Used</span>
+          </div>
+        )}
+
+        {/* Confirm/Cancel buttons when selected */}
+        {state === 'selected' && (
+          <div className={styles.confirmOverlay}>
+            <button
+              className={styles.confirmButton}
+              onClick={handleConfirmClick}
+              aria-label="Confirm action"
+              type="button"
+            >
+              <FaCheck />
+              <span>Confirm</span>
+            </button>
+            <button
+              className={styles.cancelButton}
+              onClick={handleCancelClick}
+              aria-label="Cancel selection"
+              type="button"
+            >
+              <FaTimes />
+              <span>Cancel</span>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={styles.panel}>
       {/* Header showing action count */}
@@ -138,52 +344,56 @@ export function TurnActionPanel({
 
       {/* Cards container */}
       <div className={styles.cardsContainer}>
-        {/* Card 1 */}
-        <div className={styles.card}>
-          <CardActionRegion
-            action={card1.topAction}
-            position="top"
-            state={card1TopState}
-            cardName={card1.name}
-            initiative={card1.initiative}
-            onClick={() => handleActionClick(card1.id, 'top')}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
+        {/* Card 1 with action overlays */}
+        <div className={styles.cardWrapper}>
+          <AbilityCard2
+            card={card1}
+            variant="full"
+            className={styles.actionCard}
           />
-          <CardActionRegion
-            action={card1.bottomAction}
-            position="bottom"
-            state={card1BottomState}
-            cardName={card1.name}
-            initiative={card1.initiative}
-            onClick={() => handleActionClick(card1.id, 'bottom')}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
+          {/* Clickable overlay regions */}
+          <div className={styles.overlayContainer}>
+            <ActionOverlay
+              card={card1}
+              cardId={card1.id}
+              position="top"
+              state={card1TopState}
+              actionLabel={`${card1.name} - ${card1.topAction.type}`}
+            />
+            <ActionOverlay
+              card={card1}
+              cardId={card1.id}
+              position="bottom"
+              state={card1BottomState}
+              actionLabel={`${card1.name} - ${card1.bottomAction.type}`}
+            />
+          </div>
         </div>
 
-        {/* Card 2 */}
-        <div className={styles.card}>
-          <CardActionRegion
-            action={card2.topAction}
-            position="top"
-            state={card2TopState}
-            cardName={card2.name}
-            initiative={card2.initiative}
-            onClick={() => handleActionClick(card2.id, 'top')}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
+        {/* Card 2 with action overlays */}
+        <div className={styles.cardWrapper}>
+          <AbilityCard2
+            card={card2}
+            variant="full"
+            className={styles.actionCard}
           />
-          <CardActionRegion
-            action={card2.bottomAction}
-            position="bottom"
-            state={card2BottomState}
-            cardName={card2.name}
-            initiative={card2.initiative}
-            onClick={() => handleActionClick(card2.id, 'bottom')}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
+          {/* Clickable overlay regions */}
+          <div className={styles.overlayContainer}>
+            <ActionOverlay
+              card={card2}
+              cardId={card2.id}
+              position="top"
+              state={card2TopState}
+              actionLabel={`${card2.name} - ${card2.topAction.type}`}
+            />
+            <ActionOverlay
+              card={card2}
+              cardId={card2.id}
+              position="bottom"
+              state={card2BottomState}
+              actionLabel={`${card2.name} - ${card2.bottomAction.type}`}
+            />
+          </div>
         </div>
       </div>
 
@@ -192,9 +402,30 @@ export function TurnActionPanel({
         {pendingAction ? (
           <span>Tap Confirm to execute this action, or Cancel to choose another</span>
         ) : actionsUsed < 2 ? (
-          <span>Tap an action to select it</span>
+          <span>Tap an action to select it. Long-press to enlarge.</span>
         ) : null}
       </div>
+
+      {/* Zoomed card modal - rendered via portal */}
+      {zoomedCard && createPortal(
+        <div
+          className={styles.zoomOverlay}
+          onMouseUp={() => setZoomedCard(null)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setTimeout(() => setZoomedCard(null), 50);
+          }}
+        >
+          <div className={styles.zoomModal}>
+            <AbilityCard2
+              card={zoomedCard}
+              variant="full"
+              className={styles.zoomedCard}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

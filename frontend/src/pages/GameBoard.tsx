@@ -31,6 +31,7 @@ import { ExhaustionModal } from '../components/ExhaustionModal';
 import { GamePanel } from '../components/game/GamePanel';
 import { InfoPanel, type SheetTab } from '../components/game/InfoPanel';
 import { TurnStatus } from '../components/game/TurnStatus';
+import { TurnActionPanel } from '../components/game/TurnActionPanel';
 import { GameLog } from '../components/game/GameLog';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
@@ -515,14 +516,20 @@ export function GameBoard() {
       )}
 
       {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
+      {/* Issue #411: showTurnAction indicates turn action panel should be visible */}
       <InfoPanel
-        showCardSelection={gameState.showCardSelection || showPileView || showInventory}
+        showCardSelection={
+          gameState.showCardSelection ||
+          (gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards) ||
+          showPileView ||
+          showInventory
+        }
         activeTab={activeSheetTab}
         onTabChange={(tab) => setActiveSheetTab(tab)}
         onSheetClose={
-          // Only allow closing if it's not mandatory card selection
-          // Card selection is controlled by game state, not closed manually
-          (!gameState.showCardSelection && (showInventory || showPileView)) ? () => {
+          // Only allow closing if it's not mandatory card selection or turn action
+          // Card selection and turn action are controlled by game state, not closed manually
+          (!gameState.showCardSelection && !(gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) && (showInventory || showPileView)) ? () => {
             // Set closing flag to prevent click-through to pile buttons
             closingRef.current = true;
             setTimeout(() => {
@@ -554,12 +561,8 @@ export function GameBoard() {
                 : false
             }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
-            // Issue #411: Card action selection props
+            // Issue #411: Turn action state for End Turn button logic
             turnActionState={gameState.turnActionState}
-            selectedTurnCards={gameState.selectedTurnCards}
-            onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
-            onActionConfirm={() => gameStateManager.confirmCardAction()}
-            onActionCancel={() => gameStateManager.cancelCardAction()}
           />
         }
         gameLog={<GameLog logs={gameState.logs} />}
@@ -608,6 +611,16 @@ export function GameBoard() {
               }
               totalCharacters={gameState.myCharacterIds.length}
               charactersWithSelections={gameStateManager.getCharactersWithSelectionsCount()}
+            />
+          ) : (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) ? (
+            // Issue #411: TurnActionPanel for selecting card actions during turn
+            <TurnActionPanel
+              card1={gameState.selectedTurnCards.card1}
+              card2={gameState.selectedTurnCards.card2}
+              turnActionState={gameState.turnActionState}
+              onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
+              onActionConfirm={() => gameStateManager.confirmCardAction()}
+              onActionCancel={() => gameStateManager.cancelCardAction()}
             />
           ) : showPileView ? (
             <CardSelectionPanel

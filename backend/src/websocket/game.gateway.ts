@@ -318,6 +318,13 @@ export class GameGateway
     AxialCoordinates[]
   >(); // roomCode -> loot collection hexes
 
+  // Issue #411: Track card destinations during turn execution
+  // Maps characterId -> cardId -> destination ('discard' | 'lost')
+  private readonly pendingCardDestinations = new Map<
+    string,
+    Map<string, 'discard' | 'lost'>
+  >();
+
   /**
    * Get the room that a Socket.IO client is currently in
    * Multi-room support: Uses Socket.IO rooms to determine which game room the client is active in
@@ -3500,12 +3507,21 @@ export class GameGateway
 
       if (isLost) {
         cardDestination = 'lost';
-        // Note: We don't move the card yet - it happens at end of turn
-        // This matches Gloomhaven rules where cards stay in play until turn ends
-        this.logger.log(
-          `Card ${payload.cardId} marked for lost pile (has lost modifier)`,
-        );
       }
+
+      // Record the pending card destination for end-of-turn processing
+      // This matches Gloomhaven rules where cards stay in play until turn ends
+      let characterDestinations = this.pendingCardDestinations.get(
+        character.id,
+      );
+      if (!characterDestinations) {
+        characterDestinations = new Map<string, 'discard' | 'lost'>();
+        this.pendingCardDestinations.set(character.id, characterDestinations);
+      }
+      characterDestinations.set(payload.cardId, cardDestination);
+      this.logger.log(
+        `Card ${payload.cardId} marked for ${cardDestination} pile`,
+      );
 
       // Build the response payload
       const responsePayload: CardActionExecutedPayload = {
@@ -4367,21 +4383,31 @@ export class GameGateway
         throw new Error('It is not your turn');
       }
 
-      // Move played cards to discard pile before resetting action flags
+      // Move played cards to appropriate piles based on pending destinations (Issue #411)
       if (character.selectedCards) {
         const topCardId = character.selectedCards.topCardId;
         const bottomCardId = character.selectedCards.bottomCardId;
 
-        // Remove cards from hand and add to discard pile
-        character.removeFromHand(topCardId);
-        character.addToDiscard(topCardId);
+        // Get pending destinations for this character
+        const pendingDestinations = this.pendingCardDestinations.get(
+          character.id,
+        );
 
-        character.removeFromHand(bottomCardId);
-        character.addToDiscard(bottomCardId);
+        // Determine destination for each card (default to discard if not tracked)
+        const topDestination = pendingDestinations?.get(topCardId) || 'discard';
+        const bottomDestination =
+          pendingDestinations?.get(bottomCardId) || 'discard';
+
+        // Move cards to their appropriate piles
+        character.moveCardToPile(topCardId, topDestination);
+        character.moveCardToPile(bottomCardId, bottomDestination);
 
         this.logger.log(
-          `Moved played cards to discard: ${topCardId}, ${bottomCardId}. Hand: ${character.hand.length}, Discard: ${character.discardPile.length}`,
+          `Moved played cards: ${topCardId} -> ${topDestination}, ${bottomCardId} -> ${bottomDestination}. Hand: ${character.hand.length}, Discard: ${character.discardPile.length}, Lost: ${character.lostPile.length}`,
         );
+
+        // Clear pending destinations for this character
+        this.pendingCardDestinations.delete(character.id);
       }
 
       // Reset action flags for this character's turn ending

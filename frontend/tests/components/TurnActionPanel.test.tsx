@@ -3,9 +3,11 @@
  *
  * Tests the TurnActionPanel component which displays the player's two
  * selected cards side-by-side during their turn for action execution.
+ * Now uses AbilityCard2 with clickable overlay regions for top/bottom actions.
  *
  * Features tested:
- * - Displaying two cards with their actions
+ * - Displaying two cards using AbilityCard2
+ * - Clickable overlay regions for top/bottom action selection
  * - Action state management based on turnActionState
  * - Tap-to-select, tap-to-confirm flow
  * - Available action calculation after first action
@@ -101,22 +103,20 @@ describe('TurnActionPanel', () => {
   });
 
   describe('Rendering', () => {
-    it('should render both card names', () => {
+    it('should render both card names using AbilityCard2', () => {
       render(<TurnActionPanel {...defaultProps} />);
 
-      // Each card name appears twice (once per action region)
-      expect(screen.getAllByText('Trample')).toHaveLength(2);
-      expect(screen.getAllByText('Eye for an Eye')).toHaveLength(2);
+      // Each card name appears once (in the AbilityCard2 header)
+      expect(screen.getByText('Trample')).toBeInTheDocument();
+      expect(screen.getByText('Eye for an Eye')).toBeInTheDocument();
     });
 
-    it('should render action types for all four actions', () => {
+    it('should render clickable overlay regions for each card', () => {
       render(<TurnActionPanel {...defaultProps} />);
 
-      // Card1 has Attack (top) and Move (bottom)
-      // Card2 has Attack (top) and Heal (bottom)
-      expect(screen.getAllByText('Attack')).toHaveLength(2);
-      expect(screen.getByText('Move')).toBeInTheDocument();
-      expect(screen.getByText('Heal')).toBeInTheDocument();
+      // Should have 4 action overlay regions (top/bottom for each card)
+      const actionButtons = screen.getAllByRole('button', { name: /action/i });
+      expect(actionButtons).toHaveLength(4);
     });
 
     it('should show header with action count for first action', () => {
@@ -141,7 +141,7 @@ describe('TurnActionPanel', () => {
     it('should show help text when no action is selected', () => {
       render(<TurnActionPanel {...defaultProps} />);
 
-      expect(screen.getByText('Tap an action to select it')).toBeInTheDocument();
+      expect(screen.getByText('Tap an action to select it. Long-press to enlarge.')).toBeInTheDocument();
     });
   });
 
@@ -149,10 +149,13 @@ describe('TurnActionPanel', () => {
     it('should mark all actions as available when turnActionState has no first action', () => {
       render(<TurnActionPanel {...defaultProps} turnActionState={initialTurnState} />);
 
-      // All four action regions should be available (clickable)
-      const buttons = screen.getAllByRole('button');
-      // 4 action regions + potentially confirm/cancel buttons
-      expect(buttons.length).toBeGreaterThanOrEqual(4);
+      // All four action overlay regions should be available (clickable)
+      const actionButtons = screen.getAllByRole('button', { name: /action/i });
+      expect(actionButtons).toHaveLength(4);
+      // All should be clickable (aria-disabled=false)
+      actionButtons.forEach(button => {
+        expect(button).toHaveAttribute('aria-disabled', 'false');
+      });
     });
 
     it('should mark first action as used after it is executed', () => {
@@ -175,6 +178,11 @@ describe('TurnActionPanel', () => {
 
       // After using card1 top, only card2 bottom should be available
       // card1 bottom and card2 top should be disabled
+      const disabledButtons = screen.getAllByRole('button', { name: /action/i }).filter(
+        button => button.getAttribute('aria-disabled') === 'true'
+      );
+      // 2 disabled (card1 bottom and card2 top) + 1 used (card1 top) = 3 non-available
+      expect(disabledButtons.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -183,9 +191,9 @@ describe('TurnActionPanel', () => {
       const onActionSelect = jest.fn();
       render(<TurnActionPanel {...defaultProps} onActionSelect={onActionSelect} />);
 
-      // Click on card1's top action (first Attack button)
-      const attackButtons = screen.getAllByText('Attack');
-      fireEvent.click(attackButtons[0].closest('[role="button"]')!);
+      // Click on card1's top action overlay
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
+      fireEvent.click(topActionOverlay);
 
       expect(onActionSelect).toHaveBeenCalledWith('card-1', 'top');
     });
@@ -195,8 +203,8 @@ describe('TurnActionPanel', () => {
       render(<TurnActionPanel {...defaultProps} onActionSelect={onActionSelect} />);
 
       // Click to select an action
-      const attackButtons = screen.getAllByText('Attack');
-      fireEvent.click(attackButtons[0].closest('[role="button"]')!);
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
+      fireEvent.click(topActionOverlay);
 
       // Confirm/Cancel should appear
       expect(screen.getByText('Confirm')).toBeInTheDocument();
@@ -208,8 +216,8 @@ describe('TurnActionPanel', () => {
       render(<TurnActionPanel {...defaultProps} onActionSelect={onActionSelect} />);
 
       // Click to select an action
-      const attackButtons = screen.getAllByText('Attack');
-      fireEvent.click(attackButtons[0].closest('[role="button"]')!);
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
+      fireEvent.click(topActionOverlay);
 
       expect(screen.getByText(/Tap Confirm to execute/)).toBeInTheDocument();
     });
@@ -219,8 +227,8 @@ describe('TurnActionPanel', () => {
       render(<TurnActionPanel {...defaultProps} onActionConfirm={onActionConfirm} />);
 
       // Select an action first
-      const attackButtons = screen.getAllByText('Attack');
-      fireEvent.click(attackButtons[0].closest('[role="button"]')!);
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
+      fireEvent.click(topActionOverlay);
 
       // Click confirm
       fireEvent.click(screen.getByText('Confirm'));
@@ -233,8 +241,8 @@ describe('TurnActionPanel', () => {
       render(<TurnActionPanel {...defaultProps} onActionCancel={onActionCancel} />);
 
       // Select an action first
-      const attackButtons = screen.getAllByText('Attack');
-      fireEvent.click(attackButtons[0].closest('[role="button"]')!);
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
+      fireEvent.click(topActionOverlay);
 
       // Click cancel
       fireEvent.click(screen.getByText('Cancel'));
@@ -246,15 +254,17 @@ describe('TurnActionPanel', () => {
       const onActionCancel = jest.fn();
       render(<TurnActionPanel {...defaultProps} onActionCancel={onActionCancel} />);
 
-      const attackButtons = screen.getAllByText('Attack');
-      const firstAttack = attackButtons[0].closest('[role="button"]')!;
+      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
 
       // Select
-      fireEvent.click(firstAttack);
+      fireEvent.click(topActionOverlay);
       expect(screen.getByText('Confirm')).toBeInTheDocument();
 
+      // Re-query the element after state change to ensure we have the updated DOM element
+      const topActionOverlayAfterSelect = screen.getByRole('button', { name: /top action: Trample - attack/i });
+
       // Click same action again to deselect
-      fireEvent.click(firstAttack);
+      fireEvent.click(topActionOverlayAfterSelect);
       expect(onActionCancel).toHaveBeenCalled();
     });
   });
@@ -264,19 +274,17 @@ describe('TurnActionPanel', () => {
       render(<TurnActionPanel {...defaultProps} turnActionState={afterFirstActionState} />);
 
       // After card1 top is used, only card2 bottom should be available
-      // Find card2's heal action (bottom)
-      const healButton = screen.getByText('Heal').closest('[role="button"]');
-      expect(healButton).toHaveAttribute('aria-disabled', 'false');
+      // Find card2's bottom action overlay
+      const card2BottomOverlay = screen.getByRole('button', { name: /bottom action: Eye for an Eye - heal/i });
+      expect(card2BottomOverlay).toHaveAttribute('aria-disabled', 'false');
     });
 
     it('should disable same position on other card', () => {
       render(<TurnActionPanel {...defaultProps} turnActionState={afterFirstActionState} />);
 
       // After card1 top is used, card2 top should be disabled
-      // Both Attack elements - second one is card2's top
-      const attackButtons = screen.getAllByText('Attack');
-      const card2TopRegion = attackButtons[1].closest('[role="button"]');
-      expect(card2TopRegion).toHaveAttribute('aria-disabled', 'true');
+      const card2TopOverlay = screen.getByRole('button', { name: /top action: Eye for an Eye - attack/i });
+      expect(card2TopOverlay).toHaveAttribute('aria-disabled', 'true');
     });
   });
 
@@ -291,8 +299,15 @@ describe('TurnActionPanel', () => {
 
       render(<TurnActionPanel {...defaultProps} turnActionState={emptyState} />);
 
-      // Should still render cards but all disabled
-      expect(screen.getAllByText('Trample')).toHaveLength(2);
+      // Should still render cards but all action overlays disabled
+      expect(screen.getByText('Trample')).toBeInTheDocument();
+      expect(screen.getByText('Eye for an Eye')).toBeInTheDocument();
+
+      // All overlays should be disabled
+      const actionOverlays = screen.getAllByRole('button', { name: /action/i });
+      actionOverlays.forEach(overlay => {
+        expect(overlay).toHaveAttribute('aria-disabled', 'true');
+      });
     });
 
     it('should handle cards with same actions gracefully', () => {
@@ -311,8 +326,9 @@ describe('TurnActionPanel', () => {
         />
       );
 
-      // Should render 4 attack actions
-      expect(screen.getAllByText('Attack')).toHaveLength(4);
+      // Should render 4 action overlay regions (top/bottom for each card)
+      const actionOverlays = screen.getAllByRole('button', { name: /action/i });
+      expect(actionOverlays).toHaveLength(4);
     });
   });
 });
@@ -320,7 +336,7 @@ describe('TurnActionPanel', () => {
 /**
  * Test Coverage Summary:
  *
- * - Rendering: Both cards, all actions, header with action count, help text
+ * - Rendering: Both cards using AbilityCard2, clickable overlay regions, header with action count, help text
  * - Action States: Available, used, disabled based on turnActionState
  * - Selection Flow: onActionSelect, onActionConfirm, onActionCancel, toggle
  * - After First Action: Only opposite position on other card available
