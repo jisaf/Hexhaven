@@ -383,6 +383,24 @@ class GameStateManager {
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
     // Issue #411: Card action execution event
     register('card_action_executed', this.handleCardActionExecuted.bind(this));
+    // Issue #411: Listen for errors from card actions
+    register('error', (data: { code?: string; message: string }) => {
+      console.error('[GameStateManager] WebSocket error:', data);
+      if (data.code === 'USE_CARD_ACTION_FAILED') {
+        this.addLog([
+          { text: 'Action failed: ', color: 'red' },
+          { text: data.message, color: 'orange' },
+        ]);
+        // Clear targeting mode on error
+        this.state.cardActionTargetingMode = null;
+        this.state.cardActionRange = 0;
+        this.state.attackMode = false;
+        this.state.validMovementHexes = [];
+        this.state.validAttackHexes = [];
+        this.state.attackableTargets = [];
+        this.emitStateUpdate();
+      }
+    });
     register('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
