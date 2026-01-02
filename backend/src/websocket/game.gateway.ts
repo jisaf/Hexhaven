@@ -130,8 +130,11 @@ import {
 import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 import { hexDistance } from '../utils/hex-utils';
 
-// @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
-// See main.ts lines 48-113 for manual wiring
+// @WebSocketGateway decorator disabled - using manual Socket.IO initialization in main.ts
+// See main.ts for:
+//   - Socket.IO server setup (lines ~124-131)
+//   - Event handler registrations (lines ~186-254)
+// Note: @SubscribeMessage decorators are kept for documentation but are not functional.
 @Injectable()
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -170,8 +173,11 @@ export class GameGateway
     ScenarioNarrativeDef | null
   >();
 
-  afterInit(_server: Server) {
-    // Initialization logging removed for performance
+  afterInit(server: Server) {
+    // Note: @WebSocketGateway decorator is disabled in this project.
+    // All socket event handlers are registered manually in main.ts.
+    // See main.ts lines 186-254 for the handler registrations.
+    this.logger.log('Socket.IO server initialized');
   }
 
   /**
