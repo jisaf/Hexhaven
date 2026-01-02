@@ -69,6 +69,12 @@ export function GameBoard() {
   const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
   const [showInventory, setShowInventory] = useState(false);
 
+  // Turn action panel visibility (Issue #411)
+  // Track which turn entity the hidden state applies to (auto-resets when turn changes)
+  const [hiddenForTurnEntity, setHiddenForTurnEntity] = useState<string | null>(null);
+  // Derived: panel is hidden only if hidden for the current turn entity
+  const turnActionPanelHidden = hiddenForTurnEntity === gameState.currentTurnEntityId;
+
   // Monster ability overlay state
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
 
@@ -520,26 +526,32 @@ export function GameBoard() {
       <InfoPanel
         showCardSelection={
           gameState.showCardSelection ||
-          (gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards) ||
+          // Turn action panel: show if it's my turn, I have turn action state and cards, AND user hasn't hidden it
+          (gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards && !turnActionPanelHidden) ||
           showPileView ||
           showInventory
         }
         activeTab={activeSheetTab}
         onTabChange={(tab) => setActiveSheetTab(tab)}
         onSheetClose={
-          // Only allow closing if it's not mandatory card selection or turn action
-          // Card selection and turn action are controlled by game state, not closed manually
-          (!gameState.showCardSelection && !(gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) && (showInventory || showPileView)) ? () => {
+          // Allow closing for: pile view, inventory, OR turn action panel (but not card selection phase)
+          (!gameState.showCardSelection && (showInventory || showPileView || (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards))) ? () => {
             // Set closing flag to prevent click-through to pile buttons
             closingRef.current = true;
             setTimeout(() => {
               closingRef.current = false;
             }, 300);
-            // Clear both states
-            setShowInventory(false);
-            setShowPileView(false);
-            setSelectedPile(null);
-            setPileViewCards([]);
+            // Clear states based on what's open
+            if (showInventory || showPileView) {
+              setShowInventory(false);
+              setShowPileView(false);
+              setSelectedPile(null);
+              setPileViewCards([]);
+            }
+            // If turn action panel was showing, mark it as hidden for this turn
+            if (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) {
+              setHiddenForTurnEntity(gameState.currentTurnEntityId);
+            }
           } : undefined
         }
         inventoryCount={ownedItems.length}
@@ -580,6 +592,20 @@ export function GameBoard() {
               setActiveSheetTab('inventory');
             }}
             inventorySelected={showInventory && activeSheetTab === 'inventory'}
+            // Issue #411: Active Cards button - shows during turn when cards are selected
+            showActiveCards={gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards}
+            onActiveCardsClick={() => {
+              // Re-show the turn action panel (clear the hidden state)
+              setHiddenForTurnEntity(null);
+              setActiveSheetTab('cards');
+              // Close any other views
+              setShowInventory(false);
+              setShowPileView(false);
+              setSelectedPile(null);
+            }}
+            activeCardsSelected={
+              gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards && !turnActionPanelHidden
+            }
           />
         }
         cardSelection={

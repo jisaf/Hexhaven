@@ -117,6 +117,28 @@
   }
 }
 
+/* Active Cards Button (Issue #411) */
+.activePile {
+  flex: 0 0 auto;
+  min-width: 60px;
+  background: rgba(201, 164, 68, 0.15);
+  border-left: 1px solid rgba(201, 164, 68, 0.4);
+  color: #c9a444;
+}
+
+.activePile:hover {
+  background: rgba(201, 164, 68, 0.3);
+}
+
+.activePile.selected {
+  background: rgba(201, 164, 68, 0.3);
+  border-bottom: 3px solid rgba(201, 164, 68, 0.8);
+}
+
+.activePile .label {
+  color: rgba(201, 164, 68, 0.8);
+}
+
 /* Inventory Button (Issue #205) */
 .inventoryPile {
   flex: 0 0 auto;

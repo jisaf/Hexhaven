@@ -11,7 +11,7 @@ import React from 'react';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import styles from './CardPileIndicator.module.css';
 
-export type PileType = 'hand' | 'discard' | 'lost';
+export type PileType = 'hand' | 'discard' | 'lost' | 'active';
 
 interface CardPileIndicatorProps {
   handCount: number;
@@ -26,6 +26,12 @@ interface CardPileIndicatorProps {
   onInventoryClick?: () => void;
   /** Whether inventory is currently selected */
   inventorySelected?: boolean;
+  /** Whether to show the active cards button (during turn with selected cards) */
+  showActiveCards?: boolean;
+  /** Click handler for active cards button */
+  onActiveCardsClick?: () => void;
+  /** Whether active cards panel is currently open */
+  activeCardsSelected?: boolean;
 }
 
 export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
@@ -38,6 +44,9 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   inventoryCount = 0,
   onInventoryClick,
   inventorySelected = false,
+  showActiveCards = false,
+  onActiveCardsClick,
+  activeCardsSelected = false,
 }) => {
   return (
     <div className={styles.indicator} data-testid="card-pile-indicator">
@@ -71,6 +80,19 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         <span className={styles.label}>Lost</span>
         <span className={styles.count}>{lostCount}</span>
       </button>
+
+      {/* Active Cards Button (Issue #411) - Shows during turn with selected cards */}
+      {showActiveCards && onActiveCardsClick && (
+        <button
+          className={`${styles.pile} ${styles.activePile} ${activeCardsSelected ? styles.selected : ''}`}
+          title="View active turn cards"
+          data-testid="active-cards-button"
+          onClick={onActiveCardsClick}
+        >
+          <i className="ra ra-crossed-swords" style={{ fontSize: '16px' }} />
+          <span className={styles.label}>Active</span>
+        </button>
+      )}
 
       {/* Inventory Button (Issue #205) */}
       {onInventoryClick && (
