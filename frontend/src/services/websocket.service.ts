@@ -9,6 +9,12 @@
 import { io, Socket } from 'socket.io-client';
 import { saveLastRoomCode } from '../utils/storage';
 import { authService } from './auth.service';
+import {
+  WS_CONNECTION_TIMEOUT_MS,
+  WS_RECONNECTION_DELAY_MS,
+  WS_RECONNECTION_DELAY_MAX_MS,
+  WS_MAX_RECONNECT_ATTEMPTS,
+} from '../config/websocket';
 import type {
   RoomJoinedPayload,
   GameStartedPayload,
@@ -52,6 +58,9 @@ export interface WebSocketEvents {
 
   // Character selection
   character_selected: (data: CharacterSelectedPayload) => void;
+
+  // Scenario selection (Issue #419)
+  scenario_selected: (data: { scenarioId: string }) => void;
 
   // Game start
   game_started: (data: GameStartedPayload) => void;
@@ -159,7 +168,7 @@ class WebSocketService {
   private eventHandlers: Map<string, Set<any>> = new Map();
   private registeredEvents: Set<string> = new Set(); // Track which events are registered with Socket.IO
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = WS_MAX_RECONNECT_ATTEMPTS;
   private authFailed = false; // Flag to prevent reconnection after auth failure
 
   /**
@@ -194,10 +203,10 @@ class WebSocketService {
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionDelay: 1000, // Start at 1 second
-      reconnectionDelayMax: 10000, // Max 10 seconds (exponential backoff)
+      reconnectionDelay: WS_RECONNECTION_DELAY_MS,
+      reconnectionDelayMax: WS_RECONNECTION_DELAY_MAX_MS,
       reconnectionAttempts: this.maxReconnectAttempts,
-      timeout: 5000, // Connection timeout
+      timeout: WS_CONNECTION_TIMEOUT_MS, // Issue #419: increased for slow networks
       auth: {
         token: accessToken, // JWT token for server-side user identification
       },
@@ -205,6 +214,40 @@ class WebSocketService {
 
     this.setupConnectionHandlers();
     this.setupReconnectionHandlers();
+    this.setupVisibilityHandler();
+  }
+
+  /**
+   * Issue #419: Handle page visibility changes to ensure reconnection
+   * When user defocuses the window and returns, the WebSocket may be disconnected
+   * but Socket.IO's automatic reconnection might not trigger properly
+   */
+  private setupVisibilityHandler(): void {
+    if (typeof document === 'undefined') return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[WebSocketService] Page became visible, checking connection...');
+
+        // If socket exists but is disconnected, force reconnection
+        if (this.socket && !this.socket.connected && !this.authFailed) {
+          console.log('[WebSocketService] Socket disconnected, forcing reconnection...');
+
+          // Listen for successful connection after manual reconnect
+          const onConnect = () => {
+            console.log('[WebSocketService] Manual reconnection successful');
+            this.socket?.off('connect', onConnect);
+            // Emit ws_reconnected since this is a reconnection, not initial connect
+            this.emit('ws_reconnected');
+          };
+          this.socket.on('connect', onConnect);
+
+          this.socket.connect();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
   /**

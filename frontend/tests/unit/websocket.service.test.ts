@@ -6,6 +6,12 @@
  * These tests verify that the WebSocket service properly handles
  * authentication errors and stops reconnection attempts when
  * AUTH_REQUIRED or AUTH_INVALID errors are received.
+ *
+ * TODO (Issue #419 MEDIUM-1): Refactor test architecture
+ * - Extract MockSocket class into a shared test utility (e.g., tests/utils/mock-socket.ts)
+ * - Reduce duplication of mock setup across test files
+ * - Consider using a more centralized mock factory pattern
+ * - This is a larger refactoring that should be addressed in a separate PR
  */
 
 // Define event handler type for socket events

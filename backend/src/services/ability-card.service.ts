@@ -38,7 +38,8 @@ export class AbilityCardService {
       level: dbCard.level,
       initiative: dbCard.initiative,
       topAction: dbCard.topAction as unknown as AbilityCard['topAction'],
-      bottomAction: dbCard.bottomAction as unknown as AbilityCard['bottomAction'],
+      bottomAction:
+        dbCard.bottomAction as unknown as AbilityCard['bottomAction'],
     };
   }
 

@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.3
-**Last Updated**: 2025-12-29
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons)
+**Version**: 1.4
+**Last Updated**: 2025-12-31
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + WebSocket Improvements)
 
 ---
 
@@ -242,6 +242,8 @@ frontend/src/
 │   ├── Lobby.tsx        # Room creation/join
 │   ├── GameBoard.tsx    # Main game view
 │   └── Profile.tsx      # Account & progression
+├── config/              # Configuration constants
+│   └── websocket.ts     # WebSocket timeouts and reconnection config (Issue #419)
 ├── services/            # Centralized state management & external communication
 │   ├── websocket.service.ts               # Socket.io client
 │   ├── room-session.service.ts            # Room session state manager
@@ -1125,7 +1127,8 @@ GET    /api/campaigns/:id/my-characters        # Get user's characters in campai
 join_room        { roomCode, nickname }
 leave_room       { roomCode }
 select_character { characterId?, action?, targetCharacterId?, index? }  # Multi-character support
-start_game       { roomCode, scenarioId }
+select_scenario  { scenarioId }                                        # Issue #419: Host selects scenario in lobby
+start_game       { roomCode }                                          # Issue #419: scenarioId now from room state
 move_character   { roomCode, characterId, targetHex }
 select_cards     { roomCode, characterId?, cards: { top, bottom } }
 attack_target    { roomCode, characterId?, targetId }
@@ -1150,6 +1153,7 @@ room_joined         { roomCode, players }  # players include characterClasses[]
 player_joined       { player }
 player_left         { playerId }
 character_selected  { playerId, characterClasses[], characterIds?, activeIndex }
+scenario_selected   { scenarioId }                            # Issue #419: Broadcast scenario selection to all players
 game_started        { scenario, initialState, campaignId? }  # Issue #318: Campaign context
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
@@ -1189,8 +1193,26 @@ summon_died               { summonId, reason: 'damage' | 'owner_exhausted' | 'ow
 
 ### Socket.io Configuration
 
+**Centralized Configuration** (Issue #419):
+All WebSocket timeout and reconnection values are centralized in `/frontend/src/config/websocket.ts`:
+
 ```typescript
-// Server
+// Shared WebSocket configuration constants
+export const WS_CONNECTION_TIMEOUT_MS = 15000;           // Connection timeout (increased from 5s for slow networks)
+export const WS_CONNECTION_WAIT_TIMEOUT_MS = 15000;      // Room join wait timeout
+export const WS_RECONNECT_DEBOUNCE_MS = 500;             // DEPRECATED: No longer used (see commit d384b43)
+export const WS_RECONNECTION_DELAY_MS = 1000;            // Initial reconnection delay
+export const WS_RECONNECTION_DELAY_MAX_MS = 10000;       // Max reconnection delay (exponential backoff)
+export const WS_MAX_RECONNECT_ATTEMPTS = 5;              // Maximum reconnection attempts
+```
+
+**Rationale**:
+- **15-second timeout** (increased from default 5s): Accommodates slow mobile networks and high-latency connections
+- **No reconnection debounce** (commit d384b43): Removed because it caused "Player not in any room" errors. The `joinInProgress` flag already prevents duplicate join requests
+- **Centralized constants**: Single source of truth prevents inconsistencies and magic numbers across the codebase
+
+**Server Configuration**:
+```typescript
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL,
@@ -1198,15 +1220,107 @@ const io = new Server(httpServer, {
   },
   transports: ['websocket', 'polling'],
 });
+```
 
-// Client
+**Client Configuration**:
+```typescript
 const socket = io(serverUrl, {
   autoConnect: true,
   reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionAttempts: 5,
+  reconnectionDelay: WS_RECONNECTION_DELAY_MS,          // 1000ms
+  reconnectionDelayMax: WS_RECONNECTION_DELAY_MAX_MS,   // 10000ms
+  reconnectionAttempts: WS_MAX_RECONNECT_ATTEMPTS,      // 5 attempts
+  timeout: WS_CONNECTION_TIMEOUT_MS,                     // 15000ms (increased from 5000ms)
+  auth: {
+    token: accessToken,  // JWT for server-side user identification
+  },
 });
 ```
+
+### Socket-to-Player Mapping (Issue #419)
+
+**Immediate Mapping on Connection**:
+The backend gateway populates socket-to-player mappings immediately when a socket connects, not waiting for `join_room`:
+
+```typescript
+// game.gateway.ts - handleConnection()
+handleConnection(client: Socket): void {
+  const userId = client.data.userId;  // From JWT auth in main.ts
+
+  // Clean up stale mappings (handles reconnection with new socket ID)
+  const oldSocketId = this.playerToSocket.get(userId);
+  if (oldSocketId && oldSocketId !== client.id) {
+    this.socketToPlayer.delete(oldSocketId);
+  }
+
+  // Populate mapping immediately
+  this.socketToPlayer.set(client.id, userId);
+  this.playerToSocket.set(userId, client.id);
+}
+```
+
+**Benefits**:
+- ✅ Game events can identify users immediately after connection
+- ✅ Prevents race conditions where events arrive before `join_room` completes
+- ✅ Automatic stale socket cleanup for reconnection scenarios
+
+**Guard in join_room** (Issue #419):
+The `handleJoinRoom` handler checks if mapping already exists to prevent duplicate work:
+
+```typescript
+// Only update mapping if not already set (DRY principle)
+if (!this.socketToPlayer.has(client.id)) {
+  this.socketToPlayer.set(client.id, userId);
+  this.playerToSocket.set(userId, client.id);
+}
+```
+
+### Reconnection Handling (Issue #419)
+
+**Automatic Room Rejoin**:
+The frontend `RoomSessionManager` automatically rejoins the room after WebSocket reconnection:
+
+```typescript
+// room-session.service.ts - onReconnected()
+public onReconnected(): void {
+  // Clear error state on successful reconnection
+  this.state.error = null;
+
+  // Clear any pending debounce timer (no longer used)
+  if (this.reconnectDebounceTimer) {
+    clearTimeout(this.reconnectDebounceTimer);
+    this.reconnectDebounceTimer = null;
+  }
+
+  // Reset join flag to allow rejoin
+  this.hasJoinedInSession = false;
+
+  // IMMEDIATE rejoin - no debounce
+  // The `joinInProgress` flag prevents duplicate join requests
+  if (this.state.roomCode) {
+    this.ensureJoined('rejoin');
+  }
+}
+```
+
+**CRITICAL FIX (Commit d384b43)**:
+The 500ms debounce was **removed** because it was causing "Player not in any room or room not found" errors. When users reconnected and immediately tried to perform actions (like selecting a scenario), the debounce delay meant the room rejoin hadn't completed yet. The existing `joinInProgress` flag in `ensureJoined()` already prevents duplicate join requests, making the debounce unnecessary.
+
+**Reconnection Flow**:
+1. Socket.IO detects disconnect and attempts reconnection (up to 5 attempts with exponential backoff)
+2. On successful reconnect, Socket.IO emits `connect` event
+3. `WebSocketService` emits `ws_reconnected` event
+4. `RoomSessionManager.onReconnected()` is called
+5. Manager **immediately** resets join state and calls `ensureJoined('rejoin')`
+6. Client rejoins room via `join_room` WebSocket event
+7. Backend remaps socket ID to player via `handleJoinRoom()`
+
+**Benefits**:
+- ✅ **Seamless recovery**: Users automatically rejoin rooms after temporary disconnects
+- ✅ **Immediate rejoin**: No delay prevents user actions from failing
+- ✅ **Error state cleared**: Connection errors are automatically cleared on successful reconnect
+- ✅ **Duplicate prevention**: `joinInProgress` flag prevents race conditions
+- ✅ **User-friendly**: No manual intervention required for transient network issues
 
 ### Room Management
 
@@ -1214,6 +1328,18 @@ const socket = io(serverUrl, {
 - Players join/leave rooms dynamically
 - Server broadcasts state updates to room members
 - Disconnect handling with 10-minute grace period
+
+**Scenario Selection** (Issue #419):
+- Host can select scenario using `select_scenario` WebSocket event
+- Room state stores `scenarioId` as single source of truth
+- `scenario_selected` event broadcasts selection to all players in room
+- `start_game` event uses `room.scenarioId` from room state (no longer passed as parameter)
+
+**Reconnection Features** (Issue #419):
+- **Automatic room rejoin**: Frontend automatically rejoins room after Socket.IO reconnects (immediate, no debounce)
+- **Immediate socket mapping**: Backend populates socket-to-player mappings on connection, not on room join
+- **Stale socket cleanup**: Backend removes old socket mappings when user reconnects with new socket ID
+- **Connection timeout**: 15-second timeout accommodates slow networks (increased from 5s default)
 
 ### State Synchronization
 
@@ -1381,4 +1507,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-29 (Updated for Summon System - Issue #228)
+**Last Review**: 2026-01-02 (Updated for WebSocket Reconnection Debounce Removal & Scenario Selection - Issue #419, Commit d384b43)

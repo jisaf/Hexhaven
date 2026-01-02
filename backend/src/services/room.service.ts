@@ -198,6 +198,32 @@ export class RoomService {
   }
 
   /**
+   * Select a scenario for a room (before game start)
+   * Only the host can select a scenario
+   */
+  selectScenario(
+    roomCode: string,
+    scenarioId: string,
+    requestingPlayerUuid: string,
+  ): GameRoom {
+    const room = this.getRoom(roomCode);
+
+    if (!room) {
+      throw new NotFoundError('Room not found');
+    }
+
+    // Verify requester is host
+    const requestingPlayer = room.getPlayer(requestingPlayerUuid);
+    if (!requestingPlayer || !requestingPlayer.isHost) {
+      throw new ValidationError('Only the host can select the scenario');
+    }
+
+    room.selectScenario(scenarioId);
+
+    return room;
+  }
+
+  /**
    * Get all active rooms (for debugging/admin)
    */
   getAllRooms(): GameRoom[] {
