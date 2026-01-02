@@ -130,6 +130,9 @@ import {
 import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 import { hexDistance } from '../utils/hex-utils';
 
+/** Default range for summon placement if not specified on the card (Gloomhaven standard) */
+const DEFAULT_SUMMON_PLACEMENT_RANGE = 3;
+
 // @WebSocketGateway decorator disabled - using manual Socket.IO initialization in main.ts
 // See main.ts for:
 //   - Socket.IO server setup (lines ~124-131)
@@ -3286,7 +3289,7 @@ export class GameGateway
       const occupiedHexes = this.collectOccupiedHexes(roomCode);
 
       // Validate placement
-      const placementRange = maxRange ?? 3; // Default range of 3 if not specified
+      const placementRange = maxRange ?? DEFAULT_SUMMON_PLACEMENT_RANGE;
       const isValid = this.summonService.validatePlacement(
         targetHex,
         characterPosition,
@@ -4137,8 +4140,8 @@ export class GameGateway
     // Collect occupied hexes
     const occupiedHexes = this.collectOccupiedHexes(roomCode);
 
-    // Validate placement: must be empty and within range (default 3)
-    const placementRange = 3;
+    // Validate placement: must be empty and within range
+    const placementRange = DEFAULT_SUMMON_PLACEMENT_RANGE;
     const isValid = this.summonService.validatePlacement(
       targetHex,
       characterPosition,

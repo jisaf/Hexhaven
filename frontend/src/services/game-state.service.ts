@@ -1453,6 +1453,12 @@ class GameStateManager {
     const character = this.state.gameData?.characters.find(c => c.id === this.state.myCharacterId);
     if (!character?.currentHex) {
       console.warn('[GameStateManager] Cannot find character position');
+      // Clear pending action and notify user via log
+      this.state.pendingAction = null;
+      this.addLog([
+        { text: 'Cannot target: character position unknown', color: 'red' },
+      ]);
+      this.emitStateUpdate();
       return;
     }
 

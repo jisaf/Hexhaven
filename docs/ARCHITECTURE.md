@@ -1315,6 +1315,9 @@ use_item         { roomCode, characterId, itemId }
 equip_item       { roomCode, characterId, itemId, slotIndex? }
 unequip_item     { roomCode, characterId, itemId }
 
+# Card Actions (Issue #411)
+use_card_action  { roomCode, characterId, cardId, position: 'top' | 'bottom', targetId?, targetHex? }
+
 # Narratives
 acknowledge_narrative  { narrativeId }
 
@@ -1331,8 +1334,9 @@ character_selected  { playerId, characterClasses[], characterIds?, activeIndex }
 game_started        { scenario, initialState, campaignId? }  # Issue #318: Campaign context
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
-next_turn_started   { entityId }
+turn_started        { entityId, turnActionState? }  # Issue #411: turnActionState for character turns
 monster_activated   { monsterId, actions }
+card_action_executed { characterId, cardId, position, success, updatedState }  # Issue #411: Card action result
 attack_resolved     { attackerId, targetId, damage }
 scenario_completed  { victory, reason }
 player_disconnected { playerId }
@@ -1564,4 +1568,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2026-01-02 (Updated for Unified Card Pile UI System - Issue #411)
+**Last Review**: 2026-01-02 (Updated for Card Action Selection System - Issue #411, Phases 1-7)

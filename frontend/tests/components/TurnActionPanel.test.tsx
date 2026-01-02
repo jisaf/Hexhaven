@@ -60,30 +60,27 @@ describe('TurnActionPanel', () => {
 
   // Initial turn state with all actions available
   const initialTurnState: TurnActionState = {
-    characterId: 'char-1',
     availableActions: [
       { cardId: 'card-1', position: 'top' },
       { cardId: 'card-1', position: 'bottom' },
       { cardId: 'card-2', position: 'top' },
       { cardId: 'card-2', position: 'bottom' },
     ],
-    firstAction: null,
-    secondAction: null,
+    firstAction: undefined,
+    secondAction: undefined,
   };
 
   // Turn state after first action (card1 top used)
   const afterFirstActionState: TurnActionState = {
-    characterId: 'char-1',
     availableActions: [
       { cardId: 'card-2', position: 'bottom' },
     ],
     firstAction: { cardId: 'card-1', position: 'top' },
-    secondAction: null,
+    secondAction: undefined,
   };
 
   // Turn state after both actions used
   const completedTurnState: TurnActionState = {
-    characterId: 'char-1',
     availableActions: [],
     firstAction: { cardId: 'card-1', position: 'top' },
     secondAction: { cardId: 'card-2', position: 'bottom' },
@@ -261,10 +258,9 @@ describe('TurnActionPanel', () => {
   describe('Edge Cases', () => {
     it('should handle empty available actions gracefully', () => {
       const emptyState: TurnActionState = {
-        characterId: 'char-1',
         availableActions: [],
-        firstAction: null,
-        secondAction: null,
+        firstAction: undefined,
+        secondAction: undefined,
       };
 
       render(<TurnActionPanel {...defaultProps} turnActionState={emptyState} />);

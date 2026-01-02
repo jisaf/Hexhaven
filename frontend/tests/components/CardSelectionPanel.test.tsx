@@ -553,7 +553,8 @@ describe('CardSelectionPanel', () => {
       );
 
       // Should still render without crashing
-      expect(screen.getByText(/Select Your Actions/i)).toBeInTheDocument();
+      // Updated for Issue #411: New instruction text when no cards selected
+      expect(screen.getByText(/Select your first card/i)).toBeInTheDocument();
     });
 
     it('should pass onClick handler to AbilityCard2', () => {
