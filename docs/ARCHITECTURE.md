@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.3
-**Last Updated**: 2025-12-29
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons)
+**Version**: 1.4
+**Last Updated**: 2026-01-02
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles)
 
 ---
 
@@ -225,6 +225,14 @@ frontend/src/
 │   ├── CharacterSelect.tsx
 │   ├── TurnOrderDisplay.tsx
 │   ├── AccountUpgradeModal.tsx
+│   ├── BottomSheet.tsx  # Issue #411: Generic slide-up modal panel
+│   ├── game/            # Game-specific components
+│   │   ├── CardPileIndicator.tsx  # Pile selection bar
+│   │   ├── PileView.tsx           # Unified card pile viewer
+│   │   ├── CardSelectionPanel.tsx # Card selection UI
+│   │   ├── TurnActionPanel.tsx    # Active turn cards
+│   │   ├── InfoPanel.tsx          # Right panel container
+│   │   └── ...
 │   ├── inventory/       # Issue #205: Inventory components
 │   │   ├── InventoryPanel.tsx
 │   │   ├── InventoryTabContent.tsx
@@ -476,6 +484,88 @@ gameSessionCoordinator.switchGame();
 - ✅ Single entry point for lifecycle operations
 - ✅ Easy to extend with new coordinated operations
 
+### Card Pile UI System (Issue #411)
+
+The game implements a unified card pile display system with consistent styling across all pile types, using a BottomSheet modal container with responsive card rendering.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  CardPileIndicator  │────>│  GameBoard          │────>│  BottomSheet     │
+│  (Pile Buttons)     │     │  (State Manager)    │     │  (Modal Container)│
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │                           │
+         │ onPileClick(pile)         │ setSelectedPile()         │ title + children
+         ▼                           ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Pile Selection     │     │  Content Routing    │     │  Unified Display │
+│  - hand             │     │  - PileView         │     │  - Single header │
+│  - discard          │     │  - CardSelection    │     │  - Count in title│
+│  - lost             │     │  - TurnActionPanel  │     │  - Swipe to close│
+│  - active           │     │  - Inventory        │     │  - Responsive    │
+│  - inventory        │     └─────────────────────┘     └──────────────────┘
+└─────────────────────┘
+```
+
+**Key Components**:
+
+1. **CardPileIndicator** (`frontend/src/components/game/CardPileIndicator.tsx`):
+   - Full-width bar (44px) showing card counts for hand, discard, and lost piles
+   - Clickable buttons for each pile type (hand, discard, lost, active, inventory)
+   - Visual feedback for selected pile with highlighted state
+   - Auto-hide when not in use, sticky positioning in InfoPanel
+   - RPG Awesome icons for active and inventory buttons
+
+2. **PileView** (`frontend/src/components/game/PileView.tsx`):
+   - NEW: Unified view-only component for displaying card piles
+   - Displays cards in grid layout using AbilityCard2 components
+   - Responsive card sizing with aspect-ratio: 2/3, height: 100%
+   - Empty state message when pile is empty
+   - Used for hand, discard, and lost piles in BottomSheet
+   - Note: Title is handled by BottomSheet, not by PileView
+
+3. **BottomSheet** (`frontend/src/components/BottomSheet.tsx`):
+   - Generic slide-up modal panel for all card pile content
+   - Mobile-first with swipe-down-to-dismiss gesture
+   - Single header showing title with card count (e.g., "Hand (12)")
+   - Handles open/close state and drag interactions
+   - Close button (X) in top-right corner
+   - Content area renders different components based on selectedPile
+
+4. **GameBoard Pile Management** (`frontend/src/pages/GameBoard.tsx`):
+   - Central state management for selectedPile and pileViewCards
+   - handlePileClick() unified handler for all pile selections
+   - Auto-selects hand pile when card selection phase begins (Issue #411)
+   - Guards against click-through after closing with closingRef
+   - Routes BottomSheet content based on selectedPile:
+     - `hand/discard/lost`: PileView with cards from abilityDeck
+     - `active`: TurnActionPanel with selected turn cards
+     - `inventory`: InventoryTabContent
+     - Card selection: CardSelectionPanel (overrides other piles)
+
+**Card Rendering Improvements**:
+- Unified styling across all piles using AbilityCard2 component
+- Responsive sizing: Cards use `aspect-ratio: 2/3` with `height: 100%`
+- Cards fill available vertical space while maintaining correct proportions
+- Grid layout adapts to container size: 2-4 columns based on width
+- Consistent card appearance whether in hand, discard, lost, or selection panel
+
+**UI/UX Enhancements**:
+- Single header from BottomSheet eliminates double header issues
+- Card count displayed in sheet title for quick reference
+- Rest badge removed from CardPileIndicator (non-functional)
+- Debug console repositioned: smaller (32x24px), above card pile area
+- Pile selection persists until explicitly closed or new pile selected
+- Click-through prevention with 300ms guard after closing
+
+**Design Decisions**:
+- BottomSheet owns the title, child components focus on content only
+- All pile content uses same BottomSheet container for consistency
+- Card selection phase takes priority over pile viewing
+- Hand pile auto-selected during card selection for immediate access
+- abilityDeck used as source of truth for card data (not playerHand)
+- PileView is view-only; interactive selection handled by CardSelectionPanel
+
 ### Card Action Targeting System (Issue #411)
 
 The game implements an extensible targeting system for card actions during turns, supporting different action types with distinct visual feedback.
@@ -504,10 +594,12 @@ The game implements an extensible targeting system for card actions during turns
 
 1. **TurnActionPanel** (`frontend/src/components/game/TurnActionPanel.tsx`):
    - Side-by-side card display with clickable overlay regions
+   - Displays in BottomSheet when "Active" pile is selected during turn
    - Tap-again pattern for non-targeting actions (loot, self-heal, special)
    - Immediate targeting mode entry for targeting actions
    - Long-press card zoom for detailed viewing
    - Visual states: available (golden border), selected (highlighted), used (grayed), disabled
+   - Note: No internal header, title handled by BottomSheet
 
 2. **GameStateManager Targeting** (`frontend/src/services/game-state.service.ts`):
    - `cardActionTargetingMode`: Tracks active targeting mode ('move' | 'attack' | 'heal' | 'summon')
@@ -1472,4 +1564,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-29 (Updated for Summon System - Issue #228)
+**Last Review**: 2026-01-02 (Updated for Unified Card Pile UI System - Issue #411)

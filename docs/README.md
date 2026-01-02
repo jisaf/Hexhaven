@@ -167,6 +167,7 @@ Only essential developer-facing files:
 ## Documentation Health
 
 ### Recent Updates
+- 2026-01-02: Unified card pile UI system documentation (Issue #411)
 - 2025-12-31: Game rules split into manageable sections (docs/game-rules/)
 - 2025-12-29: Complete documentation reorganization
 - 2025-12-27: Campaign narrative system added
@@ -191,6 +192,6 @@ Only essential developer-facing files:
 
 ---
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-02
 **Maintained By**: Hexhaven Development Team
-**Version**: 2.0.0
+**Version**: 2.0.1
