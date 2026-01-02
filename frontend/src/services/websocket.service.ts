@@ -59,6 +59,9 @@ export interface WebSocketEvents {
   // Character selection
   character_selected: (data: CharacterSelectedPayload) => void;
 
+  // Scenario selection (Issue #419)
+  scenario_selected: (data: { scenarioId: string }) => void;
+
   // Game start
   game_started: (data: GameStartedPayload) => void;
 
