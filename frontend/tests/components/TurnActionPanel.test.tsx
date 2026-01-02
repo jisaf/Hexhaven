@@ -118,24 +118,8 @@ describe('TurnActionPanel', () => {
       expect(actionButtons).toHaveLength(4);
     });
 
-    it('should show header with action count for first action', () => {
-      render(<TurnActionPanel {...defaultProps} turnActionState={initialTurnState} />);
-
-      expect(screen.getByText('Select Action')).toBeInTheDocument();
-      expect(screen.getByText('Choose your first action')).toBeInTheDocument();
-    });
-
-    it('should show header with action count for second action', () => {
-      render(<TurnActionPanel {...defaultProps} turnActionState={afterFirstActionState} />);
-
-      expect(screen.getByText('Choose your second action')).toBeInTheDocument();
-    });
-
-    it('should show "Turn complete" when both actions used', () => {
-      render(<TurnActionPanel {...defaultProps} turnActionState={completedTurnState} />);
-
-      expect(screen.getByText('Turn complete')).toBeInTheDocument();
-    });
+    // Note: Header/title is now handled by BottomSheet, not TurnActionPanel
+    // Action count is shown in BottomSheet title as "Select Action (0/2)", etc.
 
     it('should show help text when no action is selected', () => {
       render(<TurnActionPanel {...defaultProps} />);

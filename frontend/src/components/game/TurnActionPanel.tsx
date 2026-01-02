@@ -325,16 +325,6 @@ export function TurnActionPanel({
 
   return (
     <div className={styles.panel}>
-      {/* Header showing action count */}
-      <div className={styles.header}>
-        <span className={styles.title}>Select Action</span>
-        <span className={styles.actionCount}>
-          {actionsUsed === 0 ? 'Choose your first action' :
-           actionsUsed === 1 ? 'Choose your second action' :
-           'Turn complete'}
-        </span>
-      </div>
-
       {/* Cards container */}
       <div className={styles.cardsContainer}>
         {/* Card 1 with action overlays */}

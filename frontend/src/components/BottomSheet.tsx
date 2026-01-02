@@ -136,15 +136,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Drag Handle */}
-      <div
-        className={styles.dragHandle}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-      >
-        <div className={styles.dragBar} />
+      {/* Header */}
+      <div className={styles.header}>
         {title && <span className={styles.title}>{title}</span>}
         {showCloseButton && (
           <button
@@ -153,8 +146,6 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               e.stopPropagation();
               onClose();
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
             aria-label="Close"
           >
             &times;

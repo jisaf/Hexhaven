@@ -594,7 +594,10 @@ export function GameBoard() {
           selectedPile === 'hand' ? `Hand (${pileViewCards.length})` :
           selectedPile === 'discard' ? `Discard Pile (${pileViewCards.length})` :
           selectedPile === 'lost' ? `Lost Cards (${pileViewCards.length})` :
-          selectedPile === 'active' ? 'Active Cards' :
+          selectedPile === 'active' ? `Select Action (${
+            (gameState.turnActionState?.firstAction ? 1 : 0) +
+            (gameState.turnActionState?.secondAction ? 1 : 0)
+          }/2)` :
           selectedPile === 'inventory' ? 'Inventory' :
           gameState.showCardSelection ? 'Select Cards' :
           undefined
