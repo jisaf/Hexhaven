@@ -817,7 +817,7 @@ export class GameGateway
    * Returns acknowledgment so frontend knows the connection is working
    */
   @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket): {
+  handlePing(@ConnectedSocket() _client: Socket): {
     pong: boolean;
     timestamp: number;
   } {
@@ -1552,7 +1552,7 @@ export class GameGateway
   @SubscribeMessage('start_game')
   async handleStartGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: StartGamePayload,
+    @MessageBody() _payload: StartGamePayload,
   ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
@@ -1586,7 +1586,9 @@ export class GameGateway
       // It's set during room creation or via select_scenario event
       const scenarioId = room.scenarioId;
       if (!scenarioId) {
-        throw new Error('No scenario selected. Please select a scenario before starting the game.');
+        throw new Error(
+          'No scenario selected. Please select a scenario before starting the game.',
+        );
       }
 
       // Load scenario data
