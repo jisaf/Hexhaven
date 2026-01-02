@@ -576,6 +576,20 @@ export class HexGrid {
   }
 
   /**
+   * Show heal target range highlights (cyan hexes).
+   */
+  public showHealRange(hexes: Axial[]): void {
+    this.highlightManager.showHealRange(hexes);
+  }
+
+  /**
+   * Clear all heal range highlights.
+   */
+  public clearHealRange(): void {
+    this.highlightManager.clearHealRange();
+  }
+
+  /**
    * Update tile data
    */
   public updateTile(hex: Axial, data: Partial<HexTileData>): void {

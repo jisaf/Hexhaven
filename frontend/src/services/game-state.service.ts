@@ -2,7 +2,7 @@ import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
-import { getRange } from '../../../shared/types/modifiers';
+import { getRange, type CardAction } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -173,9 +173,12 @@ interface GameState {
   turnActionState: TurnActionState | null;
   selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
   pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
-  // Issue #411: Targeting mode for move/attack actions from cards
-  cardActionTargetingMode: 'move' | 'attack' | null;
+  // Issue #411: Targeting mode for actions from cards (extensible for heal, summon, etc.)
+  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | null;
   cardActionRange: number; // The range/value from the card action
+  // Issue #411: Hex highlighting for heal and summon actions
+  validHealHexes: Axial[];
+  validSummonHexes: Axial[];
 }
 
 interface ExhaustionState {
@@ -304,6 +307,8 @@ class GameStateManager {
     pendingAction: null,
     cardActionTargetingMode: null,
     cardActionRange: 0,
+    validHealHexes: [],
+    validSummonHexes: [],
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -397,6 +402,8 @@ class GameStateManager {
         this.state.attackMode = false;
         this.state.validMovementHexes = [];
         this.state.validAttackHexes = [];
+        this.state.validHealHexes = [];
+        this.state.validSummonHexes = [];
         this.state.attackableTargets = [];
         this.emitStateUpdate();
       }
@@ -1225,6 +1232,33 @@ class GameStateManager {
         return;
       }
 
+      if (this.state.cardActionTargetingMode === 'heal' && this.state.isMyTurn) {
+        // In heal targeting mode, check if clicking on an ally
+        const ally = this.state.gameData?.characters.find(c =>
+          c.id !== this.state.myCharacterId &&
+          c.currentHex?.q === hex.q &&
+          c.currentHex?.r === hex.r &&
+          !c.isExhausted
+        );
+        if (ally) {
+          console.log('[GameStateManager] Heal targeting mode - target selected:', ally.id);
+          this.completeCardHealAction(ally.id);
+        }
+        return;
+      }
+
+      if (this.state.cardActionTargetingMode === 'summon' && this.state.isMyTurn) {
+        // In summon targeting mode, check if hex is empty and in range
+        const isValidSummonHex = this.state.validSummonHexes.some(
+          h => h.q === hex.q && h.r === hex.r
+        );
+        if (isValidSummonHex) {
+          console.log('[GameStateManager] Summon targeting mode - hex selected:', hex);
+          this.completeCardSummonAction({ q: hex.q, r: hex.r });
+        }
+        return;
+      }
+
       if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
 
       // ATTACK MODE: Check if clicking on a valid attack target (legacy)
@@ -1371,35 +1405,13 @@ class GameStateManager {
       return;
     }
 
-    this.state.pendingAction = { cardId, position };
-    this.emitStateUpdate();
-  }
-
-  /**
-   * Issue #411: Confirm the pending card action
-   * For move/attack actions, enters targeting mode first
-   * For other actions, emits use_card_action immediately
-   */
-  public confirmCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
-    if (!this.state.isMyTurn || !this.state.pendingAction || !this.state.myCharacterId) {
-      console.warn('[GameStateManager] Cannot confirm card action: invalid state');
-      return;
-    }
-
-    // If we already have a target, emit immediately (called from targeting callback)
-    if (targetId !== undefined || targetHex !== undefined) {
-      this.emitCardAction(targetId, targetHex);
-      return;
-    }
-
     // Get the card and action to determine type
-    const { cardId, position } = this.state.pendingAction;
     const card = this.state.selectedTurnCards?.card1.id === cardId
       ? this.state.selectedTurnCards?.card1
       : this.state.selectedTurnCards?.card2;
 
     if (!card) {
-      console.warn('[GameStateManager] Cannot find card for pending action');
+      console.warn('[GameStateManager] Cannot find card for action');
       return;
     }
 
@@ -1409,43 +1421,86 @@ class GameStateManager {
       return;
     }
 
-    console.log('[GameStateManager] Confirming action type:', action.type, 'value:', action.value);
+    // Set pending action
+    this.state.pendingAction = { cardId, position };
 
-    // Get character for hex calculations
+    // Determine if this action requires hex targeting
+    // - move: always requires targeting
+    // - attack: always requires targeting
+    // - heal: requires targeting if range > 0 (ranged heal), self-heal doesn't
+    // - summon: always requires targeting (placement)
+    const requiresTargeting =
+      action.type === 'move' ||
+      action.type === 'attack' ||
+      action.type === 'summon' ||
+      (action.type === 'heal' && getRange(action.modifiers) > 0);
+
+    if (requiresTargeting) {
+      this.enterTargetingMode(action);
+    } else {
+      // For non-targeting actions (loot, self-heal, special, etc.),
+      // wait for tap-again confirmation on the card
+      this.emitStateUpdate();
+    }
+  }
+
+  /**
+   * Issue #411: Enter targeting mode for actions requiring hex selection
+   * Extensible for move, attack, heal, summon, and future action types
+   * Called immediately when selecting a targeting action - hex selection is the confirmation
+   */
+  private enterTargetingMode(action: CardAction): void {
     const character = this.state.gameData?.characters.find(c => c.id === this.state.myCharacterId);
     if (!character?.currentHex) {
       console.warn('[GameStateManager] Cannot find character position');
       return;
     }
 
-    // Handle action based on type
+    // Build occupied hex set once for reuse
+    const occupiedHexes = new Set<string>();
+    this.state.gameData?.monsters.forEach(m => {
+      if (m.health > 0 && m.currentHex) {
+        occupiedHexes.add(`${m.currentHex.q},${m.currentHex.r}`);
+      }
+    });
+    this.state.gameData?.characters.forEach(c => {
+      if (c.currentHex) {
+        occupiedHexes.add(`${c.currentHex.q},${c.currentHex.r}`);
+      }
+    });
+
+    // Build ally positions for heal targeting (excludes self if needed)
+    const allyPositions = new Set<string>();
+    this.state.gameData?.characters.forEach(c => {
+      if (c.id !== this.state.myCharacterId && c.currentHex && !c.isExhausted) {
+        allyPositions.add(`${c.currentHex.q},${c.currentHex.r}`);
+      }
+    });
+
+    // Build monster positions for attack targeting
+    const monsterPositions = new Set<string>();
+    this.state.gameData?.monsters.forEach(m => {
+      if (m.health > 0 && m.currentHex) {
+        monsterPositions.add(`${m.currentHex.q},${m.currentHex.r}`);
+      }
+    });
+
     switch (action.type) {
       case 'move': {
-        // Enter move targeting mode - user must select a hex
-        const moveRange = action.value || 0;
+        // Move targeting: pathfinding, can't stop on occupied hexes
+        const moveRange = action.value;
         this.state.cardActionTargetingMode = 'move';
         this.state.cardActionRange = moveRange;
         this.state.currentMovementPoints = moveRange;
 
-        // Calculate valid movement hexes
-        const occupiedHexes = new Set<string>();
-        // Add monster positions
-        this.state.gameData?.monsters.forEach(m => {
-          if (m.health > 0 && m.currentHex) {
-            occupiedHexes.add(`${m.currentHex.q},${m.currentHex.r}`);
-          }
-        });
-        // Add other character positions
-        this.state.gameData?.characters.forEach(c => {
-          if (c.id !== this.state.myCharacterId && c.currentHex) {
-            occupiedHexes.add(`${c.currentHex.q},${c.currentHex.r}`);
-          }
-        });
+        // For movement blocking, we need hexes with monsters (not allies - can pass through)
+        const blockedByMonsters = (hex: { q: number; r: number }) =>
+          monsterPositions.has(`${hex.q},${hex.r}`);
 
         this.state.validMovementHexes = hexRangeReachable(
           character.currentHex,
           moveRange,
-          occupiedHexes
+          blockedByMonsters
         );
         this.state.selectedCharacterId = this.state.myCharacterId;
         this.emitStateUpdate();
@@ -1454,16 +1509,18 @@ class GameStateManager {
       }
 
       case 'attack': {
-        // Get attack range from modifiers (defaults to 1 for melee)
+        // Attack targeting: distance-based, filter for enemy hexes
         const attackRange = getRange(action.modifiers) || 1;
         this.state.cardActionTargetingMode = 'attack';
         this.state.cardActionRange = attackRange;
         this.state.attackMode = true;
 
-        // Calculate valid attack hexes and targets
-        this.state.validAttackHexes = hexAttackRange(character.currentHex, attackRange);
+        const hasTarget = (hex: { q: number; r: number }) =>
+          monsterPositions.has(`${hex.q},${hex.r}`);
 
-        // Find attackable monsters within range
+        this.state.validAttackHexes = hexAttackRange(character.currentHex, attackRange, hasTarget);
+
+        // Build list of attackable monster IDs for UI highlighting
         const attackableMonsters: string[] = [];
         this.state.gameData?.monsters.forEach(m => {
           if (m.health > 0 && m.currentHex) {
@@ -1482,17 +1539,52 @@ class GameStateManager {
         break;
       }
 
-      case 'heal':
-      case 'loot':
-      case 'shield':
-      case 'summon':
-      case 'special':
-      case 'text':
-      default:
-        // Non-targeting actions - emit immediately
-        this.emitCardAction();
+      case 'heal': {
+        // Heal targeting: distance-based, filter for ally hexes
+        const healRange = getRange(action.modifiers);
+        this.state.cardActionTargetingMode = 'heal';
+        this.state.cardActionRange = healRange;
+
+        const hasAlly = (hex: { q: number; r: number }) =>
+          allyPositions.has(`${hex.q},${hex.r}`);
+
+        this.state.validHealHexes = hexAttackRange(character.currentHex, healRange, hasAlly);
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered heal targeting mode, range:', healRange, 'valid hexes:', this.state.validHealHexes.length);
         break;
+      }
+
+      case 'summon': {
+        // Summon targeting: distance-based, filter for empty hexes
+        const summonRange = getRange(action.modifiers) || 1; // Default range 1 if not specified
+        this.state.cardActionTargetingMode = 'summon';
+        this.state.cardActionRange = summonRange;
+
+        const isEmptyHex = (hex: { q: number; r: number }) =>
+          !occupiedHexes.has(`${hex.q},${hex.r}`);
+
+        this.state.validSummonHexes = hexAttackRange(character.currentHex, summonRange, isEmptyHex);
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered summon targeting mode, range:', summonRange, 'valid hexes:', this.state.validSummonHexes.length);
+        break;
+      }
     }
+  }
+
+  /**
+   * Issue #411: Confirm the pending card action (tap-again for non-targeting actions)
+   * For targeting actions, this is called with target when hex/monster is selected
+   */
+  public confirmCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+    if (!this.state.isMyTurn || !this.state.pendingAction || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot confirm card action: invalid state');
+      return;
+    }
+
+    // Emit the action (with or without target)
+    this.emitCardAction(targetId, targetHex);
   }
 
   /**
@@ -1515,15 +1607,25 @@ class GameStateManager {
     console.log('[GameStateManager] Emitting use_card_action:', payload);
     websocketService.emit('use_card_action', payload);
 
-    // Clear targeting mode and highlighting
+    // Clear targeting mode and all highlighting arrays
+    this.clearTargetingState();
+
+    // The pendingAction will be cleared when we receive card_action_executed
+  }
+
+  /**
+   * Issue #411: Clear all targeting-related state
+   * Centralized cleanup for targeting mode exit/cancel/error
+   */
+  private clearTargetingState(): void {
     this.state.cardActionTargetingMode = null;
     this.state.cardActionRange = 0;
     this.state.attackMode = false;
     this.state.validMovementHexes = [];
     this.state.validAttackHexes = [];
+    this.state.validHealHexes = [];
+    this.state.validSummonHexes = [];
     this.state.attackableTargets = [];
-
-    // The pendingAction will be cleared when we receive card_action_executed
   }
 
   /**
@@ -1549,15 +1651,32 @@ class GameStateManager {
   }
 
   /**
+   * Issue #411: Complete a heal action with the selected target
+   */
+  public completeCardHealAction(targetId: string): void {
+    if (this.state.cardActionTargetingMode !== 'heal' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in heal targeting mode');
+      return;
+    }
+    this.emitCardAction(targetId, undefined);
+  }
+
+  /**
+   * Issue #411: Complete a summon action with the selected hex
+   */
+  public completeCardSummonAction(targetHex: { q: number; r: number }): void {
+    if (this.state.cardActionTargetingMode !== 'summon' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in summon targeting mode');
+      return;
+    }
+    this.emitCardAction(undefined, targetHex);
+  }
+
+  /**
    * Issue #411: Cancel targeting mode and clear pending action
    */
   public cancelCardActionTargeting(): void {
-    this.state.cardActionTargetingMode = null;
-    this.state.cardActionRange = 0;
-    this.state.attackMode = false;
-    this.state.validMovementHexes = [];
-    this.state.validAttackHexes = [];
-    this.state.attackableTargets = [];
+    this.clearTargetingState();
     this.state.pendingAction = null;
     this.emitStateUpdate();
   }
@@ -1879,6 +1998,8 @@ class GameStateManager {
         pendingAction: null,
         cardActionTargetingMode: null,
         cardActionRange: 0,
+        validHealHexes: [],
+        validSummonHexes: [],
     };
     this.emitStateUpdate();
   }

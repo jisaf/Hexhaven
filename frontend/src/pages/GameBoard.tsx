@@ -147,6 +147,10 @@ export function GameBoard() {
     showMovementRange,
     showAttackRange,
     clearAttackRange,
+    showHealRange,
+    clearHealRange,
+    showSummonPlacementRange,
+    clearSummonPlacementRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
@@ -298,6 +302,28 @@ export function GameBoard() {
       }
     }
   }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
+
+  // Issue #411: Heal targeting highlighting (cyan hexes for ally targets)
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.cardActionTargetingMode === 'heal' && gameState.validHealHexes.length > 0) {
+        showHealRange(gameState.validHealHexes);
+      } else {
+        clearHealRange();
+      }
+    }
+  }, [gameState.cardActionTargetingMode, gameState.validHealHexes, hexGridReady, showHealRange, clearHealRange]);
+
+  // Issue #411: Summon placement highlighting (purple hexes for empty placement)
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.cardActionTargetingMode === 'summon' && gameState.validSummonHexes.length > 0) {
+        showSummonPlacementRange(gameState.validSummonHexes);
+      } else {
+        clearSummonPlacementRange();
+      }
+    }
+  }, [gameState.cardActionTargetingMode, gameState.validSummonHexes, hexGridReady, showSummonPlacementRange, clearSummonPlacementRange]);
 
   // Track whether the board has been initialized to prevent re-initialization on every state change
   const boardInitializedRef = useRef(false);
@@ -547,7 +573,6 @@ export function GameBoard() {
             onPileClick={handlePileClick}
             selectedPile={selectedPile}
             inventoryCount={ownedItems.length}
-            showActiveCards={gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards}
           />
         }
         isSheetOpen={
@@ -609,7 +634,6 @@ export function GameBoard() {
               turnActionState={gameState.turnActionState}
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
-              onActionCancel={() => gameStateManager.cancelCardAction()}
               targetingMode={gameState.cardActionTargetingMode}
               onCancelTargeting={() => gameStateManager.cancelCardActionTargeting()}
             />

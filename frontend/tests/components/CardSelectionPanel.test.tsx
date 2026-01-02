@@ -183,10 +183,10 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your TOP action/i)).toBeInTheDocument();
+      expect(screen.getByText(/Select your first card/i)).toBeInTheDocument();
     });
 
-    it('should show instruction to select bottom action after top is selected', () => {
+    it('should show instruction to select second card after first is selected', () => {
       render(
         <CardSelectionPanel
           cards={mockCards}
@@ -198,7 +198,7 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your BOTTOM action/i)).toBeInTheDocument();
+      expect(screen.getByText(/Select your second card/i)).toBeInTheDocument();
     });
 
     it('should show ready to confirm message when both cards are selected', () => {

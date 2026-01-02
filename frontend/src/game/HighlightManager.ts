@@ -20,6 +20,7 @@ export const HIGHLIGHT_COLORS = {
   ATTACK: 0xff0000,    // Red
   SELECTED: 0x0099ff,  // Blue
   SUMMON: 0x9900ff,    // Purple
+  HEAL: 0x00ffcc,      // Cyan/Teal - distinguishable from green movement
 } as const;
 
 export class HighlightManager {
@@ -27,6 +28,7 @@ export class HighlightManager {
   private highlightedMovementHexes: Set<string>;
   private highlightedAttackHexes: Set<string>;
   private highlightedSummonHexes: Set<string>;
+  private highlightedHealHexes: Set<string>;
   private selectedHexKey: string | null = null;
 
   constructor(tiles: Map<string, HexTile>) {
@@ -34,6 +36,7 @@ export class HighlightManager {
     this.highlightedMovementHexes = new Set();
     this.highlightedAttackHexes = new Set();
     this.highlightedSummonHexes = new Set();
+    this.highlightedHealHexes = new Set();
   }
 
   /**
@@ -107,6 +110,20 @@ export class HighlightManager {
     this.clearHighlightedRange(this.highlightedSummonHexes);
   }
 
+  /**
+   * Highlight valid heal target hexes by tinting them cyan/teal.
+   */
+  public showHealRange(hexes: Axial[]): void {
+    this.showHighlightedRange(hexes, HIGHLIGHT_COLORS.HEAL, this.highlightedHealHexes);
+  }
+
+  /**
+   * Clear all heal range highlights.
+   */
+  public clearHealRange(): void {
+    this.clearHighlightedRange(this.highlightedHealHexes);
+  }
+
   public setSelectedHex(hex: Axial | null): void {
     // Clear previous selection
     if (this.selectedHexKey) {
@@ -136,6 +153,7 @@ export class HighlightManager {
     this.clearMovementRange();
     this.clearAttackRange();
     this.clearSummonPlacementRange();
+    this.clearHealRange();
     this.setSelectedHex(null);
   }
 

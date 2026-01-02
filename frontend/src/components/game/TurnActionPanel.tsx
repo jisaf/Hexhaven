@@ -23,7 +23,6 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FaCheck, FaTimes } from 'react-icons/fa';
 import type { AbilityCard } from '../../../../shared/types/entities';
 import type { TurnActionState, TurnAction } from '../../../../shared/types/events';
 import { AbilityCard2 } from '../AbilityCard2';
@@ -42,12 +41,10 @@ export interface TurnActionPanelProps {
   turnActionState: TurnActionState;
   /** Callback when an action is selected */
   onActionSelect: (cardId: string, position: 'top' | 'bottom') => void;
-  /** Callback when selected action is confirmed */
+  /** Callback when selected action is confirmed (tap-again pattern) */
   onActionConfirm: () => void;
-  /** Callback when selection is cancelled */
-  onActionCancel: () => void;
-  /** Issue #411: Current targeting mode (move/attack need target selection) */
-  targetingMode?: 'move' | 'attack' | null;
+  /** Issue #411: Current targeting mode (actions that need hex/target selection) */
+  targetingMode?: 'move' | 'attack' | 'heal' | 'summon' | null;
   /** Issue #411: Cancel targeting mode */
   onCancelTargeting?: () => void;
 }
@@ -90,7 +87,6 @@ export function TurnActionPanel({
   turnActionState,
   onActionSelect,
   onActionConfirm,
-  onActionCancel,
   targetingMode,
   onCancelTargeting,
 }: TurnActionPanelProps) {
@@ -98,6 +94,16 @@ export function TurnActionPanel({
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
   // Track which card is zoomed for long-press viewing
   const [zoomedCard, setZoomedCard] = useState<AbilityCard | null>(null);
+  // Track previous targeting mode to detect when it exits
+  const prevTargetingMode = useRef(targetingMode);
+
+  // Clear pendingAction when targeting mode exits (action confirmed via hex selection)
+  useEffect(() => {
+    if (prevTargetingMode.current && !targetingMode) {
+      setPendingAction(null);
+    }
+    prevTargetingMode.current = targetingMode;
+  }, [targetingMode]);
 
   // Calculate number of actions used
   const actionsUsed = useMemo(() => {
@@ -108,30 +114,36 @@ export function TurnActionPanel({
   }, [turnActionState]);
 
   // Handle action region click
+  // - Targeting actions (move, attack, heal, summon): first tap enters targeting mode, hex tap confirms
+  // - Non-targeting actions: first tap selects, second tap (tap-again) confirms
+  // - Tapping a different action while one is selected cancels the original and selects the new one
   const handleActionClick = useCallback((cardId: string, position: 'top' | 'bottom') => {
-    // If clicking the same action, treat as toggle off
-    if (pendingAction?.cardId === cardId && pendingAction?.position === position) {
-      setPendingAction(null);
-      onActionCancel();
+    const isSameAction = pendingAction?.cardId === cardId && pendingAction?.position === position;
+
+    // If in targeting mode and tapping the SAME action, ignore (must tap hex to confirm or cancel button)
+    if (targetingMode && isSameAction) {
       return;
     }
 
-    // Set as pending and notify parent
+    // If in targeting mode and tapping a DIFFERENT action, cancel targeting first
+    if (targetingMode && !isSameAction) {
+      onCancelTargeting?.();
+      // Then fall through to select the new action
+    }
+
+    // If clicking the same action that's already selected (and not in targeting mode),
+    // this is tap-again confirmation for non-targeting actions
+    if (isSameAction && !targetingMode) {
+      setPendingAction(null);
+      onActionConfirm();
+      return;
+    }
+
+    // Set as pending and notify parent - this may enter targeting mode for move/attack
     setPendingAction({ cardId, position });
     onActionSelect(cardId, position);
-  }, [pendingAction, onActionSelect, onActionCancel]);
+  }, [pendingAction, onActionSelect, onActionConfirm, targetingMode, onCancelTargeting]);
 
-  // Handle confirm
-  const handleConfirm = useCallback(() => {
-    setPendingAction(null);
-    onActionConfirm();
-  }, [onActionConfirm]);
-
-  // Handle cancel
-  const handleCancel = useCallback(() => {
-    setPendingAction(null);
-    onActionCancel();
-  }, [onActionCancel]);
 
   // Get states for all four action regions
   const card1TopState = getActionRegionState(card1.id, 'top', turnActionState, pendingAction);
@@ -149,12 +161,14 @@ export function TurnActionPanel({
     position,
     state,
     actionLabel,
+    isInTargetingMode,
   }: {
     card: AbilityCard;
     cardId: string;
     position: 'top' | 'bottom';
     state: CardActionState;
     actionLabel: string;
+    isInTargetingMode: boolean;
   }) => {
     const isInteractive = state === 'available' || state === 'selected';
     const overlayRef = useRef<HTMLDivElement>(null);
@@ -188,16 +202,6 @@ export function TurnActionPanel({
         e.preventDefault();
         handleActionClick(cardId, position);
       }
-    };
-
-    const handleConfirmClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      handleConfirm();
-    };
-
-    const handleCancelClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      handleCancel();
     };
 
     // Native touch event handlers for long-press detection
@@ -309,27 +313,10 @@ export function TurnActionPanel({
           </div>
         )}
 
-        {/* Confirm/Cancel buttons when selected */}
-        {state === 'selected' && (
-          <div className={styles.confirmOverlay}>
-            <button
-              className={styles.confirmButton}
-              onClick={handleConfirmClick}
-              aria-label="Confirm action"
-              type="button"
-            >
-              <FaCheck />
-              <span>Confirm</span>
-            </button>
-            <button
-              className={styles.cancelButton}
-              onClick={handleCancelClick}
-              aria-label="Cancel selection"
-              type="button"
-            >
-              <FaTimes />
-              <span>Cancel</span>
-            </button>
+        {/* Selected state - show "Tap again" hint only for non-targeting actions */}
+        {state === 'selected' && !isInTargetingMode && (
+          <div className={styles.selectedOverlay}>
+            <span>Tap again to confirm</span>
           </div>
         )}
       </div>
@@ -365,6 +352,7 @@ export function TurnActionPanel({
               position="top"
               state={card1TopState}
               actionLabel={`${card1.name} - ${card1.topAction.type}`}
+              isInTargetingMode={!!targetingMode}
             />
             <ActionOverlay
               card={card1}
@@ -372,6 +360,7 @@ export function TurnActionPanel({
               position="bottom"
               state={card1BottomState}
               actionLabel={`${card1.name} - ${card1.bottomAction.type}`}
+              isInTargetingMode={!!targetingMode}
             />
           </div>
         </div>
@@ -391,6 +380,7 @@ export function TurnActionPanel({
               position="top"
               state={card2TopState}
               actionLabel={`${card2.name} - ${card2.topAction.type}`}
+              isInTargetingMode={!!targetingMode}
             />
             <ActionOverlay
               card={card2}
@@ -398,6 +388,7 @@ export function TurnActionPanel({
               position="bottom"
               state={card2BottomState}
               actionLabel={`${card2.name} - ${card2.bottomAction.type}`}
+              isInTargetingMode={!!targetingMode}
             />
           </div>
         </div>
@@ -423,8 +414,26 @@ export function TurnActionPanel({
               </button>
             )}
           </>
+        ) : targetingMode === 'heal' ? (
+          <>
+            <span className={styles.targetingHint}>Tap an ally to heal them</span>
+            {onCancelTargeting && (
+              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
+                Cancel Heal
+              </button>
+            )}
+          </>
+        ) : targetingMode === 'summon' ? (
+          <>
+            <span className={styles.targetingHint}>Tap an empty hex to place your summon</span>
+            {onCancelTargeting && (
+              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
+                Cancel Summon
+              </button>
+            )}
+          </>
         ) : pendingAction ? (
-          <span>Tap Confirm to execute this action, or Cancel to choose another</span>
+          <span>Tap again to confirm, or tap a different action</span>
         ) : actionsUsed < 2 ? (
           <span>Tap an action to select it. Long-press to enlarge.</span>
         ) : null}

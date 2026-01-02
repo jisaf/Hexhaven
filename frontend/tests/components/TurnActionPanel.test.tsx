@@ -95,7 +95,6 @@ describe('TurnActionPanel', () => {
     turnActionState: initialTurnState,
     onActionSelect: jest.fn(),
     onActionConfirm: jest.fn(),
-    onActionCancel: jest.fn(),
   };
 
   beforeEach(() => {
@@ -198,7 +197,7 @@ describe('TurnActionPanel', () => {
       expect(onActionSelect).toHaveBeenCalledWith('card-1', 'top');
     });
 
-    it('should show confirm/cancel buttons after action is selected', () => {
+    it('should show tap-again hint after action is selected', () => {
       const onActionSelect = jest.fn();
       render(<TurnActionPanel {...defaultProps} onActionSelect={onActionSelect} />);
 
@@ -206,9 +205,8 @@ describe('TurnActionPanel', () => {
       const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
       fireEvent.click(topActionOverlay);
 
-      // Confirm/Cancel should appear
-      expect(screen.getByText('Confirm')).toBeInTheDocument();
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      // Tap-again hint should appear
+      expect(screen.getByText('Tap again to confirm')).toBeInTheDocument();
     });
 
     it('should show updated help text when action is selected', () => {
@@ -219,10 +217,10 @@ describe('TurnActionPanel', () => {
       const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
       fireEvent.click(topActionOverlay);
 
-      expect(screen.getByText(/Tap Confirm to execute/)).toBeInTheDocument();
+      expect(screen.getByText(/Tap again to confirm, or tap a different action/)).toBeInTheDocument();
     });
 
-    it('should call onActionConfirm when confirm is clicked', () => {
+    it('should call onActionConfirm when same action is tapped twice', () => {
       const onActionConfirm = jest.fn();
       render(<TurnActionPanel {...defaultProps} onActionConfirm={onActionConfirm} />);
 
@@ -230,42 +228,30 @@ describe('TurnActionPanel', () => {
       const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
       fireEvent.click(topActionOverlay);
 
-      // Click confirm
-      fireEvent.click(screen.getByText('Confirm'));
+      // Re-query after state change
+      const topActionOverlayAfterSelect = screen.getByRole('button', { name: /top action: Trample - attack/i });
+
+      // Tap again to confirm (tap-again pattern)
+      fireEvent.click(topActionOverlayAfterSelect);
 
       expect(onActionConfirm).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onActionCancel when cancel is clicked', () => {
-      const onActionCancel = jest.fn();
-      render(<TurnActionPanel {...defaultProps} onActionCancel={onActionCancel} />);
+    it('should switch selection when different action is tapped', () => {
+      const onActionSelect = jest.fn();
+      render(<TurnActionPanel {...defaultProps} onActionSelect={onActionSelect} />);
 
-      // Select an action first
+      // Select first action
       const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
       fireEvent.click(topActionOverlay);
+      expect(onActionSelect).toHaveBeenCalledWith('card-1', 'top');
 
-      // Click cancel
-      fireEvent.click(screen.getByText('Cancel'));
+      // Select a different action (bottom of card 2: Eye for an Eye - heal)
+      const bottomActionOverlay = screen.getByRole('button', { name: /bottom action: Eye for an Eye - heal/i });
+      fireEvent.click(bottomActionOverlay);
 
-      expect(onActionCancel).toHaveBeenCalledTimes(1);
-    });
-
-    it('should toggle selection off when clicking same action twice', () => {
-      const onActionCancel = jest.fn();
-      render(<TurnActionPanel {...defaultProps} onActionCancel={onActionCancel} />);
-
-      const topActionOverlay = screen.getByRole('button', { name: /top action: Trample - attack/i });
-
-      // Select
-      fireEvent.click(topActionOverlay);
-      expect(screen.getByText('Confirm')).toBeInTheDocument();
-
-      // Re-query the element after state change to ensure we have the updated DOM element
-      const topActionOverlayAfterSelect = screen.getByRole('button', { name: /top action: Trample - attack/i });
-
-      // Click same action again to deselect
-      fireEvent.click(topActionOverlayAfterSelect);
-      expect(onActionCancel).toHaveBeenCalled();
+      // Should select the new action
+      expect(onActionSelect).toHaveBeenCalledWith('card-2', 'bottom');
     });
   });
 
@@ -338,7 +324,7 @@ describe('TurnActionPanel', () => {
  *
  * - Rendering: Both cards using AbilityCard2, clickable overlay regions, header with action count, help text
  * - Action States: Available, used, disabled based on turnActionState
- * - Selection Flow: onActionSelect, onActionConfirm, onActionCancel, toggle
+ * - Selection Flow: onActionSelect, tap-again confirmation (onActionConfirm), switch selection
  * - After First Action: Only opposite position on other card available
  * - Edge Cases: Empty available actions, same action types
  */

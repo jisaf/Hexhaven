@@ -42,7 +42,7 @@ import type { CharacterClass } from '../../../shared/types/entities';
  * Join intent - indicates WHY a join is happening
  * Used for backend logging and debugging
  */
-export type JoinIntent = 'create' | 'join' | 'rejoin' | 'refresh';
+export type JoinIntent = 'create' | 'join' | 'rejoin' | 'refresh' | 'reconnect';
 
 /**
  * Room status lifecycle (DEPRECATED - use connectionStatus + isGameActive)
@@ -179,6 +179,7 @@ class RoomSessionManager {
     roomJoined?: (data: RoomJoinedPayload) => void;
     gameStarted?: (data: GameStartedPayload) => void;
     disconnected?: () => void;
+    reconnected?: () => void;
     playerJoined?: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
     playerLeft?: (data: { playerId: string }) => void;
     characterSelected?: (data: CharacterSelectedPayload) => void;
@@ -201,6 +202,9 @@ class RoomSessionManager {
     }
     if (this.boundHandlers.disconnected) {
       websocketService.off('ws_disconnected', this.boundHandlers.disconnected);
+    }
+    if (this.boundHandlers.reconnected) {
+      websocketService.off('ws_reconnected', this.boundHandlers.reconnected);
     }
     if (this.boundHandlers.playerJoined) {
       websocketService.off('player_joined', this.boundHandlers.playerJoined);
@@ -251,6 +255,7 @@ class RoomSessionManager {
     this.boundHandlers.roomJoined = this.onRoomJoined.bind(this);
     this.boundHandlers.gameStarted = this.onGameStarted.bind(this);
     this.boundHandlers.disconnected = this.onDisconnected.bind(this);
+    this.boundHandlers.reconnected = this.onReconnected.bind(this);
     this.boundHandlers.playerJoined = (data: { player: { id: string; nickname: string; isHost: boolean } }) => this.onPlayerJoined({
       id: data.player.id,
       nickname: data.player.nickname,
@@ -272,6 +277,7 @@ class RoomSessionManager {
     websocketService.on('character_selected', this.boundHandlers.characterSelected);
     websocketService.on('game_started', this.boundHandlers.gameStarted);
     websocketService.on('ws_disconnected', this.boundHandlers.disconnected);
+    websocketService.on('ws_reconnected', this.boundHandlers.reconnected);
 
     this.listenersSetup = true;
   }
@@ -373,6 +379,9 @@ class RoomSessionManager {
         // This happens when navigating to /game after Lobby has unmounted
         if (intent === 'refresh' && this.state.isGameActive && !this.state.gameState) {
           console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
+        } else if (intent === 'reconnect') {
+          // Issue #411: Always allow reconnect intent to re-establish backend socketToPlayer mapping
+          console.log('[RoomSessionManager] Reconnect intent - proceeding to restore backend mapping');
         } else {
           console.log(
             `[RoomSessionManager] Already joined in this session (connectionStatus: ${this.state.connectionStatus}, isGameActive: ${this.state.isGameActive}), skipping duplicate join`
@@ -384,6 +393,7 @@ class RoomSessionManager {
       // Get room info from state or localStorage
       // - 'create': Use fresh roomCode from localStorage (just created)
       // - 'refresh': Prefer localStorage (URL roomCode saved by GameBoard) to handle direct URL navigation
+      // - 'reconnect': Use state roomCode (we're reconnecting to the same room)
       // - 'join'/'rejoin': Use state first, fallback to localStorage
       const roomCode = (intent === 'create' || intent === 'refresh')
         ? getLastRoomCode() || this.state.roomCode
@@ -606,6 +616,22 @@ class RoomSessionManager {
     this.hasJoinedInSession = false; // Allow rejoin after disconnect
 
     this.emitStateUpdate();
+  }
+
+  /**
+   * Handle WebSocket reconnection
+   * Issue #411: Re-join room to restore backend socketToPlayer mapping
+   */
+  public onReconnected(): void {
+    console.log('[RoomSessionManager] WebSocket reconnected - re-joining room');
+
+    // Only re-join if we have a room code (we were in a room before disconnect)
+    if (this.state.roomCode) {
+      // Use ensureJoined with 'reconnect' intent to restore backend mapping
+      this.ensureJoined('reconnect').catch((error) => {
+        console.error('[RoomSessionManager] Failed to re-join room after reconnect:', error);
+      });
+    }
   }
 
   /**

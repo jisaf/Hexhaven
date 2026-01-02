@@ -21,8 +21,6 @@ interface CardPileIndicatorProps {
   selectedPile?: PileType | null;
   /** Number of items in inventory (for badge) */
   inventoryCount?: number;
-  /** Whether to show the active cards button (during turn with selected cards) */
-  showActiveCards?: boolean;
 }
 
 export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
@@ -33,7 +31,6 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   onPileClick,
   selectedPile,
   inventoryCount = 0,
-  showActiveCards = false,
 }) => {
   return (
     <div className={styles.indicator} data-testid="card-pile-indicator">
@@ -68,18 +65,16 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
         <span className={styles.count}>{lostCount}</span>
       </button>
 
-      {/* Active Cards Button (Issue #411) - Shows during turn with selected cards */}
-      {showActiveCards && (
-        <button
-          className={`${styles.pile} ${styles.activePile} ${selectedPile === 'active' ? styles.selected : ''}`}
-          title="View active turn cards"
-          data-testid="active-cards-button"
-          onClick={() => onPileClick('active')}
-        >
-          <i className="ra ra-crossed-swords" style={{ fontSize: '16px' }} />
-          <span className={styles.label}>Active</span>
-        </button>
-      )}
+      {/* Active Cards Button (Issue #411) - Always visible */}
+      <button
+        className={`${styles.pile} ${styles.activePile} ${selectedPile === 'active' ? styles.selected : ''}`}
+        title="View active turn cards"
+        data-testid="active-cards-button"
+        onClick={() => onPileClick('active')}
+      >
+        <i className="ra ra-crossed-swords" style={{ fontSize: '16px' }} />
+        <span className={styles.label}>Active</span>
+      </button>
 
       {/* Inventory Button (Issue #205) */}
       <button
