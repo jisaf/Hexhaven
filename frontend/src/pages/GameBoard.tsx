@@ -37,6 +37,7 @@ import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
+import { PileView } from '../components/game/PileView';
 import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
 import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
@@ -471,9 +472,10 @@ export function GameBoard() {
           break;
       }
 
-      // Convert card IDs to full card objects
+      // Convert card IDs to full card objects using abilityDeck (master copy of all cards)
+      // playerHand only contains cards currently in hand, not discard/lost
       const cardObjects = cardIds
-        .map(id => gameState.playerHand.find(card => card.id === id))
+        .map(id => gameState.abilityDeck.find(card => card.id === id))
         .filter((card): card is AbilityCard => card !== undefined);
 
       setPileViewCards(cardObjects);
@@ -650,21 +652,20 @@ export function GameBoard() {
               loading={inventoryLoading}
               error={inventoryError || undefined}
             />
-          ) : (selectedPile === 'hand' || selectedPile === 'discard' || selectedPile === 'lost') && pileViewCards.length > 0 ? (
-            <CardSelectionPanel
+          ) : (selectedPile === 'hand' || selectedPile === 'discard' || selectedPile === 'lost') ? (
+            <PileView
               cards={pileViewCards}
-              onCardSelect={() => {}}
-              onClearSelection={() => {
-                setSelectedPile(null);
-                setPileViewCards([]);
-              }}
-              onConfirmSelection={() => {}}
-              onLongRest={() => {}}
-              selectedTopAction={null}
-              selectedBottomAction={null}
-              waiting={true}
-              canLongRest={false}
-              discardPileCount={discardCount}
+              title={
+                selectedPile === 'hand' ? 'Hand' :
+                selectedPile === 'discard' ? 'Discard Pile' :
+                'Lost Cards'
+              }
+              subtitle={`${pileViewCards.length} card${pileViewCards.length !== 1 ? 's' : ''}`}
+              emptyMessage={
+                selectedPile === 'hand' ? 'No cards in hand' :
+                selectedPile === 'discard' ? 'Discard pile is empty' :
+                'No lost cards'
+              }
             />
           ) : undefined
         }

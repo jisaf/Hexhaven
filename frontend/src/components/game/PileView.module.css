@@ -1,0 +1,135 @@
+/**
+ * PileView Styles
+ *
+ * Unified styling for card pile viewers (Hand, Discard, Lost).
+ * Matches TurnActionPanel for visual consistency across all pile displays.
+ */
+
+.pileView {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+/* Header - matches TurnActionPanel */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(240, 230, 210, 0.8);
+}
+
+/* Cards container - horizontal scroll */
+.cardsContainer {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  gap: 16px;
+  padding: 10px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+/* Hide scrollbar */
+.cardsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.cardsContainer {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Individual card wrapper */
+.cardWrapper {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--card-width, 180px);
+  height: var(--card-height, 260px);
+}
+
+/* The actual ability card */
+.card {
+  width: 100%;
+  height: 100%;
+  font-size: clamp(10px, 2vw, 14px);
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  color: rgba(240, 230, 210, 0.6);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Portrait mode - matches TurnActionPanel responsive behavior */
+@media (orientation: portrait) {
+  .pileView {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .header {
+    padding-bottom: 4px;
+  }
+
+  .title {
+    font-size: 12px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .cardsContainer {
+    padding: 0;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  /* Smaller cards in portrait */
+  .cardWrapper {
+    --card-width: 120px;
+    --card-height: 170px;
+    width: var(--card-width);
+    height: var(--card-height);
+  }
+
+  .card {
+    font-size: clamp(8px, 2vw, 11px);
+  }
+
+  .emptyState {
+    min-height: 100px;
+    font-size: 12px;
+  }
+}
+
+/* Very small portrait screens */
+@media (orientation: portrait) and (max-height: 600px) {
+  .cardWrapper {
+    --card-width: 100px;
+    --card-height: 145px;
+  }
+}
