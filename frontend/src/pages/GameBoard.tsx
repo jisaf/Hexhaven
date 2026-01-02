@@ -571,7 +571,6 @@ export function GameBoard() {
             handCount={handCount}
             discardCount={discardCount}
             lostCount={lostCount}
-            canRest={discardCount >= 2}
             onPileClick={handlePileClick}
             selectedPile={selectedPile}
             inventoryCount={ownedItems.length}

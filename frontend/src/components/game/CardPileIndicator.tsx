@@ -16,7 +16,6 @@ interface CardPileIndicatorProps {
   handCount: number;
   discardCount: number;
   lostCount: number;
-  canRest: boolean;
   onPileClick: (pile: PileType) => void;
   selectedPile?: PileType | null;
   /** Number of items in inventory (for badge) */
@@ -27,7 +26,6 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   handCount,
   discardCount,
   lostCount,
-  canRest,
   onPileClick,
   selectedPile,
   inventoryCount = 0,
@@ -45,14 +43,13 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
       </button>
 
       <button
-        className={`${styles.pile} ${canRest ? styles.restAvailable : ''} ${selectedPile === 'discard' ? styles.selected : ''}`}
-        title={canRest ? "Discarded cards (Rest available) - Click to view" : "Click to view discarded cards"}
+        className={`${styles.pile} ${selectedPile === 'discard' ? styles.selected : ''}`}
+        title="Click to view discarded cards"
         data-testid="discard-pile"
         onClick={() => onPileClick('discard')}
       >
         <span className={styles.label}>Discard</span>
         <span className={styles.count}>{discardCount}</span>
-        {canRest && <span className={styles.restBadge}>Rest</span>}
       </button>
 
       <button
