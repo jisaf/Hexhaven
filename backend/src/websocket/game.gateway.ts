@@ -3449,7 +3449,9 @@ export class GameGateway
         throw new Error('Character not found');
       }
       if (character.playerId !== userId) {
-        this.logger.error(`Character ${payload.characterId} belongs to ${character.playerId}, not ${userId}`);
+        this.logger.error(
+          `Character ${payload.characterId} belongs to ${character.playerId}, not ${userId}`,
+        );
         throw new Error('Not your character');
       }
 
@@ -3458,7 +3460,9 @@ export class GameGateway
       const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
       const currentTurnEntity = turnOrder?.[currentIndex];
       if (currentTurnEntity?.entityId !== character.id) {
-        this.logger.error(`Not character's turn. Current: ${currentTurnEntity?.entityId}, Character: ${character.id}`);
+        this.logger.error(
+          `Not character's turn. Current: ${currentTurnEntity?.entityId}, Character: ${character.id}`,
+        );
         throw new Error("Not this character's turn");
       }
 
@@ -3472,15 +3476,22 @@ export class GameGateway
         payload.cardId !== selectedCards.topCardId &&
         payload.cardId !== selectedCards.bottomCardId
       ) {
-        this.logger.error(`Card ${payload.cardId} not in selected cards: top=${selectedCards.topCardId}, bottom=${selectedCards.bottomCardId}`);
+        this.logger.error(
+          `Card ${payload.cardId} not in selected cards: top=${selectedCards.topCardId}, bottom=${selectedCards.bottomCardId}`,
+        );
         throw new Error('Card is not one of the selected cards for this turn');
       }
 
       // Validate action is available based on Gloomhaven rules
       const availableActions = character.getAvailableActions();
-      this.logger.log(`Available actions for ${character.id}:`, availableActions);
+      this.logger.log(
+        `Available actions for ${character.id}:`,
+        availableActions,
+      );
       if (!character.isActionAvailable(payload.cardId, payload.position)) {
-        this.logger.error(`Action ${payload.position} of ${payload.cardId} not available. First action: ${JSON.stringify(character.turnActions.firstAction)}`);
+        this.logger.error(
+          `Action ${payload.position} of ${payload.cardId} not available. First action: ${JSON.stringify(character.turnActions.firstAction)}`,
+        );
         throw new Error(
           'Invalid action selection - this action is not available',
         );

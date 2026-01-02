@@ -146,11 +146,45 @@
 /* Portrait orientation adjustments */
 @media (orientation: portrait) {
   .initiative-selector {
-    padding: 8px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .initiative-label {
+    font-size: 11px;
   }
 
   .initiative-options {
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row; /* Keep horizontal to save vertical space */
+    gap: 6px;
+  }
+
+  .initiative-option {
+    padding: 6px 8px;
+    min-height: auto; /* Override the 48px min-height */
+  }
+
+  .initiative-value {
+    font-size: 16px;
+    min-width: 24px;
+  }
+
+  .card-name {
+    font-size: 11px;
+  }
+
+  .faster-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .initiative-option input[type="radio"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .initiative-option input[type="radio"]:checked::after {
+    width: 8px;
+    height: 8px;
   }
 }

@@ -228,25 +228,33 @@
 
 @media (orientation: portrait) {
   .card-selection-panel {
-    padding: 8px;
-    gap: 8px;
+    padding: 4px 8px;
+    gap: 4px;
   }
 
   .selection-instructions {
     position: static;
     max-width: 100%;
     text-align: center;
-    padding: 4px;
+    padding: 2px 4px;
     border: none;
     background: none;
+    max-height: none;
   }
 
   .selection-instructions h3 {
-    font-size: 16px;
+    font-size: 14px;
+    margin-bottom: 2px;
   }
 
   .selection-instructions p {
-    font-size: 12px;
+    font-size: 11px;
+    margin: 0;
+  }
+
+  .selection-instructions .character-progress {
+    font-size: 10px;
+    margin-bottom: 2px;
   }
 
   .cards-container {
@@ -262,13 +270,25 @@
   /* Issue #411: Initiative selector in portrait mode */
   .initiative-selector-container {
     position: static;
-    margin: 8px 0;
+    margin: 4px 0;
   }
 
   .action-buttons {
     position: static;
     justify-content: center;
     flex-wrap: wrap;
-    padding: 8px;
+    padding: 4px 8px;
+    gap: 8px;
+  }
+
+  .action-buttons button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* Long rest button text is long - make it more compact */
+  .btn-long-rest {
+    white-space: nowrap;
+    padding: 6px 10px;
   }
 }
