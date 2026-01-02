@@ -1127,7 +1127,8 @@ GET    /api/campaigns/:id/my-characters        # Get user's characters in campai
 join_room        { roomCode, nickname }
 leave_room       { roomCode }
 select_character { characterId?, action?, targetCharacterId?, index? }  # Multi-character support
-start_game       { roomCode, scenarioId }
+select_scenario  { scenarioId }                                        # Issue #419: Host selects scenario in lobby
+start_game       { roomCode }                                          # Issue #419: scenarioId now from room state
 move_character   { roomCode, characterId, targetHex }
 select_cards     { roomCode, characterId?, cards: { top, bottom } }
 attack_target    { roomCode, characterId?, targetId }
@@ -1152,6 +1153,7 @@ room_joined         { roomCode, players }  # players include characterClasses[]
 player_joined       { player }
 player_left         { playerId }
 character_selected  { playerId, characterClasses[], characterIds?, activeIndex }
+scenario_selected   { scenarioId }                            # Issue #419: Broadcast scenario selection to all players
 game_started        { scenario, initialState, campaignId? }  # Issue #318: Campaign context
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
@@ -1198,7 +1200,7 @@ All WebSocket timeout and reconnection values are centralized in `/frontend/src/
 // Shared WebSocket configuration constants
 export const WS_CONNECTION_TIMEOUT_MS = 15000;           // Connection timeout (increased from 5s for slow networks)
 export const WS_CONNECTION_WAIT_TIMEOUT_MS = 15000;      // Room join wait timeout
-export const WS_RECONNECT_DEBOUNCE_MS = 500;             // Reconnection debounce delay (prevents rapid-fire reconnects)
+export const WS_RECONNECT_DEBOUNCE_MS = 500;             // DEPRECATED: No longer used (see commit d384b43)
 export const WS_RECONNECTION_DELAY_MS = 1000;            // Initial reconnection delay
 export const WS_RECONNECTION_DELAY_MAX_MS = 10000;       // Max reconnection delay (exponential backoff)
 export const WS_MAX_RECONNECT_ATTEMPTS = 5;              // Maximum reconnection attempts
@@ -1206,7 +1208,7 @@ export const WS_MAX_RECONNECT_ATTEMPTS = 5;              // Maximum reconnection
 
 **Rationale**:
 - **15-second timeout** (increased from default 5s): Accommodates slow mobile networks and high-latency connections
-- **500ms debounce**: Prevents rapid-fire reconnection handling when Socket.IO performs multiple quick reconnect attempts
+- **No reconnection debounce** (commit d384b43): Removed because it caused "Player not in any room" errors. The `joinInProgress` flag already prevents duplicate join requests
 - **Centralized constants**: Single source of truth prevents inconsistencies and magic numbers across the codebase
 
 **Server Configuration**:
@@ -1284,36 +1286,40 @@ public onReconnected(): void {
   // Clear error state on successful reconnection
   this.state.error = null;
 
-  // Debounce to prevent rapid-fire reconnection handling
+  // Clear any pending debounce timer (no longer used)
   if (this.reconnectDebounceTimer) {
     clearTimeout(this.reconnectDebounceTimer);
+    this.reconnectDebounceTimer = null;
   }
 
-  this.reconnectDebounceTimer = setTimeout(() => {
-    // Reset join flag to allow rejoin
-    this.hasJoinedInSession = false;
+  // Reset join flag to allow rejoin
+  this.hasJoinedInSession = false;
 
-    // Auto-rejoin if we have a room code stored
-    if (this.state.roomCode) {
-      this.ensureJoined('rejoin');
-    }
-  }, WS_RECONNECT_DEBOUNCE_MS);  // 500ms debounce
+  // IMMEDIATE rejoin - no debounce
+  // The `joinInProgress` flag prevents duplicate join requests
+  if (this.state.roomCode) {
+    this.ensureJoined('rejoin');
+  }
 }
 ```
+
+**CRITICAL FIX (Commit d384b43)**:
+The 500ms debounce was **removed** because it was causing "Player not in any room or room not found" errors. When users reconnected and immediately tried to perform actions (like selecting a scenario), the debounce delay meant the room rejoin hadn't completed yet. The existing `joinInProgress` flag in `ensureJoined()` already prevents duplicate join requests, making the debounce unnecessary.
 
 **Reconnection Flow**:
 1. Socket.IO detects disconnect and attempts reconnection (up to 5 attempts with exponential backoff)
 2. On successful reconnect, Socket.IO emits `connect` event
 3. `WebSocketService` emits `ws_reconnected` event
 4. `RoomSessionManager.onReconnected()` is called
-5. After 500ms debounce, manager resets join state and calls `ensureJoined('rejoin')`
+5. Manager **immediately** resets join state and calls `ensureJoined('rejoin')`
 6. Client rejoins room via `join_room` WebSocket event
 7. Backend remaps socket ID to player via `handleJoinRoom()`
 
 **Benefits**:
 - ✅ **Seamless recovery**: Users automatically rejoin rooms after temporary disconnects
-- ✅ **Debounced handling**: Prevents rapid-fire reconnects from overwhelming the system
+- ✅ **Immediate rejoin**: No delay prevents user actions from failing
 - ✅ **Error state cleared**: Connection errors are automatically cleared on successful reconnect
+- ✅ **Duplicate prevention**: `joinInProgress` flag prevents race conditions
 - ✅ **User-friendly**: No manual intervention required for transient network issues
 
 ### Room Management
@@ -1323,8 +1329,14 @@ public onReconnected(): void {
 - Server broadcasts state updates to room members
 - Disconnect handling with 10-minute grace period
 
+**Scenario Selection** (Issue #419):
+- Host can select scenario using `select_scenario` WebSocket event
+- Room state stores `scenarioId` as single source of truth
+- `scenario_selected` event broadcasts selection to all players in room
+- `start_game` event uses `room.scenarioId` from room state (no longer passed as parameter)
+
 **Reconnection Features** (Issue #419):
-- **Automatic room rejoin**: Frontend automatically rejoins room after Socket.IO reconnects (500ms debounced)
+- **Automatic room rejoin**: Frontend automatically rejoins room after Socket.IO reconnects (immediate, no debounce)
 - **Immediate socket mapping**: Backend populates socket-to-player mappings on connection, not on room join
 - **Stale socket cleanup**: Backend removes old socket mappings when user reconnects with new socket ID
 - **Connection timeout**: 15-second timeout accommodates slow networks (increased from 5s default)
@@ -1495,4 +1507,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2025-12-31 (Updated for WebSocket Connection Improvements - Issue #419)
+**Last Review**: 2026-01-02 (Updated for WebSocket Reconnection Debounce Removal & Scenario Selection - Issue #419, Commit d384b43)

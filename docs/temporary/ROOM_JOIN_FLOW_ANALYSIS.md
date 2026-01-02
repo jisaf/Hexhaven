@@ -1,6 +1,9 @@
 # Room Join Flow Analysis
 **Date**: 2025-11-19
+**Status**: OUTDATED - Superseded by Issue #419 and RoomSessionManager centralization
 **Issue**: Inconsistent room joining behavior across different paths
+
+> **NOTE**: This analysis is historical. As of Issue #419 (commits through d384b43, January 2026), the room join flow has been centralized in `RoomSessionManager` with immediate reconnection (no debounce) and `select_scenario` WebSocket event. The `start_game` event no longer requires `scenarioId` parameter - it uses `room.scenarioId` from room state. See `/docs/ARCHITECTURE.md` and `/docs/websocket_analysis.md` for current documentation.
 
 ---
 
