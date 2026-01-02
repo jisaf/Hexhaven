@@ -701,6 +701,7 @@ export interface NarrativeHexesRevealedPayload {
 export interface ClientEvents {
   join_room: JoinRoomPayload;
   select_character: SelectCharacterPayload;
+  select_scenario: { scenarioId: string };
   start_game: StartGamePayload;
   move_character: MoveCharacterPayload;
   select_cards: SelectCardsPayload;
@@ -741,6 +742,7 @@ export interface ServerEvents {
   player_joined: PlayerJoinedPayload;
   player_left: PlayerLeftPayload;
   character_selected: CharacterSelectedPayload;
+  scenario_selected: { scenarioId: string };
   game_started: GameStartedPayload;
   cards_selected: CardsSelectedPayload;
   turn_order_determined: TurnOrderDeterminedPayload;

@@ -23,10 +23,7 @@
 import { websocketService } from './websocket.service';
 import { narrativeStateService } from './narrative-state.service';
 import { authService } from './auth.service';
-import {
-  WS_CONNECTION_WAIT_TIMEOUT_MS,
-  WS_RECONNECT_DEBOUNCE_MS,
-} from '../config/websocket';
+import { WS_CONNECTION_WAIT_TIMEOUT_MS } from '../config/websocket';
 import {
   getLastRoomCode,
   getPlayerUUID,
@@ -190,6 +187,7 @@ class RoomSessionManager {
     playerJoined?: (data: { player: { id: string; nickname: string; isHost: boolean } }) => void;
     playerLeft?: (data: { playerId: string }) => void;
     characterSelected?: (data: CharacterSelectedPayload) => void;
+    scenarioSelected?: (data: { scenarioId: string }) => void;
   } = {};
   private listenersSetup = false;
 
@@ -221,6 +219,9 @@ class RoomSessionManager {
     }
     if (this.boundHandlers.characterSelected) {
       websocketService.off('character_selected', this.boundHandlers.characterSelected);
+    }
+    if (this.boundHandlers.scenarioSelected) {
+      websocketService.off('scenario_selected', this.boundHandlers.scenarioSelected);
     }
     this.boundHandlers = {};
     this.listenersSetup = false;
@@ -277,11 +278,13 @@ class RoomSessionManager {
       data.characterIds || [],
       data.activeIndex ?? 0
     );
+    this.boundHandlers.scenarioSelected = (data: { scenarioId: string }) => this.onScenarioSelected(data.scenarioId);
 
     websocketService.on('room_joined', this.boundHandlers.roomJoined);
     websocketService.on('player_joined', this.boundHandlers.playerJoined);
     websocketService.on('player_left', this.boundHandlers.playerLeft);
     websocketService.on('character_selected', this.boundHandlers.characterSelected);
+    websocketService.on('scenario_selected', this.boundHandlers.scenarioSelected);
     websocketService.on('game_started', this.boundHandlers.gameStarted);
     websocketService.on('ws_disconnected', this.boundHandlers.disconnected);
     websocketService.on('ws_reconnected', this.boundHandlers.reconnected); // Issue #419
@@ -527,6 +530,15 @@ class RoomSessionManager {
     this.emitStateUpdate();
   }
 
+  /**
+   * Handle scenario selection broadcast from server
+   */
+  public onScenarioSelected(scenarioId: string): void {
+    console.log('[RoomSessionManager] onScenarioSelected:', scenarioId);
+    this.state.scenarioId = scenarioId;
+    this.emitStateUpdate();
+  }
+
   public async createRoom(
     nickname: string,
     options?: { campaignId?: string; scenarioId?: string; isSoloGame?: boolean }
@@ -624,7 +636,10 @@ class RoomSessionManager {
   /**
    * Handle WebSocket reconnection (Socket.IO automatic reconnect)
    * Issue #419: Automatically rejoins the room if we have a room code stored
-   * Uses debouncing to prevent rapid-fire reconnection handling
+   *
+   * CRITICAL FIX: Removed debounce - the 500ms delay was causing "Player not in any room"
+   * errors when users tried to act before the delayed rejoin completed.
+   * The `joinInProgress` flag in ensureJoined() already prevents duplicate join requests.
    */
   public onReconnected(): void {
     console.log('[RoomSessionManager] WebSocket reconnected (automatic)');
@@ -633,28 +648,26 @@ class RoomSessionManager {
     this.state.error = null;
     this.emitStateUpdate();
 
-    // Issue #419 HIGH-2: Debounce to prevent rapid-fire reconnection handling
+    // Clear any pending debounce timer (no longer used, but kept for safety)
     if (this.reconnectDebounceTimer) {
       clearTimeout(this.reconnectDebounceTimer);
+      this.reconnectDebounceTimer = null;
     }
 
-    this.reconnectDebounceTimer = setTimeout(() => {
-      this.reconnectDebounceTimer = null;
+    // Reset join flag to allow rejoin
+    this.hasJoinedInSession = false;
 
-      // Reset join flag to allow rejoin
-      this.hasJoinedInSession = false;
-
-      // If we have a room code stored, automatically rejoin
-      // This handles the case where socket disconnected/reconnected during gameplay
-      if (this.state.roomCode) {
-        console.log(
-          `[RoomSessionManager] Auto-rejoining room ${this.state.roomCode} after reconnection`
-        );
-        this.ensureJoined('rejoin').catch((error) => {
-          console.error('[RoomSessionManager] Failed to rejoin after reconnection:', error);
-        });
-      }
-    }, WS_RECONNECT_DEBOUNCE_MS);
+    // IMMEDIATE rejoin - no debounce
+    // If we have a room code stored, automatically rejoin the Socket.IO room
+    // This is critical because the new socket isn't in any room until join_room is sent
+    if (this.state.roomCode) {
+      console.log(
+        `[RoomSessionManager] Immediately rejoining room ${this.state.roomCode} after reconnection`
+      );
+      this.ensureJoined('rejoin').catch((error) => {
+        console.error('[RoomSessionManager] Failed to rejoin after reconnection:', error);
+      });
+    }
   }
 
   /**

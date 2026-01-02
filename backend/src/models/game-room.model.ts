@@ -206,6 +206,18 @@ export class GameRoom {
     this._updatedAt = new Date();
   }
 
+  /**
+   * Select scenario for the room (before game start)
+   * Only allowed in LOBBY status
+   */
+  selectScenario(scenarioId: string): void {
+    if (this._status !== RoomStatus.LOBBY) {
+      throw new Error('Cannot change scenario - game already started');
+    }
+    this._scenarioId = scenarioId;
+    this._updatedAt = new Date();
+  }
+
   toJSON(): GameRoomData & { players: any[] } {
     return {
       id: this.id,
