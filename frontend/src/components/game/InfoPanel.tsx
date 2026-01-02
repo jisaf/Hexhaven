@@ -3,16 +3,15 @@
  *
  * Container that manages:
  * 1. Always visible: TurnStatus + GameLog + CardPileBar (44px at bottom)
- * 2. Overlay when active: BottomSheet with tabs (Cards | Inventory)
+ * 2. Overlay when active: BottomSheet with content
  *
  * BottomSheet can be swiped down to dismiss.
+ * Content is controlled by which card pile is clicked.
  */
 
 import type { ReactNode } from 'react';
-import { BottomSheet, type BottomSheetTab } from '../BottomSheet';
+import { BottomSheet } from '../BottomSheet';
 import styles from './InfoPanel.module.css';
-
-export type SheetTab = 'cards' | 'inventory';
 
 interface InfoPanelProps {
   /** Upper section: TurnStatus component */
@@ -24,70 +23,29 @@ interface InfoPanelProps {
   /** Bottom section: CardPileIndicator (44px fixed height) */
   cardPileBar: ReactNode;
 
-  /** Optional: CardSelectionPanel content (displayed in Cards tab) */
-  cardSelection?: ReactNode;
-
-  /** Optional: Inventory content (displayed in Inventory tab) */
-  inventoryContent?: ReactNode;
+  /** Content to display in the bottom sheet */
+  sheetContent?: ReactNode;
 
   /** Whether the bottom sheet is open */
-  showCardSelection: boolean;
-
-  /** Currently active tab */
-  activeTab?: SheetTab;
-
-  /** Callback when tab changes */
-  onTabChange?: (tab: SheetTab) => void;
+  isSheetOpen: boolean;
 
   /** Callback when sheet is closed */
   onSheetClose?: () => void;
 
-  /** Count of items (for badge on inventory tab) */
-  inventoryCount?: number;
+  /** Title for the sheet */
+  sheetTitle?: string;
 }
 
 export function InfoPanel({
   turnStatus,
   gameLog,
   cardPileBar,
-  cardSelection,
-  inventoryContent,
-  showCardSelection,
-  activeTab = 'cards',
-  onTabChange,
+  sheetContent,
+  isSheetOpen,
   onSheetClose,
-  inventoryCount,
+  sheetTitle,
 }: InfoPanelProps) {
-  // Build tabs array
-  const tabs: BottomSheetTab[] = [];
-
-  // Cards tab (always present when there's card selection content)
-  if (cardSelection) {
-    tabs.push({
-      id: 'cards',
-      label: 'Cards',
-      icon: 'ra ra-scroll-unfurled',
-      content: cardSelection,
-    });
-  }
-
-  // Inventory tab (always present when there's inventory content)
-  if (inventoryContent) {
-    tabs.push({
-      id: 'inventory',
-      label: 'Inventory',
-      icon: 'ra ra-knapsack',
-      content: inventoryContent,
-      badge: inventoryCount,
-    });
-  }
-
-  const handleTabChange = (tabId: string) => {
-    onTabChange?.(tabId as SheetTab);
-  };
-
   const handleClose = () => {
-    console.log('[InfoPanel] handleClose called, onSheetClose defined:', !!onSheetClose);
     onSheetClose?.();
   };
 
@@ -105,16 +63,16 @@ export function InfoPanel({
       </div>
 
       {/* Bottom sheet overlay: slides in on top when active */}
-      {showCardSelection && tabs.length > 0 && (
+      {isSheetOpen && sheetContent && (
         <div className={styles.cardSelectionOverlay}>
           <BottomSheet
-            tabs={tabs}
-            activeTabId={activeTab}
-            onTabChange={handleTabChange}
-            isOpen={showCardSelection}
+            isOpen={isSheetOpen}
             onClose={handleClose}
             showCloseButton={!!onSheetClose}
-          />
+            title={sheetTitle}
+          >
+            {sheetContent}
+          </BottomSheet>
         </div>
       )}
     </div>

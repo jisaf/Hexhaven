@@ -1,32 +1,19 @@
 /**
  * BottomSheet Component (Issue #205)
  *
- * Generic slide-up panel with tabs for cards, inventory, effects, etc.
+ * Generic slide-up panel for displaying content.
  * Mobile-first design with touch-friendly interactions:
  * - Swipe down to dismiss
  * - Touch-friendly drag handle
- * - Tab switching
  * - Slides up from bottom (portrait) or in from right (landscape)
  */
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import styles from './BottomSheet.module.css';
 
-export interface BottomSheetTab {
-  id: string;
-  label: string;
-  icon?: string; // Optional icon class (e.g., 'ra ra-sword')
-  content: React.ReactNode;
-  badge?: number; // Optional notification badge count
-}
-
 interface BottomSheetProps {
-  /** Array of tabs to display */
-  tabs: BottomSheetTab[];
-  /** Currently active tab ID */
-  activeTabId: string;
-  /** Callback when tab changes */
-  onTabChange: (tabId: string) => void;
+  /** Content to display in the sheet */
+  children: React.ReactNode;
   /** Whether the sheet is open */
   isOpen: boolean;
   /** Callback when sheet is closed (swipe down or close button) */
@@ -38,9 +25,7 @@ interface BottomSheetProps {
 }
 
 export const BottomSheet: React.FC<BottomSheetProps> = ({
-  tabs,
-  activeTabId,
-  onTabChange,
+  children,
   isOpen,
   onClose,
   title,
@@ -133,9 +118,6 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     }
   }, [isDragging, handleDragEnd]);
 
-  // Get active tab
-  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
-
   if (!isOpen) {
     return null;
   }
@@ -169,7 +151,6 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             className={styles.closeButton}
             onClick={(e) => {
               e.stopPropagation();
-              console.log('[BottomSheet] Close button clicked');
               onClose();
             }}
             onMouseDown={(e) => e.stopPropagation()}
@@ -181,29 +162,9 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         )}
       </div>
 
-      {/* Tab Bar */}
-      {tabs.length > 1 && (
-        <div className={styles.tabBar}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`${styles.tab} ${tab.id === activeTabId ? styles.activeTab : ''}`}
-              onClick={() => onTabChange(tab.id)}
-              aria-selected={tab.id === activeTabId}
-            >
-              {tab.icon && <i className={`${tab.icon} ${styles.tabIcon}`} />}
-              <span className={styles.tabLabel}>{tab.label}</span>
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span className={styles.tabBadge}>{tab.badge}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Tab Content */}
+      {/* Content */}
       <div className={styles.content}>
-        {activeTab?.content}
+        {children}
       </div>
     </div>
   );

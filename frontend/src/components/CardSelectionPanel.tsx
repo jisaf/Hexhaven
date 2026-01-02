@@ -78,8 +78,8 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   const getInstructionText = () => {
     if (waiting) return 'Waiting for other players...';
     if (mustRest) return `Cannot play 2 cards (${cards.length} in hand). Must rest.`;
-    if (!selectedTopAction) return 'Select a card for your TOP action';
-    if (!selectedBottomAction) return 'Select a card for your BOTTOM action';
+    if (!selectedTopAction) return 'Select your first card';
+    if (!selectedBottomAction) return 'Select your second card';
     if (totalCharacters > 1 && !allCharactersReady) {
       return `Cards selected! Click confirm to select for next character.`;
     }
@@ -132,13 +132,6 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                 card={card}
                 variant="full"
                 isSelected={isSelected}
-                isTop={
-                  card.id === selectedTopAction?.id
-                    ? true
-                    : card.id === selectedBottomAction?.id
-                      ? false
-                      : undefined
-                }
                 disabled={disabled || waiting}
                 onClick={() => !waiting && onCardSelect(card)}
               />

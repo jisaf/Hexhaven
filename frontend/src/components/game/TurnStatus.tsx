@@ -108,18 +108,8 @@ export function TurnStatus({
           <button
             onClick={onEndTurn}
             className={styles.endTurnButton}
-            disabled={
-              !isMyTurn ||
-              // Issue #411: Disable End Turn until both actions are complete
-              (turnActionState != null &&
-                turnActionState.availableActions.length > 0)
-            }
+            disabled={!isMyTurn}
             aria-label="End Turn"
-            title={
-              isMyTurn && turnActionState && turnActionState.availableActions.length > 0
-                ? 'Complete both card actions before ending turn'
-                : undefined
-            }
           >
             End Turn
           </button>

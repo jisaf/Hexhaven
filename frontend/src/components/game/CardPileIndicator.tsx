@@ -2,16 +2,15 @@
  * CardPileIndicator Component
  *
  * Full-width bar (44px height) showing card counts in each pile.
- * Clickable to view cards in each pile.
- * Indicates when rest is available.
- * Also includes an inventory button (Issue #205).
+ * Clickable to view/toggle each pile's content.
+ * All buttons use the same onPileClick handler.
  */
 
 import React from 'react';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import styles from './CardPileIndicator.module.css';
 
-export type PileType = 'hand' | 'discard' | 'lost' | 'active';
+export type PileType = 'hand' | 'discard' | 'lost' | 'active' | 'inventory';
 
 interface CardPileIndicatorProps {
   handCount: number;
@@ -22,16 +21,8 @@ interface CardPileIndicatorProps {
   selectedPile?: PileType | null;
   /** Number of items in inventory (for badge) */
   inventoryCount?: number;
-  /** Click handler for inventory button */
-  onInventoryClick?: () => void;
-  /** Whether inventory is currently selected */
-  inventorySelected?: boolean;
   /** Whether to show the active cards button (during turn with selected cards) */
   showActiveCards?: boolean;
-  /** Click handler for active cards button */
-  onActiveCardsClick?: () => void;
-  /** Whether active cards panel is currently open */
-  activeCardsSelected?: boolean;
 }
 
 export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
@@ -42,11 +33,7 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
   onPileClick,
   selectedPile,
   inventoryCount = 0,
-  onInventoryClick,
-  inventorySelected = false,
   showActiveCards = false,
-  onActiveCardsClick,
-  activeCardsSelected = false,
 }) => {
   return (
     <div className={styles.indicator} data-testid="card-pile-indicator">
@@ -82,12 +69,12 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
       </button>
 
       {/* Active Cards Button (Issue #411) - Shows during turn with selected cards */}
-      {showActiveCards && onActiveCardsClick && (
+      {showActiveCards && (
         <button
-          className={`${styles.pile} ${styles.activePile} ${activeCardsSelected ? styles.selected : ''}`}
+          className={`${styles.pile} ${styles.activePile} ${selectedPile === 'active' ? styles.selected : ''}`}
           title="View active turn cards"
           data-testid="active-cards-button"
-          onClick={onActiveCardsClick}
+          onClick={() => onPileClick('active')}
         >
           <i className="ra ra-crossed-swords" style={{ fontSize: '16px' }} />
           <span className={styles.label}>Active</span>
@@ -95,19 +82,17 @@ export const CardPileIndicator: React.FC<CardPileIndicatorProps> = ({
       )}
 
       {/* Inventory Button (Issue #205) */}
-      {onInventoryClick && (
-        <button
-          className={`${styles.pile} ${styles.inventoryPile} ${inventorySelected ? styles.selected : ''}`}
-          title="Click to open inventory"
-          data-testid="inventory-button"
-          onClick={onInventoryClick}
-        >
-          <i className="ra ra-knapsack" style={{ fontSize: '16px' }} />
-          {inventoryCount > 0 && (
-            <span className={styles.inventoryBadge}>{inventoryCount}</span>
-          )}
-        </button>
-      )}
+      <button
+        className={`${styles.pile} ${styles.inventoryPile} ${selectedPile === 'inventory' ? styles.selected : ''}`}
+        title="Click to open inventory"
+        data-testid="inventory-button"
+        onClick={() => onPileClick('inventory')}
+      >
+        <i className="ra ra-knapsack" style={{ fontSize: '16px' }} />
+        {inventoryCount > 0 && (
+          <span className={styles.inventoryBadge}>{inventoryCount}</span>
+        )}
+      </button>
     </div>
   );
 };

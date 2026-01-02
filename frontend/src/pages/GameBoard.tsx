@@ -29,7 +29,7 @@ import { ScenarioCompleteModal } from '../components/ScenarioCompleteModal';
 import { RestModal } from '../components/RestModal';
 import { ExhaustionModal } from '../components/ExhaustionModal';
 import { GamePanel } from '../components/game/GamePanel';
-import { InfoPanel, type SheetTab } from '../components/game/InfoPanel';
+import { InfoPanel } from '../components/game/InfoPanel';
 import { TurnStatus } from '../components/game/TurnStatus';
 import { TurnActionPanel } from '../components/game/TurnActionPanel';
 import { GameLog } from '../components/game/GameLog';
@@ -59,21 +59,10 @@ export function GameBoard() {
   const [objectives, setObjectives] = useState<ObjectivesLoadedPayload | null>(null);
   const [objectiveProgress, setObjectiveProgress] = useState<Map<string, ObjectiveProgressUpdatePayload>>(new Map());
 
-  // Card pile selection state
+  // Bottom sheet state - controlled by pile selection
   const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
   const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
-  const [showPileView, setShowPileView] = useState(false);
   const closingRef = useRef(false); // Guard against click-through after close
-
-  // Inventory / BottomSheet state (Issue #205)
-  const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
-  const [showInventory, setShowInventory] = useState(false);
-
-  // Turn action panel visibility (Issue #411)
-  // Track which turn entity the hidden state applies to (auto-resets when turn changes)
-  const [hiddenForTurnEntity, setHiddenForTurnEntity] = useState<string | null>(null);
-  // Derived: panel is hidden only if hidden for the current turn entity
-  const turnActionPanelHidden = hiddenForTurnEntity === gameState.currentTurnEntityId;
 
   // Monster ability overlay state
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
@@ -419,49 +408,53 @@ export function GameBoard() {
   const discardCount = myCharacter?.discardPile?.length || 0;
   const lostCount = myCharacter?.lostPile?.length || 0;
 
-  // Handle card pile clicks
+  // Handle card pile clicks - unified handler for all piles
   const handlePileClick = (pile: PileType) => {
     // Guard against click-through after closing the panel
     if (closingRef.current) {
       return;
     }
+
     // Toggle selection - if clicking the same pile, close it
     if (selectedPile === pile) {
       setSelectedPile(null);
       setPileViewCards([]);
-      setShowPileView(false);
       return;
     }
 
-    // Select the pile and get its cards
+    // Select the new pile
     setSelectedPile(pile);
 
-    if (!myCharacter) {
+    // For card piles, load the cards
+    if (pile === 'hand' || pile === 'discard' || pile === 'lost') {
+      if (!myCharacter) {
+        setPileViewCards([]);
+        return;
+      }
+
+      let cardIds: string[] = [];
+      switch (pile) {
+        case 'hand':
+          cardIds = myCharacter.hand || [];
+          break;
+        case 'discard':
+          cardIds = myCharacter.discardPile || [];
+          break;
+        case 'lost':
+          cardIds = myCharacter.lostPile || [];
+          break;
+      }
+
+      // Convert card IDs to full card objects
+      const cardObjects = cardIds
+        .map(id => gameState.playerHand.find(card => card.id === id))
+        .filter((card): card is AbilityCard => card !== undefined);
+
+      setPileViewCards(cardObjects);
+    } else {
+      // For active/inventory, clear pile view cards
       setPileViewCards([]);
-      setShowPileView(false);
-      return;
     }
-
-    let cardIds: string[] = [];
-    switch (pile) {
-      case 'hand':
-        cardIds = myCharacter.hand || [];
-        break;
-      case 'discard':
-        cardIds = myCharacter.discardPile || [];
-        break;
-      case 'lost':
-        cardIds = myCharacter.lostPile || [];
-        break;
-    }
-
-    // Convert card IDs to full card objects by looking up from playerHand
-    const cardObjects = cardIds
-      .map(id => gameState.playerHand.find(card => card.id === id))
-      .filter((card): card is AbilityCard => card !== undefined);
-
-    setPileViewCards(cardObjects);
-    setShowPileView(true);
   };
 
   // Transform TurnEntity[] to TurnOrderEntity[] with health information
@@ -521,40 +514,8 @@ export function GameBoard() {
         />
       )}
 
-      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
-      {/* Issue #411: showTurnAction indicates turn action panel should be visible */}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar + BottomSheet */}
       <InfoPanel
-        showCardSelection={
-          gameState.showCardSelection ||
-          // Turn action panel: show if it's my turn, I have turn action state and cards, AND user hasn't hidden it
-          (gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards && !turnActionPanelHidden) ||
-          showPileView ||
-          showInventory
-        }
-        activeTab={activeSheetTab}
-        onTabChange={(tab) => setActiveSheetTab(tab)}
-        onSheetClose={
-          // Allow closing for: pile view, inventory, OR turn action panel (but not card selection phase)
-          (!gameState.showCardSelection && (showInventory || showPileView || (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards))) ? () => {
-            // Set closing flag to prevent click-through to pile buttons
-            closingRef.current = true;
-            setTimeout(() => {
-              closingRef.current = false;
-            }, 300);
-            // Clear states based on what's open
-            if (showInventory || showPileView) {
-              setShowInventory(false);
-              setShowPileView(false);
-              setSelectedPile(null);
-              setPileViewCards([]);
-            }
-            // If turn action panel was showing, mark it as hidden for this turn
-            if (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) {
-              setHiddenForTurnEntity(gameState.currentTurnEntityId);
-            }
-          } : undefined
-        }
-        inventoryCount={ownedItems.length}
         turnStatus={
           <TurnStatus
             turnOrder={turnOrderWithHealth}
@@ -573,7 +534,6 @@ export function GameBoard() {
                 : false
             }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
-            // Issue #411: Turn action state for End Turn button logic
             turnActionState={gameState.turnActionState}
           />
         }
@@ -587,28 +547,33 @@ export function GameBoard() {
             onPileClick={handlePileClick}
             selectedPile={selectedPile}
             inventoryCount={ownedItems.length}
-            onInventoryClick={() => {
-              setShowInventory(true);
-              setActiveSheetTab('inventory');
-            }}
-            inventorySelected={showInventory && activeSheetTab === 'inventory'}
-            // Issue #411: Active Cards button - shows during turn when cards are selected
             showActiveCards={gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards}
-            onActiveCardsClick={() => {
-              // Re-show the turn action panel (clear the hidden state)
-              setHiddenForTurnEntity(null);
-              setActiveSheetTab('cards');
-              // Close any other views
-              setShowInventory(false);
-              setShowPileView(false);
-              setSelectedPile(null);
-            }}
-            activeCardsSelected={
-              gameState.isMyTurn && !!gameState.turnActionState && !!gameState.selectedTurnCards && !turnActionPanelHidden
-            }
           />
         }
-        cardSelection={
+        isSheetOpen={
+          // Sheet is open during card selection, or when a pile is selected
+          gameState.showCardSelection || selectedPile !== null
+        }
+        onSheetClose={
+          // Allow closing when not in card selection phase
+          !gameState.showCardSelection ? () => {
+            closingRef.current = true;
+            setTimeout(() => { closingRef.current = false; }, 300);
+            setSelectedPile(null);
+            setPileViewCards([]);
+          } : undefined
+        }
+        sheetTitle={
+          selectedPile === 'hand' ? 'Hand' :
+          selectedPile === 'discard' ? 'Discard Pile' :
+          selectedPile === 'lost' ? 'Lost Cards' :
+          selectedPile === 'active' ? 'Active Cards' :
+          selectedPile === 'inventory' ? 'Inventory' :
+          gameState.showCardSelection ? 'Select Cards' :
+          undefined
+        }
+        sheetContent={
+          // Priority: Card selection phase > Active pile content > Other pile content
           gameState.showCardSelection ? (
             <CardSelectionPanel
               cards={gameState.playerHand}
@@ -629,7 +594,6 @@ export function GameBoard() {
                   ? (gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length
                   : 0
               }
-              // Multi-character support
               activeCharacterName={
                 gameState.myCharacterId
                   ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.classType
@@ -638,8 +602,7 @@ export function GameBoard() {
               totalCharacters={gameState.myCharacterIds.length}
               charactersWithSelections={gameStateManager.getCharactersWithSelectionsCount()}
             />
-          ) : (gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards) ? (
-            // Issue #411: TurnActionPanel for selecting card actions during turn
+          ) : selectedPile === 'active' && gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards ? (
             <TurnActionPanel
               card1={gameState.selectedTurnCards.card1}
               card2={gameState.selectedTurnCards.card2}
@@ -650,38 +613,36 @@ export function GameBoard() {
               targetingMode={gameState.cardActionTargetingMode}
               onCancelTargeting={() => gameStateManager.cancelCardActionTargeting()}
             />
-          ) : showPileView ? (
+          ) : selectedPile === 'inventory' ? (
+            <InventoryTabContent
+              ownedItems={ownedItems}
+              equippedItems={equippedItems}
+              itemStates={itemStates}
+              characterLevel={typeof myCharacter?.level === 'number' ? myCharacter.level : 1}
+              onUseItem={useItem}
+              onEquipItem={equipItem}
+              onUnequipItem={unequipItem}
+              disabled={!gameState.isMyTurn}
+              loading={inventoryLoading}
+              error={inventoryError || undefined}
+            />
+          ) : (selectedPile === 'hand' || selectedPile === 'discard' || selectedPile === 'lost') && pileViewCards.length > 0 ? (
             <CardSelectionPanel
               cards={pileViewCards}
-              onCardSelect={() => {}} // No-op in view mode
+              onCardSelect={() => {}}
               onClearSelection={() => {
-                setShowPileView(false);
                 setSelectedPile(null);
                 setPileViewCards([]);
               }}
-              onConfirmSelection={() => {}} // No-op in view mode
-              onLongRest={() => {}} // No-op in view mode
+              onConfirmSelection={() => {}}
+              onLongRest={() => {}}
               selectedTopAction={null}
               selectedBottomAction={null}
-              waiting={true} // Disable interaction in view mode
+              waiting={true}
               canLongRest={false}
               discardPileCount={discardCount}
             />
           ) : undefined
-        }
-        inventoryContent={
-          <InventoryTabContent
-            ownedItems={ownedItems}
-            equippedItems={equippedItems}
-            itemStates={itemStates}
-            characterLevel={typeof myCharacter?.level === 'number' ? myCharacter.level : 1}
-            onUseItem={useItem}
-            onEquipItem={equipItem}
-            onUnequipItem={unequipItem}
-            disabled={!gameState.isMyTurn}
-            loading={inventoryLoading}
-            error={inventoryError || undefined}
-          />
         }
       />
 
