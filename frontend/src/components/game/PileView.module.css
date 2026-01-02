@@ -18,15 +18,15 @@
   overflow: hidden;
 }
 
-/* Cards container - matches CardSelectionPanel */
+/* Cards container - fills available height */
 .cardsContainer {
   display: flex;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   gap: 8px;
-  padding: 10px 10px 20px 10px;
+  padding: 8px;
   flex-grow: 1;
-  max-height: 100%;
+  align-items: stretch;
 }
 
 /* Hide scrollbar */
@@ -39,13 +39,13 @@
   scrollbar-width: none;
 }
 
-/* Individual card wrapper - matches CardSelectionPanel */
+/* Individual card wrapper - fills container height, width from aspect ratio */
 .cardWrapper {
   flex: 0 0 auto;
   transition: all 0.3s ease;
   position: relative;
-  width: var(--card-width, 180px);
-  height: var(--card-height, 260px);
+  height: 100%;
+  aspect-ratio: 2 / 3;
 }
 
 /* The actual ability card */
@@ -67,35 +67,20 @@
   opacity: 0.7;
 }
 
-/* Portrait mode - matches CardSelectionPanel responsive behavior */
+/* Portrait mode - tighter spacing */
 @media (orientation: portrait) {
   .pileView {
-    padding: 4px 8px;
+    padding: 4px;
     gap: 4px;
   }
 
   .cardsContainer {
-    padding: 0;
-  }
-
-  /* Smaller cards in portrait */
-  .cardWrapper {
-    --card-width: 120px;
-    --card-height: 170px;
-    width: var(--card-width);
-    height: var(--card-height);
+    padding: 4px;
+    gap: 6px;
   }
 
   .emptyState {
-    min-height: 100px;
+    min-height: 80px;
     font-size: 14px;
-  }
-}
-
-/* Very small portrait screens */
-@media (orientation: portrait) and (max-height: 600px) {
-  .cardWrapper {
-    --card-width: 100px;
-    --card-height: 145px;
   }
 }

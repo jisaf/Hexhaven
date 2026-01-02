@@ -21,15 +21,16 @@
   overflow: hidden;
 }
 
-/* Cards container - horizontal scroll like CardSelectionPanel */
+/* Cards container - fills available height */
 .cardsContainer {
   display: flex;
   overflow-x: auto;
-  overflow-y: visible;
-  gap: 16px;
-  padding: 10px;
+  overflow-y: hidden;
+  gap: 12px;
+  padding: 8px;
   flex-grow: 1;
   justify-content: center;
+  align-items: stretch;
 }
 
 /* Hide scrollbar */
@@ -42,13 +43,12 @@
   scrollbar-width: none;
 }
 
-/* Individual card wrapper - contains AbilityCard2 and overlay */
+/* Individual card wrapper - fills container height, width from aspect ratio */
 .cardWrapper {
   position: relative;
   flex: 0 0 auto;
-  /* Use CSS variables like CardSelectionPanel */
-  width: var(--card-width, 180px);
-  height: var(--card-height, 260px);
+  height: 100%;
+  aspect-ratio: 2 / 3;
 }
 
 /* The actual ability card */
@@ -216,49 +216,21 @@
   background: rgba(192, 57, 43, 1);
 }
 
-/* Portrait mode - horizontal scroll with smaller cards */
+/* Portrait mode - tighter spacing */
 @media (orientation: portrait) {
   .panel {
-    padding: 8px;
-    gap: 8px;
+    padding: 4px;
+    gap: 4px;
   }
 
   .cardsContainer {
-    padding: 0;
+    padding: 4px;
     gap: 8px;
-    justify-content: center;
-  }
-
-  /* Smaller cards in portrait - match CardSelectionPanel */
-  .cardWrapper {
-    --card-width: 120px;
-    --card-height: 170px;
-    width: var(--card-width);
-    height: var(--card-height);
   }
 
   .helpText {
     font-size: 10px;
     padding-top: 4px;
-  }
-
-  .confirmButton,
-  .cancelButton {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-}
-
-/* Very small portrait screens */
-@media (orientation: portrait) and (max-height: 600px) {
-  .cardWrapper {
-    --card-width: 100px;
-    --card-height: 145px;
-  }
-
-  .header {
-    flex-direction: row;
-    gap: 8px;
   }
 }
 

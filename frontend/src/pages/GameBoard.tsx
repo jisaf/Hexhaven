@@ -65,6 +65,13 @@ export function GameBoard() {
   const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
   const closingRef = useRef(false); // Guard against click-through after close
 
+  // Auto-select hand pile when card selection phase begins
+  useEffect(() => {
+    if (gameState.showCardSelection) {
+      setSelectedPile('hand');
+    }
+  }, [gameState.showCardSelection]);
+
   // Monster ability overlay state
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
 

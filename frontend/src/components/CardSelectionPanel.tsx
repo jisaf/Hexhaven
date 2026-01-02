@@ -100,18 +100,14 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
 
   return (
     <div className={panelClassName}>
-      <div className="selection-instructions">
-        <h3>
-          {activeCharacterName && totalCharacters > 1
-            ? `Select Actions: ${activeCharacterName}`
-            : 'Select Your Actions'}
-        </h3>
+      {/* Status text shown in cards area */}
+      <div className="status-text">
         {totalCharacters > 1 && (
           <span className="character-progress">
-            {charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/{totalCharacters} characters ready
+            {charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/{totalCharacters} ready
           </span>
         )}
-        <p>{getInstructionText()}</p>
+        <span className="instruction">{getInstructionText()}</span>
       </div>
 
       <div className="cards-container">
