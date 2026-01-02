@@ -21,28 +21,26 @@
   overflow: hidden;
 }
 
-/* Header - matches CardSelectionPanel's selection-instructions style */
+/* Header - simple inline style */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: rgba(13, 26, 46, 0.95);
-  border-radius: 6px;
-  border: 1px solid #c9a444;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 164, 68, 0.3);
 }
 
 .title {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 700;
   color: #c9a444;
-  font-family: 'MedievalSharp', serif;
-  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .actionCount {
-  font-size: 14px;
-  color: #f0e6d2;
+  font-size: 12px;
+  color: rgba(240, 230, 210, 0.8);
 }
 
 /* Cards container - horizontal scroll like CardSelectionPanel */
@@ -240,24 +238,19 @@
   background: rgba(192, 57, 43, 1);
 }
 
-/* Portrait mode - matches CardSelectionPanel responsive behavior */
+/* Portrait mode - horizontal scroll with smaller cards */
 @media (orientation: portrait) {
   .panel {
-    padding: 4px 8px;
-    gap: 4px;
+    padding: 8px;
+    gap: 8px;
   }
 
   .header {
-    padding: 2px 4px;
-    border: none;
-    background: none;
-    text-align: center;
-    flex-direction: column;
-    gap: 2px;
+    padding-bottom: 4px;
   }
 
   .title {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .actionCount {

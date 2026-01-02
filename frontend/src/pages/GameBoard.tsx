@@ -591,9 +591,9 @@ export function GameBoard() {
           } : undefined
         }
         sheetTitle={
-          selectedPile === 'hand' ? 'Hand' :
-          selectedPile === 'discard' ? 'Discard Pile' :
-          selectedPile === 'lost' ? 'Lost Cards' :
+          selectedPile === 'hand' ? `Hand (${pileViewCards.length})` :
+          selectedPile === 'discard' ? `Discard Pile (${pileViewCards.length})` :
+          selectedPile === 'lost' ? `Lost Cards (${pileViewCards.length})` :
           selectedPile === 'active' ? 'Active Cards' :
           selectedPile === 'inventory' ? 'Inventory' :
           gameState.showCardSelection ? 'Select Cards' :
@@ -655,12 +655,6 @@ export function GameBoard() {
           ) : (selectedPile === 'hand' || selectedPile === 'discard' || selectedPile === 'lost') ? (
             <PileView
               cards={pileViewCards}
-              title={
-                selectedPile === 'hand' ? 'Hand' :
-                selectedPile === 'discard' ? 'Discard Pile' :
-                'Lost Cards'
-              }
-              subtitle={`${pileViewCards.length} card${pileViewCards.length !== 1 ? 's' : ''}`}
               emptyMessage={
                 selectedPile === 'hand' ? 'No cards in hand' :
                 selectedPile === 'discard' ? 'Discard pile is empty' :

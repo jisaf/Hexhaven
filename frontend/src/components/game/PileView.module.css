@@ -3,6 +3,7 @@
  *
  * Unified styling for card pile viewers (Hand, Discard, Lost).
  * Matches CardSelectionPanel for the clearer, darker design.
+ * Note: Header/title is handled by BottomSheet.
  */
 
 .pileView {
@@ -15,30 +16,6 @@
   background-color: rgba(13, 26, 46, 0.98);
   border-top: 2px solid #c9a444;
   overflow: hidden;
-}
-
-/* Header - matches CardSelectionPanel's selection-instructions style */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: rgba(13, 26, 46, 0.95);
-  border-radius: 6px;
-  border: 1px solid #c9a444;
-}
-
-.title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #c9a444;
-  font-family: 'MedievalSharp', serif;
-  margin: 0;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: #f0e6d2;
 }
 
 /* Cards container - matches CardSelectionPanel */
@@ -95,23 +72,6 @@
   .pileView {
     padding: 4px 8px;
     gap: 4px;
-  }
-
-  .header {
-    padding: 2px 4px;
-    border: none;
-    background: none;
-    text-align: center;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .title {
-    font-size: 14px;
-  }
-
-  .subtitle {
-    font-size: 11px;
   }
 
   .cardsContainer {
