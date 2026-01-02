@@ -79,8 +79,6 @@
 .actionCard {
   width: 100%;
   height: 100%;
-  /* Slightly smaller font for turn panel context */
-  font-size: clamp(10px, 2vw, 14px);
 }
 
 /* Overlay container - positioned over the card */
@@ -278,10 +276,6 @@
     --card-height: 170px;
     width: var(--card-width);
     height: var(--card-height);
-  }
-
-  .actionCard {
-    font-size: clamp(8px, 2vw, 11px);
   }
 
   .helpText {
