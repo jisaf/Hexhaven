@@ -42,8 +42,12 @@ interface ElementsPanelProps {
 
 /**
  * Map ElementState to FloatingChip intensity
+ * Returns 'off' for undefined or invalid states to handle malformed data gracefully
  */
-function mapStateToIntensity(state: ElementState): 'full' | 'waning' | 'off' {
+function mapStateToIntensity(state: ElementState | undefined): 'full' | 'waning' | 'off' {
+  if (!state) {
+    return 'off';
+  }
   switch (state) {
     case ElementState.STRONG:
       return 'full';
@@ -62,8 +66,17 @@ export function ElementsPanel({ elementalState }: ElementsPanelProps) {
   }
 
   // Filter to only active elements (STRONG or WANING)
+  // Also verify the element exists in ELEMENT_CONFIG for defensive coding
   const activeElements = ELEMENT_ORDER.filter((element) => {
+    // Skip elements not in config (defensive check)
+    if (!ELEMENT_CONFIG[element]) {
+      return false;
+    }
     const state = elementalState[element];
+    // Handle undefined states gracefully
+    if (!state) {
+      return false;
+    }
     return state === ElementState.STRONG || state === ElementState.WANING;
   });
 
@@ -78,6 +91,12 @@ export function ElementsPanel({ elementalState }: ElementsPanelProps) {
         {activeElements.map((element) => {
           const config = ELEMENT_CONFIG[element];
           const state = elementalState[element];
+
+          // Defensive check: skip if config is missing (shouldn't happen due to filter above)
+          if (!config) {
+            return null;
+          }
+
           const intensity = mapStateToIntensity(state);
 
           return (
@@ -89,7 +108,7 @@ export function ElementsPanel({ elementalState }: ElementsPanelProps) {
               borderColor={config.borderColor}
               intensity={intensity}
               isTurn={intensity === 'full'} // Use pulse animation for STRONG elements
-              title={`${element.charAt(0).toUpperCase() + element.slice(1)} - ${state}`}
+              title={`${element.charAt(0).toUpperCase() + element.slice(1)} - ${state ?? 'unknown'}`}
               testId={`element-chip-${element}`}
               className="element-chip"
             />

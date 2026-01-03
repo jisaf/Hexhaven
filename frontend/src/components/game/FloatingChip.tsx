@@ -20,9 +20,13 @@ import React from 'react';
 // CSS styles extracted outside component to avoid re-creating on every render
 const FLOATING_CHIP_STYLES = `
   .floating-chip {
+    /* Chip dimension variables for easy customization */
+    --chip-size: 44px;
+    --chip-icon-size: 32px;
+
     position: relative;
-    width: 44px;
-    height: 44px;
+    width: var(--chip-size);
+    height: var(--chip-size);
     padding: 0;
     background: transparent;
     border: none;
@@ -60,8 +64,8 @@ const FLOATING_CHIP_STYLES = `
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 32px;
-    height: 32px;
+    width: var(--chip-icon-size);
+    height: var(--chip-icon-size);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -148,13 +152,11 @@ const FLOATING_CHIP_STYLES = `
 
   @media (max-width: 768px) {
     .floating-chip {
-      width: 36px;
-      height: 36px;
+      --chip-size: 36px;
+      --chip-icon-size: 26px;
     }
 
     .chip-icon {
-      width: 26px;
-      height: 26px;
       font-size: 14px;
     }
   }
@@ -209,7 +211,9 @@ export interface FloatingChipProps {
 }
 
 export const FloatingChip = React.memo(function FloatingChip({
-  id,
+  // id is kept in props interface for debugging/testing but not used internally
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  id: _id,
   icon,
   color,
   borderColor,
@@ -259,7 +263,6 @@ export const FloatingChip = React.memo(function FloatingChip({
 
   return (
     <button
-      key={id}
       className={chipClasses}
       onClick={onClick}
       style={

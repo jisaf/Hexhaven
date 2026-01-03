@@ -8,34 +8,35 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ElementsPanel } from '../../src/components/game/ElementsPanel';
+import { ElementState } from '../../../shared/types/entities';
 import type { ElementalInfusion } from '../../../shared/types/entities';
 
 describe('ElementsPanel', () => {
   const allInertState: ElementalInfusion = {
-    fire: 'inert',
-    ice: 'inert',
-    air: 'inert',
-    earth: 'inert',
-    light: 'inert',
-    dark: 'inert',
+    fire: ElementState.INERT,
+    ice: ElementState.INERT,
+    air: ElementState.INERT,
+    earth: ElementState.INERT,
+    light: ElementState.INERT,
+    dark: ElementState.INERT,
   };
 
   const mixedState: ElementalInfusion = {
-    fire: 'strong',
-    ice: 'waning',
-    air: 'inert',
-    earth: 'inert',
-    light: 'strong',
-    dark: 'inert',
+    fire: ElementState.STRONG,
+    ice: ElementState.WANING,
+    air: ElementState.INERT,
+    earth: ElementState.INERT,
+    light: ElementState.STRONG,
+    dark: ElementState.INERT,
   };
 
   const allStrongState: ElementalInfusion = {
-    fire: 'strong',
-    ice: 'strong',
-    air: 'strong',
-    earth: 'strong',
-    light: 'strong',
-    dark: 'strong',
+    fire: ElementState.STRONG,
+    ice: ElementState.STRONG,
+    air: ElementState.STRONG,
+    earth: ElementState.STRONG,
+    light: ElementState.STRONG,
+    dark: ElementState.STRONG,
   };
 
   describe('null state handling', () => {
