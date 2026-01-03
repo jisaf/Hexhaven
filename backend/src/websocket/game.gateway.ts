@@ -42,6 +42,7 @@ import type {
   ScenarioObjectives,
   ObjectiveProgressEntry,
 } from '../../../shared/types/objectives';
+import type { ActionResponse } from '../../../shared/types/action-protocol';
 import type {
   JoinRoomPayload,
   SelectCharacterPayload,
@@ -792,9 +793,33 @@ export class GameGateway
 
   /**
    * Handle client connection
+   * Issue #419: Populate socketToPlayer mapping immediately on connection
+   * This ensures game events can identify the user even before join_room is called
    */
-  handleConnection(_client: Socket): void {
-    // Verbose connection log removed
+  handleConnection(client: Socket): void {
+    const userId = client.data.userId;
+    if (userId) {
+      // Clean up any stale mapping for this user (handles reconnection with new socket ID)
+      const oldSocketId = this.playerToSocket.get(userId);
+      if (oldSocketId && oldSocketId !== client.id) {
+        this.socketToPlayer.delete(oldSocketId);
+        this.logger.log(
+          `Cleaned up stale socket mapping: ${oldSocketId} for user ${userId}`,
+        );
+      }
+
+      // Populate socket mapping immediately on connection
+      this.socketToPlayer.set(client.id, userId);
+      this.playerToSocket.set(userId, client.id);
+      this.logger.log(
+        `Socket ${client.id} mapped to user ${userId} on connection`,
+      );
+    } else {
+      // This should not happen as main.ts rejects connections without valid JWT
+      this.logger.warn(
+        `Socket ${client.id} connected without userId in socket.data`,
+      );
+    }
   }
 
   /**
@@ -851,6 +876,19 @@ export class GameGateway
     }
 
     // Verbose disconnection log removed
+  }
+
+  /**
+   * Issue #419: Ping handler for connection verification
+   * Frontend sends ping when tab becomes visible to verify connection is alive
+   * Returns acknowledgment so frontend knows the connection is working
+   */
+  @SubscribeMessage('ping')
+  handlePing(@ConnectedSocket() _client: Socket): {
+    pong: boolean;
+    timestamp: number;
+  } {
+    return { pong: true, timestamp: Date.now() };
   }
 
   /**
@@ -926,8 +964,12 @@ export class GameGateway
       }
 
       // Associate socket with player (using database userId)
-      this.socketToPlayer.set(client.id, userId);
-      this.playerToSocket.set(userId, client.id);
+      // Issue #419: Only update mapping if not already set (handleConnection may have set it)
+      // This prevents overwriting mappings unnecessarily and maintains DRY principle
+      if (!this.socketToPlayer.has(client.id)) {
+        this.socketToPlayer.set(client.id, userId);
+        this.playerToSocket.set(userId, client.id);
+      }
 
       // IMPORTANT: Leave all other game rooms before joining the new one
       // This ensures getRoomFromSocket() always returns the correct current room
@@ -1529,12 +1571,57 @@ export class GameGateway
   }
 
   /**
+   * Select scenario for the room (host only, before game start)
+   */
+  @SubscribeMessage('select_scenario')
+  handleSelectScenario(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { scenarioId: string },
+  ): void {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room } = roomData;
+
+      // Use room service to select scenario (validates host permission)
+      roomService.selectScenario(room.roomCode, payload.scenarioId, userId);
+
+      this.logger.log(
+        `Scenario selected in room ${room.roomCode}: ${payload.scenarioId}`,
+      );
+
+      // Broadcast scenario selection to all players in room
+      this.server.to(room.roomCode).emit('scenario_selected', {
+        scenarioId: payload.scenarioId,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Select scenario error: ${errorMessage}`);
+      const errorPayload: ErrorPayload = {
+        code: 'SELECT_SCENARIO_ERROR',
+        message: errorMessage,
+      };
+      client.emit('error', errorPayload);
+    }
+  }
+
+  /**
    * Start the game
    */
   @SubscribeMessage('start_game')
   async handleStartGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: StartGamePayload,
+    @MessageBody() _payload: StartGamePayload,
   ): Promise<void> {
     try {
       const userId = this.socketToPlayer.get(client.id);
@@ -1564,12 +1651,19 @@ export class GameGateway
         throw new Error('Only the host can start the game');
       }
 
+      // Issue #419: Room state is the single source of truth for scenarioId
+      // It's set during room creation or via select_scenario event
+      const scenarioId = room.scenarioId;
+      if (!scenarioId) {
+        throw new Error(
+          'No scenario selected. Please select a scenario before starting the game.',
+        );
+      }
+
       // Load scenario data
-      const scenario = await this.scenarioService.loadScenario(
-        payload.scenarioId,
-      );
+      const scenario = await this.scenarioService.loadScenario(scenarioId);
       if (!scenario) {
-        throw new Error(`Scenario not found: ${payload.scenarioId}`);
+        throw new Error(`Scenario not found: ${scenarioId}`);
       }
 
       // Validate scenario
@@ -1582,11 +1676,11 @@ export class GameGateway
       // Use room.campaignId (set during room creation) as the server authority
       // instead of relying on frontend to pass it back
       this.logger.log(
-        `[Campaign Debug] Before startGame: room.campaignId=${room.campaignId}, payload.scenarioId=${payload.scenarioId}`,
+        `[Campaign Debug] Before startGame: room.campaignId=${room.campaignId}, scenarioId=${scenarioId}`,
       );
       roomService.startGame(
         room.roomCode,
-        payload.scenarioId,
+        scenarioId,
         userId,
         room.campaignId || undefined,
       );
@@ -1601,7 +1695,7 @@ export class GameGateway
           data: {
             id: room.id,
             roomCode: room.roomCode,
-            scenarioId: payload.scenarioId,
+            scenarioId: scenarioId,
             campaignId: room.campaignId || null,
             difficulty: 1,
             status: 'ACTIVE',
@@ -1837,7 +1931,7 @@ export class GameGateway
       const objectives = this.roomObjectives.get(room.roomCode);
 
       const gameStartedPayload: GameStartedPayload = {
-        scenarioId: payload.scenarioId,
+        scenarioId: scenarioId,
         scenarioName: scenario.name,
         mapLayout: scenario.mapLayout,
         monsters: monsters.map((m) => ({
@@ -2234,12 +2328,14 @@ export class GameGateway
 
   /**
    * Select two ability cards for the round (US2 - T097)
+   * Issue #419: Returns acknowledgment for reliable card selection
    */
   @SubscribeMessage('select_cards')
   async handleSelectCards(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: SelectCardsPayload,
-  ): Promise<void> {
+  ): Promise<ActionResponse> {
+    const requestId = (payload as any).requestId || 'unknown';
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -2412,6 +2508,13 @@ export class GameGateway
       if (allSelected) {
         this.startNewRound(room.roomCode);
       }
+
+      // Issue #419: Return success acknowledgment
+      return {
+        requestId,
+        success: true,
+        serverTimestamp: Date.now(),
+      };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
@@ -2421,6 +2524,17 @@ export class GameGateway
         message: errorMessage,
       };
       client.emit('error', errorPayload);
+
+      // Issue #419: Return error acknowledgment
+      return {
+        requestId,
+        success: false,
+        error: {
+          code: 'SELECT_CARDS_ERROR',
+          message: errorMessage,
+        },
+        serverTimestamp: Date.now(),
+      };
     }
   }
 
