@@ -38,7 +38,7 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   waiting = false,
   canLongRest = false,
   discardPileCount = 0,
-  activeCharacterName,
+  // activeCharacterName - intentionally omitted (unused)
   totalCharacters = 1,
   charactersWithSelections = 0,
   // Issue #411 - Initiative selection

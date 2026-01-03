@@ -136,8 +136,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Header */}
-      <div className={styles.header}>
+      {/* Header - drag handle for swipe-to-dismiss */}
+      <div
+        className={styles.header}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+      >
         {title && <span className={styles.title}>{title}</span>}
         {showCloseButton && (
           <button

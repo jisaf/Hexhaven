@@ -66,9 +66,11 @@ export function GameBoard() {
   const closingRef = useRef(false); // Guard against click-through after close
 
   // Auto-select hand pile when card selection phase begins
+  // Use setTimeout to avoid synchronous setState in effect (lint rule)
   useEffect(() => {
     if (gameState.showCardSelection) {
-      setSelectedPile('hand');
+      const timer = setTimeout(() => setSelectedPile('hand'), 0);
+      return () => clearTimeout(timer);
     }
   }, [gameState.showCardSelection]);
 
