@@ -640,7 +640,7 @@ export function GameBoard() {
               selectedInitiativeCardId={gameState.selectedInitiativeCardId}
               onInitiativeChange={(cardId) => gameStateManager.setInitiativeCard(cardId)}
             />
-          ) : selectedPile === 'active' && gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards ? (
+          ) : gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards ? (
             <TurnActionPanel
               card1={gameState.selectedTurnCards.card1}
               card2={gameState.selectedTurnCards.card2}
@@ -648,7 +648,6 @@ export function GameBoard() {
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
               targetingMode={gameState.cardActionTargetingMode}
-              onCancelTargeting={() => gameStateManager.cancelCardActionTargeting()}
             />
           ) : selectedPile === 'inventory' ? (
             <InventoryTabContent

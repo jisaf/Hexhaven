@@ -45,8 +45,6 @@ export interface TurnActionPanelProps {
   onActionConfirm: () => void;
   /** Issue #411: Current targeting mode (actions that need hex/target selection) */
   targetingMode?: 'move' | 'attack' | 'heal' | 'summon' | null;
-  /** Issue #411: Cancel targeting mode */
-  onCancelTargeting?: () => void;
 }
 
 /**
@@ -88,7 +86,6 @@ export function TurnActionPanel({
   onActionSelect,
   onActionConfirm,
   targetingMode,
-  onCancelTargeting,
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
@@ -120,15 +117,9 @@ export function TurnActionPanel({
   const handleActionClick = useCallback((cardId: string, position: 'top' | 'bottom') => {
     const isSameAction = pendingAction?.cardId === cardId && pendingAction?.position === position;
 
-    // If in targeting mode and tapping the SAME action, ignore (must tap hex to confirm or cancel button)
+    // If in targeting mode and tapping the SAME action, ignore (must tap hex to confirm)
     if (targetingMode && isSameAction) {
       return;
-    }
-
-    // If in targeting mode and tapping a DIFFERENT action, cancel targeting first
-    if (targetingMode && !isSameAction) {
-      onCancelTargeting?.();
-      // Then fall through to select the new action
     }
 
     // If clicking the same action that's already selected (and not in targeting mode),
@@ -139,10 +130,13 @@ export function TurnActionPanel({
       return;
     }
 
+    // If in targeting mode and tapping a DIFFERENT action, switch to the new action
+    // (the game state manager will handle clearing the old targeting state)
+
     // Set as pending and notify parent - this may enter targeting mode for move/attack
     setPendingAction({ cardId, position });
     onActionSelect(cardId, position);
-  }, [pendingAction, onActionSelect, onActionConfirm, targetingMode, onCancelTargeting]);
+  }, [pendingAction, onActionSelect, onActionConfirm, targetingMode]);
 
 
   // Get states for all four action regions
@@ -387,45 +381,17 @@ export function TurnActionPanel({
       {/* Help text */}
       <div className={styles.helpText}>
         {targetingMode === 'move' ? (
-          <>
-            <span className={styles.targetingHint}>Tap a hex on the map to move there</span>
-            {onCancelTargeting && (
-              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
-                Cancel Move
-              </button>
-            )}
-          </>
+          <span className={styles.targetingHint}>Tap a green hex to move there</span>
         ) : targetingMode === 'attack' ? (
-          <>
-            <span className={styles.targetingHint}>Tap an enemy to attack</span>
-            {onCancelTargeting && (
-              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
-                Cancel Attack
-              </button>
-            )}
-          </>
+          <span className={styles.targetingHint}>Tap a red hex to attack</span>
         ) : targetingMode === 'heal' ? (
-          <>
-            <span className={styles.targetingHint}>Tap an ally to heal them</span>
-            {onCancelTargeting && (
-              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
-                Cancel Heal
-              </button>
-            )}
-          </>
+          <span className={styles.targetingHint}>Tap an ally to heal them</span>
         ) : targetingMode === 'summon' ? (
-          <>
-            <span className={styles.targetingHint}>Tap an empty hex to place your summon</span>
-            {onCancelTargeting && (
-              <button className={styles.cancelTargetingButton} onClick={onCancelTargeting}>
-                Cancel Summon
-              </button>
-            )}
-          </>
+          <span className={styles.targetingHint}>Tap a purple hex to place your summon</span>
         ) : pendingAction ? (
           <span>Tap again to confirm, or tap a different action</span>
         ) : actionsUsed < 2 ? (
-          <span>Tap an action to select it. Long-press to enlarge.</span>
+          <span>Tap an action to select it</span>
         ) : null}
       </div>
 

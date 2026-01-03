@@ -121,7 +121,7 @@ describe('TurnActionPanel', () => {
     it('should show help text when no action is selected', () => {
       render(<TurnActionPanel {...defaultProps} />);
 
-      expect(screen.getByText('Tap an action to select it. Long-press to enlarge.')).toBeInTheDocument();
+      expect(screen.getByText('Tap an action to select it')).toBeInTheDocument();
     });
   });
 

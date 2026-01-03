@@ -1160,7 +1160,8 @@ class GameStateManager {
       { text: `Cards selected for ${this.state.myCharacterIds.length} character(s)` },
     ]);
 
-    // Keep panel visible but show waiting state
+    // Collapse card selection panel and wait for round to start
+    this.state.showCardSelection = false;
     this.state.waitingForRoundStart = true;
     this.emitStateUpdate();
   }
@@ -1403,6 +1404,11 @@ class GameStateManager {
     if (!isAvailable) {
       console.warn('[GameStateManager] Cannot select card action: action not available');
       return;
+    }
+
+    // If already in targeting mode, clear it before selecting new action
+    if (this.state.cardActionTargetingMode) {
+      this.clearTargetingState();
     }
 
     // Get the card and action to determine type
