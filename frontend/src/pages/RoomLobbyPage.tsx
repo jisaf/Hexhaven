@@ -23,6 +23,7 @@ import { gameSessionCoordinator } from '../services/game-session-coordinator.ser
 import { LobbyRoomView } from '../components/lobby/LobbyRoomView';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useCharacterSelection } from '../hooks/useCharacterSelection';
+import { useAutoSelectCharacters } from '../hooks/useAutoSelectCharacters';
 import { getDisplayName, saveLastRoomCode } from '../utils/storage';
 import { allPlayersReady, findPlayerById, isPlayerHost } from '../utils/playerTransformers';
 import styles from './RoomLobbyPage.module.css';
@@ -52,6 +53,12 @@ export const RoomLobbyPage: React.FC = () => {
     setActiveCharacter,
     disabledCharacterIds,
   } = useCharacterSelection();
+
+  // Auto-select characters from CreateGamePage navigation state (Issue #443 code review)
+  useAutoSelectCharacters({
+    isReady: sessionState.connectionStatus === 'connected' && !!sessionState.roomCode,
+    addCharacter,
+  });
 
   // Ensure joined on mount/refresh
   useEffect(() => {

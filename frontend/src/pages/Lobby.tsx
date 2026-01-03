@@ -31,6 +31,7 @@ import { CampaignView } from '../components/lobby/CampaignView';
 import { Tabs } from '../components/Tabs';
 import { useRoomSession } from '../hooks/useRoomSession';
 import { useCharacterSelection } from '../hooks/useCharacterSelection';
+import { useAutoSelectCharacters } from '../hooks/useAutoSelectCharacters';
 import {
   getPlayerNickname,
   getDisplayName,
@@ -68,6 +69,12 @@ export function Lobby() {
     setActiveCharacter,
     disabledCharacterIds,
   } = useCharacterSelection();
+
+  // Auto-select characters from CreateGamePage navigation state (Issue #443 code review)
+  useAutoSelectCharacters({
+    isReady: sessionState.status === 'lobby' && !!sessionState.roomCode,
+    addCharacter,
+  });
 
   const [activeRooms, setActiveRooms] = useState([]);
   const [myRooms, setMyRooms] = useState([]);

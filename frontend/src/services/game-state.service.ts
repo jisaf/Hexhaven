@@ -165,6 +165,7 @@ interface GameState {
 
   // Rest state
   restState: RestState | null;
+  restDeclaredCharacters: Set<string>; // Track characters that declared long rest
 
   // Exhaustion state
   exhaustionState: ExhaustionState | null;
@@ -300,6 +301,7 @@ class GameStateManager {
     showCardSelection: false,
     waitingForRoundStart: false,
     restState: null,
+    restDeclaredCharacters: new Set(), // Track characters that declared long rest
     exhaustionState: null,
     // Issue #411: Card action selection during turn
     turnActionState: null,
@@ -657,6 +659,9 @@ class GameStateManager {
         initiativeCardId: null,
       });
     }
+
+    // Clear rest declared tracking for new round
+    this.state.restDeclaredCharacters = new Set();
 
     // Clear currently displayed selections
     this.state.selectedTopAction = null;
@@ -1142,6 +1147,8 @@ class GameStateManager {
         // Not all characters have selected - find next character without selections
         for (let i = 0; i < this.state.myCharacterIds.length; i++) {
           const charId = this.state.myCharacterIds[i];
+          // Skip characters that declared rest
+          if (this.state.restDeclaredCharacters.has(charId)) continue;
           const selection = this.state.characterCardSelections.get(charId);
           if (!selection || !selection.topCardId || !selection.bottomCardId) {
             this.switchActiveCharacter(i);
@@ -1794,17 +1801,43 @@ class GameStateManager {
         ]);
         break;
 
-      case 'rest-declared':
+      case 'rest-declared': {
         // Long rest has been declared (initiative 99 set, round will start)
         // Actual rest actions (heal, move cards) happen at END of turn
         this.state.restState = null;
-        this.state.showCardSelection = false;
+
+        // Track that this character declared rest (for multi-character support)
+        this.state.restDeclaredCharacters.add(data.characterId);
+
+        // Check if ALL controlled characters have made decisions (cards selected OR rest declared)
+        const allDecisionsMade = this.state.myCharacterIds.every(charId => {
+          if (this.state.restDeclaredCharacters.has(charId)) return true;
+          const selection = this.state.characterCardSelections.get(charId);
+          return selection?.topCardId && selection?.bottomCardId;
+        });
+
+        if (allDecisionsMade) {
+          this.state.showCardSelection = false;
+        } else if (this.state.myCharacterIds.length > 1) {
+          // Multi-character: Switch to next character needing a decision
+          for (let i = 0; i < this.state.myCharacterIds.length; i++) {
+            const charId = this.state.myCharacterIds[i];
+            if (!this.state.restDeclaredCharacters.has(charId)) {
+              const selection = this.state.characterCardSelections.get(charId);
+              if (!selection?.topCardId || !selection?.bottomCardId) {
+                this.switchActiveCharacter(i);
+                break;
+              }
+            }
+          }
+        }
 
         this.addLog([
           { text: characterName, color: 'lightblue' },
           { text: ' declared long rest (initiative 99)', color: 'white' },
         ]);
         break;
+      }
 
       case 'rest-complete': {
         this.state.restState = null;
@@ -2011,6 +2044,7 @@ class GameStateManager {
         showCardSelection: false,
         waitingForRoundStart: false,
         restState: null,
+        restDeclaredCharacters: new Set(), // Track characters that declared long rest
         exhaustionState: null,
         abilityDeck: [],
         abilityDecks: new Map(), // Per-character ability decks
@@ -2083,10 +2117,12 @@ class GameStateManager {
   }
 
   /**
-   * Check if all controlled characters have selected their cards
+   * Check if all controlled characters have selected their cards (or declared rest)
    */
   public allCharactersHaveSelectedCards(): boolean {
     for (const charId of this.state.myCharacterIds) {
+      // Skip characters that declared rest
+      if (this.state.restDeclaredCharacters.has(charId)) continue;
       const selection = this.state.characterCardSelections.get(charId);
       if (!selection || !selection.topCardId || !selection.bottomCardId) {
         return false;
@@ -2096,11 +2132,16 @@ class GameStateManager {
   }
 
   /**
-   * Get count of characters that have selected cards
+   * Get count of characters that have selected cards (or declared rest)
    */
   public getCharactersWithSelectionsCount(): number {
     let count = 0;
     for (const charId of this.state.myCharacterIds) {
+      // Count characters that declared rest
+      if (this.state.restDeclaredCharacters.has(charId)) {
+        count++;
+        continue;
+      }
       const selection = this.state.characterCardSelections.get(charId);
       if (selection?.topCardId && selection?.bottomCardId) {
         count++;

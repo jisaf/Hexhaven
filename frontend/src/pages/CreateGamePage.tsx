@@ -133,11 +133,17 @@ export const CreateGamePage: React.FC = () => {
         // Solo game started - go directly to play
         navigate(`/rooms/${sessionState.roomCode}/play`);
       } else {
-        // Multiplayer - go to room lobby
-        navigate(`/rooms/${sessionState.roomCode}`);
+        // Multiplayer - go to room lobby with selected characters
+        // Pass character IDs so they can be auto-selected in the lobby
+        navigate(`/rooms/${sessionState.roomCode}`, {
+          state: {
+            pendingCharacters: selectedCharacters.map(c => c.id),
+            isSoloGame,
+          }
+        });
       }
     }
-  }, [sessionState.connectionStatus, sessionState.roomCode, sessionState.isGameActive, navigate]);
+  }, [sessionState.connectionStatus, sessionState.roomCode, sessionState.isGameActive, navigate, selectedCharacters, isSoloGame]);
 
   // Reset loading when session error occurs (error is derived above)
   useEffect(() => {
