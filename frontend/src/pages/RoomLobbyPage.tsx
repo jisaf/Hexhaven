@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
@@ -30,6 +30,7 @@ import styles from './RoomLobbyPage.module.css';
 export const RoomLobbyPage: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation(['common', 'lobby']);
 
   // Session state
@@ -96,6 +97,30 @@ export const RoomLobbyPage: React.FC = () => {
       navigate(`/rooms/${sessionState.roomCode}/play`);
     }
   }, [sessionState.isGameActive, sessionState.roomCode, navigate]);
+
+  // Auto-select characters from CreateGamePage navigation state and auto-start for solo games
+  useEffect(() => {
+    const navState = location.state as { pendingCharacters?: string[]; isSoloGame?: boolean } | null;
+    if (sessionState.connectionStatus === 'connected' && sessionState.roomCode && navState?.pendingCharacters?.length) {
+      console.log('[RoomLobbyPage] Auto-selecting characters from CreateGamePage:', navState.pendingCharacters);
+      // Add each character to the selection
+      navState.pendingCharacters.forEach((characterId) => {
+        addCharacter(characterId);
+      });
+
+      // For solo games, automatically start the game after characters are selected
+      if (navState.isSoloGame) {
+        console.log('[RoomLobbyPage] Solo game - auto-starting after character selection');
+        // Small delay to allow character selection to complete
+        setTimeout(() => {
+          websocketService.startGame();
+        }, 500);
+      }
+
+      // Clear navigation state to prevent re-triggering
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [sessionState.connectionStatus, sessionState.roomCode, location.state, location.pathname, addCharacter, navigate]);
 
   // Handle session errors
   useEffect(() => {

@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { websocketService } from '../services/websocket.service';
 import { roomSessionManager } from '../services/room-session.service';
@@ -42,6 +42,7 @@ import styles from './Lobby.module.css';
 
 export function Lobby() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation(['common', 'lobby']);
 
   // Local UI state (derived from sessionState)
@@ -151,6 +152,30 @@ export function Lobby() {
       setIsLoading(false);
     }
   }, [sessionState.status, sessionState.roomCode, pendingCampaignCharacters, addCharacter]);
+
+  // Auto-select characters from CreateGamePage navigation state and auto-start for solo games
+  useEffect(() => {
+    const navState = location.state as { pendingCharacters?: string[]; isSoloGame?: boolean } | null;
+    if (sessionState.status === 'lobby' && sessionState.roomCode && navState?.pendingCharacters?.length) {
+      console.log('[Lobby] Auto-selecting characters from CreateGamePage:', navState.pendingCharacters);
+      // Add each character to the selection
+      navState.pendingCharacters.forEach((characterId) => {
+        addCharacter(characterId);
+      });
+
+      // For solo games, automatically start the game after characters are selected
+      if (navState.isSoloGame) {
+        console.log('[Lobby] Solo game - auto-starting after character selection');
+        // Small delay to allow character selection to complete
+        setTimeout(() => {
+          websocketService.startGame();
+        }, 500);
+      }
+
+      // Clear navigation state to prevent re-triggering
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [sessionState.status, sessionState.roomCode, location.state, location.pathname, addCharacter, navigate]);
 
   const proceedWithRoomCreation = async (playerNickname: string) => {
     setIsLoading(true);
