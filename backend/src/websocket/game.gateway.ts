@@ -5,6 +5,7 @@
  * Handles room management, character selection, game start, and player actions.
  */
 
+import { randomUUID } from 'crypto';
 import {
   SubscribeMessage,
   MessageBody,
@@ -347,6 +348,7 @@ export class GameGateway
   private readonly pendingForcedMovement = new Map<
     string,
     {
+      requestId: string; // Unique ID to prevent race conditions
       attackerId: string;
       targetId: string;
       targetName: string;
@@ -426,6 +428,38 @@ export class GameGateway
       .forEach((s) => occupiedHexes.push(s.position));
 
     return occupiedHexes;
+  }
+
+  /**
+   * Check if a hex position is occupied by a character, monster, or summon.
+   * Used for forced movement validation and other occupancy checks.
+   *
+   * @param pos - The hex position to check
+   * @param monsters - Array of monsters in the room
+   * @param characters - Array of characters in the room
+   * @returns true if the hex is occupied, false otherwise
+   */
+  private isHexOccupied(
+    pos: AxialCoordinates,
+    monsters: Monster[],
+    characters: Character[],
+  ): boolean {
+    // Check monsters
+    if (
+      monsters.some(
+        (m) =>
+          !m.isDead && m.currentHex.q === pos.q && m.currentHex.r === pos.r,
+      )
+    ) {
+      return true;
+    }
+    // Check characters (Character model uses 'position' not 'currentHex')
+    if (
+      characters.some((c) => c.position?.q === pos.q && c.position?.r === pos.r)
+    ) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -1315,6 +1349,9 @@ export class GameGateway
         // Issue #228: Summon state cleanup
         this.roomSummons.delete(roomCode);
         this.summonsActedThisTurn.delete(roomCode);
+        // Issue #448: Forced movement state cleanup
+        this.pendingForcedMovement.delete(roomCode);
+        this.pendingCardDestinations.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -3782,6 +3819,11 @@ export class GameGateway
         throw new Error('Not authorized to confirm this forced movement');
       }
 
+      // Validate the requestId matches to prevent race conditions
+      if (pending.requestId !== payload.requestId) {
+        throw new Error('Stale forced movement request (requestId mismatch)');
+      }
+
       // Validate the request matches pending
       if (
         pending.attackerId !== payload.attackerId ||
@@ -3801,7 +3843,6 @@ export class GameGateway
 
       // Apply the movement
       const monsters = this.roomMonsters.get(roomCode) || [];
-      let target: Character | Monster | undefined;
       let fromHex: AxialCoordinates;
 
       if (pending.isMonsterTarget) {
@@ -3809,7 +3850,6 @@ export class GameGateway
         if (!monsterTarget) {
           throw new Error('Target not found for forced movement');
         }
-        target = monsterTarget;
         fromHex = { ...monsterTarget.currentHex };
         // Move the monster
         monsterTarget.currentHex = {
@@ -3823,14 +3863,10 @@ export class GameGateway
         if (!characterTarget) {
           throw new Error('Target not found for forced movement');
         }
-        target = characterTarget;
         fromHex = { ...characterTarget.position };
         // Move the character
         characterTarget.moveTo(payload.destinationHex);
       }
-
-      // target is guaranteed to be defined here due to throws above
-      void target; // Acknowledge target is now assigned
 
       // Clear pending state
       this.pendingForcedMovement.delete(roomCode);
@@ -3888,6 +3924,18 @@ export class GameGateway
       if (!pending) {
         this.logger.warn('Skip forced movement called but no pending movement');
         return;
+      }
+
+      // Verify the player owns the attacking character (authorization check)
+      const userCharacters = characterService.getCharactersByPlayerId(userId);
+      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
+      if (!isOwner) {
+        throw new Error('Not authorized to skip this forced movement');
+      }
+
+      // Validate the requestId matches to prevent race conditions
+      if (pending.requestId !== _payload.requestId) {
+        throw new Error('Stale forced movement request (requestId mismatch)');
       }
 
       // Clear pending state
@@ -4254,19 +4302,23 @@ export class GameGateway
       const forcedMovementDistance =
         pushModifier?.distance || pullModifier?.distance || 0;
 
-      if (forcedMovementType && forcedMovementDistance > 0) {
+      if (
+        forcedMovementType &&
+        Number.isInteger(forcedMovementDistance) &&
+        forcedMovementDistance > 0
+      ) {
         // Get hex map for validation
         const hexMap = this.roomMaps.get(roomCode);
         const monsters = this.roomMonsters.get(roomCode) || [];
         const room = roomService.getRoom(roomCode);
         const allCharacters: Character[] =
           room?.players
-            .flatMap((p: any) =>
+            .flatMap((p: { userId: string }) =>
               characterService.getCharactersByPlayerId(p.userId),
             )
             .filter((c: Character | null): c is Character => c !== null) || [];
 
-        // Build getHex and isOccupied functions
+        // Build getHex function
         const getHex = (
           pos: AxialCoordinates,
         ): {
@@ -4274,31 +4326,14 @@ export class GameGateway
           features?: HexFeature[];
         } | null => {
           const key = `${pos.q},${pos.r}`;
-          return hexMap?.get(key) as { terrainType?: TerrainType; features?: HexFeature[] } | null;
+          return hexMap?.get(key) as {
+            terrainType?: TerrainType;
+            features?: HexFeature[];
+          } | null;
         };
-        const isOccupied = (pos: AxialCoordinates) => {
-          // Check monsters
-          if (
-            monsters.some(
-              (m: any) =>
-                !m.isDead &&
-                m.currentHex.q === pos.q &&
-                m.currentHex.r === pos.r,
-            )
-          ) {
-            return true;
-          }
-          // Check characters (Character model uses 'position' not 'currentHex')
-          if (
-            allCharacters.some(
-              (c: Character) =>
-                c.position?.q === pos.q && c.position?.r === pos.r,
-            )
-          ) {
-            return true;
-          }
-          return false;
-        };
+        // Use the isHexOccupied helper method
+        const isOccupied = (pos: AxialCoordinates) =>
+          this.isHexOccupied(pos, monsters, allCharacters);
 
         // Calculate valid destinations
         const validDestinations =
@@ -4312,8 +4347,12 @@ export class GameGateway
           );
 
         if (validDestinations.length > 0) {
+          // Generate unique request ID to prevent race conditions
+          const requestId = randomUUID();
+
           // Store pending forced movement
           this.pendingForcedMovement.set(roomCode, {
+            requestId,
             attackerId: character.id,
             targetId: payload.targetId,
             targetName: isMonsterTarget
@@ -4328,6 +4367,7 @@ export class GameGateway
 
           // Emit forced_movement_required event
           const forcedMovementPayload: ForcedMovementRequiredPayload = {
+            requestId,
             attackerId: character.id,
             targetId: payload.targetId,
             targetName: isMonsterTarget

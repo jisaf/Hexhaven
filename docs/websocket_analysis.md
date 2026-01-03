@@ -446,7 +446,7 @@ Attack with Push/Pull lands
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `forced_movement_required` | `{ attackerId, targetId, targetName, movementType, distance, validDestinations[], currentPosition }` | Signals player must choose a destination hex |
+| `forced_movement_required` | `{ requestId, attackerId, targetId, targetName, movementType, distance, validDestinations[], currentPosition }` | Signals player must choose a destination hex (requestId added in #448) |
 | `entity_forced_moved` | `{ entityId, entityType, fromHex, toHex, movementType }` | Entity was moved via push/pull |
 | `forced_movement_skipped` | `{ attackerId, targetId, movementType, reason }` | Push/pull was skipped |
 
@@ -454,8 +454,10 @@ Attack with Push/Pull lands
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `confirm_forced_movement` | `{ attackerId, targetId, destinationHex, movementType }` | Player selected a destination |
-| `skip_forced_movement` | `{ attackerId, targetId }` | Player chose to skip |
+| `confirm_forced_movement` | `{ requestId, attackerId, targetId, destinationHex, movementType }` | Player selected a destination (requestId added in #448) |
+| `skip_forced_movement` | `{ requestId, attackerId, targetId }` | Player chose to skip (requestId added in #448) |
+
+**Note on requestId (Issue #448):** The `requestId` field was added to prevent race conditions when multiple forced movement requests could be pending. The client must echo back the same `requestId` it received in `forced_movement_required`. The backend validates this ID matches the pending request before processing the confirmation or skip action.
 
 ### 10.3. Frontend State
 
@@ -467,6 +469,7 @@ interface GameStateManagerState {
   cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | 'push' | 'pull' | null;
   validForcedMovementHexes: Axial[];
   pendingForcedMovement: {
+    requestId: string;      // Added in #448: Unique ID to prevent race conditions
     attackerId: string;
     targetId: string;
     targetName: string;
@@ -475,6 +478,99 @@ interface GameStateManagerState {
   } | null;
 }
 ```
+
+### 10.5. Race Condition Prevention (Issue #448)
+
+**Problem:** Multiple forced movement requests could be pending simultaneously if:
+- Network latency causes delayed responses
+- Player clicks rapidly during forced movement selection
+- Server emits a new forced movement request before the previous one is resolved
+
+**Solution:** The `requestId` field uniquely identifies each forced movement request:
+
+1. **Server generates UUID** when emitting `forced_movement_required`:
+   ```typescript
+   const requestId = randomUUID();
+   this.pendingForcedMovement.set(roomCode, { requestId, attackerId, targetId, ... });
+   ```
+
+2. **Client stores requestId** in `pendingForcedMovement` state:
+   ```typescript
+   this.state.pendingForcedMovement = {
+     requestId: data.requestId,  // Store the server's requestId
+     attackerId: data.attackerId,
+     // ...
+   };
+   ```
+
+3. **Client echoes requestId** in confirmation/skip payloads:
+   ```typescript
+   const payload: ConfirmForcedMovementPayload = {
+     requestId: this.state.pendingForcedMovement.requestId,  // Echo back
+     attackerId: this.state.pendingForcedMovement.attackerId,
+     // ...
+   };
+   ```
+
+4. **Server validates requestId** before processing:
+   ```typescript
+   if (pending.requestId !== payload.requestId) {
+     throw new Error('Stale forced movement request (requestId mismatch)');
+   }
+   ```
+
+**Benefits:**
+- ✅ Prevents stale requests from being processed
+- ✅ Ensures only the most recent forced movement request is valid
+- ✅ Eliminates race conditions when network is slow or actions overlap
+
+### 10.6. Authorization Checks (Issue #448)
+
+The `handleSkipForcedMovement` handler now includes authorization verification to ensure only the attacking player can skip their own forced movement:
+
+```typescript
+// Verify the user owns the attacker character
+const userCharacters = charactersArray.filter(c => c.userId === userId);
+const isOwner = userCharacters.some(c => c.id === pending.attackerId);
+if (!isOwner) {
+  throw new Error('Not authorized to skip this forced movement');
+}
+```
+
+This prevents malicious or accidental skip requests from other players.
+
+### 10.7. Room Cleanup (Issue #448)
+
+Pending forced movement state is now properly cleaned up in the following scenarios:
+
+1. **Player disconnects:**
+   ```typescript
+   // handleDisconnect() - when player leaves
+   this.pendingForcedMovement.delete(roomCode);
+   ```
+
+2. **Last player leaves room:**
+   ```typescript
+   // handleLeaveRoom() - when room becomes empty
+   this.pendingForcedMovement.delete(roomCode);
+   ```
+
+3. **Turn ends:**
+   ```typescript
+   // After character's turn completes
+   this.pendingForcedMovement.delete(room.roomCode);
+   ```
+
+4. **Forced movement resolved:**
+   ```typescript
+   // After confirmation or skip
+   this.pendingForcedMovement.delete(roomCode);
+   ```
+
+**Benefits:**
+- ✅ Prevents memory leaks from abandoned forced movement state
+- ✅ Ensures clean state when players reconnect
+- ✅ No stale forced movement requests across turns or sessions
 
 ### 10.4. Visual Feedback
 

@@ -11,6 +11,7 @@
 import { ForcedMovementService } from './forced-movement.service';
 import { AxialCoordinates } from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
+import { hexDistance } from '../utils/hex-utils';
 
 // Create a mock Character with position setter
 const createMockCharacter = (position: AxialCoordinates): Character => {
@@ -69,9 +70,9 @@ describe('ForcedMovementService', () => {
         expect(destinations.length).toBeGreaterThan(0);
 
         // All destinations should be farther from attacker than target
-        const targetDist = Math.abs(targetPos.q) + Math.abs(targetPos.r);
+        const targetDist = hexDistance(attackerPos, targetPos);
         destinations.forEach(dest => {
-          const destDist = Math.abs(dest.q) + Math.abs(dest.r);
+          const destDist = hexDistance(attackerPos, dest);
           expect(destDist).toBeGreaterThan(targetDist);
         });
       });
@@ -96,13 +97,12 @@ describe('ForcedMovementService', () => {
         // Push 2 should have destinations up to 2 hexes away from target
         expect(destinations.length).toBeGreaterThan(0);
 
-        // Should include destinations at various distances
+        // Should include destinations at various distances from target
         const hasDistanceOne = destinations.some(d =>
-          Math.abs(d.q - targetPos.q) + Math.abs(d.r - targetPos.r) === 1 ||
-          Math.abs(d.q - targetPos.q) === 1 && Math.abs(d.r - targetPos.r) === 0
+          hexDistance(targetPos, d) === 1
         );
         const hasDistanceTwo = destinations.some(d =>
-          Math.abs(d.q - targetPos.q) + Math.abs(d.r - targetPos.r) >= 2
+          hexDistance(targetPos, d) >= 2
         );
         expect(hasDistanceOne || hasDistanceTwo).toBe(true);
       });
@@ -203,9 +203,9 @@ describe('ForcedMovementService', () => {
 
         // All destinations should be closer to attacker than target
         // Target is 2 away from attacker, destinations should be 1 away
+        const targetDist = hexDistance(attackerPos, targetPos);
         destinations.forEach(dest => {
-          const destDist = Math.abs(dest.q - attackerPos.q) + Math.abs(dest.r - attackerPos.r);
-          const targetDist = Math.abs(targetPos.q - attackerPos.q) + Math.abs(targetPos.r - attackerPos.r);
+          const destDist = hexDistance(attackerPos, dest);
           expect(destDist).toBeLessThan(targetDist);
         });
       });

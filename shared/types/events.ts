@@ -762,6 +762,7 @@ export interface NarrativeHexesRevealedPayload {
  * Player has selected a destination hex for forced movement
  */
 export interface ConfirmForcedMovementPayload {
+  requestId: string; // Must match the requestId from ForcedMovementRequiredPayload
   attackerId: string;
   targetId: string;
   destinationHex: AxialCoordinates;
@@ -773,6 +774,7 @@ export interface ConfirmForcedMovementPayload {
  * Player chose to skip the forced movement
  */
 export interface SkipForcedMovementPayload {
+  requestId: string; // Must match the requestId from ForcedMovementRequiredPayload
   attackerId: string;
   targetId: string;
 }
@@ -782,6 +784,7 @@ export interface SkipForcedMovementPayload {
  * Sent after attack resolves if push/pull modifier present and target alive
  */
 export interface ForcedMovementRequiredPayload {
+  requestId: string; // Unique ID to prevent race conditions with stale requests
   attackerId: string;
   targetId: string;
   targetName: string;

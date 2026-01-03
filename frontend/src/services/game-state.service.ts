@@ -184,6 +184,7 @@ interface GameState {
   // Push/Pull targeting state
   validForcedMovementHexes: Axial[];
   pendingForcedMovement: {
+    requestId: string; // Unique ID to prevent race conditions
     attackerId: string;
     targetId: string;
     targetName: string;
@@ -409,7 +410,6 @@ class GameStateManager {
     register('forced_movement_skipped', this.handleForcedMovementSkipped.bind(this));
     // Issue #411: Listen for errors from card actions
     register('error', (data: { code?: string; message: string }) => {
-      console.error('[GameStateManager] WebSocket error:', data);
       if (data.code === 'USE_CARD_ACTION_FAILED') {
         this.addLog([
           { text: 'Action failed: ', color: 'red' },
@@ -424,6 +424,14 @@ class GameStateManager {
         this.state.validHealHexes = [];
         this.state.validSummonHexes = [];
         this.state.attackableTargets = [];
+        this.emitStateUpdate();
+      } else if (data.code === 'CONFIRM_FORCED_MOVEMENT_FAILED' || data.code === 'SKIP_FORCED_MOVEMENT_FAILED') {
+        this.addLog([
+          { text: 'Forced movement failed: ', color: 'red' },
+          { text: data.message, color: 'orange' },
+        ]);
+        // Clear targeting state on error - user will need to try again if applicable
+        this.clearTargetingState();
         this.emitStateUpdate();
       }
     });
@@ -1300,7 +1308,6 @@ class GameStateManager {
           h => h.q === hex.q && h.r === hex.r
         );
         if (isValidForcedMovementHex && this.state.pendingForcedMovement) {
-          console.log('[GameStateManager] Push/pull targeting mode - destination selected:', hex);
           this.confirmForcedMovement({ q: hex.q, r: hex.r });
         }
         return;
@@ -1737,10 +1744,9 @@ class GameStateManager {
    * Sets up push/pull targeting mode for player to select destination.
    */
   private handleForcedMovementRequired(data: ForcedMovementRequiredPayload): void {
-    console.log('[GameStateManager] Forced movement required:', data);
-
     // Store pending forced movement data
     this.state.pendingForcedMovement = {
+      requestId: data.requestId,
       attackerId: data.attackerId,
       targetId: data.targetId,
       targetName: data.targetName,
@@ -1767,8 +1773,6 @@ class GameStateManager {
    * Updates entity position after forced movement is applied.
    */
   private handleEntityForcedMoved(data: EntityForcedMovedPayload): void {
-    console.log('[GameStateManager] Entity forced moved:', data);
-
     // Update entity position based on entity type
     if (data.entityType === 'monster') {
       const monster = this.state.gameData?.monsters.find(m => m.id === data.entityId);
@@ -1799,8 +1803,6 @@ class GameStateManager {
    * Clears targeting state when push/pull is skipped or unavailable.
    */
   private handleForcedMovementSkipped(data: ForcedMovementSkippedPayload): void {
-    console.log('[GameStateManager] Forced movement skipped:', data);
-
     // Log the skip with reason
     const actionLabel = data.movementType === 'push' ? 'Push' : 'Pull';
     this.addLog([
@@ -1824,18 +1826,17 @@ class GameStateManager {
     }
 
     const payload: ConfirmForcedMovementPayload = {
+      requestId: this.state.pendingForcedMovement.requestId,
       attackerId: this.state.pendingForcedMovement.attackerId,
       targetId: this.state.pendingForcedMovement.targetId,
       destinationHex: { q: destinationHex.q, r: destinationHex.r },
       movementType: this.state.pendingForcedMovement.movementType,
     };
 
-    console.log('[GameStateManager] Confirming forced movement:', payload);
     websocketService.emit('confirm_forced_movement', payload);
 
-    // Clear targeting state immediately (backend will send entity_forced_moved or error)
-    this.clearTargetingState();
-    this.emitStateUpdate();
+    // Note: State is cleared by handleEntityForcedMoved on success
+    // or restored on error via the error handler
   }
 
   /**
@@ -1849,17 +1850,15 @@ class GameStateManager {
     }
 
     const payload: SkipForcedMovementPayload = {
+      requestId: this.state.pendingForcedMovement.requestId,
       attackerId: this.state.pendingForcedMovement.attackerId,
       targetId: this.state.pendingForcedMovement.targetId,
-      // Note: movementType removed - not in type definition and backend doesn't use it
     };
 
-    console.log('[GameStateManager] Skipping forced movement:', payload);
     websocketService.emit('skip_forced_movement', payload);
 
-    // Clear targeting state immediately
-    this.clearTargetingState();
-    this.emitStateUpdate();
+    // Note: State is cleared by handleForcedMovementSkipped on success
+    // or restored on error via the error handler
   }
 
   /**

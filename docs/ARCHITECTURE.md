@@ -2,7 +2,7 @@
 
 **Version**: 1.4
 **Last Updated**: 2026-01-03
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles + WebSocket Improvements)
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles + WebSocket Improvements + Push/Pull Targeting)
 
 ---
 
@@ -1326,6 +1326,10 @@ acknowledge_narrative  { narrativeId }
 
 # Summons (Issue #228)
 request_summon_placement  { roomCode, summonDefinition, targetHex, characterId, maxRange? }
+
+# Push/Pull Targeting (Issue #448)
+confirm_forced_movement   { requestId, attackerId, targetId, destinationHex, movementType }
+skip_forced_movement      { requestId, attackerId, targetId }
 ```
 
 **Server → Client**:
@@ -1368,11 +1372,18 @@ summon_created            { summonId, name, ownerId?, placementHex, health, atta
 summon_activated          { summonId, moved, fromHex, toHex, attacked, targetId?, damageDealt?, targetDied }
 summon_died               { summonId, reason: 'damage' | 'owner_exhausted' | 'owner_died' | 'scenario_end' }
 
+# Push/Pull Targeting (Issue #448)
+forced_movement_required  { requestId, attackerId, targetId, targetName, movementType, distance, validDestinations, currentPosition }
+entity_forced_moved       { entityId, entityType, fromHex, toHex, movementType, causedBy }
+forced_movement_skipped   { attackerId, targetId, movementType, reason }
+
 # WebSocket Reconnection (Issue #411)
 ws_reconnected            { }  # Fired when WebSocket reconnects, triggers room rejoin
 ```
 
 **Note on ws_reconnected**: When a WebSocket connection is restored after a disconnect, this event is emitted to the client. The frontend's `RoomSessionManager` listens for this event and automatically re-joins the room with the `'reconnect'` intent. This restores the backend's `socketToPlayer` mapping, ensuring that subsequent player actions (like card actions, movement, etc.) route correctly to the player's character.
+
+**Note on requestId (Issue #448)**: The `requestId` field in forced movement events prevents race conditions when multiple push/pull requests could be pending. The server generates a unique UUID for each `forced_movement_required` event. The client must echo this `requestId` back in `confirm_forced_movement` or `skip_forced_movement` payloads. The server validates that the received `requestId` matches the pending request before processing, rejecting stale requests. This ensures that only the most recent forced movement request is valid, eliminating issues with slow networks or rapid player actions. Pending forced movement state is automatically cleaned up when: (1) a player disconnects, (2) the last player leaves a room, (3) a turn ends, or (4) the forced movement is resolved.
 
 ---
 
@@ -1694,4 +1705,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2026-01-03 (Updated for Card Action Selection System - Issue #411 & WebSocket Improvements - Issue #419)
+**Last Review**: 2026-01-03 (Updated for Card Action Selection System - Issue #411, WebSocket Improvements - Issue #419, and Push/Pull Targeting - Issue #448)
