@@ -26,6 +26,7 @@ import { createPortal } from 'react-dom';
 import type { AbilityCard } from '../../../../shared/types/entities';
 import type { TurnActionState, TurnAction } from '../../../../shared/types/events';
 import { AbilityCard2 } from '../AbilityCard2';
+import { TAP_MOVEMENT_THRESHOLD_PX } from '../../utils/touch-constants';
 import styles from './TurnActionPanel.module.css';
 
 const LONG_PRESS_DURATION = 350; // ms before zoom activates
@@ -230,7 +231,7 @@ export function TurnActionPanel({
           const touch = e.touches[0];
           const dx = Math.abs(touch.clientX - touchStartPos.current.x);
           const dy = Math.abs(touch.clientY - touchStartPos.current.y);
-          if (dx > 10 || dy > 10) {
+          if (dx > TAP_MOVEMENT_THRESHOLD_PX || dy > TAP_MOVEMENT_THRESHOLD_PX) {
             cancelLongPress();
             touchStartPos.current = null;
           }

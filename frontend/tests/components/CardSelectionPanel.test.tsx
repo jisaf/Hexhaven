@@ -757,5 +757,8 @@ describe('CardSelectionPanel', () => {
  *   - Disabled state during waiting
  *   - Auto-select lower initiative card
  *
+ * Note: Touch scroll vs tap detection is handled by AbilityCard2 component
+ * and tested in AbilityCard2.test.tsx
+ *
  * Coverage: ~100% of CardSelectionPanel component functionality
  */

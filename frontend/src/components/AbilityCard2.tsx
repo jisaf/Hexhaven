@@ -18,6 +18,7 @@ import { CardDataProvider, abilityCardToCardData } from '../contexts/CardDataCon
 import { ActionRowLayout, CardIcons } from './layouts/ActionRowLayout';
 import type { AbilityCard as AbilityCardType, Action } from '../../../shared/types/entities';
 import { isLostAction, isPersistent, getXPValue } from '../../../shared/types/modifiers';
+import { TAP_MOVEMENT_THRESHOLD_PX } from '../utils/touch-constants';
 import 'rpg-awesome/css/rpg-awesome.min.css';
 import './AbilityCard2.css';
 
@@ -107,6 +108,7 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
   const isLongPress = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const wasScrolling = useRef(false); // Track if touch moved beyond tap threshold
 
   // Clear any text selection
   const clearSelection = useCallback(() => {
@@ -142,6 +144,7 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
       // Store touch position to detect movement
       const touch = e.touches[0];
       touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      wasScrolling.current = false; // Reset scroll tracking
 
       isLongPress.current = false;
       longPressTimer.current = setTimeout(() => {
@@ -153,13 +156,14 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      // If user moves finger significantly, cancel long press
+      // If user moves finger significantly, cancel long press and mark as scrolling
       if (touchStartPos.current && e.touches[0]) {
         const touch = e.touches[0];
         const dx = Math.abs(touch.clientX - touchStartPos.current.x);
         const dy = Math.abs(touch.clientY - touchStartPos.current.y);
-        if (dx > 10 || dy > 10) {
+        if (dx > TAP_MOVEMENT_THRESHOLD_PX || dy > TAP_MOVEMENT_THRESHOLD_PX) {
           cancelLongPress();
+          wasScrolling.current = true; // Mark as scroll, not tap
           touchStartPos.current = null;
         }
       }
@@ -172,15 +176,18 @@ export const AbilityCard2: React.FC<AbilityCard2Props> = ({
 
       if (isZoomed) {
         setTimeout(closeZoom, 50);
-      } else if (!isLongPress.current && !disabled && onClick) {
+      } else if (!isLongPress.current && !wasScrolling.current && !disabled && onClick) {
+        // Only trigger click if it was a tap (not a long press or scroll)
         onClick();
       }
       clearSelection();
+      wasScrolling.current = false; // Reset for next touch interaction
     };
 
     const handleTouchCancel = () => {
       cancelLongPress();
       touchStartPos.current = null;
+      wasScrolling.current = false;
       closeZoom();
     };
 
