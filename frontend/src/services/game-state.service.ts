@@ -1851,7 +1851,7 @@ class GameStateManager {
     const payload: SkipForcedMovementPayload = {
       attackerId: this.state.pendingForcedMovement.attackerId,
       targetId: this.state.pendingForcedMovement.targetId,
-      movementType: this.state.pendingForcedMovement.movementType,
+      // Note: movementType removed - not in type definition and backend doesn't use it
     };
 
     console.log('[GameStateManager] Skipping forced movement:', payload);

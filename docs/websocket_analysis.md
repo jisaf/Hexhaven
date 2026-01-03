@@ -454,8 +454,8 @@ Attack with Push/Pull lands
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `confirm_forced_movement` | `{ targetId, destinationHex, movementType }` | Player selected a destination |
-| `skip_forced_movement` | `{ targetId, movementType }` | Player chose to skip |
+| `confirm_forced_movement` | `{ attackerId, targetId, destinationHex, movementType }` | Player selected a destination |
+| `skip_forced_movement` | `{ attackerId, targetId }` | Player chose to skip |
 
 ### 10.3. Frontend State
 

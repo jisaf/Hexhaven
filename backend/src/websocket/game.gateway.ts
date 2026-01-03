@@ -128,10 +128,12 @@ import type {
 import {
   ConnectionStatus,
   RoomStatus,
+  TerrainType,
   getRange,
   type AxialCoordinates,
   type CharacterClass,
   type Monster,
+  type HexFeature,
 } from '../../../shared/types/entities';
 import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 import { hexDistance } from '../utils/hex-utils';
@@ -879,6 +881,9 @@ export class GameGateway
 
             // Track disconnected player for narrative timeout handling
             this.narrativeService.markPlayerDisconnected(room.roomCode, userId);
+
+            // Clear any pending forced movement for this room to prevent stale state
+            this.pendingForcedMovement.delete(roomCode);
 
             this.logger.log(
               `Session saved for disconnected player ${userId} in room ${room.roomCode}`,
@@ -3770,6 +3775,13 @@ export class GameGateway
         throw new Error('No pending forced movement');
       }
 
+      // Verify the player owns the attacking character (authorization check)
+      const userCharacters = characterService.getCharactersByPlayerId(userId);
+      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
+      if (!isOwner) {
+        throw new Error('Not authorized to confirm this forced movement');
+      }
+
       // Validate the request matches pending
       if (
         pending.attackerId !== payload.attackerId ||
@@ -3789,29 +3801,36 @@ export class GameGateway
 
       // Apply the movement
       const monsters = this.roomMonsters.get(roomCode) || [];
-      let target: any;
+      let target: Character | Monster | undefined;
+      let fromHex: AxialCoordinates;
 
       if (pending.isMonsterTarget) {
-        target = monsters.find((m: any) => m.id === pending.targetId);
-      } else {
-        target = characterService.getCharacterById(pending.targetId);
-      }
-
-      if (!target) {
-        throw new Error('Target not found for forced movement');
-      }
-
-      const fromHex = { ...target.currentHex };
-
-      // Move the target
-      if (pending.isMonsterTarget) {
-        target.currentHex = {
+        const monsterTarget = monsters.find((m) => m.id === pending.targetId);
+        if (!monsterTarget) {
+          throw new Error('Target not found for forced movement');
+        }
+        target = monsterTarget;
+        fromHex = { ...monsterTarget.currentHex };
+        // Move the monster
+        monsterTarget.currentHex = {
           q: payload.destinationHex.q,
           r: payload.destinationHex.r,
         };
       } else {
-        target.moveTo(payload.destinationHex);
+        const characterTarget = characterService.getCharacterById(
+          pending.targetId,
+        );
+        if (!characterTarget) {
+          throw new Error('Target not found for forced movement');
+        }
+        target = characterTarget;
+        fromHex = { ...characterTarget.position };
+        // Move the character
+        characterTarget.moveTo(payload.destinationHex);
       }
+
+      // target is guaranteed to be defined here due to throws above
+      void target; // Acknowledge target is now assigned
 
       // Clear pending state
       this.pendingForcedMovement.delete(roomCode);
@@ -4251,12 +4270,11 @@ export class GameGateway
         const getHex = (
           pos: AxialCoordinates,
         ): {
-          terrainType?: string;
-          features?: Array<{ type: string; isOpen?: boolean }>;
+          terrainType?: TerrainType;
+          features?: HexFeature[];
         } | null => {
           const key = `${pos.q},${pos.r}`;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return hexMap?.get(key) || null;
+          return hexMap?.get(key) as { terrainType?: TerrainType; features?: HexFeature[] } | null;
         };
         const isOccupied = (pos: AxialCoordinates) => {
           // Check monsters
@@ -4844,6 +4862,9 @@ export class GameGateway
         // Clear pending destinations for this character
         this.pendingCardDestinations.delete(character.id);
       }
+
+      // Clear any pending forced movement to prevent stale state
+      this.pendingForcedMovement.delete(room.roomCode);
 
       // Reset action flags for this character's turn ending
       character.resetActionFlags();
