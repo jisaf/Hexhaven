@@ -17,6 +17,164 @@
 
 import React from 'react';
 
+// CSS styles extracted outside component to avoid re-creating on every render
+const FLOATING_CHIP_STYLES = `
+  .floating-chip {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .floating-chip:hover {
+    transform: scale(1.1);
+  }
+
+  .floating-chip.active {
+    transform: scale(1.15);
+  }
+
+  .floating-chip.active .chip-icon {
+    box-shadow: 0 0 0 3px var(--chip-color), 0 0 12px rgba(90, 159, 212, 0.5);
+  }
+
+  .floating-chip.waning {
+    opacity: 0.5;
+  }
+
+  .floating-chip.waning .chip-icon {
+    filter: brightness(0.7);
+  }
+
+  .floating-chip.current-turn {
+    animation: chip-pulse 1.5s ease-in-out infinite;
+  }
+
+  .chip-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    border-radius: 50%;
+    z-index: 2;
+  }
+
+  .health-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  .intensity-border {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    border: 3px solid var(--chip-border-color);
+    border-radius: 50%;
+    z-index: 0;
+    box-shadow: 0 0 8px var(--chip-border-color);
+  }
+
+  .turn-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #fbbf24;
+    border: 2px solid #000;
+    border-radius: 50%;
+    z-index: 3;
+  }
+
+  .chip-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #fbbf24;
+    background: #000;
+    border: 1px solid #fbbf24;
+    border-radius: 50%;
+    z-index: 3;
+  }
+
+  .chip-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    z-index: 4;
+  }
+
+  .floating-chip.has-overlay .chip-icon {
+    opacity: 0.4;
+    filter: grayscale(100%);
+  }
+
+  @keyframes chip-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .floating-chip {
+      width: 36px;
+      height: 36px;
+    }
+
+    .chip-icon {
+      width: 26px;
+      height: 26px;
+      font-size: 14px;
+    }
+  }
+`;
+
+// Track whether styles have been injected (checked outside render)
+let stylesInjected = false;
+
+// Inject styles once into document head (runs outside of render)
+function injectStylesOnce(): void {
+  if (stylesInjected || typeof document === 'undefined') {
+    return;
+  }
+  stylesInjected = true;
+  const styleElement = document.createElement('style');
+  styleElement.setAttribute('data-floating-chip-styles', 'true');
+  styleElement.textContent = FLOATING_CHIP_STYLES;
+  document.head.appendChild(styleElement);
+}
+
 export interface FloatingChipProps {
   /** Unique identifier */
   id: string;
@@ -50,7 +208,7 @@ export interface FloatingChipProps {
   className?: string;
 }
 
-export function FloatingChip({
+export const FloatingChip = React.memo(function FloatingChip({
   id,
   icon,
   color,
@@ -67,6 +225,11 @@ export function FloatingChip({
   testId,
   className = '',
 }: FloatingChipProps): React.ReactElement | null {
+  // Inject styles once into document head (effect runs after render, not during)
+  React.useEffect(() => {
+    injectStylesOnce();
+  }, []);
+
   // Don't render if intensity is 'off'
   if (intensity === 'off') {
     return null;
@@ -117,148 +280,6 @@ export function FloatingChip({
       {isTurn && <div className="turn-indicator" />}
       {badge && <div className="chip-badge">{badge}</div>}
       {overlay && <div className="chip-overlay">{overlay}</div>}
-
-      <style>{`
-        .floating-chip {
-          position: relative;
-          width: 44px;
-          height: 44px;
-          padding: 0;
-          background: transparent;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .floating-chip:hover {
-          transform: scale(1.1);
-        }
-
-        .floating-chip.active {
-          transform: scale(1.15);
-        }
-
-        .floating-chip.active .chip-icon {
-          box-shadow: 0 0 0 3px var(--chip-color), 0 0 12px rgba(90, 159, 212, 0.5);
-        }
-
-        .floating-chip.waning {
-          opacity: 0.5;
-        }
-
-        .floating-chip.waning .chip-icon {
-          filter: brightness(0.7);
-        }
-
-        .floating-chip.current-turn {
-          animation: chip-pulse 1.5s ease-in-out infinite;
-        }
-
-        .chip-icon {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          font-weight: bold;
-          color: #ffffff;
-          border-radius: 50%;
-          z-index: 2;
-        }
-
-        .health-ring {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          z-index: 1;
-        }
-
-        .intensity-border {
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          width: calc(100% + 4px);
-          height: calc(100% + 4px);
-          border: 3px solid var(--chip-border-color);
-          border-radius: 50%;
-          z-index: 0;
-          box-shadow: 0 0 8px var(--chip-border-color);
-        }
-
-        .turn-indicator {
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          width: 12px;
-          height: 12px;
-          background: #fbbf24;
-          border: 2px solid #000;
-          border-radius: 50%;
-          z-index: 3;
-        }
-
-        .chip-badge {
-          position: absolute;
-          bottom: -2px;
-          right: -2px;
-          width: 14px;
-          height: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          color: #fbbf24;
-          background: #000;
-          border: 1px solid #fbbf24;
-          border-radius: 50%;
-          z-index: 3;
-        }
-
-        .chip-overlay {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 20px;
-          z-index: 4;
-        }
-
-        .floating-chip.has-overlay .chip-icon {
-          opacity: 0.4;
-          filter: grayscale(100%);
-        }
-
-        @keyframes chip-pulse {
-          0%, 100% {
-            box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
-          }
-          50% {
-            box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
-          }
-        }
-
-        @media (max-width: 768px) {
-          .floating-chip {
-            width: 36px;
-            height: 36px;
-          }
-
-          .chip-icon {
-            width: 26px;
-            height: 26px;
-            font-size: 14px;
-          }
-        }
-      `}</style>
     </button>
   );
-}
+});

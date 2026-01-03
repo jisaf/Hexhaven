@@ -717,8 +717,20 @@ class GameStateManager {
       };
     }
 
-    // Update the specific element - cast string to ElementState
-    this.state.elementalState[data.element] = data.newState as unknown as ElementState;
+    // Update the specific element - map string to ElementState enum
+    // ElementalStateChangedPayload.newState is typed as 'inert' | 'waning' | 'strong'
+    // which matches ElementState enum values exactly
+    const stateMap: Record<string, ElementState> = {
+      'inert': ElementState.INERT,
+      'waning': ElementState.WANING,
+      'strong': ElementState.STRONG,
+    };
+    const mappedState = stateMap[data.newState];
+    if (mappedState !== undefined) {
+      this.state.elementalState[data.element] = mappedState;
+    } else {
+      console.warn(`[GameStateManager] Unknown element state: ${data.newState}`);
+    }
     this.emitStateUpdate();
   }
 
