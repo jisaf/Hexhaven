@@ -177,7 +177,7 @@ export class GameGateway
     ScenarioNarrativeDef | null
   >();
 
-  afterInit(server: Server) {
+  afterInit(_server: Server) {
     // Note: @WebSocketGateway decorator is disabled in this project.
     // All socket event handlers are registered manually in main.ts.
     // See main.ts lines 186-254 for the handler registrations.
