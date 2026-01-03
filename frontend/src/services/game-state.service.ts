@@ -1,7 +1,8 @@
 import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload } from '../../../shared/types';
-import type { Character } from '../../../shared/types/entities';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload, RoundEndedPayload, ElementalStateChangedPayload } from '../../../shared/types';
+import { ElementState } from '../../../shared/types/entities';
+import type { Character, ElementalInfusion } from '../../../shared/types/entities';
 import { getRange, type CardAction } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
@@ -180,6 +181,9 @@ interface GameState {
   // Issue #411: Hex highlighting for heal and summon actions
   validHealHexes: Axial[];
   validSummonHexes: Axial[];
+
+  // Elemental state for UI display
+  elementalState: ElementalInfusion | null;
 }
 
 interface ExhaustionState {
@@ -311,6 +315,7 @@ class GameStateManager {
     cardActionRange: 0,
     validHealHexes: [],
     validSummonHexes: [],
+    elementalState: null,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -390,6 +395,8 @@ class GameStateManager {
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
     // Issue #411: Card action execution event
     register('card_action_executed', this.handleCardActionExecuted.bind(this));
+    // Elemental state updates
+    register('elemental_state_changed', this.handleElementalStateChanged.bind(this));
     // Issue #411: Listen for errors from card actions
     register('error', (data: { code?: string; message: string }) => {
       console.error('[GameStateManager] WebSocket error:', data);
@@ -616,10 +623,15 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
-  private handleRoundEnded(data: { roundNumber: number }): void {
+  private handleRoundEnded(data: RoundEndedPayload): void {
     console.log(`[GameStateManager] 📋 handleRoundEnded received: round=${data.roundNumber}`);
     // Update current round (important for rejoin to show correct round number)
     this.state.currentRound = data.roundNumber;
+
+    // Update elemental state from round_ended payload
+    if (data.elementalState) {
+      this.state.elementalState = data.elementalState as ElementalInfusion;
+    }
     this.addLog([{ text: `Round ${data.roundNumber} has ended. Select cards for next round.` }]);
 
     // Move played cards to discard pile for ALL controlled characters
@@ -687,6 +699,26 @@ class GameStateManager {
     this.state.showCardSelection = true;
     this.state.waitingForRoundStart = false;
     console.log(`[GameStateManager] ✅ handleRoundEnded complete: showCardSelection=${this.state.showCardSelection}, currentRound=${this.state.currentRound}`);
+    this.emitStateUpdate();
+  }
+
+  private handleElementalStateChanged(data: ElementalStateChangedPayload): void {
+    console.log(`[GameStateManager] 🔥 Element changed: ${data.element} ${data.previousState} → ${data.newState}`);
+
+    // Initialize elemental state if not exists
+    if (!this.state.elementalState) {
+      this.state.elementalState = {
+        fire: ElementState.INERT,
+        ice: ElementState.INERT,
+        air: ElementState.INERT,
+        earth: ElementState.INERT,
+        light: ElementState.INERT,
+        dark: ElementState.INERT,
+      };
+    }
+
+    // Update the specific element - cast string to ElementState
+    this.state.elementalState[data.element] = data.newState as unknown as ElementState;
     this.emitStateUpdate();
   }
 
@@ -2064,6 +2096,7 @@ class GameStateManager {
         cardActionRange: 0,
         validHealHexes: [],
         validSummonHexes: [],
+        elementalState: null,
     };
     this.emitStateUpdate();
   }

@@ -227,6 +227,9 @@ frontend/src/
 │   ├── AccountUpgradeModal.tsx
 │   ├── BottomSheet.tsx  # Issue #411: Generic slide-up modal panel
 │   ├── game/            # Game-specific components
+│   │   ├── FloatingChip.tsx       # Reusable circular chip (DRY component)
+│   │   ├── ElementsPanel.tsx      # Elemental infusion display (right side)
+│   │   ├── EntityChipsPanel.tsx   # Character/monster chips (left side)
 │   │   ├── CardPileIndicator.tsx  # Pile selection bar
 │   │   ├── PileView.tsx           # Unified card pile viewer
 │   │   ├── CardSelectionPanel.tsx # Card selection UI
@@ -817,6 +820,154 @@ Campaign mode enables persistent progression across multiple game sessions, with
 - User must have character in campaign to view/access it
 - Validated DTOs with @IsUUID, @IsString, @IsIn decorators
 
+### Elemental Infusion Display System
+
+The elemental display system provides real-time visual feedback for Gloomhaven's elemental infusion mechanics, showing active elements on the game board with intensity-based styling.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Backend Game Logic │────>│  WebSocket Gateway  │────>│  GameStateManager│
+│  (Element Tracking) │     │  (Events)           │     │  (State + Updates│
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │                           │
+         │ Element transitions       │ elemental_state_changed   │ state.elementalState
+         ▼                           ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Round End: STRONG  │     │  Frontend UI        │     │  ElementsPanel   │
+│  → WANING → INERT   │     │  (React Components) │     │  (Floating Panel)│
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │                           │
+         │ Card actions create/      │ Subscribe to state        │ Filter active
+         │ consume elements          │ changes via hook          │ elements
+         ▼                           ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Element States:    │     │  useGameState()     │     │  FloatingChip    │
+│  - STRONG (bright)  │     │  - Auto re-render   │     │  - Intensity map │
+│  - WANING (dim)     │     │  - Centralized state│     │  - Pulse effect  │
+│  - INERT (hidden)   │     └─────────────────────┘     │  - DRY component │
+└─────────────────────┘                                   └──────────────────┘
+```
+
+**Key Components**:
+
+1. **FloatingChip** (`frontend/src/components/game/FloatingChip.tsx`):
+   - **Purpose**: Reusable circular chip component for all floating UI elements
+   - **DRY Architecture**: Shared between EntityChipsPanel and ElementsPanel
+   - **Intensity States**:
+     - `full` - Bright display with deep border glow and pulse animation
+     - `waning` - Dimmed appearance (50% opacity, brightness filter)
+     - `off` - Hidden completely (returns `null`)
+   - **Visual Features**:
+     - Optional health ring with conic gradient
+     - Turn indicator badge (yellow dot with pulse)
+     - Elite badge (★) for monsters
+     - Status overlay (💀) for exhaustion
+     - Active/selected state with scale transform
+   - **Responsive**: 44px desktop, 36px mobile
+
+2. **ElementsPanel** (`frontend/src/components/game/ElementsPanel.tsx`):
+   - **Position**: Floating panel on right side of game board
+   - **Mirrors EntityChipsPanel styling**: Consistent visual language
+   - **Data-Driven Configuration**: ELEMENT_CONFIG for easy extensibility
+   - **Element Configuration**:
+     ```typescript
+     FIRE:  { icon: '🔥', color: '#ff4500', borderColor: '#8b0000' }
+     ICE:   { icon: '❄️', color: '#00bfff', borderColor: '#004080' }
+     AIR:   { icon: '💨', color: '#b0e0e6', borderColor: '#4682b4' }
+     EARTH: { icon: '🪨', color: '#8b4513', borderColor: '#3d2a0d' }
+     LIGHT: { icon: '✨', color: '#ffd700', borderColor: '#b8860b' }
+     DARK:  { icon: '🌑', color: '#4b0082', borderColor: '#1a0033' }
+     ```
+   - **Filtering Logic**: Only renders STRONG and WANING elements (INERT hidden)
+   - **Null Return Optimization**: Returns `null` when no active elements
+
+3. **EntityChipsPanel Refactor** (`frontend/src/components/game/EntityChipsPanel.tsx`):
+   - **Before**: Inline chip rendering with duplicated styles
+   - **After**: Uses FloatingChip component for consistent display
+   - **Benefits**: Eliminates code duplication, easier maintenance, consistent UX
+   - **Features**:
+     - Character section (top) with active character highlighting
+     - Monster section (bottom) with elite badges
+     - Health rings with color-coded percentages
+     - Collapsible sections with count badges
+
+**WebSocket Event Flow**:
+```typescript
+// Server → Client event
+elemental_state_changed: {
+  element: ElementType;           // 'fire', 'ice', 'air', 'earth', 'light', 'dark'
+  previousState: ElementState;    // 'INERT', 'WANING', 'STRONG'
+  newState: ElementState;
+}
+
+// Frontend GameStateManager handler
+handleElementalStateChanged(data: ElementalStateChangedPayload): void {
+  // Initialize elemental state if not exists
+  if (!this.state.elementalState) {
+    this.state.elementalState = {
+      fire: ElementState.INERT,
+      ice: ElementState.INERT,
+      air: ElementState.INERT,
+      earth: ElementState.INERT,
+      light: ElementState.INERT,
+      dark: ElementState.INERT,
+    };
+  }
+
+  // Update the specific element
+  this.state.elementalState[data.element] = data.newState;
+  this.emitStateUpdate(); // Triggers React re-render
+}
+```
+
+**State Propagation**:
+1. Backend game logic creates/consumes elements via card actions
+2. Backend transitions elements at round end (STRONG → WANING → INERT)
+3. Backend emits `elemental_state_changed` via WebSocket
+4. `websocketService` receives event and calls registered handlers
+5. `GameStateManager.handleElementalStateChanged()` updates `state.elementalState`
+6. State update triggers observer pattern notification
+7. React components re-render via `useGameState()` hook
+8. `ElementsPanel` receives updated `elementalState` prop
+9. Panel filters to active elements (STRONG/WANING)
+10. `FloatingChip` renders with mapped intensity ('full'/'waning'/'off')
+
+**Element State Mapping**:
+```typescript
+function mapStateToIntensity(state: ElementState): 'full' | 'waning' | 'off' {
+  switch (state) {
+    case ElementState.STRONG:
+      return 'full';      // Bright with border glow and pulse
+    case ElementState.WANING:
+      return 'waning';    // Dimmed (50% opacity)
+    case ElementState.INERT:
+    default:
+      return 'off';       // Hidden (null return)
+  }
+}
+```
+
+**Design Decisions**:
+- **DRY Component**: FloatingChip eliminates duplication between entity and element displays
+- **Data-Driven Config**: ELEMENT_CONFIG enables easy addition of new elements
+- **Conditional Rendering**: `intensity='off'` returns `null` for performance
+- **Visual Consistency**: Mirrors EntityChipsPanel layout and styling
+- **Pulse Animation**: STRONG elements use `isTurn={true}` for visual emphasis
+- **Extensible**: Adding new visual states only requires updating ELEMENT_CONFIG
+
+**Performance Optimizations**:
+- Null return when no active elements (avoids empty div)
+- Filter before rendering (doesn't render hidden INERT elements)
+- CSS-in-JS scoped styles (no global namespace pollution)
+- Memoization via React component purity
+
+**Integration**:
+```tsx
+// GameBoard.tsx
+<ElementsPanel elementalState={gameState.elementalState} />
+```
+
 ### Campaign Narrative System
 
 The narrative system enables rich storytelling through intro/outro narratives and mid-scenario triggers with game effects and rewards.
@@ -1346,6 +1497,9 @@ scenario_completed  { victory, reason }
 player_disconnected { playerId }
 player_reconnected  { playerId }
 
+# Elemental State
+elemental_state_changed  { element, previousState, newState }  # Real-time element updates
+
 # Items (Issue #205)
 item_used           { characterId, itemId, effects, newState }
 item_equipped       { characterId, itemId, slot, slotIndex }
@@ -1694,4 +1848,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2026-01-03 (Updated for Card Action Selection System - Issue #411 & WebSocket Improvements - Issue #419)
+**Last Review**: 2026-01-03 (Updated for Elemental Infusion Display System, FloatingChip DRY Component, Card Action Selection System - Issue #411 & WebSocket Improvements - Issue #419)
