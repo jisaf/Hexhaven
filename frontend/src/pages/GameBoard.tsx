@@ -637,6 +637,8 @@ export function GameBoard() {
               }
               totalCharacters={gameState.myCharacterIds.length}
               charactersWithSelections={gameStateManager.getCharactersWithSelectionsCount()}
+              selectedInitiativeCardId={gameState.selectedInitiativeCardId}
+              onInitiativeChange={(cardId) => gameStateManager.setInitiativeCard(cardId)}
             />
           ) : selectedPile === 'active' && gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards ? (
             <TurnActionPanel
