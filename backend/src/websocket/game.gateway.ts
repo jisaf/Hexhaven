@@ -345,6 +345,7 @@ export class GameGateway
 
   // Pending forced movement: roomCode -> pending data
   // Tracks when we're waiting for player to select push/pull destination
+  // Timeout (60s) auto-skips if player doesn't respond
   private readonly pendingForcedMovement = new Map<
     string,
     {
@@ -357,8 +358,12 @@ export class GameGateway
       distance: number;
       validDestinations: AxialCoordinates[];
       currentPosition: AxialCoordinates;
+      timeoutId: ReturnType<typeof setTimeout>; // Auto-skip timeout
     }
   >();
+
+  // Forced movement timeout duration (60 minutes)
+  private readonly FORCED_MOVEMENT_TIMEOUT_MS = 60 * 60 * 1000;
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -428,6 +433,18 @@ export class GameGateway
       .forEach((s) => occupiedHexes.push(s.position));
 
     return occupiedHexes;
+  }
+
+  /**
+   * Clear pending forced movement for a room, including its timeout.
+   * Prevents memory leaks and stale timeout callbacks.
+   */
+  private clearPendingForcedMovement(roomCode: string): void {
+    const pending = this.pendingForcedMovement.get(roomCode);
+    if (pending) {
+      clearTimeout(pending.timeoutId);
+      this.pendingForcedMovement.delete(roomCode);
+    }
   }
 
   /**
@@ -917,7 +934,7 @@ export class GameGateway
             this.narrativeService.markPlayerDisconnected(room.roomCode, userId);
 
             // Clear any pending forced movement for this room to prevent stale state
-            this.pendingForcedMovement.delete(roomCode);
+            this.clearPendingForcedMovement(roomCode);
 
             this.logger.log(
               `Session saved for disconnected player ${userId} in room ${room.roomCode}`,
@@ -1350,7 +1367,7 @@ export class GameGateway
         this.roomSummons.delete(roomCode);
         this.summonsActedThisTurn.delete(roomCode);
         // Issue #448: Forced movement state cleanup
-        this.pendingForcedMovement.delete(roomCode);
+        this.clearPendingForcedMovement(roomCode);
         this.pendingCardDestinations.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
@@ -3868,8 +3885,8 @@ export class GameGateway
         characterTarget.moveTo(payload.destinationHex);
       }
 
-      // Clear pending state
-      this.pendingForcedMovement.delete(roomCode);
+      // Clear pending state (includes timeout cleanup)
+      this.clearPendingForcedMovement(roomCode);
 
       // Emit entity_forced_moved event
       const movedPayload: EntityForcedMovedPayload = {
@@ -3882,6 +3899,16 @@ export class GameGateway
       };
 
       this.server.to(roomCode).emit('entity_forced_moved', movedPayload);
+
+      // Add game log entry for the forced movement
+      const attacker = characterService.getCharacterById(pending.attackerId);
+      const actionVerb = pending.movementType === 'push' ? 'pushed' : 'pulled';
+      this.addGameLogEntry(roomCode, [
+        { text: pending.targetName, color: '#FFA500' }, // Orange for target
+        { text: ` was ${actionVerb} by ` },
+        { text: attacker?.characterClass || 'Unknown', color: '#87CEEB' }, // Light blue for attacker
+      ]);
+
       this.logger.log(
         `Forced movement applied: ${pending.targetId} moved to (${payload.destinationHex.q}, ${payload.destinationHex.r})`,
       );
@@ -3938,8 +3965,8 @@ export class GameGateway
         throw new Error('Stale forced movement request (requestId mismatch)');
       }
 
-      // Clear pending state
-      this.pendingForcedMovement.delete(roomCode);
+      // Clear pending state (includes timeout cleanup)
+      this.clearPendingForcedMovement(roomCode);
 
       // Emit forced_movement_skipped event
       const skipPayload: ForcedMovementSkippedPayload = {
@@ -4350,19 +4377,48 @@ export class GameGateway
           // Generate unique request ID to prevent race conditions
           const requestId = randomUUID();
 
-          // Store pending forced movement
+          // Set up auto-skip timeout for unresponsive players
+          const timeoutId = setTimeout(() => {
+            const pending = this.pendingForcedMovement.get(roomCode);
+            // Only skip if this is the same request (not stale)
+            if (pending && pending.requestId === requestId) {
+              this.pendingForcedMovement.delete(roomCode);
+              const skipPayload: ForcedMovementSkippedPayload = {
+                attackerId: character.id,
+                targetId: payload.targetId,
+                movementType: forcedMovementType,
+                reason: 'timeout',
+              };
+              this.server
+                .to(roomCode)
+                .emit('forced_movement_skipped', skipPayload);
+              this.logger.log(
+                `Forced movement auto-skipped due to timeout: ${forcedMovementType}`,
+              );
+            }
+          }, this.FORCED_MOVEMENT_TIMEOUT_MS);
+
+          // Get target name with player nickname for characters
+          const targetName = isMonsterTarget
+            ? target.monsterType
+            : this.getPlayerNickname(
+                roomCode,
+                target.playerId,
+                target.characterClass,
+              );
+
+          // Store pending forced movement with timeout reference
           this.pendingForcedMovement.set(roomCode, {
             requestId,
             attackerId: character.id,
             targetId: payload.targetId,
-            targetName: isMonsterTarget
-              ? target.monsterType
-              : target.characterClass,
+            targetName,
             isMonsterTarget,
             movementType: forcedMovementType,
             distance: forcedMovementDistance,
             validDestinations,
             currentPosition: target.currentHex,
+            timeoutId,
           });
 
           // Emit forced_movement_required event
@@ -4370,9 +4426,7 @@ export class GameGateway
             requestId,
             attackerId: character.id,
             targetId: payload.targetId,
-            targetName: isMonsterTarget
-              ? target.monsterType
-              : target.characterClass,
+            targetName,
             movementType: forcedMovementType,
             distance: forcedMovementDistance,
             validDestinations,
@@ -4904,7 +4958,7 @@ export class GameGateway
       }
 
       // Clear any pending forced movement to prevent stale state
-      this.pendingForcedMovement.delete(room.roomCode);
+      this.clearPendingForcedMovement(room.roomCode);
 
       // Reset action flags for this character's turn ending
       character.resetActionFlags();

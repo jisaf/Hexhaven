@@ -1778,11 +1778,15 @@ class GameStateManager {
       const monster = this.state.gameData?.monsters.find(m => m.id === data.entityId);
       if (monster) {
         monster.currentHex = { q: data.toHex.q, r: data.toHex.r };
+        // Trigger visual update for monster sprite
+        this.visualCallbacks.updateMonsterPosition?.(data.entityId, data.toHex);
       }
     } else if (data.entityType === 'character') {
       const character = this.state.gameData?.characters.find(c => c.id === data.entityId);
       if (character && character.currentHex) {
         character.currentHex = { q: data.toHex.q, r: data.toHex.r };
+        // Trigger visual update for character sprite
+        this.visualCallbacks.moveCharacter?.(data.entityId, data.toHex);
       }
     }
 
