@@ -1092,11 +1092,19 @@ class GameStateManager {
   // ============== PUBLIC ACTIONS ==============
   //
   public selectCard(card: AbilityCard): void {
-    if (!this.state.selectedTopAction) {
+    // Toggle behavior: if card is already selected, deselect it
+    if (this.state.selectedTopAction?.id === card.id) {
+      this.state.selectedTopAction = null;
+    } else if (this.state.selectedBottomAction?.id === card.id) {
+      this.state.selectedBottomAction = null;
+    } else if (!this.state.selectedTopAction) {
+      // First slot empty - select as top action
       this.state.selectedTopAction = card;
-    } else if (!this.state.selectedBottomAction && card.id !== this.state.selectedTopAction.id) {
+    } else if (!this.state.selectedBottomAction) {
+      // Second slot empty - select as bottom action
       this.state.selectedBottomAction = card;
     }
+    // If both slots full and card not already selected, do nothing
 
     // Update characterCardSelections for multi-character tracking
     if (this.state.myCharacterId) {
