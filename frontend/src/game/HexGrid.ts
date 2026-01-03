@@ -590,6 +590,20 @@ export class HexGrid {
   }
 
   /**
+   * Highlight valid forced movement (push/pull) hexes.
+   */
+  public showForcedMovementRange(hexes: Axial[]): void {
+    this.highlightManager.showForcedMovementRange(hexes);
+  }
+
+  /**
+   * Clear all forced movement range highlights.
+   */
+  public clearForcedMovementRange(): void {
+    this.highlightManager.clearForcedMovementRange();
+  }
+
+  /**
    * Update tile data
    */
   public updateTile(hex: Axial, data: Partial<HexTileData>): void {

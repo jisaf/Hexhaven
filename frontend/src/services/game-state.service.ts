@@ -1,6 +1,6 @@
 import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload, ForcedMovementRequiredPayload, EntityForcedMovedPayload, ForcedMovementSkippedPayload, ConfirmForcedMovementPayload, SkipForcedMovementPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
 import { getRange, type CardAction } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
@@ -175,11 +175,21 @@ interface GameState {
   selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
   pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
   // Issue #411: Targeting mode for actions from cards (extensible for heal, summon, etc.)
-  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | null;
+  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | 'push' | 'pull' | null;
   cardActionRange: number; // The range/value from the card action
   // Issue #411: Hex highlighting for heal and summon actions
   validHealHexes: Axial[];
   validSummonHexes: Axial[];
+
+  // Push/Pull targeting state
+  validForcedMovementHexes: Axial[];
+  pendingForcedMovement: {
+    attackerId: string;
+    targetId: string;
+    targetName: string;
+    movementType: 'push' | 'pull';
+    distance: number;
+  } | null;
 }
 
 interface ExhaustionState {
@@ -311,6 +321,9 @@ class GameStateManager {
     cardActionRange: 0,
     validHealHexes: [],
     validSummonHexes: [],
+    // Push/Pull targeting state
+    validForcedMovementHexes: [],
+    pendingForcedMovement: null,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -390,6 +403,10 @@ class GameStateManager {
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
     // Issue #411: Card action execution event
     register('card_action_executed', this.handleCardActionExecuted.bind(this));
+    // Push/pull forced movement events
+    register('forced_movement_required', this.handleForcedMovementRequired.bind(this));
+    register('entity_forced_moved', this.handleEntityForcedMoved.bind(this));
+    register('forced_movement_skipped', this.handleForcedMovementSkipped.bind(this));
     // Issue #411: Listen for errors from card actions
     register('error', (data: { code?: string; message: string }) => {
       console.error('[GameStateManager] WebSocket error:', data);
@@ -1277,6 +1294,18 @@ class GameStateManager {
         return;
       }
 
+      // Push/pull forced movement targeting mode
+      if ((this.state.cardActionTargetingMode === 'push' || this.state.cardActionTargetingMode === 'pull') && this.state.isMyTurn) {
+        const isValidForcedMovementHex = this.state.validForcedMovementHexes.some(
+          h => h.q === hex.q && h.r === hex.r
+        );
+        if (isValidForcedMovementHex && this.state.pendingForcedMovement) {
+          console.log('[GameStateManager] Push/pull targeting mode - destination selected:', hex);
+          this.confirmForcedMovement({ q: hex.q, r: hex.r });
+        }
+        return;
+      }
+
       if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
 
       // ATTACK MODE: Check if clicking on a valid attack target (legacy)
@@ -1654,6 +1683,8 @@ class GameStateManager {
     this.state.validAttackHexes = [];
     this.state.validHealHexes = [];
     this.state.validSummonHexes = [];
+    this.state.validForcedMovementHexes = [];
+    this.state.pendingForcedMovement = null;
     this.state.attackableTargets = [];
   }
 
@@ -1699,6 +1730,136 @@ class GameStateManager {
       return;
     }
     this.emitCardAction(undefined, targetHex);
+  }
+
+  /**
+   * Handle forced_movement_required event from backend.
+   * Sets up push/pull targeting mode for player to select destination.
+   */
+  private handleForcedMovementRequired(data: ForcedMovementRequiredPayload): void {
+    console.log('[GameStateManager] Forced movement required:', data);
+
+    // Store pending forced movement data
+    this.state.pendingForcedMovement = {
+      attackerId: data.attackerId,
+      targetId: data.targetId,
+      targetName: data.targetName,
+      movementType: data.movementType,
+      distance: data.distance,
+    };
+
+    // Set targeting mode and valid hexes
+    this.state.cardActionTargetingMode = data.movementType;
+    this.state.validForcedMovementHexes = data.validDestinations.map(h => ({ q: h.q, r: h.r }));
+
+    // Log the action
+    const actionLabel = data.movementType === 'push' ? 'Push' : 'Pull';
+    this.addLog([
+      { text: `${actionLabel} ${data.distance}: `, color: 'yellow' },
+      { text: `Select destination for ${data.targetName}`, color: 'white' },
+    ]);
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Handle entity_forced_moved event from backend.
+   * Updates entity position after forced movement is applied.
+   */
+  private handleEntityForcedMoved(data: EntityForcedMovedPayload): void {
+    console.log('[GameStateManager] Entity forced moved:', data);
+
+    // Update entity position based on entity type
+    if (data.entityType === 'monster') {
+      const monster = this.state.gameData?.monsters.find(m => m.id === data.entityId);
+      if (monster) {
+        monster.currentHex = { q: data.toHex.q, r: data.toHex.r };
+      }
+    } else if (data.entityType === 'character') {
+      const character = this.state.gameData?.characters.find(c => c.id === data.entityId);
+      if (character && character.currentHex) {
+        character.currentHex = { q: data.toHex.q, r: data.toHex.r };
+      }
+    }
+
+    // Log the movement
+    const actionLabel = data.movementType === 'push' ? 'pushed' : 'pulled';
+    this.addLog([
+      { text: `Target ${actionLabel} `, color: 'yellow' },
+      { text: `to (${data.toHex.q}, ${data.toHex.r})`, color: 'white' },
+    ]);
+
+    // Clear targeting state after movement applied
+    this.clearTargetingState();
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Handle forced_movement_skipped event from backend.
+   * Clears targeting state when push/pull is skipped or unavailable.
+   */
+  private handleForcedMovementSkipped(data: ForcedMovementSkippedPayload): void {
+    console.log('[GameStateManager] Forced movement skipped:', data);
+
+    // Log the skip with reason
+    const actionLabel = data.movementType === 'push' ? 'Push' : 'Pull';
+    this.addLog([
+      { text: `${actionLabel} skipped`, color: 'gray' },
+      { text: data.reason ? `: ${data.reason}` : '', color: 'gray' },
+    ]);
+
+    // Clear targeting state
+    this.clearTargetingState();
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Confirm forced movement to selected destination.
+   * Emits confirm_forced_movement event to backend.
+   */
+  public confirmForcedMovement(destinationHex: { q: number; r: number }): void {
+    if (!this.state.pendingForcedMovement) {
+      console.warn('[GameStateManager] No pending forced movement to confirm');
+      return;
+    }
+
+    const payload: ConfirmForcedMovementPayload = {
+      attackerId: this.state.pendingForcedMovement.attackerId,
+      targetId: this.state.pendingForcedMovement.targetId,
+      destinationHex: { q: destinationHex.q, r: destinationHex.r },
+      movementType: this.state.pendingForcedMovement.movementType,
+    };
+
+    console.log('[GameStateManager] Confirming forced movement:', payload);
+    websocketService.emit('confirm_forced_movement', payload);
+
+    // Clear targeting state immediately (backend will send entity_forced_moved or error)
+    this.clearTargetingState();
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Skip forced movement (player chooses not to push/pull).
+   * Emits skip_forced_movement event to backend.
+   */
+  public skipForcedMovement(): void {
+    if (!this.state.pendingForcedMovement) {
+      console.warn('[GameStateManager] No pending forced movement to skip');
+      return;
+    }
+
+    const payload: SkipForcedMovementPayload = {
+      attackerId: this.state.pendingForcedMovement.attackerId,
+      targetId: this.state.pendingForcedMovement.targetId,
+      movementType: this.state.pendingForcedMovement.movementType,
+    };
+
+    console.log('[GameStateManager] Skipping forced movement:', payload);
+    websocketService.emit('skip_forced_movement', payload);
+
+    // Clear targeting state immediately
+    this.clearTargetingState();
+    this.emitStateUpdate();
   }
 
   /**
@@ -2056,6 +2217,9 @@ class GameStateManager {
         cardActionRange: 0,
         validHealHexes: [],
         validSummonHexes: [],
+        // Push/Pull targeting state
+        validForcedMovementHexes: [],
+        pendingForcedMovement: null,
     };
     this.emitStateUpdate();
   }

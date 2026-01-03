@@ -406,3 +406,78 @@ This architecture successfully achieves:
 - ✅ Clean separation between state and rendering
 - ✅ Testable, maintainable codebase
 - ✅ No duplicate state or event handlers
+
+## 10. Forced Movement Events (January 2026)
+
+Interactive push/pull targeting was added to allow players to choose where to push/pull enemies after attacks.
+
+### 10.1. Event Flow
+
+```
+Attack with Push/Pull lands
+       │
+       ├─ Target survives?
+       │     │
+       │    Yes
+       │     │
+       │     ├─ Attacker is player character?
+       │     │      │
+       │     │     Yes → Calculate valid destinations
+       │     │      │          │
+       │     │      │          ├─ Has valid hexes?
+       │     │      │          │      │
+       │     │      │          │     Yes → Emit forced_movement_required
+       │     │      │          │            (player selects yellow hex)
+       │     │      │          │            Player confirms → emit entity_forced_moved
+       │     │      │          │            Player skips → emit forced_movement_skipped
+       │     │      │          │
+       │     │      │          │     No → Emit forced_movement_skipped (no_valid_destinations)
+       │     │      │
+       │     │     No (monster) → Auto-calculate most direct line
+       │     │                    Apply movement
+       │     │                    Emit entity_forced_moved
+       │
+       └─ Target dies? → No push/pull applied
+```
+
+### 10.2. WebSocket Events
+
+**Server → Client:**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `forced_movement_required` | `{ attackerId, targetId, targetName, movementType, distance, validDestinations[], currentPosition }` | Signals player must choose a destination hex |
+| `entity_forced_moved` | `{ entityId, entityType, fromHex, toHex, movementType }` | Entity was moved via push/pull |
+| `forced_movement_skipped` | `{ attackerId, targetId, movementType, reason }` | Push/pull was skipped |
+
+**Client → Server:**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `confirm_forced_movement` | `{ targetId, destinationHex, movementType }` | Player selected a destination |
+| `skip_forced_movement` | `{ targetId, movementType }` | Player chose to skip |
+
+### 10.3. Frontend State
+
+The `GameStateManager` tracks forced movement state:
+
+```typescript
+interface GameStateManagerState {
+  // ... existing fields ...
+  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | 'push' | 'pull' | null;
+  validForcedMovementHexes: Axial[];
+  pendingForcedMovement: {
+    attackerId: string;
+    targetId: string;
+    targetName: string;
+    movementType: 'push' | 'pull';
+    distance: number;
+  } | null;
+}
+```
+
+### 10.4. Visual Feedback
+
+- **Yellow highlights**: Valid destination hexes are highlighted in yellow (0xffff00)
+- **Skip button**: Displayed in TurnActionPanel when push/pull targeting is active
+- **Hint text**: "Tap a yellow hex to push/pull [target name]"

@@ -15,6 +15,7 @@ import {
 } from '../../../shared/types/entities';
 import { Character } from '../models/character.model';
 import { PathfindingService } from './pathfinding.service';
+import { hexDistance, hexNeighbors, hexKey } from '../utils/hex-utils';
 
 export interface MovementResult {
   success: boolean;
@@ -267,7 +268,7 @@ export class ForcedMovementService {
   }
 
   /**
-   * Get all valid hexes for forced movement
+   * Get all valid hexes for forced movement (single direction - legacy)
    * Used for visualization/validation
    */
   getValidForcedMovementHexes(
@@ -299,5 +300,115 @@ export class ForcedMovementService {
     }
 
     return hexes;
+  }
+
+  /**
+   * Get ALL valid destination hexes for player-controlled forced movement.
+   * Uses BFS to find all reachable hexes that satisfy the direction constraint.
+   *
+   * For push: each step must be FARTHER from attacker
+   * For pull: each step must be CLOSER to attacker
+   *
+   * @param attackerPos - Position of the attacker (source of push/pull)
+   * @param targetPos - Current position of the target being pushed/pulled
+   * @param distance - Maximum movement distance (push/pull value)
+   * @param movementType - 'push' or 'pull'
+   * @param getHex - Function to get hex info for walkability check
+   * @param isOccupied - Function to check if hex is occupied
+   * @returns Array of all valid destination hexes
+   */
+  getAllValidForcedMovementDestinations(
+    attackerPos: AxialCoordinates,
+    targetPos: AxialCoordinates,
+    distance: number,
+    movementType: 'push' | 'pull',
+    getHex: (pos: AxialCoordinates) => HexInfo | null,
+    isOccupied: (pos: AxialCoordinates) => boolean,
+  ): AxialCoordinates[] {
+    const results: AxialCoordinates[] = [];
+    const visited = new Set<string>();
+
+    // BFS queue: each entry tracks position and depth (steps taken)
+    const queue: Array<{ pos: AxialCoordinates; depth: number }> = [];
+
+    // Start from target's current position
+    visited.add(hexKey(targetPos));
+    queue.push({ pos: targetPos, depth: 0 });
+
+    while (queue.length > 0) {
+      const { pos: currentPos, depth } = queue.shift()!;
+
+      // Don't explore beyond max distance
+      if (depth >= distance) {
+        continue;
+      }
+
+      const currentDistFromAttacker = hexDistance(attackerPos, currentPos);
+
+      // Check all 6 neighbors
+      const neighbors = hexNeighbors(currentPos);
+      for (const neighbor of neighbors) {
+        const key = hexKey(neighbor);
+
+        // Skip if already visited
+        if (visited.has(key)) {
+          continue;
+        }
+        visited.add(key);
+
+        // Check walkability
+        const hex = getHex(neighbor);
+        if (!this.isWalkableHex(hex)) {
+          continue;
+        }
+
+        // Check if occupied
+        if (isOccupied(neighbor)) {
+          continue;
+        }
+
+        // Check direction constraint
+        const neighborDistFromAttacker = hexDistance(attackerPos, neighbor);
+
+        if (movementType === 'push') {
+          // Push: neighbor must be FARTHER from attacker than current
+          if (neighborDistFromAttacker <= currentDistFromAttacker) {
+            continue;
+          }
+        } else {
+          // Pull: neighbor must be CLOSER to attacker than current
+          if (neighborDistFromAttacker >= currentDistFromAttacker) {
+            continue;
+          }
+        }
+
+        // Valid destination - add to results
+        results.push({ q: neighbor.q, r: neighbor.r });
+
+        // Continue BFS from this neighbor
+        queue.push({ pos: neighbor, depth: depth + 1 });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Apply forced movement to a specific destination (player-chosen).
+   * Used when player selects a destination hex from valid options.
+   */
+  applyToDestination(
+    target: Character,
+    destination: AxialCoordinates,
+  ): MovementResult {
+    const result: MovementResult = {
+      success: true,
+      finalPosition: destination,
+      terrainEffects: [],
+    };
+
+    target.moveTo(destination);
+
+    return result;
   }
 }

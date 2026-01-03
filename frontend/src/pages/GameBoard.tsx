@@ -161,6 +161,8 @@ export function GameBoard() {
     clearHealRange,
     showSummonPlacementRange,
     clearSummonPlacementRange,
+    showForcedMovementRange,
+    clearForcedMovementRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
@@ -334,6 +336,18 @@ export function GameBoard() {
       }
     }
   }, [gameState.cardActionTargetingMode, gameState.validSummonHexes, hexGridReady, showSummonPlacementRange, clearSummonPlacementRange]);
+
+  // Push/Pull targeting highlighting (yellow hexes for forced movement destination selection)
+  useEffect(() => {
+    if (hexGridReady) {
+      const isPushPullMode = gameState.cardActionTargetingMode === 'push' || gameState.cardActionTargetingMode === 'pull';
+      if (isPushPullMode && gameState.validForcedMovementHexes && gameState.validForcedMovementHexes.length > 0) {
+        showForcedMovementRange(gameState.validForcedMovementHexes);
+      } else {
+        clearForcedMovementRange();
+      }
+    }
+  }, [gameState.cardActionTargetingMode, gameState.validForcedMovementHexes, hexGridReady, showForcedMovementRange, clearForcedMovementRange]);
 
   // Track whether the board has been initialized to prevent re-initialization on every state change
   const boardInitializedRef = useRef(false);
@@ -650,6 +664,8 @@ export function GameBoard() {
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
               targetingMode={gameState.cardActionTargetingMode}
+              pendingForcedMovement={gameState.pendingForcedMovement}
+              onSkipForcedMovement={() => gameStateManager.skipForcedMovement()}
             />
           ) : selectedPile === 'inventory' ? (
             <InventoryTabContent

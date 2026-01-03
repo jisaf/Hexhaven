@@ -44,7 +44,14 @@ export interface TurnActionPanelProps {
   /** Callback when selected action is confirmed (tap-again pattern) */
   onActionConfirm: () => void;
   /** Issue #411: Current targeting mode (actions that need hex/target selection) */
-  targetingMode?: 'move' | 'attack' | 'heal' | 'summon' | null;
+  targetingMode?: 'move' | 'attack' | 'heal' | 'summon' | 'push' | 'pull' | null;
+  /** Pending forced movement info (for skip button) */
+  pendingForcedMovement?: {
+    movementType: 'push' | 'pull';
+    targetName: string;
+  } | null;
+  /** Callback when player wants to skip forced movement */
+  onSkipForcedMovement?: () => void;
 }
 
 /**
@@ -86,6 +93,8 @@ export function TurnActionPanel({
   onActionSelect,
   onActionConfirm,
   targetingMode,
+  pendingForcedMovement,
+  onSkipForcedMovement,
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
@@ -388,12 +397,29 @@ export function TurnActionPanel({
           <span className={styles.targetingHint}>Tap an ally to heal them</span>
         ) : targetingMode === 'summon' ? (
           <span className={styles.targetingHint}>Tap a purple hex to place your summon</span>
+        ) : (targetingMode === 'push' || targetingMode === 'pull') && pendingForcedMovement ? (
+          <span className={styles.targetingHint}>
+            Tap a yellow hex to {targetingMode} {pendingForcedMovement.targetName}
+          </span>
         ) : pendingAction ? (
           <span>Tap again to confirm, or tap a different action</span>
         ) : actionsUsed < 2 ? (
           <span>Tap an action to select it</span>
         ) : null}
       </div>
+
+      {/* Skip button for push/pull */}
+      {(targetingMode === 'push' || targetingMode === 'pull') && onSkipForcedMovement && (
+        <div className={styles.skipButtonContainer}>
+          <button
+            className={styles.skipButton}
+            onClick={onSkipForcedMovement}
+            type="button"
+          >
+            Skip {targetingMode === 'push' ? 'Push' : 'Pull'}
+          </button>
+        </div>
+      )}
 
       {/* Zoomed card modal - rendered via portal */}
       {zoomedCard && createPortal(

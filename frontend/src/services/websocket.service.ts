@@ -157,6 +157,11 @@ export interface WebSocketEvents {
   // Card action events (Issue #411)
   card_action_executed: (data: import('../../../shared/types/events').CardActionExecutedPayload) => void;
 
+  // Push/pull forced movement events
+  forced_movement_required: (data: import('../../../shared/types/events').ForcedMovementRequiredPayload) => void;
+  entity_forced_moved: (data: import('../../../shared/types/events').EntityForcedMovedPayload) => void;
+  forced_movement_skipped: (data: import('../../../shared/types/events').ForcedMovementSkippedPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

@@ -226,6 +226,18 @@ export function useHexGrid(
     }
   }, []);
 
+  const showForcedMovementRange = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showForcedMovementRange(hexes);
+    }
+  }, []);
+
+  const clearForcedMovementRange = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearForcedMovementRange();
+    }
+  }, []);
+
   /**
    * Update monster position on the hex grid
    *
@@ -370,6 +382,8 @@ export function useHexGrid(
     clearHealRange,
     showSummonPlacementRange,
     clearSummonPlacementRange,
+    showForcedMovementRange,
+    clearForcedMovementRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,

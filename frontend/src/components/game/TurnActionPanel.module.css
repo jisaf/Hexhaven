@@ -216,6 +216,37 @@
   background: rgba(192, 57, 43, 1);
 }
 
+/* Skip button container for push/pull */
+.skipButtonContainer {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+/* Skip button for push/pull actions */
+.skipButton {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(201, 164, 68, 0.9);
+  color: #0d1a2e;
+  border: 2px solid #c9a444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.skipButton:hover {
+  background: rgba(201, 164, 68, 1);
+  transform: scale(1.02);
+}
+
+.skipButton:active {
+  transform: scale(0.98);
+}
+
 /* Portrait mode - tighter spacing */
 @media (orientation: portrait) {
   .panel {

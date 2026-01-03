@@ -99,6 +99,24 @@ Attack abilities will often have effects that increase their power. If an attack
 
 [**PULL X**](../../img/icons/status/pull.png) – The target is forced to move X hexes in a direction specified by the attacker, but each hex moved must place the target **closer to** the attacker than it was previously. If there are no viable hexes into which to pull the target, the pull ends. The target can be pulled through its allies, but not its enemies. Both push and pull effects are considered movements, however, they are not affected by difficult terrain.
 
+#### PUSH/PULL TARGETING (HEXHAVEN IMPLEMENTATION)
+
+When a player character attacks with a push or pull effect, they are presented with an **interactive targeting system** to select the destination hex:
+
+1. **Valid Destination Highlighting**: After the attack resolves, all valid destination hexes are highlighted in **yellow**. Valid hexes must satisfy:
+   - **Push**: Each hex in the path must be farther from the attacker than the previous hex
+   - **Pull**: Each hex in the path must be closer to the attacker than the previous hex
+   - The hex cannot be blocked by obstacles or occupied by other figures
+   - The path cannot pass through obstacles or enemies
+
+2. **Hex Selection**: Tap any highlighted yellow hex to immediately move the target to that location. Movement is applied without requiring confirmation (tap-to-confirm pattern).
+
+3. **Skip Option**: Players can choose to skip the forced movement by tapping the "Skip Push" or "Skip Pull" button. This is useful when pushing an enemy might disadvantage the player's strategy.
+
+4. **Monster Attackers**: When a monster performs a push or pull attack, the movement is calculated automatically using the most direct path that satisfies the distance constraint.
+
+5. **No Valid Destinations**: If no valid hexes exist (e.g., target is backed against a wall), the push/pull effect is skipped silently and noted in the game log.
+
 [**PIERCE X**](../../img/icons/status/pierce.png) – Up to X points of the target’s Shield are ignored for the attack. Unlike other effects, PIERCE is applied while calculating the accompanying attack damage instead of afterwards.
 
 ***Example:** an Attack 3 PIERCE 2 ability used on a monster with Shield 3 would ignore two of the monster’s Shield points and inflict 2 damage (modified by an attack modifier card).*
