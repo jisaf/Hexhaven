@@ -4377,6 +4377,9 @@ export class GameGateway
           // Generate unique request ID to prevent race conditions
           const requestId = randomUUID();
 
+          // Capture targetId for closure to avoid undefined issues
+          const targetId = payload.targetId;
+
           // Set up auto-skip timeout for unresponsive players
           const timeoutId = setTimeout(() => {
             const pending = this.pendingForcedMovement.get(roomCode);
@@ -4384,16 +4387,16 @@ export class GameGateway
             if (pending && pending.requestId === requestId) {
               this.pendingForcedMovement.delete(roomCode);
               const skipPayload: ForcedMovementSkippedPayload = {
-                attackerId: character.id,
-                targetId: payload.targetId,
-                movementType: forcedMovementType,
+                attackerId: pending.attackerId,
+                targetId: pending.targetId,
+                movementType: pending.movementType,
                 reason: 'timeout',
               };
               this.server
                 .to(roomCode)
                 .emit('forced_movement_skipped', skipPayload);
               this.logger.log(
-                `Forced movement auto-skipped due to timeout: ${forcedMovementType}`,
+                `Forced movement auto-skipped due to timeout: ${pending.movementType}`,
               );
             }
           }, this.FORCED_MOVEMENT_TIMEOUT_MS);

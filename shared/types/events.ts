@@ -815,7 +815,7 @@ export interface ForcedMovementSkippedPayload {
   attackerId: string;
   targetId: string;
   movementType: 'push' | 'pull';
-  reason: 'player_skipped' | 'no_valid_destinations' | 'target_died';
+  reason: 'player_skipped' | 'no_valid_destinations' | 'target_died' | 'timeout';
 }
 
 // ========== EVENT TYPE MAPPING ==========
