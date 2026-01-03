@@ -1,8 +1,8 @@
 import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload } from '../../../shared/types';
 import type { Character } from '../../../shared/types/entities';
-import { getRange } from '../../../shared/types/modifiers';
+import { getRange, type CardAction } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -115,6 +115,7 @@ const hasAttackTarget = (hex: Axial, state: GameState, attackerId: string): bool
 interface CharacterCardSelection {
   topCardId: string | null;
   bottomCardId: string | null;
+  initiativeCardId: string | null; // Issue #411: Which card determines initiative
 }
 
 interface GameState {
@@ -141,6 +142,7 @@ interface GameState {
   playerHand: AbilityCard[];
   selectedTopAction: AbilityCard | null;
   selectedBottomAction: AbilityCard | null;
+  selectedInitiativeCardId: string | null; // Issue #411: Which card determines initiative
   characterCardSelections: Map<string, CharacterCardSelection>; // Per-character card selections
 
   // Movement state
@@ -166,6 +168,17 @@ interface GameState {
 
   // Exhaustion state
   exhaustionState: ExhaustionState | null;
+
+  // Issue #411: Card action selection during turn
+  turnActionState: TurnActionState | null;
+  selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
+  pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
+  // Issue #411: Targeting mode for actions from cards (extensible for heal, summon, etc.)
+  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | null;
+  cardActionRange: number; // The range/value from the card action
+  // Issue #411: Hex highlighting for heal and summon actions
+  validHealHexes: Axial[];
+  validSummonHexes: Axial[];
 }
 
 interface ExhaustionState {
@@ -272,6 +285,7 @@ class GameStateManager {
     playerHand: [],
     selectedTopAction: null,
     selectedBottomAction: null,
+    selectedInitiativeCardId: null, // Issue #411: Initiative card selection
     characterCardSelections: new Map(), // Per-character card selections
     selectedCharacterId: null,
     selectedHex: null,
@@ -287,6 +301,14 @@ class GameStateManager {
     waitingForRoundStart: false,
     restState: null,
     exhaustionState: null,
+    // Issue #411: Card action selection during turn
+    turnActionState: null,
+    selectedTurnCards: null,
+    pendingAction: null,
+    cardActionTargetingMode: null,
+    cardActionRange: 0,
+    validHealHexes: [],
+    validSummonHexes: [],
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
   private visualCallbacks: VisualUpdateCallbacks = {};
@@ -364,6 +386,28 @@ class GameStateManager {
     register('loot_collected', this.handleLootCollected.bind(this));
     register('rest-event', this.handleRestEvent.bind(this));
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
+    // Issue #411: Card action execution event
+    register('card_action_executed', this.handleCardActionExecuted.bind(this));
+    // Issue #411: Listen for errors from card actions
+    register('error', (data: { code?: string; message: string }) => {
+      console.error('[GameStateManager] WebSocket error:', data);
+      if (data.code === 'USE_CARD_ACTION_FAILED') {
+        this.addLog([
+          { text: 'Action failed: ', color: 'red' },
+          { text: data.message, color: 'orange' },
+        ]);
+        // Clear targeting mode on error
+        this.state.cardActionTargetingMode = null;
+        this.state.cardActionRange = 0;
+        this.state.attackMode = false;
+        this.state.validMovementHexes = [];
+        this.state.validAttackHexes = [];
+        this.state.validHealHexes = [];
+        this.state.validSummonHexes = [];
+        this.state.attackableTargets = [];
+        this.emitStateUpdate();
+      }
+    });
     register('ws_connected', () => {
         this.state.connectionStatus = 'connected';
         this.emitStateUpdate();
@@ -420,6 +464,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(char.id, {
         topCardId: characterWithDeck.selectedCards?.topCardId || null,
         bottomCardId: characterWithDeck.selectedCards?.bottomCardId || null,
+        initiativeCardId: null, // Issue #411: Will be set when player chooses
       });
 
       // Store ability deck for this character
@@ -609,12 +654,14 @@ class GameStateManager {
       this.state.characterCardSelections.set(charId, {
         topCardId: null,
         bottomCardId: null,
+        initiativeCardId: null,
       });
     }
 
     // Clear currently displayed selections
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+    this.state.selectedInitiativeCardId = null; // Issue #411: Clear initiative selection
 
     // Reset to first character for card selection
     if (this.state.myCharacterIds.length > 0) {
@@ -638,7 +685,7 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
-  private handleTurnStarted(data: { turnIndex: number; entityId: string; entityType: 'character' | 'monster' }): void {
+  private handleTurnStarted(data: TurnStartedPayload): void {
     // Check if this turn belongs to ANY of the player's characters (multi-character support)
     const isMyCharacter = data.entityType === 'character' && this.state.myCharacterIds.includes(data.entityId);
     this.state.isMyTurn = isMyCharacter;
@@ -651,6 +698,24 @@ class GameStateManager {
         console.log(`[GameStateManager] Auto-switching to character ${charIndex} for their turn`);
         this.switchActiveCharacter(charIndex);
       }
+
+      // Issue #411: Set turnActionState and selectedCards from turn_started payload
+      if (data.turnActionState) {
+        this.state.turnActionState = data.turnActionState;
+        console.log(`[GameStateManager] Turn action state set:`, data.turnActionState);
+      }
+      if (data.selectedCards) {
+        this.state.selectedTurnCards = data.selectedCards;
+        console.log(`[GameStateManager] Selected turn cards set:`, data.selectedCards.card1.name, data.selectedCards.card2.name);
+      }
+
+      // Clear any pending action from previous turn
+      this.state.pendingAction = null;
+    } else {
+      // Not my turn - clear turn action state
+      this.state.turnActionState = null;
+      this.state.selectedTurnCards = null;
+      this.state.pendingAction = null;
     }
 
     const turnOrderEntry = this.state.turnOrder.find(t => t.entityId === data.entityId);
@@ -883,6 +948,91 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
+  /**
+   * Issue #411: Handle card action executed event from backend
+   * Updates turnActionState with the executed action
+   */
+  private handleCardActionExecuted(data: CardActionExecutedPayload): void {
+    console.log(`[GameStateManager] Card action executed:`, data);
+
+    // Only update state if this is our character
+    if (!this.state.myCharacterIds.includes(data.characterId)) {
+      // Log for other players
+      const character = this.state.gameData?.characters.find(c => c.id === data.characterId);
+      const characterName = character?.classType || 'Character';
+      this.addLog([
+        { text: characterName, color: 'lightblue' },
+        { text: ` used ` },
+        { text: data.position, color: 'gold' },
+        { text: ` action` },
+      ]);
+      this.emitStateUpdate();
+      return;
+    }
+
+    // Update turnActionState to reflect the executed action
+    if (this.state.turnActionState) {
+      const executedAction = { cardId: data.cardId, position: data.position };
+
+      if (!this.state.turnActionState.firstAction) {
+        // This was the first action
+        this.state.turnActionState = {
+          ...this.state.turnActionState,
+          firstAction: executedAction,
+          // Recalculate available actions: only opposite section of other card
+          availableActions: this.calculateAvailableActionsAfterFirst(executedAction),
+        };
+      } else if (!this.state.turnActionState.secondAction) {
+        // This was the second action
+        this.state.turnActionState = {
+          ...this.state.turnActionState,
+          secondAction: executedAction,
+          availableActions: [], // No more actions available
+        };
+      }
+    }
+
+    // Clear pending action and targeting mode
+    this.state.pendingAction = null;
+    this.state.cardActionTargetingMode = null;
+    this.state.cardActionRange = 0;
+
+    // Log the action
+    const card = this.state.selectedTurnCards?.card1.id === data.cardId
+      ? this.state.selectedTurnCards?.card1
+      : this.state.selectedTurnCards?.card2;
+    const cardName = card?.name || 'Card';
+
+    if (data.success) {
+      this.addLog([
+        { text: `Used ` },
+        { text: cardName, color: 'lightblue' },
+        { text: ` ${data.position} action (${data.actionType})` },
+      ]);
+    } else {
+      this.addLog([
+        { text: `Failed to use ` },
+        { text: cardName, color: 'red' },
+        { text: `: ${data.error || 'Unknown error'}` },
+      ]);
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Calculate available actions after first action is used
+   * Rules: Must use opposite section (top/bottom) of the other card
+   */
+  private calculateAvailableActionsAfterFirst(firstAction: { cardId: string; position: 'top' | 'bottom' }): Array<{ cardId: string; position: 'top' | 'bottom' }> {
+    if (!this.state.selectedTurnCards) return [];
+
+    const { card1, card2 } = this.state.selectedTurnCards;
+    const otherCardId = firstAction.cardId === card1.id ? card2.id : card1.id;
+    const oppositePosition = firstAction.position === 'top' ? 'bottom' : 'top';
+
+    return [{ cardId: otherCardId, position: oppositePosition }];
+  }
 
   private emitStateUpdate(): void {
     this.subscribers.forEach(callback => callback({ ...this.state }));
@@ -945,9 +1095,31 @@ class GameStateManager {
 
     // Update characterCardSelections for multi-character tracking
     if (this.state.myCharacterId) {
+      const existingSelection = this.state.characterCardSelections.get(this.state.myCharacterId);
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: this.state.selectedTopAction?.id || null,
         bottomCardId: this.state.selectedBottomAction?.id || null,
+        initiativeCardId: existingSelection?.initiativeCardId || null, // Preserve existing initiative selection
+      });
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Set the initiative card for the current character
+   * Called when player selects which card determines their turn order
+   */
+  public setInitiativeCard(cardId: string): void {
+    this.state.selectedInitiativeCardId = cardId;
+
+    // Update characterCardSelections for multi-character tracking
+    if (this.state.myCharacterId) {
+      const existingSelection = this.state.characterCardSelections.get(this.state.myCharacterId);
+      this.state.characterCardSelections.set(this.state.myCharacterId, {
+        topCardId: existingSelection?.topCardId || null,
+        bottomCardId: existingSelection?.bottomCardId || null,
+        initiativeCardId: cardId,
       });
     }
 
@@ -960,6 +1132,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: this.state.selectedTopAction.id,
         bottomCardId: this.state.selectedBottomAction.id,
+        initiativeCardId: this.state.selectedInitiativeCardId, // Issue #411: Save initiative selection
       });
     }
 
@@ -983,7 +1156,13 @@ class GameStateManager {
     for (const charId of this.state.myCharacterIds) {
       const selection = this.state.characterCardSelections.get(charId);
       if (selection?.topCardId && selection?.bottomCardId) {
-        websocketService.selectCards(selection.topCardId, selection.bottomCardId, charId);
+        // Issue #411: Include initiativeCardId in the payload
+        websocketService.selectCards(
+          selection.topCardId,
+          selection.bottomCardId,
+          charId,
+          selection.initiativeCardId || undefined
+        );
       }
     }
 
@@ -991,7 +1170,8 @@ class GameStateManager {
       { text: `Cards selected for ${this.state.myCharacterIds.length} character(s)` },
     ]);
 
-    // Keep panel visible but show waiting state
+    // Collapse card selection panel and wait for round to start
+    this.state.showCardSelection = false;
     this.state.waitingForRoundStart = true;
     this.emitStateUpdate();
   }
@@ -999,12 +1179,14 @@ class GameStateManager {
   public clearCardSelection(): void {
     this.state.selectedTopAction = null;
     this.state.selectedBottomAction = null;
+    this.state.selectedInitiativeCardId = null; // Issue #411: Clear initiative selection
 
     // Clear from characterCardSelections too
     if (this.state.myCharacterId) {
       this.state.characterCardSelections.set(this.state.myCharacterId, {
         topCardId: null,
         bottomCardId: null,
+        initiativeCardId: null,
       });
     }
 
@@ -1042,9 +1224,55 @@ class GameStateManager {
   }
 
   public selectHex(hex: Axial): void {
+      // Issue #411: Card action targeting mode takes priority
+      if (this.state.cardActionTargetingMode === 'move' && this.state.isMyTurn) {
+        console.log('[GameStateManager] Move targeting mode - hex selected:', hex);
+        this.completeCardMoveAction({ q: hex.q, r: hex.r });
+        return;
+      }
+
+      if (this.state.cardActionTargetingMode === 'attack' && this.state.isMyTurn) {
+        // In attack targeting mode, check if clicking on a monster
+        const monster = this.state.gameData?.monsters.find(m =>
+          m.currentHex.q === hex.q && m.currentHex.r === hex.r && m.health > 0
+        );
+        if (monster) {
+          console.log('[GameStateManager] Attack targeting mode - target selected:', monster.id);
+          this.completeCardAttackAction(monster.id);
+        }
+        return;
+      }
+
+      if (this.state.cardActionTargetingMode === 'heal' && this.state.isMyTurn) {
+        // In heal targeting mode, check if clicking on an ally
+        const ally = this.state.gameData?.characters.find(c =>
+          c.id !== this.state.myCharacterId &&
+          c.currentHex?.q === hex.q &&
+          c.currentHex?.r === hex.r &&
+          !c.isExhausted
+        );
+        if (ally) {
+          console.log('[GameStateManager] Heal targeting mode - target selected:', ally.id);
+          this.completeCardHealAction(ally.id);
+        }
+        return;
+      }
+
+      if (this.state.cardActionTargetingMode === 'summon' && this.state.isMyTurn) {
+        // In summon targeting mode, check if hex is empty and in range
+        const isValidSummonHex = this.state.validSummonHexes.some(
+          h => h.q === hex.q && h.r === hex.r
+        );
+        if (isValidSummonHex) {
+          console.log('[GameStateManager] Summon targeting mode - hex selected:', hex);
+          this.completeCardSummonAction({ q: hex.q, r: hex.r });
+        }
+        return;
+      }
+
       if (!this.state.selectedCharacterId || !this.state.isMyTurn) return;
 
-      // ATTACK MODE: Check if clicking on a valid attack target
+      // ATTACK MODE: Check if clicking on a valid attack target (legacy)
       if (this.state.attackMode) {
         if (!this.state.myCharacterId) {
           console.error('[GameStateManager] Cannot attack: no active character');
@@ -1164,6 +1392,323 @@ class GameStateManager {
       };
     }
     return null;
+  }
+
+  // ============== ISSUE #411: CARD ACTION SELECTION ==============
+
+  /**
+   * Issue #411: Select a card action (sets pendingAction)
+   * Called when player taps on a card action region
+   */
+  public selectCardAction(cardId: string, position: 'top' | 'bottom'): void {
+    if (!this.state.isMyTurn || !this.state.turnActionState) {
+      console.warn('[GameStateManager] Cannot select card action: not my turn or no turn action state');
+      return;
+    }
+
+    // Check if this action is available
+    const isAvailable = this.state.turnActionState.availableActions.some(
+      (action) => action.cardId === cardId && action.position === position
+    );
+
+    if (!isAvailable) {
+      console.warn('[GameStateManager] Cannot select card action: action not available');
+      return;
+    }
+
+    // If already in targeting mode, clear it before selecting new action
+    if (this.state.cardActionTargetingMode) {
+      this.clearTargetingState();
+    }
+
+    // Get the card and action to determine type
+    const card = this.state.selectedTurnCards?.card1.id === cardId
+      ? this.state.selectedTurnCards?.card1
+      : this.state.selectedTurnCards?.card2;
+
+    if (!card) {
+      console.warn('[GameStateManager] Cannot find card for action');
+      return;
+    }
+
+    const action = position === 'top' ? card.topAction : card.bottomAction;
+    if (!action) {
+      console.warn('[GameStateManager] Card has no action at position:', position);
+      return;
+    }
+
+    // Set pending action
+    this.state.pendingAction = { cardId, position };
+
+    // Determine if this action requires hex targeting
+    // - move: always requires targeting
+    // - attack: always requires targeting
+    // - heal: requires targeting if range > 0 (ranged heal), self-heal doesn't
+    // - summon: always requires targeting (placement)
+    const requiresTargeting =
+      action.type === 'move' ||
+      action.type === 'attack' ||
+      action.type === 'summon' ||
+      (action.type === 'heal' && getRange(action.modifiers) > 0);
+
+    if (requiresTargeting) {
+      this.enterTargetingMode(action);
+    } else {
+      // For non-targeting actions (loot, self-heal, special, etc.),
+      // wait for tap-again confirmation on the card
+      this.emitStateUpdate();
+    }
+  }
+
+  /**
+   * Issue #411: Enter targeting mode for actions requiring hex selection
+   * Extensible for move, attack, heal, summon, and future action types
+   * Called immediately when selecting a targeting action - hex selection is the confirmation
+   */
+  private enterTargetingMode(action: CardAction): void {
+    const character = this.state.gameData?.characters.find(c => c.id === this.state.myCharacterId);
+    if (!character?.currentHex) {
+      console.warn('[GameStateManager] Cannot find character position');
+      // Clear pending action and notify user via log
+      this.state.pendingAction = null;
+      this.addLog([
+        { text: 'Cannot target: character position unknown', color: 'red' },
+      ]);
+      this.emitStateUpdate();
+      return;
+    }
+
+    // Build occupied hex set once for reuse
+    const occupiedHexes = new Set<string>();
+    this.state.gameData?.monsters.forEach(m => {
+      if (m.health > 0 && m.currentHex) {
+        occupiedHexes.add(`${m.currentHex.q},${m.currentHex.r}`);
+      }
+    });
+    this.state.gameData?.characters.forEach(c => {
+      if (c.currentHex) {
+        occupiedHexes.add(`${c.currentHex.q},${c.currentHex.r}`);
+      }
+    });
+
+    // Build ally positions for heal targeting (excludes self if needed)
+    const allyPositions = new Set<string>();
+    this.state.gameData?.characters.forEach(c => {
+      if (c.id !== this.state.myCharacterId && c.currentHex && !c.isExhausted) {
+        allyPositions.add(`${c.currentHex.q},${c.currentHex.r}`);
+      }
+    });
+
+    // Build monster positions for attack targeting
+    const monsterPositions = new Set<string>();
+    this.state.gameData?.monsters.forEach(m => {
+      if (m.health > 0 && m.currentHex) {
+        monsterPositions.add(`${m.currentHex.q},${m.currentHex.r}`);
+      }
+    });
+
+    switch (action.type) {
+      case 'move': {
+        // Move targeting: pathfinding, can't stop on occupied hexes
+        const moveRange = action.value;
+        this.state.cardActionTargetingMode = 'move';
+        this.state.cardActionRange = moveRange;
+        this.state.currentMovementPoints = moveRange;
+
+        // For movement blocking, we need hexes with monsters (not allies - can pass through)
+        const blockedByMonsters = (hex: { q: number; r: number }) =>
+          monsterPositions.has(`${hex.q},${hex.r}`);
+
+        this.state.validMovementHexes = hexRangeReachable(
+          character.currentHex,
+          moveRange,
+          blockedByMonsters
+        );
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered move targeting mode, range:', moveRange, 'valid hexes:', this.state.validMovementHexes.length);
+        break;
+      }
+
+      case 'attack': {
+        // Attack targeting: distance-based, filter for enemy hexes
+        const attackRange = getRange(action.modifiers) || 1;
+        this.state.cardActionTargetingMode = 'attack';
+        this.state.cardActionRange = attackRange;
+        this.state.attackMode = true;
+
+        const hasTarget = (hex: { q: number; r: number }) =>
+          monsterPositions.has(`${hex.q},${hex.r}`);
+
+        this.state.validAttackHexes = hexAttackRange(character.currentHex, attackRange, hasTarget);
+
+        // Build list of attackable monster IDs for UI highlighting
+        const attackableMonsters: string[] = [];
+        this.state.gameData?.monsters.forEach(m => {
+          if (m.health > 0 && m.currentHex) {
+            const inRange = this.state.validAttackHexes.some(
+              h => h.q === m.currentHex.q && h.r === m.currentHex.r
+            );
+            if (inRange) {
+              attackableMonsters.push(m.id);
+            }
+          }
+        });
+        this.state.attackableTargets = attackableMonsters;
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered attack targeting mode, range:', attackRange, 'targets:', attackableMonsters.length);
+        break;
+      }
+
+      case 'heal': {
+        // Heal targeting: distance-based, filter for ally hexes
+        const healRange = getRange(action.modifiers);
+        this.state.cardActionTargetingMode = 'heal';
+        this.state.cardActionRange = healRange;
+
+        const hasAlly = (hex: { q: number; r: number }) =>
+          allyPositions.has(`${hex.q},${hex.r}`);
+
+        this.state.validHealHexes = hexAttackRange(character.currentHex, healRange, hasAlly);
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered heal targeting mode, range:', healRange, 'valid hexes:', this.state.validHealHexes.length);
+        break;
+      }
+
+      case 'summon': {
+        // Summon targeting: distance-based, filter for empty hexes
+        const summonRange = getRange(action.modifiers) || 1; // Default range 1 if not specified
+        this.state.cardActionTargetingMode = 'summon';
+        this.state.cardActionRange = summonRange;
+
+        const isEmptyHex = (hex: { q: number; r: number }) =>
+          !occupiedHexes.has(`${hex.q},${hex.r}`);
+
+        this.state.validSummonHexes = hexAttackRange(character.currentHex, summonRange, isEmptyHex);
+        this.state.selectedCharacterId = this.state.myCharacterId;
+        this.emitStateUpdate();
+        console.log('[GameStateManager] Entered summon targeting mode, range:', summonRange, 'valid hexes:', this.state.validSummonHexes.length);
+        break;
+      }
+    }
+  }
+
+  /**
+   * Issue #411: Confirm the pending card action (tap-again for non-targeting actions)
+   * For targeting actions, this is called with target when hex/monster is selected
+   */
+  public confirmCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+    if (!this.state.isMyTurn || !this.state.pendingAction || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot confirm card action: invalid state');
+      return;
+    }
+
+    // Emit the action (with or without target)
+    this.emitCardAction(targetId, targetHex);
+  }
+
+  /**
+   * Issue #411: Internal method to emit the card action to backend
+   */
+  private emitCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+    if (!this.state.pendingAction || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot emit card action: missing pending action or character');
+      return;
+    }
+
+    const payload: UseCardActionPayload = {
+      characterId: this.state.myCharacterId,
+      cardId: this.state.pendingAction.cardId,
+      position: this.state.pendingAction.position,
+      targetId,
+      targetHex,
+    };
+
+    console.log('[GameStateManager] Emitting use_card_action:', payload);
+    websocketService.emit('use_card_action', payload);
+
+    // Clear targeting mode and all highlighting arrays
+    this.clearTargetingState();
+
+    // The pendingAction will be cleared when we receive card_action_executed
+  }
+
+  /**
+   * Issue #411: Clear all targeting-related state
+   * Centralized cleanup for targeting mode exit/cancel/error
+   */
+  private clearTargetingState(): void {
+    this.state.cardActionTargetingMode = null;
+    this.state.cardActionRange = 0;
+    this.state.attackMode = false;
+    this.state.validMovementHexes = [];
+    this.state.validAttackHexes = [];
+    this.state.validHealHexes = [];
+    this.state.validSummonHexes = [];
+    this.state.attackableTargets = [];
+  }
+
+  /**
+   * Issue #411: Complete a move action with the selected hex
+   */
+  public completeCardMoveAction(targetHex: { q: number; r: number }): void {
+    if (this.state.cardActionTargetingMode !== 'move' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in move targeting mode');
+      return;
+    }
+    this.emitCardAction(undefined, targetHex);
+  }
+
+  /**
+   * Issue #411: Complete an attack action with the selected target
+   */
+  public completeCardAttackAction(targetId: string): void {
+    if (this.state.cardActionTargetingMode !== 'attack' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in attack targeting mode');
+      return;
+    }
+    this.emitCardAction(targetId, undefined);
+  }
+
+  /**
+   * Issue #411: Complete a heal action with the selected target
+   */
+  public completeCardHealAction(targetId: string): void {
+    if (this.state.cardActionTargetingMode !== 'heal' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in heal targeting mode');
+      return;
+    }
+    this.emitCardAction(targetId, undefined);
+  }
+
+  /**
+   * Issue #411: Complete a summon action with the selected hex
+   */
+  public completeCardSummonAction(targetHex: { q: number; r: number }): void {
+    if (this.state.cardActionTargetingMode !== 'summon' || !this.state.pendingAction) {
+      console.warn('[GameStateManager] Not in summon targeting mode');
+      return;
+    }
+    this.emitCardAction(undefined, targetHex);
+  }
+
+  /**
+   * Issue #411: Cancel targeting mode and clear pending action
+   */
+  public cancelCardActionTargeting(): void {
+    this.clearTargetingState();
+    this.state.pendingAction = null;
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Issue #411: Cancel the pending card action selection
+   */
+  public cancelCardAction(): void {
+    this.state.pendingAction = null;
+    this.emitStateUpdate();
   }
 
   public selectAttackTarget(targetId: string): void {
@@ -1451,6 +1996,7 @@ class GameStateManager {
         playerHand: [],
         selectedTopAction: null,
         selectedBottomAction: null,
+        selectedInitiativeCardId: null, // Issue #411: Initiative card selection
         characterCardSelections: new Map(), // Per-character card selections
         selectedCharacterId: null,
         selectedHex: null,
@@ -1468,6 +2014,14 @@ class GameStateManager {
         exhaustionState: null,
         abilityDeck: [],
         abilityDecks: new Map(), // Per-character ability decks
+        // Issue #411: Card action selection during turn
+        turnActionState: null,
+        selectedTurnCards: null,
+        pendingAction: null,
+        cardActionTargetingMode: null,
+        cardActionRange: 0,
+        validHealHexes: [],
+        validSummonHexes: [],
     };
     this.emitStateUpdate();
   }
@@ -1488,6 +2042,7 @@ class GameStateManager {
       this.state.characterCardSelections.set(currentCharId, {
         topCardId: this.state.selectedTopAction?.id || null,
         bottomCardId: this.state.selectedBottomAction?.id || null,
+        initiativeCardId: this.state.selectedInitiativeCardId, // Issue #411
       });
     }
 
@@ -1514,9 +2069,11 @@ class GameStateManager {
           this.state.selectedBottomAction = savedSelections.bottomCardId
             ? characterDeck.find(card => card.id === savedSelections.bottomCardId) || null
             : null;
+          this.state.selectedInitiativeCardId = savedSelections.initiativeCardId; // Issue #411
         } else {
           this.state.selectedTopAction = null;
           this.state.selectedBottomAction = null;
+          this.state.selectedInitiativeCardId = null; // Issue #411
         }
       }
     }

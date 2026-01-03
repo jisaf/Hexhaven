@@ -29,13 +29,15 @@ import { ScenarioCompleteModal } from '../components/ScenarioCompleteModal';
 import { RestModal } from '../components/RestModal';
 import { ExhaustionModal } from '../components/ExhaustionModal';
 import { GamePanel } from '../components/game/GamePanel';
-import { InfoPanel, type SheetTab } from '../components/game/InfoPanel';
+import { InfoPanel } from '../components/game/InfoPanel';
 import { TurnStatus } from '../components/game/TurnStatus';
+import { TurnActionPanel } from '../components/game/TurnActionPanel';
 import { GameLog } from '../components/game/GameLog';
 import { GameHints } from '../components/game/GameHints';
 import { ReconnectingOverlay } from '../components/game/ReconnectingOverlay';
 import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
+import { PileView } from '../components/game/PileView';
 import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
 import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
@@ -58,15 +60,19 @@ export function GameBoard() {
   const [objectives, setObjectives] = useState<ObjectivesLoadedPayload | null>(null);
   const [objectiveProgress, setObjectiveProgress] = useState<Map<string, ObjectiveProgressUpdatePayload>>(new Map());
 
-  // Card pile selection state
+  // Bottom sheet state - controlled by pile selection
   const [selectedPile, setSelectedPile] = useState<PileType | null>(null);
   const [pileViewCards, setPileViewCards] = useState<AbilityCard[]>([]);
-  const [showPileView, setShowPileView] = useState(false);
   const closingRef = useRef(false); // Guard against click-through after close
 
-  // Inventory / BottomSheet state (Issue #205)
-  const [activeSheetTab, setActiveSheetTab] = useState<SheetTab>('cards');
-  const [showInventory, setShowInventory] = useState(false);
+  // Auto-select hand pile when card selection phase begins
+  // Use setTimeout to avoid synchronous setState in effect (lint rule)
+  useEffect(() => {
+    if (gameState.showCardSelection) {
+      const timer = setTimeout(() => setSelectedPile('hand'), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.showCardSelection]);
 
   // Monster ability overlay state
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
@@ -151,6 +157,10 @@ export function GameBoard() {
     showMovementRange,
     showAttackRange,
     clearAttackRange,
+    showHealRange,
+    clearHealRange,
+    showSummonPlacementRange,
+    clearSummonPlacementRange,
     setSelectedHex,
     moveCharacter,
     updateMonsterPosition,
@@ -303,6 +313,28 @@ export function GameBoard() {
     }
   }, [gameState.attackMode, gameState.validAttackHexes, hexGridReady, showAttackRange, clearAttackRange]);
 
+  // Issue #411: Heal targeting highlighting (cyan hexes for ally targets)
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.cardActionTargetingMode === 'heal' && gameState.validHealHexes.length > 0) {
+        showHealRange(gameState.validHealHexes);
+      } else {
+        clearHealRange();
+      }
+    }
+  }, [gameState.cardActionTargetingMode, gameState.validHealHexes, hexGridReady, showHealRange, clearHealRange]);
+
+  // Issue #411: Summon placement highlighting (purple hexes for empty placement)
+  useEffect(() => {
+    if (hexGridReady) {
+      if (gameState.cardActionTargetingMode === 'summon' && gameState.validSummonHexes.length > 0) {
+        showSummonPlacementRange(gameState.validSummonHexes);
+      } else {
+        clearSummonPlacementRange();
+      }
+    }
+  }, [gameState.cardActionTargetingMode, gameState.validSummonHexes, hexGridReady, showSummonPlacementRange, clearSummonPlacementRange]);
+
   // Track whether the board has been initialized to prevent re-initialization on every state change
   const boardInitializedRef = useRef(false);
 
@@ -404,20 +436,6 @@ export function GameBoard() {
     }
   }, [roomCode, navigate, gameState.campaignId]);
 
-  const handleAttackClick = () => {
-    const attackAction = gameStateManager.getAttackAction();
-    if (attackAction && gameState.myCharacterId) {
-      gameStateManager.enterAttackMode(gameState.myCharacterId, attackAction.range);
-    }
-  };
-
-  const handleMoveClick = () => {
-    gameStateManager.enterMoveMode();
-  };
-
-  const attackAction = gameStateManager.getAttackAction();
-  const moveAction = gameStateManager.getMoveAction();
-
   // Get my character's card pile counts
   const myCharacter = gameState.myCharacterId
     ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)
@@ -426,49 +444,54 @@ export function GameBoard() {
   const discardCount = myCharacter?.discardPile?.length || 0;
   const lostCount = myCharacter?.lostPile?.length || 0;
 
-  // Handle card pile clicks
+  // Handle card pile clicks - unified handler for all piles
   const handlePileClick = (pile: PileType) => {
     // Guard against click-through after closing the panel
     if (closingRef.current) {
       return;
     }
+
     // Toggle selection - if clicking the same pile, close it
     if (selectedPile === pile) {
       setSelectedPile(null);
       setPileViewCards([]);
-      setShowPileView(false);
       return;
     }
 
-    // Select the pile and get its cards
+    // Select the new pile
     setSelectedPile(pile);
 
-    if (!myCharacter) {
+    // For card piles, load the cards
+    if (pile === 'hand' || pile === 'discard' || pile === 'lost') {
+      if (!myCharacter) {
+        setPileViewCards([]);
+        return;
+      }
+
+      let cardIds: string[] = [];
+      switch (pile) {
+        case 'hand':
+          cardIds = myCharacter.hand || [];
+          break;
+        case 'discard':
+          cardIds = myCharacter.discardPile || [];
+          break;
+        case 'lost':
+          cardIds = myCharacter.lostPile || [];
+          break;
+      }
+
+      // Convert card IDs to full card objects using abilityDeck (master copy of all cards)
+      // playerHand only contains cards currently in hand, not discard/lost
+      const cardObjects = cardIds
+        .map(id => gameState.abilityDeck.find(card => card.id === id))
+        .filter((card): card is AbilityCard => card !== undefined);
+
+      setPileViewCards(cardObjects);
+    } else {
+      // For active/inventory, clear pile view cards
       setPileViewCards([]);
-      setShowPileView(false);
-      return;
     }
-
-    let cardIds: string[] = [];
-    switch (pile) {
-      case 'hand':
-        cardIds = myCharacter.hand || [];
-        break;
-      case 'discard':
-        cardIds = myCharacter.discardPile || [];
-        break;
-      case 'lost':
-        cardIds = myCharacter.lostPile || [];
-        break;
-    }
-
-    // Convert card IDs to full card objects by looking up from playerHand
-    const cardObjects = cardIds
-      .map(id => gameState.playerHand.find(card => card.id === id))
-      .filter((card): card is AbilityCard => card !== undefined);
-
-    setPileViewCards(cardObjects);
-    setShowPileView(true);
   };
 
   // Transform TurnEntity[] to TurnOrderEntity[] with health information
@@ -528,28 +551,8 @@ export function GameBoard() {
         />
       )}
 
-      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar OR CardSelection/Inventory */}
+      {/* Info Panel - Right/Bottom: TurnStatus + GameLog + CardPileBar + BottomSheet */}
       <InfoPanel
-        showCardSelection={gameState.showCardSelection || showPileView || showInventory}
-        activeTab={activeSheetTab}
-        onTabChange={(tab) => setActiveSheetTab(tab)}
-        onSheetClose={
-          // Only allow closing if it's not mandatory card selection
-          // Card selection is controlled by game state, not closed manually
-          (!gameState.showCardSelection && (showInventory || showPileView)) ? () => {
-            // Set closing flag to prevent click-through to pile buttons
-            closingRef.current = true;
-            setTimeout(() => {
-              closingRef.current = false;
-            }, 300);
-            // Clear both states
-            setShowInventory(false);
-            setShowPileView(false);
-            setSelectedPile(null);
-            setPileViewCards([]);
-          } : undefined
-        }
-        inventoryCount={ownedItems.length}
         turnStatus={
           <TurnStatus
             turnOrder={turnOrderWithHealth}
@@ -559,11 +562,6 @@ export function GameBoard() {
             monsters={(gameState.gameData?.monsters || []) as Monster[]}
             connectionStatus={gameState.connectionStatus}
             isMyTurn={gameState.isMyTurn}
-            hasAttack={attackAction !== null}
-            hasMove={moveAction !== null}
-            attackMode={gameState.attackMode}
-            onAttackClick={handleAttackClick}
-            onMoveClick={handleMoveClick}
             onEndTurn={() => gameStateManager.endTurn()}
             onBackToLobby={handleBackToLobby}
             onShortRest={() => gameStateManager.executeRest('short')}
@@ -573,6 +571,7 @@ export function GameBoard() {
                 : false
             }
             objectivesSlot={<ObjectiveTracker objectives={objectives} progress={objectiveProgress} />}
+            turnActionState={gameState.turnActionState}
           />
         }
         gameLog={<GameLog logs={gameState.logs} />}
@@ -581,18 +580,38 @@ export function GameBoard() {
             handCount={handCount}
             discardCount={discardCount}
             lostCount={lostCount}
-            canRest={discardCount >= 2}
             onPileClick={handlePileClick}
             selectedPile={selectedPile}
             inventoryCount={ownedItems.length}
-            onInventoryClick={() => {
-              setShowInventory(true);
-              setActiveSheetTab('inventory');
-            }}
-            inventorySelected={showInventory && activeSheetTab === 'inventory'}
           />
         }
-        cardSelection={
+        isSheetOpen={
+          // Sheet is open during card selection, or when a pile is selected
+          gameState.showCardSelection || selectedPile !== null
+        }
+        onSheetClose={
+          // Allow closing when not in card selection phase
+          !gameState.showCardSelection ? () => {
+            closingRef.current = true;
+            setTimeout(() => { closingRef.current = false; }, 300);
+            setSelectedPile(null);
+            setPileViewCards([]);
+          } : undefined
+        }
+        sheetTitle={
+          selectedPile === 'hand' ? `Hand (${pileViewCards.length})` :
+          selectedPile === 'discard' ? `Discard Pile (${pileViewCards.length})` :
+          selectedPile === 'lost' ? `Lost Cards (${pileViewCards.length})` :
+          selectedPile === 'active' ? `Select Action (${
+            (gameState.turnActionState?.firstAction ? 1 : 0) +
+            (gameState.turnActionState?.secondAction ? 1 : 0)
+          }/2)` :
+          selectedPile === 'inventory' ? 'Inventory' :
+          gameState.showCardSelection ? 'Select Cards' :
+          undefined
+        }
+        sheetContent={
+          // Priority: Card selection phase > Active pile content > Other pile content
           gameState.showCardSelection ? (
             <CardSelectionPanel
               cards={gameState.playerHand}
@@ -613,7 +632,6 @@ export function GameBoard() {
                   ? (gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.discardPile || []).length
                   : 0
               }
-              // Multi-character support
               activeCharacterName={
                 gameState.myCharacterId
                   ? gameState.gameData?.characters.find(c => c.id === gameState.myCharacterId)?.classType
@@ -621,39 +639,41 @@ export function GameBoard() {
               }
               totalCharacters={gameState.myCharacterIds.length}
               charactersWithSelections={gameStateManager.getCharactersWithSelectionsCount()}
+              selectedInitiativeCardId={gameState.selectedInitiativeCardId}
+              onInitiativeChange={(cardId) => gameStateManager.setInitiativeCard(cardId)}
             />
-          ) : showPileView ? (
-            <CardSelectionPanel
+          ) : gameState.isMyTurn && gameState.turnActionState && gameState.selectedTurnCards ? (
+            <TurnActionPanel
+              card1={gameState.selectedTurnCards.card1}
+              card2={gameState.selectedTurnCards.card2}
+              turnActionState={gameState.turnActionState}
+              onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
+              onActionConfirm={() => gameStateManager.confirmCardAction()}
+              targetingMode={gameState.cardActionTargetingMode}
+            />
+          ) : selectedPile === 'inventory' ? (
+            <InventoryTabContent
+              ownedItems={ownedItems}
+              equippedItems={equippedItems}
+              itemStates={itemStates}
+              characterLevel={typeof myCharacter?.level === 'number' ? myCharacter.level : 1}
+              onUseItem={useItem}
+              onEquipItem={equipItem}
+              onUnequipItem={unequipItem}
+              disabled={!gameState.isMyTurn}
+              loading={inventoryLoading}
+              error={inventoryError || undefined}
+            />
+          ) : (selectedPile === 'hand' || selectedPile === 'discard' || selectedPile === 'lost') ? (
+            <PileView
               cards={pileViewCards}
-              onCardSelect={() => {}} // No-op in view mode
-              onClearSelection={() => {
-                setShowPileView(false);
-                setSelectedPile(null);
-                setPileViewCards([]);
-              }}
-              onConfirmSelection={() => {}} // No-op in view mode
-              onLongRest={() => {}} // No-op in view mode
-              selectedTopAction={null}
-              selectedBottomAction={null}
-              waiting={true} // Disable interaction in view mode
-              canLongRest={false}
-              discardPileCount={discardCount}
+              emptyMessage={
+                selectedPile === 'hand' ? 'No cards in hand' :
+                selectedPile === 'discard' ? 'Discard pile is empty' :
+                'No lost cards'
+              }
             />
           ) : undefined
-        }
-        inventoryContent={
-          <InventoryTabContent
-            ownedItems={ownedItems}
-            equippedItems={equippedItems}
-            itemStates={itemStates}
-            characterLevel={typeof myCharacter?.level === 'number' ? myCharacter.level : 1}
-            onUseItem={useItem}
-            onEquipItem={equipItem}
-            onUnequipItem={unequipItem}
-            disabled={!gameState.isMyTurn}
-            loading={inventoryLoading}
-            error={inventoryError || undefined}
-          />
         }
       />
 

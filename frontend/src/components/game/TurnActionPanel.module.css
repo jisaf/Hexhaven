@@ -1,0 +1,280 @@
+/**
+ * TurnActionPanel Styles (Issue #411 - Phase 4.2)
+ *
+ * Responsive layout for displaying two selected cards during turn execution.
+ * Cards are displayed using AbilityCard2 with clickable overlay regions
+ * for top/bottom action selection.
+ *
+ * Layout: Cards are side-by-side on wider screens, stacked on mobile.
+ * Visual states: available (golden border), selected (highlighted), used (grayed), disabled
+ */
+
+.panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background-color: rgba(13, 26, 46, 0.98);
+  border-top: 2px solid #c9a444;
+  overflow: hidden;
+}
+
+/* Cards container - fills available height */
+.cardsContainer {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 12px;
+  padding: 8px;
+  flex-grow: 1;
+  justify-content: center;
+  align-items: stretch;
+}
+
+/* Hide scrollbar */
+.cardsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.cardsContainer {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Individual card wrapper - fills container height, width from aspect ratio */
+.cardWrapper {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+/* The actual ability card */
+.actionCard {
+  width: 100%;
+  height: 100%;
+}
+
+/* Overlay container - positioned over the card */
+.overlayContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  border-radius: 0.5em;
+  overflow: hidden;
+}
+
+/* Action overlay - covers top or bottom half of the card */
+.actionOverlay {
+  flex: 1;
+  position: relative;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Top overlay - covers the header + top action section */
+.actionOverlay.top {
+  border-radius: 0.5em 0.5em 0 0;
+}
+
+/* Bottom overlay - covers the bottom action section */
+.actionOverlay.bottom {
+  border-radius: 0 0 0.5em 0.5em;
+}
+
+/* Available state - subtle golden highlight on hover */
+.actionOverlay.available {
+  background: transparent;
+}
+
+.actionOverlay.available:hover {
+  background: rgba(201, 164, 68, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 68, 0.5);
+}
+
+.actionOverlay.available:focus {
+  outline: none;
+  background: rgba(201, 164, 68, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(201, 164, 68, 0.7);
+}
+
+/* Selected state - bright golden highlight */
+.actionOverlay.selected {
+  background: rgba(201, 164, 68, 0.25);
+  box-shadow: inset 0 0 0 3px #c9a444;
+}
+
+/* Used state - grayed out overlay */
+.actionOverlay.used {
+  background: rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+/* Disabled state - not available, slightly grayed */
+.actionOverlay.disabled {
+  background: rgba(0, 0, 0, 0.3);
+  cursor: not-allowed;
+}
+
+/* Used overlay text */
+.usedOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.usedOverlay span {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(240, 230, 210, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+/* Selected overlay - tap-again hint */
+.selectedOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.selectedOverlay span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9a444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 6px 12px;
+  border-radius: 4px;
+  animation: tapHint 1.5s ease-in-out infinite;
+}
+
+@keyframes tapHint {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+/* Help text at bottom */
+.helpText {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(240, 230, 210, 0.6);
+  padding-top: 8px;
+  min-height: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Targeting mode hint - more prominent */
+.targetingHint {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c9a444;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Cancel targeting button */
+.cancelTargetingButton {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(231, 76, 60, 0.8);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cancelTargetingButton:hover {
+  background: rgba(192, 57, 43, 1);
+}
+
+/* Portrait mode - tighter spacing */
+@media (orientation: portrait) {
+  .panel {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .cardsContainer {
+    padding: 4px;
+    gap: 8px;
+  }
+
+  .helpText {
+    font-size: 10px;
+    padding-top: 4px;
+  }
+}
+
+/* ===== Zoom Overlay for Long-Press Card View ===== */
+
+.zoomOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  touch-action: none;
+  user-select: none;
+}
+
+.zoomModal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90vw;
+  max-width: 400px;
+  animation: zoomIn 0.15s ease-out;
+}
+
+.zoomedCard {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  font-size: clamp(14px, 4vw, 18px);
+  box-shadow: 0 0 40px rgba(201, 164, 68, 0.5);
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

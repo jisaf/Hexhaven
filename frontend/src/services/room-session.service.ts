@@ -43,7 +43,7 @@ import type { CharacterClass } from '../../../shared/types/entities';
  * Join intent - indicates WHY a join is happening
  * Used for backend logging and debugging
  */
-export type JoinIntent = 'create' | 'join' | 'rejoin' | 'refresh';
+export type JoinIntent = 'create' | 'join' | 'rejoin' | 'refresh' | 'reconnect';
 
 /**
  * Room status lifecycle (DEPRECATED - use connectionStatus + isGameActive)
@@ -389,6 +389,9 @@ class RoomSessionManager {
         // This happens when navigating to /game after Lobby has unmounted
         if (intent === 'refresh' && this.state.isGameActive && !this.state.gameState) {
           console.log('[RoomSessionManager] Refresh intent with missing game state - proceeding to fetch from backend');
+        } else if (intent === 'reconnect') {
+          // Issue #411: Always allow reconnect intent to re-establish backend socketToPlayer mapping
+          console.log('[RoomSessionManager] Reconnect intent - proceeding to restore backend mapping');
         } else {
           console.log(
             `[RoomSessionManager] Already joined in this session (connectionStatus: ${this.state.connectionStatus}, isGameActive: ${this.state.isGameActive}), skipping duplicate join`
@@ -400,6 +403,7 @@ class RoomSessionManager {
       // Get room info from state or localStorage
       // - 'create': Use fresh roomCode from localStorage (just created)
       // - 'refresh': Prefer localStorage (URL roomCode saved by GameBoard) to handle direct URL navigation
+      // - 'reconnect': Use state roomCode (we're reconnecting to the same room)
       // - 'join'/'rejoin': Use state first, fallback to localStorage
       const roomCode = (intent === 'create' || intent === 'refresh')
         ? getLastRoomCode() || this.state.roomCode
@@ -635,7 +639,7 @@ class RoomSessionManager {
 
   /**
    * Handle WebSocket reconnection (Socket.IO automatic reconnect)
-   * Issue #419: Automatically rejoins the room if we have a room code stored
+   * Issue #411/#419: Re-join room to restore backend socketToPlayer mapping
    *
    * CRITICAL FIX: Removed debounce - the 500ms delay was causing "Player not in any room"
    * errors when users tried to act before the delayed rejoin completed.
@@ -664,7 +668,7 @@ class RoomSessionManager {
       console.log(
         `[RoomSessionManager] Immediately rejoining room ${this.state.roomCode} after reconnection`
       );
-      this.ensureJoined('rejoin').catch((error) => {
+      this.ensureJoined('reconnect').catch((error) => {
         console.error('[RoomSessionManager] Failed to rejoin after reconnection:', error);
       });
     }

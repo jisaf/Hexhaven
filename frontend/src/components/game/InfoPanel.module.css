@@ -40,12 +40,12 @@
 
   .cardSelectionOverlay {
     position: absolute;
-    top: 0;
+    top: 44px; /* Leave space for control bar (End Turn, Back button) */
     left: 0;
     right: 0;
     bottom: 44px; /* Leave space for card pile bar */
     width: 100%;
-    height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
+    height: calc(100% - 88px); /* Adjust height: total - controlBar(44px) - cardPileBar(44px) */
     z-index: var(--z-index-card-selection-overlay); /* Above turn status and game log */
     animation: slideUpIn 300ms ease-out forwards;
     /* Prevent click-through to underlying elements */
@@ -94,12 +94,12 @@
 
   .cardSelectionOverlay {
     position: absolute;
-    top: 0;
+    top: 44px; /* Leave space for control bar (End Turn, Back button) */
     left: 0;
     right: 0;
     bottom: 44px; /* Leave space for card pile bar */
     width: 100%;
-    height: calc(100% - 44px); /* Adjust height to not cover card pile bar */
+    height: calc(100% - 88px); /* Adjust height: total - controlBar(44px) - cardPileBar(44px) */
     z-index: var(--z-index-card-selection-overlay); /* Above turn status and game log */
     animation: slideLeftIn 300ms ease-out forwards;
     /* Prevent click-through to underlying elements */

@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
 **Version**: 1.4
-**Last Updated**: 2025-12-31
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + WebSocket Improvements)
+**Last Updated**: 2026-01-03
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles + WebSocket Improvements)
 
 ---
 
@@ -225,6 +225,14 @@ frontend/src/
 │   ├── CharacterSelect.tsx
 │   ├── TurnOrderDisplay.tsx
 │   ├── AccountUpgradeModal.tsx
+│   ├── BottomSheet.tsx  # Issue #411: Generic slide-up modal panel
+│   ├── game/            # Game-specific components
+│   │   ├── CardPileIndicator.tsx  # Pile selection bar
+│   │   ├── PileView.tsx           # Unified card pile viewer
+│   │   ├── CardSelectionPanel.tsx # Card selection UI
+│   │   ├── TurnActionPanel.tsx    # Active turn cards
+│   │   ├── InfoPanel.tsx          # Right panel container
+│   │   └── ...
 │   ├── inventory/       # Issue #205: Inventory components
 │   │   ├── InventoryPanel.tsx
 │   │   ├── InventoryTabContent.tsx
@@ -477,6 +485,176 @@ gameSessionCoordinator.switchGame();
 - ✅ Explicit lifecycle dependencies (visible in coordinator code)
 - ✅ Single entry point for lifecycle operations
 - ✅ Easy to extend with new coordinated operations
+
+### Card Pile UI System (Issue #411)
+
+The game implements a unified card pile display system with consistent styling across all pile types, using a BottomSheet modal container with responsive card rendering.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  CardPileIndicator  │────>│  GameBoard          │────>│  BottomSheet     │
+│  (Pile Buttons)     │     │  (State Manager)    │     │  (Modal Container)│
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │                           │
+         │ onPileClick(pile)         │ setSelectedPile()         │ title + children
+         ▼                           ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Pile Selection     │     │  Content Routing    │     │  Unified Display │
+│  - hand             │     │  - PileView         │     │  - Single header │
+│  - discard          │     │  - CardSelection    │     │  - Count in title│
+│  - lost             │     │  - TurnActionPanel  │     │  - Swipe to close│
+│  - active           │     │  - Inventory        │     │  - Responsive    │
+│  - inventory        │     └─────────────────────┘     └──────────────────┘
+└─────────────────────┘
+```
+
+**Key Components**:
+
+1. **CardPileIndicator** (`frontend/src/components/game/CardPileIndicator.tsx`):
+   - Full-width bar (44px) showing card counts for hand, discard, and lost piles
+   - Clickable buttons for each pile type (hand, discard, lost, active, inventory)
+   - Visual feedback for selected pile with highlighted state
+   - Auto-hide when not in use, sticky positioning in InfoPanel
+   - RPG Awesome icons for active and inventory buttons
+
+2. **PileView** (`frontend/src/components/game/PileView.tsx`):
+   - NEW: Unified view-only component for displaying card piles
+   - Displays cards in grid layout using AbilityCard2 components
+   - Responsive card sizing with aspect-ratio: 2/3, height: 100%
+   - Empty state message when pile is empty
+   - Used for hand, discard, and lost piles in BottomSheet
+   - Note: Title is handled by BottomSheet, not by PileView
+
+3. **BottomSheet** (`frontend/src/components/BottomSheet.tsx`):
+   - Generic slide-up modal panel for all card pile content
+   - Mobile-first with swipe-down-to-dismiss gesture
+   - Single header showing title with card count (e.g., "Hand (12)")
+   - Handles open/close state and drag interactions
+   - Close button (X) in top-right corner
+   - Content area renders different components based on selectedPile
+
+4. **GameBoard Pile Management** (`frontend/src/pages/GameBoard.tsx`):
+   - Central state management for selectedPile and pileViewCards
+   - handlePileClick() unified handler for all pile selections
+   - Auto-selects hand pile when card selection phase begins (Issue #411)
+   - Guards against click-through after closing with closingRef
+   - Routes BottomSheet content based on selectedPile:
+     - `hand/discard/lost`: PileView with cards from abilityDeck
+     - `active`: TurnActionPanel with selected turn cards
+     - `inventory`: InventoryTabContent
+     - Card selection: CardSelectionPanel (overrides other piles)
+
+**Card Rendering Improvements**:
+- Unified styling across all piles using AbilityCard2 component
+- Responsive sizing: Cards use `aspect-ratio: 2/3` with `height: 100%`
+- Cards fill available vertical space while maintaining correct proportions
+- Grid layout adapts to container size: 2-4 columns based on width
+- Consistent card appearance whether in hand, discard, lost, or selection panel
+
+**UI/UX Enhancements**:
+- Single header from BottomSheet eliminates double header issues
+- Card count displayed in sheet title for quick reference
+- Rest badge removed from CardPileIndicator (non-functional)
+- Debug console repositioned: smaller (32x24px), above card pile area
+- Pile selection persists until explicitly closed or new pile selected
+- Click-through prevention with 300ms guard after closing
+
+**Design Decisions**:
+- BottomSheet owns the title, child components focus on content only
+- All pile content uses same BottomSheet container for consistency
+- Card selection phase takes priority over pile viewing
+- Hand pile auto-selected during card selection for immediate access
+- abilityDeck used as source of truth for card data (not playerHand)
+- PileView is view-only; interactive selection handled by CardSelectionPanel
+
+### Card Action Targeting System (Issue #411)
+
+The game implements an extensible targeting system for card actions during turns, supporting different action types with distinct visual feedback.
+
+**Architecture**:
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  TurnActionPanel    │────>│  GameStateManager   │────>│  HexGrid         │
+│  (React Component)  │     │  (State + Targeting)│     │  (PixiJS Render) │
+└─────────────────────┘     └─────────────────────┘     └──────────────────┘
+         │                           │                           │
+         │ selectCardAction()        │ enterTargetingMode()      │ showXXXRange()
+         ▼                           ▼                           ▼
+┌─────────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│  Tap-Again Pattern  │     │  Targeting Modes    │     │  Hex Highlighting│
+│  - Non-targeting:   │     │  - move (green)     │     │  - MOVEMENT      │
+│    tap→select       │     │  - attack (red)     │     │  - ATTACK        │
+│    tap→confirm      │     │  - heal (cyan)      │     │  - HEAL          │
+│  - Targeting:       │     │  - summon (purple)  │     │  - SUMMON        │
+│    tap→targeting    │     └─────────────────────┘     └──────────────────┘
+│    hex→confirm      │
+└─────────────────────┘
+```
+
+**Key Components**:
+
+1. **TurnActionPanel** (`frontend/src/components/game/TurnActionPanel.tsx`):
+   - Side-by-side card display with clickable overlay regions
+   - Displays in BottomSheet when "Active" pile is selected during turn
+   - Tap-again pattern for non-targeting actions (loot, self-heal, special)
+   - Immediate targeting mode entry for targeting actions
+   - Long-press card zoom for detailed viewing
+   - Visual states: available (golden border), selected (highlighted), used (grayed), disabled
+   - Note: No internal header, title handled by BottomSheet
+
+2. **GameStateManager Targeting** (`frontend/src/services/game-state.service.ts`):
+   - `cardActionTargetingMode`: Tracks active targeting mode ('move' | 'attack' | 'heal' | 'summon')
+   - `enterTargetingMode(action)`: Calculates valid hexes based on action type
+   - Separate hex arrays for each targeting type:
+     - `validMovementHexes` - Pathfinding-based (green)
+     - `validAttackHexes` - Distance-based, enemy filter (red)
+     - `validHealHexes` - Distance-based, ally filter (cyan)
+     - `validSummonHexes` - Distance-based, empty hex filter (purple)
+
+3. **HighlightManager** (`frontend/src/game/HighlightManager.ts`):
+   - `HIGHLIGHT_COLORS`: Standardized color palette
+   - `showHealRange()`: Cyan/teal highlighting for heal targets
+   - `clearHealRange()`: Clear heal highlights
+   - Supports simultaneous highlight types without conflicts
+
+**Targeting Flow**:
+
+```
+1. Player taps action region on card
+   │
+   ├─ Non-targeting (loot, self-heal, special)
+   │  └─> Set pendingAction, show "Tap again to confirm"
+   │      └─> Tap same region → confirmCardAction()
+   │
+   └─ Targeting (move, attack, heal, summon)
+      └─> Set pendingAction, enterTargetingMode()
+          │
+          ├─ move: Calculate pathfinding, green hexes
+          ├─ attack: Calculate attack range, red hexes (enemies only)
+          ├─ heal: Calculate heal range, cyan hexes (allies only)
+          └─ summon: Calculate summon range, purple hexes (empty only)
+          │
+          └─> Player taps target hex/entity
+              └─> completeCardXXXAction(target) → emit to server
+```
+
+**Range Calculation**:
+- **Move**: Uses `hexRangeReachable()` with pathfinding, blocked by monsters
+- **Attack**: Uses `hexAttackRange()` with distance check, filters for monsters
+- **Heal**: Uses `hexAttackRange()` with distance check, filters for allies (excludes self)
+- **Summon**: Uses `hexAttackRange()` with distance check, filters for empty hexes
+
+**Action Switching**:
+- Tapping a different action while one is selected cancels the original and selects the new one
+- Switching from targeting action to another cancels targeting mode
+- Always shows the most recently selected action's highlights
+
+**Design Decisions**:
+- Hex selection IS the confirmation for targeting actions (no extra confirm step)
+- Tap-again pattern for non-targeting actions provides confirmation safety
+- Color-coded highlights provide immediate visual feedback for action type
+- Extensible: Adding new action types requires adding targeting mode and highlight color
 
 ### Background Image System (Issue #191)
 
@@ -1140,6 +1318,9 @@ use_item         { roomCode, characterId, itemId }
 equip_item       { roomCode, characterId, itemId, slotIndex? }
 unequip_item     { roomCode, characterId, itemId }
 
+# Card Actions (Issue #411)
+use_card_action  { roomCode, characterId, cardId, position: 'top' | 'bottom', targetId?, targetHex? }
+
 # Narratives
 acknowledge_narrative  { narrativeId }
 
@@ -1157,8 +1338,9 @@ scenario_selected   { scenarioId }                            # Issue #419: Broa
 game_started        { scenario, initialState, campaignId? }  # Issue #318: Campaign context
 character_moved     { characterId, newHex }
 turn_order_determined { turnOrder }
-next_turn_started   { entityId }
+turn_started        { entityId, turnActionState? }  # Issue #411: turnActionState for character turns
 monster_activated   { monsterId, actions }
+card_action_executed { characterId, cardId, position, success, updatedState }  # Issue #411: Card action result
 attack_resolved     { attackerId, targetId, damage }
 scenario_completed  { victory, reason }
 player_disconnected { playerId }
@@ -1185,7 +1367,12 @@ narrative_rewards_granted { rewards[], distribution }
 summon_created            { summonId, name, ownerId?, placementHex, health, attack, move, range }
 summon_activated          { summonId, moved, fromHex, toHex, attacked, targetId?, damageDealt?, targetDied }
 summon_died               { summonId, reason: 'damage' | 'owner_exhausted' | 'owner_died' | 'scenario_end' }
+
+# WebSocket Reconnection (Issue #411)
+ws_reconnected            { }  # Fired when WebSocket reconnects, triggers room rejoin
 ```
+
+**Note on ws_reconnected**: When a WebSocket connection is restored after a disconnect, this event is emitted to the client. The frontend's `RoomSessionManager` listens for this event and automatically re-joins the room with the `'reconnect'` intent. This restores the backend's `socketToPlayer` mapping, ensuring that subsequent player actions (like card actions, movement, etc.) route correctly to the player's character.
 
 ---
 
@@ -1507,4 +1694,4 @@ VITE_WS_URL=ws://localhost:3000
 
 **Document Status**: ✅ Complete
 **Maintainer**: Hexhaven Development Team
-**Last Review**: 2026-01-02 (Updated for WebSocket Reconnection Debounce Removal & Scenario Selection - Issue #419, Commit d384b43)
+**Last Review**: 2026-01-03 (Updated for Card Action Selection System - Issue #411 & WebSocket Improvements - Issue #419)

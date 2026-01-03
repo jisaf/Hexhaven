@@ -339,19 +339,19 @@ export function DebugConsole() {
       <style>{`
         .debug-toggle-button {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
-          min-width: 80px;
-          height: 50px;
-          padding: 0 12px;
-          border-radius: 8px;
-          background: #1f2937;
-          color: white;
-          border: 2px solid #3b82f6;
-          font-size: 10px;
+          bottom: 140px;
+          right: 8px;
+          min-width: 32px;
+          height: 24px;
+          padding: 0 6px;
+          border-radius: 4px;
+          background: rgba(31, 41, 55, 0.8);
+          color: #9ca3af;
+          border: 1px solid #3b82f6;
+          font-size: 8px;
           font-weight: bold;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
           z-index: 9998;
           display: flex;
           align-items: center;
@@ -360,26 +360,27 @@ export function DebugConsole() {
           user-select: none;
           -webkit-user-select: none;
           -webkit-touch-callout: none;
+          opacity: 0.6;
         }
 
         .debug-toggle-button:hover {
-          transform: scale(1.05);
+          opacity: 1;
           background: #374151;
         }
 
         .debug-console {
           position: fixed;
-          bottom: 90px;
-          right: 20px;
-          width: calc(100vw - 40px);
-          max-width: 500px;
+          bottom: 170px;
+          right: 8px;
+          width: calc(100vw - 16px);
+          max-width: 400px;
           background: #1f2937;
-          border: 2px solid #3b82f6;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+          border: 1px solid #3b82f6;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
           z-index: 9999;
           overflow: hidden;
-          animation: slideUp 0.3s ease-out;
+          animation: slideUp 0.2s ease-out;
         }
 
         .debug-console.minimized {
@@ -595,21 +596,18 @@ export function DebugConsole() {
         /* Mobile responsive */
         @media (max-width: 640px) {
           .debug-toggle-button {
-            min-width: 70px;
-            height: 44px;
-            bottom: 16px;
-            right: 16px;
-            font-size: 9px;
+            bottom: 120px;
+            right: 4px;
           }
 
           .debug-console {
-            bottom: 70px;
-            right: 16px;
-            width: calc(100vw - 32px);
+            bottom: 150px;
+            right: 4px;
+            width: calc(100vw - 8px);
           }
 
           .debug-logs {
-            max-height: 50vh;
+            max-height: 40vh;
           }
 
           .debug-controls {

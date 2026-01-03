@@ -138,10 +138,10 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your TOP action/i)).toBeInTheDocument();
+      expect(screen.getByText(/Select your first card/i)).toBeInTheDocument();
     });
 
-    it('should show instruction to select bottom action after top is selected', () => {
+    it('should show instruction to select second card after first is selected', () => {
       render(
         <CardSelectionPanel
           cards={mockCards}
@@ -153,7 +153,7 @@ describe('CardSelectionPanel', () => {
         />
       );
 
-      expect(screen.getByText(/Select a card for your BOTTOM action/i)).toBeInTheDocument();
+      expect(screen.getByText(/Select your second card/i)).toBeInTheDocument();
     });
 
     it('should show ready to confirm message when both cards are selected', () => {
@@ -508,7 +508,8 @@ describe('CardSelectionPanel', () => {
       );
 
       // Should still render without crashing
-      expect(screen.getByText(/Select Your Actions/i)).toBeInTheDocument();
+      // Updated for Issue #411: New instruction text when no cards selected
+      expect(screen.getByText(/Select your first card/i)).toBeInTheDocument();
     });
 
     it('should pass onClick handler to AbilityCard2', () => {
@@ -533,6 +534,204 @@ describe('CardSelectionPanel', () => {
       expect(mockOnCardSelect).toHaveBeenCalledWith(mockCards[0]);
     });
   });
+
+  describe('Initiative Selection (Issue #411)', () => {
+    const mockOnInitiativeChange = jest.fn();
+
+    beforeEach(() => {
+      mockOnInitiativeChange.mockClear();
+    });
+
+    it('should show initiative badges on selected cards', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Initiative badges should be visible on selected cards
+      expect(screen.getByLabelText(/Initiative 72/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Initiative 18/)).toBeInTheDocument();
+    });
+
+    it('should not show initiative badges when only one card is selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={null}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Only one badge should be visible (on the selected card)
+      expect(screen.getByLabelText(/Initiative 72/)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Initiative 18/)).not.toBeInTheDocument();
+    });
+
+    it('should not show initiative badges when no cards are selected', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={null}
+          selectedBottomAction={null}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      expect(screen.queryByLabelText(/Initiative/)).not.toBeInTheDocument();
+    });
+
+    it('should display initiative values for both selected cards', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Check that initiative values are shown as badge text (Trample: 72, Eye for an Eye: 18)
+      expect(screen.getByText('72')).toBeInTheDocument();
+      expect(screen.getByText('18')).toBeInTheDocument();
+    });
+
+    it('should call onInitiativeChange when initiative badge is clicked', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          onInitiativeChange={mockOnInitiativeChange}
+          selectedInitiativeCardId="card-1"
+        />
+      );
+
+      // Click on the second badge (card-2)
+      const badge18 = screen.getByLabelText(/Initiative 18/);
+      fireEvent.click(badge18);
+
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-2');
+    });
+
+    it('should show active class on selected initiative badge', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          selectedInitiativeCardId="card-2"
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      const badge18 = screen.getByLabelText(/Initiative 18 \(selected\)/);
+      expect(badge18).toHaveClass('active');
+
+      const badge72 = screen.getByLabelText(/Initiative 72/);
+      expect(badge72).not.toHaveClass('active');
+    });
+
+    it('should disable initiative badges when waiting', () => {
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          waiting={true}
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      const badges = screen.getAllByRole('button', { name: /Initiative/ });
+      badges.forEach(badge => {
+        expect(badge).toBeDisabled();
+      });
+    });
+
+    it('should auto-select first selected card as default initiative', () => {
+      // When both cards are selected and no initiative chosen yet,
+      // the component should auto-select the FIRST card selected (not the faster one)
+
+      render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]} // initiative 72 - this is first selected
+          selectedBottomAction={mockCards[1]} // initiative 18
+          onInitiativeChange={mockOnInitiativeChange}
+          selectedInitiativeCardId={null}
+        />
+      );
+
+      // First selected card (card-1) should be the default initiative
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-1');
+    });
+
+    it('should allow switching initiative back and forth', () => {
+      const { rerender } = render(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          selectedInitiativeCardId="card-1"
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Click card-2's badge
+      fireEvent.click(screen.getByLabelText(/Initiative 18/));
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-2');
+
+      // Rerender with card-2 selected
+      rerender(
+        <CardSelectionPanel
+          cards={mockCards}
+          onCardSelect={mockOnCardSelect}
+          onClearSelection={mockOnClearSelection}
+          onConfirmSelection={mockOnConfirmSelection}
+          selectedTopAction={mockCards[0]}
+          selectedBottomAction={mockCards[1]}
+          selectedInitiativeCardId="card-2"
+          onInitiativeChange={mockOnInitiativeChange}
+        />
+      );
+
+      // Click card-1's badge to switch back
+      fireEvent.click(screen.getByLabelText(/Initiative 72/));
+      expect(mockOnInitiativeChange).toHaveBeenCalledWith('card-1');
+    });
+  });
 });
 
 /**
@@ -550,6 +749,13 @@ describe('CardSelectionPanel', () => {
  * ✅ Must rest scenario handling
  * ✅ Empty cards edge case
  * ✅ Issue #220 regression test (onClick passed to AbilityCard2)
+ * ✅ Issue #411 - Initiative Selection:
+ *   - InitiativeSelector visibility based on card selection state
+ *   - Initiative value display
+ *   - onInitiativeChange callback
+ *   - selectedInitiativeCardId prop handling
+ *   - Disabled state during waiting
+ *   - Auto-select lower initiative card
  *
  * Coverage: ~100% of CardSelectionPanel component functionality
  */

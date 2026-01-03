@@ -61,6 +61,13 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 - Target must be in range
 - Target must have line of sight (corner-to-corner)
 
+**Frontend Targeting (Issue #411)**:
+- Tap card action → enter targeting mode (red hex highlights)
+- Valid hexes calculated by distance (`hexAttackRange`)
+- Only hexes with monsters are highlighted
+- Tap monster → execute attack
+- Range extracted from modifiers via `getRange()` helper
+
 ### 2. Move Action
 
 **Purpose**: Move character to a new location
@@ -88,6 +95,13 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 - Path must be clear (except with jump modifier)
 - Movement must not exceed movement value
 
+**Frontend Targeting (Issue #411)**:
+- Tap card action → enter targeting mode (green hex highlights)
+- Valid hexes calculated via pathfinding (`hexRangeReachable`)
+- Tap destination hex → execute movement
+- Blocked by monsters (cannot pass through enemies)
+- Can pass through allies (cannot stop on occupied hexes)
+
 ### 3. Heal Action
 
 **Purpose**: Restore health to self or target
@@ -113,6 +127,13 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 - Target must be in range if specified
 - Cannot overheal target (cap at max health)
 
+**Frontend Targeting (Issue #411)**:
+- Self-heal (range 0): No targeting, tap-again pattern
+- Ranged heal (range > 0): Enter targeting mode (cyan hex highlights)
+- Valid hexes calculated by distance (`hexAttackRange`)
+- Only hexes with allies (excluding self) are highlighted
+- Tap ally → execute heal
+
 ### 4. Loot Action
 
 **Purpose**: Collect money and treasure tokens
@@ -127,6 +148,12 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 
 **Valid Modifiers**:
 - `range` - Collect loot at range
+
+**Frontend Targeting (Issue #411)**:
+- Non-targeting action (loot happens at character's hex)
+- Uses tap-again confirmation pattern
+- First tap: Select action, show "Tap again to confirm"
+- Second tap: Execute loot action
 
 ### 5. Special Action
 
@@ -203,6 +230,13 @@ The Card Action System is a unified, type-safe framework for handling all Gloomh
 - Player-summoned: Use owner's character modifier deck
 - Scenario allies (no owner): Use shared ally modifier deck
 - Monsters: Use shared monster modifier deck (separate from ally deck)
+
+**Frontend Targeting (Issue #411)**:
+- Tap card action → enter targeting mode (purple hex highlights)
+- Valid hexes calculated by distance (`hexAttackRange`)
+- Only empty hexes (no characters or monsters) are highlighted
+- Tap empty hex → execute summon placement
+- Range extracted from modifiers via `getRange()` helper (default: 1)
 
 ### 7. Text Action
 

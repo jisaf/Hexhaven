@@ -77,6 +77,9 @@ import type {
   CharacterInventoryPayload,
   SummonCreatedPayload,
   SummonDiedPayload,
+  CardActionExecutedPayload,
+  TurnActionState,
+  UseCardActionPayload,
 } from '../../../shared/types/events';
 import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
@@ -103,6 +106,9 @@ import {
   getConsumeModifiers,
   getPierce,
   getXPValue,
+  isLostAction,
+  getShield,
+  getRetaliate,
 } from '../../../shared/types/modifiers';
 import type {
   Modifier,
@@ -123,9 +129,16 @@ import {
   type Monster,
 } from '../../../shared/types/entities';
 import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
+import { hexDistance } from '../utils/hex-utils';
 
-// @WebSocketGateway decorator removed - using manual Socket.IO initialization in main.ts
-// See main.ts lines 48-113 for manual wiring
+/** Default range for summon placement if not specified on the card (Gloomhaven standard) */
+const DEFAULT_SUMMON_PLACEMENT_RANGE = 3;
+
+// @WebSocketGateway decorator disabled - using manual Socket.IO initialization in main.ts
+// See main.ts for:
+//   - Socket.IO server setup (lines ~124-131)
+//   - Event handler registrations (lines ~186-254)
+// Note: @SubscribeMessage decorators are kept for documentation but are not functional.
 @Injectable()
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -165,7 +178,10 @@ export class GameGateway
   >();
 
   afterInit(_server: Server) {
-    // Initialization logging removed for performance
+    // Note: @WebSocketGateway decorator is disabled in this project.
+    // All socket event handlers are registered manually in main.ts.
+    // See main.ts lines 186-254 for the handler registrations.
+    this.logger.log('Socket.IO server initialized');
   }
 
   /**
@@ -179,6 +195,50 @@ export class GameGateway
   ): string {
     const room = roomService.getRoom(roomCode);
     return room?.getPlayer(playerId)?.nickname || fallback;
+  }
+
+  /**
+   * Build TurnStartedPayload with turnActionState for characters (Issue #411 - Phase 3)
+   * For monsters/summons, returns basic payload without turn action state.
+   */
+  private async buildTurnStartedPayload(
+    entityId: string,
+    entityType: 'character' | 'monster' | 'summon',
+    turnIndex: number,
+  ): Promise<TurnStartedPayload> {
+    const basePayload: TurnStartedPayload = {
+      entityId,
+      entityType,
+      turnIndex,
+    };
+
+    // Only add turnActionState for characters
+    if (entityType === 'character') {
+      const character = characterService.getCharacterById(entityId);
+      if (character) {
+        const turnActionState: TurnActionState = {
+          firstAction: character.turnActions.firstAction,
+          secondAction: character.turnActions.secondAction,
+          availableActions: character.getAvailableActions(),
+        };
+        basePayload.turnActionState = turnActionState;
+
+        // Include selected cards info if available
+        if (character.selectedCards) {
+          const card1 = await this.abilityCardService.getCardById(
+            character.selectedCards.topCardId,
+          );
+          const card2 = await this.abilityCardService.getCardById(
+            character.selectedCards.bottomCardId,
+          );
+          if (card1 && card2) {
+            basePayload.selectedCards = { card1, card2 };
+          }
+        }
+      }
+    }
+
+    return basePayload;
   }
 
   // Note: abilityCardService is now injected via constructor (DB-driven)
@@ -267,6 +327,13 @@ export class GameGateway
     string,
     AxialCoordinates[]
   >(); // roomCode -> loot collection hexes
+
+  // Issue #411: Track card destinations during turn execution
+  // Maps characterId -> cardId -> destination ('discard' | 'lost')
+  private readonly pendingCardDestinations = new Map<
+    string,
+    Map<string, 'discard' | 'lost'>
+  >();
 
   /**
    * Get the room that a Socket.IO client is currently in
@@ -1019,16 +1086,18 @@ export class GameGateway
               };
               client.emit('round_started', roundStartedPayload);
 
+              // Issue #411: Include turnActionState for character turns
               const currentEntity = turnOrder[currentTurnIdx];
-              const turnStartedPayload: TurnStartedPayload = {
-                entityId: currentEntity.entityId,
-                entityType: currentEntity.entityType,
-                turnIndex: currentTurnIdx,
-              };
-              client.emit('turn_started', turnStartedPayload);
-              this.logger.log(
-                `Sent current turn info to ${nickname} (round ${roundNumber}, turn ${currentTurnIdx})`,
-              );
+              this.buildTurnStartedPayload(
+                currentEntity.entityId,
+                currentEntity.entityType,
+                currentTurnIdx,
+              ).then((turnStartedPayload) => {
+                client.emit('turn_started', turnStartedPayload);
+                this.logger.log(
+                  `Sent current turn info to ${nickname} (round ${roundNumber}, turn ${currentTurnIdx})`,
+                );
+              });
 
               // If it's a monster's turn, re-trigger monster activation
               // The monster may have already acted, but activateMonster handles dead/acted monsters gracefully
@@ -2315,12 +2384,27 @@ export class GameGateway
       }
 
       // Calculate initiative from selected cards
+      // Issue #411: Use initiativeCardId if provided, otherwise fall back to minimum
       const topCardInitiative = validation.topCard!.initiative;
       const bottomCardInitiative = validation.bottomCard!.initiative;
-      const initiative = this.turnOrderService.calculateInitiative(
-        topCardInitiative,
-        bottomCardInitiative,
-      );
+      let initiative: number;
+
+      if (payload.initiativeCardId) {
+        // Player explicitly selected which card determines initiative
+        if (payload.initiativeCardId === payload.topCardId) {
+          initiative = topCardInitiative;
+        } else if (payload.initiativeCardId === payload.bottomCardId) {
+          initiative = bottomCardInitiative;
+        } else {
+          throw new Error('initiativeCardId must be one of the selected cards');
+        }
+      } else {
+        // Backward compatibility: use minimum initiative
+        initiative = this.turnOrderService.calculateInitiative(
+          topCardInitiative,
+          bottomCardInitiative,
+        );
+      }
 
       // Store selected cards and initiative on character
       character.selectedCards = {
@@ -2457,7 +2541,7 @@ export class GameGateway
   /**
    * Start a new round with turn order determination
    */
-  private startNewRound(roomCode: string): void {
+  private async startNewRound(roomCode: string): Promise<void> {
     const room = roomService.getRoom(roomCode);
     if (!room) {
       return;
@@ -2549,12 +2633,13 @@ export class GameGateway
       ]);
 
       // Also send turn_started for the first entity
+      // Issue #411: Include turnActionState for character turns
       const firstEntity = turnOrder[0];
-      const turnStartedPayload: TurnStartedPayload = {
-        entityId: firstEntity.entityId,
-        entityType: firstEntity.entityType,
-        turnIndex: 0,
-      };
+      const turnStartedPayload = await this.buildTurnStartedPayload(
+        firstEntity.entityId,
+        firstEntity.entityType,
+        0,
+      );
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 
       // Add log entry for turn start
@@ -3318,7 +3403,7 @@ export class GameGateway
       const occupiedHexes = this.collectOccupiedHexes(roomCode);
 
       // Validate placement
-      const placementRange = maxRange ?? 3; // Default range of 3 if not specified
+      const placementRange = maxRange ?? DEFAULT_SUMMON_PLACEMENT_RANGE;
       const isValid = this.summonService.validatePlacement(
         targetHex,
         characterPosition,
@@ -3438,6 +3523,949 @@ export class GameGateway
   }
 
   /**
+   * Use a card action during player's turn (Issue #411 - Phase 3)
+   * Player clicks top/bottom of a card to execute that action
+   *
+   * Gloomhaven rules:
+   * - First action: Any of 4 options (top/bottom of either card)
+   * - Second action: Only the opposite section of the other card
+   * - After both actions, cards go to discard or lost pile based on action.lost flag
+   */
+  @SubscribeMessage('use_card_action')
+  async handleUseCardAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: UseCardActionPayload,
+  ): Promise<void> {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      this.logger.log(
+        `Use card action request from ${userId}: card=${payload.cardId} position=${payload.position}`,
+      );
+
+      // Get room from client's current Socket.IO room
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room or room not found');
+      }
+
+      const { room } = roomData;
+
+      // Validate game is active
+      if (room.status !== RoomStatus.ACTIVE) {
+        throw new Error('Game is not active');
+      }
+
+      // Get character and validate ownership
+      const character = characterService.getCharacterById(payload.characterId);
+      if (!character) {
+        this.logger.error(`Character not found: ${payload.characterId}`);
+        throw new Error('Character not found');
+      }
+      if (character.playerId !== userId) {
+        this.logger.error(
+          `Character ${payload.characterId} belongs to ${character.playerId}, not ${userId}`,
+        );
+        throw new Error('Not your character');
+      }
+
+      // Verify it's this character's turn
+      const turnOrder = this.roomTurnOrder.get(room.roomCode);
+      const currentIndex = this.currentTurnIndex.get(room.roomCode) || 0;
+      const currentTurnEntity = turnOrder?.[currentIndex];
+      if (currentTurnEntity?.entityId !== character.id) {
+        this.logger.error(
+          `Not character's turn. Current: ${currentTurnEntity?.entityId}, Character: ${character.id}`,
+        );
+        throw new Error("Not this character's turn");
+      }
+
+      // Validate card belongs to character's selected cards (security check)
+      const selectedCards = character.selectedCards;
+      if (!selectedCards) {
+        this.logger.error(`No cards selected for character ${character.id}`);
+        throw new Error('No cards selected for this turn');
+      }
+      if (
+        payload.cardId !== selectedCards.topCardId &&
+        payload.cardId !== selectedCards.bottomCardId
+      ) {
+        this.logger.error(
+          `Card ${payload.cardId} not in selected cards: top=${selectedCards.topCardId}, bottom=${selectedCards.bottomCardId}`,
+        );
+        throw new Error('Card is not one of the selected cards for this turn');
+      }
+
+      // Validate action is available based on Gloomhaven rules
+      const availableActions = character.getAvailableActions();
+      this.logger.log(
+        `Available actions for ${character.id}:`,
+        availableActions,
+      );
+      if (!character.isActionAvailable(payload.cardId, payload.position)) {
+        this.logger.error(
+          `Action ${payload.position} of ${payload.cardId} not available. First action: ${JSON.stringify(character.turnActions.firstAction)}`,
+        );
+        throw new Error(
+          'Invalid action selection - this action is not available',
+        );
+      }
+
+      // Get the card from the database
+      const card = await this.abilityCardService.getCardById(payload.cardId);
+      if (!card) {
+        throw new Error('Card not found');
+      }
+
+      // Get the action (top or bottom)
+      const action =
+        payload.position === 'top' ? card.topAction : card.bottomAction;
+      if (!action) {
+        throw new Error(`Card has no ${payload.position} action`);
+      }
+
+      // Execute the action based on its type
+      const executionResult = await this.executeCardAction(
+        room.roomCode,
+        character,
+        action,
+        payload,
+      );
+
+      // Record the action (first or second)
+      const isFirstAction = !character.turnActions.firstAction;
+      if (isFirstAction) {
+        character.recordFirstAction(payload.cardId, payload.position);
+      } else {
+        character.recordSecondAction(payload.cardId, payload.position);
+      }
+
+      // Determine card destination based on action modifiers
+      const actionModifiers = action.modifiers || [];
+      const isLost = isLostAction(actionModifiers);
+      let cardDestination: 'discard' | 'lost' | 'active' = 'discard';
+
+      if (isLost) {
+        cardDestination = 'lost';
+      }
+
+      // Record the pending card destination for end-of-turn processing
+      // This matches Gloomhaven rules where cards stay in play until turn ends
+      let characterDestinations = this.pendingCardDestinations.get(
+        character.id,
+      );
+      if (!characterDestinations) {
+        characterDestinations = new Map<string, 'discard' | 'lost'>();
+        this.pendingCardDestinations.set(character.id, characterDestinations);
+      }
+      characterDestinations.set(payload.cardId, cardDestination);
+      this.logger.log(
+        `Card ${payload.cardId} marked for ${cardDestination} pile`,
+      );
+
+      // Build the response payload
+      const responsePayload: CardActionExecutedPayload = {
+        characterId: character.id,
+        cardId: payload.cardId,
+        position: payload.position,
+        actionType: action.type,
+        success: executionResult.success,
+        cardDestination,
+        movementPath: executionResult.movementPath,
+        damageDealt: executionResult.damageDealt,
+        healAmount: executionResult.healAmount,
+        targetId: executionResult.targetId,
+        error: executionResult.error,
+      };
+
+      // Emit to all clients in the room
+      this.server
+        .to(room.roomCode)
+        .emit('card_action_executed', responsePayload);
+
+      // Add game log entry
+      this.addGameLogEntry(room.roomCode, [
+        { text: character.characterClass, color: 'lightblue' },
+        { text: ` uses ` },
+        { text: `${payload.position} action`, color: 'cyan' },
+        { text: ` of ` },
+        { text: card.name, color: 'yellow' },
+        ...(executionResult.damageDealt !== undefined
+          ? [{ text: ` (${executionResult.damageDealt} damage)`, color: 'red' }]
+          : []),
+        ...(executionResult.healAmount !== undefined
+          ? [
+              {
+                text: ` (${executionResult.healAmount} healing)`,
+                color: 'green',
+              },
+            ]
+          : []),
+      ]);
+
+      this.logger.log(
+        `Card action executed: ${character.id} used ${payload.position} of ${card.name} (${action.type})`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error using card action: ${errorMessage}`);
+      client.emit('error', {
+        code: 'USE_CARD_ACTION_FAILED',
+        message: errorMessage,
+      });
+    }
+  }
+
+  /**
+   * Execute a card action based on its type (Issue #411 - Phase 3)
+   * Reuses existing movement and attack logic where possible
+   */
+  private async executeCardAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction,
+    payload: UseCardActionPayload,
+  ): Promise<{
+    success: boolean;
+    movementPath?: AxialCoordinates[];
+    damageDealt?: number;
+    healAmount?: number;
+    targetId?: string;
+    error?: string;
+  }> {
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      return { success: false, error: 'Room not found' };
+    }
+
+    switch (action.type) {
+      case 'move':
+        return this.executeCardMoveAction(roomCode, character, action, payload);
+
+      case 'attack':
+        return this.executeCardAttackAction(
+          roomCode,
+          character,
+          action,
+          payload,
+        );
+
+      case 'heal':
+        return this.executeCardHealAction(roomCode, character, action, payload);
+
+      case 'loot':
+        return this.executeCardLootAction(roomCode, character, action, payload);
+
+      case 'summon':
+        return this.executeCardSummonAction(
+          roomCode,
+          character,
+          action,
+          payload,
+        );
+
+      case 'special':
+        return this.executeCardSpecialAction(
+          roomCode,
+          character,
+          action,
+          payload,
+        );
+
+      case 'text':
+        return this.executeCardTextAction(roomCode, character, action, payload);
+
+      default:
+        return {
+          success: false,
+          error: `Unknown action type: ${(action as any).type}`,
+        };
+    }
+  }
+
+  /**
+   * Execute a move action from a card (Issue #411 - Phase 3)
+   */
+  private executeCardMoveAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'move'; value: number },
+    payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    movementPath?: AxialCoordinates[];
+    error?: string;
+  } {
+    // Set effective movement from the card
+    character.setEffectiveMovement(action.value);
+
+    // If no target hex provided, just set the movement value for later use
+    if (!payload.targetHex) {
+      this.logger.log(
+        `Move action activated: ${action.value} movement available`,
+      );
+      return { success: true };
+    }
+
+    // Get hex map for pathfinding
+    const hexMap = this.roomMaps.get(roomCode);
+    if (!hexMap) {
+      return { success: false, error: 'Map not initialized for this room' };
+    }
+
+    const fromHex = character.position;
+    const targetHex = payload.targetHex;
+
+    // Check if character is immobilized
+    if (character.isImmobilized) {
+      return {
+        success: false,
+        error: 'Character is immobilized and cannot move',
+      };
+    }
+
+    // Build occupied hexes set
+    const monsters = this.roomMonsters.get(roomCode) || [];
+    const occupiedHexes = new Set<string>();
+    for (const monster of monsters) {
+      if (!monster.isDead && monster.currentHex) {
+        occupiedHexes.add(`${monster.currentHex.q},${monster.currentHex.r}`);
+      }
+    }
+
+    // Calculate path
+    const path = this.pathfindingService.findPath(
+      fromHex,
+      targetHex,
+      hexMap,
+      false, // canFly
+      occupiedHexes,
+    );
+
+    if (!path) {
+      return { success: false, error: 'No valid path to target hex' };
+    }
+
+    const moveDistance = path.length > 0 ? path.length - 1 : 0;
+    const remainingMovement = character.movementRemainingThisTurn;
+
+    if (moveDistance > remainingMovement) {
+      return {
+        success: false,
+        error: `Not enough movement. Distance: ${moveDistance}, Remaining: ${remainingMovement}`,
+      };
+    }
+
+    // Move character
+    characterService.moveCharacter(character.id, targetHex);
+    character.addMovementUsed(moveDistance);
+
+    // Broadcast character moved
+    const characterMovedPayload: CharacterMovedPayload = {
+      characterId: character.id,
+      characterName: character.characterClass,
+      fromHex,
+      toHex: targetHex,
+      movementPath: path,
+      distance: moveDistance,
+    };
+
+    this.server.to(roomCode).emit('character_moved', characterMovedPayload);
+
+    return { success: true, movementPath: path };
+  }
+
+  /**
+   * Execute an attack action from a card (Issue #411 - Phase 3)
+   */
+  private async executeCardAttackAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'attack'; value: number },
+    payload: UseCardActionPayload,
+  ): Promise<{
+    success: boolean;
+    damageDealt?: number;
+    targetId?: string;
+    error?: string;
+  }> {
+    // Set effective attack from the card
+    const actionModifiers = action.modifiers || [];
+    const range = getRange(actionModifiers);
+    character.setEffectiveAttack(action.value, range);
+
+    // If no target provided, just set the attack value for later use
+    if (!payload.targetId) {
+      this.logger.log(
+        `Attack action activated: ${action.value} attack, range ${range}`,
+      );
+      return { success: true };
+    }
+
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      return { success: false, error: 'Room not found' };
+    }
+
+    // Note: hasAttackedThisTurn check removed for card-based actions (Issue #411)
+    // In Gloomhaven, you can attack multiple times if both card actions are attacks
+
+    // Check if character is disarmed
+    if (character.isDisarmed) {
+      return {
+        success: false,
+        error: 'Character is disarmed and cannot attack',
+      };
+    }
+
+    // Get target (check monsters first, then characters)
+    const monsters = this.roomMonsters.get(roomCode) || [];
+    let target: any = monsters.find((m: any) => m.id === payload.targetId);
+    const isMonsterTarget = !!target;
+
+    if (!target) {
+      target = characterService.getCharacterById(payload.targetId);
+    }
+
+    if (!target) {
+      return { success: false, error: 'Target not found' };
+    }
+
+    // Validate target is alive
+    if (target.isDead) {
+      return { success: false, error: 'Target is already dead' };
+    }
+
+    // Get base attack value
+    const baseAttack = action.value;
+
+    // Draw attack modifier card from character's deck
+    const characterDecks = this.characterModifierDecks.get(roomCode);
+    if (!characterDecks) {
+      return { success: false, error: 'Modifier decks not found' };
+    }
+
+    let modifierDeck = characterDecks.get(character.id);
+    if (!modifierDeck || modifierDeck.length === 0) {
+      modifierDeck = this.modifierDeckService.initializeStandardDeck();
+      characterDecks.set(character.id, modifierDeck);
+    }
+
+    const { card: modifierCard, remainingDeck } =
+      this.modifierDeckService.drawCard(modifierDeck);
+    characterDecks.set(character.id, remainingDeck);
+
+    // Check if reshuffle needed
+    if (this.modifierDeckService.checkReshuffle(modifierCard)) {
+      const reshuffled = this.modifierDeckService.reshuffleDeck(
+        remainingDeck,
+        [],
+      );
+      characterDecks.set(character.id, reshuffled);
+    }
+
+    // Calculate damage
+    let damage = this.damageService.calculateDamage(baseAttack, modifierCard);
+
+    // Apply shield reduction
+    const shieldEffect = this.conditionService.getShieldEffect(target.id);
+    if (shieldEffect && shieldEffect.value > 0) {
+      const pierceModifier = getPierce(actionModifiers);
+      const pierceValue = pierceModifier?.value || 0;
+      const effectiveShield = Math.max(0, shieldEffect.value - pierceValue);
+      damage = Math.max(0, damage - Math.min(effectiveShield, damage));
+    }
+
+    // Apply damage to target
+    let targetHealth: number;
+    let targetDead = false;
+
+    if (isMonsterTarget) {
+      target.health = Math.max(0, target.health - damage);
+      targetHealth = target.health;
+      targetDead = target.health === 0;
+
+      if (targetDead) {
+        target.isDead = true;
+
+        // Spawn loot token
+        const scenario = room.scenarioId
+          ? await this.scenarioService.loadScenario(room.scenarioId)
+          : null;
+        if (scenario) {
+          const lootValue = LootToken.calculateLootValue(scenario.difficulty);
+          const lootToken = LootToken.create(
+            roomCode,
+            target.currentHex,
+            lootValue,
+          );
+
+          const lootTokens = this.roomLootTokens.get(roomCode) || [];
+          lootTokens.push(lootToken);
+          this.roomLootTokens.set(roomCode, lootTokens);
+
+          this.server.to(roomCode).emit('loot_spawned', {
+            id: lootToken.id,
+            coordinates: lootToken.coordinates,
+            value: lootToken.value,
+          });
+        }
+
+        this.server.to(roomCode).emit('monster_died', {
+          monsterId: target.id,
+          killerId: character.id,
+          hexCoordinates: target.currentHex,
+        });
+      }
+    } else {
+      target.takeDamage(damage);
+      targetHealth = target.currentHealth;
+      targetDead = target.isDead;
+    }
+
+    // Mark character as having attacked
+    character.markAttackedThisTurn();
+
+    // Broadcast attack resolution
+    const attackResolvedPayload: AttackResolvedPayload = {
+      attackerId: character.id,
+      attackerName: character.characterClass,
+      targetId: payload.targetId,
+      targetName: isMonsterTarget ? target.monsterType : target.characterClass,
+      baseDamage: baseAttack,
+      damage,
+      modifier: modifierCard.modifier,
+      effects: modifierCard.effects || [],
+      targetHealth,
+      targetDead,
+    };
+
+    this.server.to(roomCode).emit('attack_resolved', attackResolvedPayload);
+
+    return {
+      success: true,
+      damageDealt: damage,
+      targetId: payload.targetId,
+    };
+  }
+
+  /**
+   * Execute a heal action from a card (Issue #411 - Phase 3)
+   */
+  private executeCardHealAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'heal'; value: number },
+    payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    healAmount?: number;
+    targetId?: string;
+    error?: string;
+  } {
+    const healValue = action.value;
+
+    // Determine target (self if not specified, or another character)
+    const targetId = payload.targetId || character.id;
+    let target: Character | null = null;
+
+    if (targetId === character.id) {
+      target = character;
+    } else {
+      target = characterService.getCharacterById(targetId);
+    }
+
+    if (!target) {
+      return { success: false, error: 'Heal target not found' };
+    }
+
+    if (target.isDead) {
+      return { success: false, error: 'Cannot heal a dead character' };
+    }
+
+    // Apply healing
+    const actualHeal = target.heal(healValue);
+
+    this.logger.log(
+      `Heal action: ${character.id} healed ${targetId} for ${actualHeal} (attempted ${healValue})`,
+    );
+
+    // Broadcast game state update for the healed character
+    this.server.to(roomCode).emit('game_state_update', {
+      type: 'character_healed',
+      characterId: targetId,
+      healAmount: actualHeal,
+      currentHealth: target.currentHealth,
+      maxHealth: target.maxHealth,
+    });
+
+    return {
+      success: true,
+      healAmount: actualHeal,
+      targetId,
+    };
+  }
+
+  /**
+   * Execute a special action from a card (Issue #411 - Phase 5)
+   * Handles modifiers like shield, retaliate, strengthen, bless, etc.
+   */
+  private executeCardSpecialAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'special' },
+    _payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    error?: string;
+  } {
+    const modifiers = action.modifiers || [];
+
+    // Handle shield modifier
+    const shieldMod = getShield(modifiers);
+    if (shieldMod) {
+      this.conditionService.applyShield(
+        character.id,
+        shieldMod.value,
+        shieldMod.duration,
+      );
+
+      this.logger.log(
+        `Special action: ${character.id} gained Shield ${shieldMod.value} (${shieldMod.duration})`,
+      );
+
+      this.server.to(roomCode).emit('game_state_update', {
+        type: 'shield_applied',
+        characterId: character.id,
+        shieldValue: shieldMod.value,
+        duration: shieldMod.duration,
+      });
+    }
+
+    // Handle retaliate modifier
+    const retaliateMod = getRetaliate(modifiers);
+    if (retaliateMod) {
+      this.conditionService.applyRetaliate(
+        character.id,
+        retaliateMod.value,
+        retaliateMod.range || 1,
+        retaliateMod.duration,
+      );
+
+      this.logger.log(
+        `Special action: ${character.id} gained Retaliate ${retaliateMod.value} Range ${retaliateMod.range || 1} (${retaliateMod.duration})`,
+      );
+
+      this.server.to(roomCode).emit('game_state_update', {
+        type: 'retaliate_applied',
+        characterId: character.id,
+        retaliateValue: retaliateMod.value,
+        retaliateRange: retaliateMod.range || 1,
+        duration: retaliateMod.duration,
+      });
+    }
+
+    // Handle condition modifiers (strengthen, bless, etc.)
+    const conditionMods = getConditions(modifiers);
+    for (const condMod of conditionMods) {
+      // Determine target - default to self for special actions
+      const targetId =
+        condMod.target === 'self' || !condMod.target
+          ? character.id
+          : character.id; // For now, default to self
+
+      const target = characterService.getCharacterById(targetId);
+      if (target) {
+        this.conditionService.applyCondition(
+          target,
+          condMod.condition,
+          condMod.duration,
+        );
+
+        this.logger.log(
+          `Special action: Applied ${condMod.condition} to ${targetId}`,
+        );
+
+        this.server.to(roomCode).emit('game_state_update', {
+          type: 'condition_applied',
+          characterId: targetId,
+          condition: condMod.condition,
+          duration: condMod.duration,
+        });
+      }
+    }
+
+    // Log special action descriptor if present
+    if (action.special) {
+      this.logger.log(`Special action executed: ${action.special}`);
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Execute a summon action from a card (Issue #411 - Phase 5)
+   * Creates a summon entity on the battlefield
+   */
+  private executeCardSummonAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'summon' },
+    payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    error?: string;
+  } {
+    const summonDef = action.summon;
+    if (!summonDef) {
+      return {
+        success: false,
+        error: 'Summon action missing summon definition',
+      };
+    }
+
+    // If no target hex provided, the player needs to select a placement location
+    if (!payload.targetHex) {
+      this.logger.log(
+        `Summon action activated: awaiting placement for ${summonDef.name}`,
+      );
+      // Return success - the frontend will prompt for hex selection
+      return { success: true };
+    }
+
+    const targetHex = payload.targetHex;
+
+    // Get character's current position for adjacency check
+    const characterPosition = character.position;
+    if (!characterPosition) {
+      return { success: false, error: 'Character has no position' };
+    }
+
+    // Get hex map for validation
+    const hexMap = this.roomMaps.get(roomCode);
+    if (!hexMap) {
+      return { success: false, error: 'Hex map not found' };
+    }
+
+    // Collect occupied hexes
+    const occupiedHexes = this.collectOccupiedHexes(roomCode);
+
+    // Validate placement: must be empty and within range
+    const placementRange = DEFAULT_SUMMON_PLACEMENT_RANGE;
+    const isValid = this.summonService.validatePlacement(
+      targetHex,
+      characterPosition,
+      hexMap,
+      occupiedHexes,
+      placementRange,
+    );
+
+    if (!isValid) {
+      return { success: false, error: 'Invalid summon placement location' };
+    }
+
+    // Get character's initiative (summons inherit owner's initiative)
+    const characterInitiative = character.selectedCards?.initiative ?? 99;
+
+    // Create summon
+    const summon = this.summonService.createSummon(
+      summonDef,
+      targetHex,
+      roomCode,
+      character.id,
+      characterInitiative,
+    );
+
+    // Add to room summons
+    let summons = this.roomSummons.get(roomCode);
+    if (!summons) {
+      summons = [];
+      this.roomSummons.set(roomCode, summons);
+    }
+    summons.push(summon);
+
+    this.logger.log(
+      `Card summon action: Created ${summon.name} (${summon.id}) at (${targetHex.q}, ${targetHex.r}) for ${character.id}`,
+    );
+
+    // Update turn order to include new summon
+    const turnOrder = this.roomTurnOrder.get(roomCode);
+    if (turnOrder) {
+      const ownerIndex = turnOrder.findIndex(
+        (e) => e.entityId === character.id,
+      );
+      const summonEntry = {
+        entityId: summon.id,
+        entityType: 'summon' as const,
+        initiative: summon.initiative,
+        name: summon.name,
+        ownerId: summon.ownerId,
+        isDead: false,
+        isExhausted: false,
+      };
+
+      if (ownerIndex !== -1) {
+        // Insert summon right before owner in turn order
+        turnOrder.splice(ownerIndex, 0, summonEntry);
+      } else {
+        // Owner not in turn order, add to end
+        turnOrder.push(summonEntry);
+      }
+
+      this.roomTurnOrder.set(roomCode, turnOrder);
+    }
+
+    // Emit summon_created event
+    const summonCreatedPayload: SummonCreatedPayload = {
+      summonId: summon.id,
+      summonName: summon.name,
+      ownerCharacterId: summon.ownerId,
+      placementHex: summon.position,
+      health: summon.currentHealth,
+      maxHealth: summon.maxHealth,
+      attack: summon.attack,
+      move: summon.move,
+      range: summon.range,
+      typeIcon: summon.typeIcon,
+      playerControlled: summon.playerControlled,
+      initiative: summon.initiative,
+    };
+
+    this.server.to(roomCode).emit('summon_created', summonCreatedPayload);
+
+    // Emit turn order update
+    if (turnOrder) {
+      this.server.to(roomCode).emit('round_started', {
+        roundNumber: this.currentRound.get(roomCode) || 1,
+        turnOrder: turnOrder.map(
+          ({ entityId, name, entityType, initiative, ownerId }) => ({
+            entityId,
+            name,
+            entityType,
+            initiative,
+            ownerId,
+          }),
+        ),
+      });
+    }
+
+    // Add game log entry
+    this.addGameLogEntry(roomCode, [
+      { text: character.characterClass, color: 'lightblue' },
+      { text: ` summoned ` },
+      { text: summon.name, color: 'lightgreen' },
+      { text: `.` },
+    ]);
+
+    return { success: true };
+  }
+
+  /**
+   * Execute a loot action from a card (Issue #411 - Phase 5)
+   * Collects loot tokens within the action's range
+   */
+  private executeCardLootAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'loot' },
+    _payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    error?: string;
+  } {
+    const lootRange = action.value || 1;
+    const characterPos = character.position;
+
+    if (!characterPos) {
+      return { success: false, error: 'Character has no position' };
+    }
+
+    // Get loot tokens from room state
+    const lootTokens = this.roomLootTokens.get(roomCode) || [];
+
+    // Find all uncollected loot tokens within range
+    const lootInRange = lootTokens.filter((token: LootToken) => {
+      if (token.isCollected) return false;
+      const distance = hexDistance(characterPos, token.coordinates);
+      return distance <= lootRange;
+    });
+
+    if (lootInRange.length === 0) {
+      this.logger.log(
+        `Loot action: No loot tokens within range ${lootRange} of ${character.id}`,
+      );
+      return { success: true }; // Success even if no loot - action was valid
+    }
+
+    // Collect all loot tokens in range
+    let totalGold = 0;
+    const collectedTokenIds: string[] = [];
+
+    lootInRange.forEach((token: LootToken) => {
+      token.collect(character.playerId);
+      totalGold += token.value;
+      collectedTokenIds.push(token.id);
+    });
+
+    // Track loot collection in accumulated stats
+    const accumulatedStats = this.roomAccumulatedStats.get(roomCode);
+    if (accumulatedStats) {
+      accumulatedStats.totalLootCollected += lootInRange.length;
+    }
+
+    // Emit loot_collected for each token (frontend expects this)
+    for (const token of lootInRange) {
+      const lootCollectedPayload: LootCollectedPayload = {
+        playerId: character.playerId,
+        lootTokenId: token.id,
+        hexCoordinates: token.coordinates,
+        goldValue: token.value,
+      };
+      this.server.to(roomCode).emit('loot_collected', lootCollectedPayload);
+    }
+
+    this.logger.log(
+      `Loot action: ${character.id} collected ${lootInRange.length} loot token(s) within range ${lootRange}, total value: ${totalGold} gold`,
+    );
+
+    // Add game log entry
+    this.addGameLogEntry(roomCode, [
+      { text: character.characterClass, color: 'lightblue' },
+      { text: ` looted ` },
+      { text: `${totalGold}`, color: 'gold' },
+      { text: ` gold.` },
+    ]);
+
+    return { success: true };
+  }
+
+  /**
+   * Execute a text action from a card (Issue #411 - Phase 5)
+   * Text actions are informational only - no game effect
+   */
+  private executeCardTextAction(
+    roomCode: string,
+    character: Character,
+    action: CardAction & { type: 'text' },
+    _payload: UseCardActionPayload,
+  ): {
+    success: boolean;
+    error?: string;
+  } {
+    // Text actions have no mechanical effect
+    // They are descriptive/flavor text that the game master handles manually
+    if (action.description) {
+      this.logger.log(`Text action by ${character.id}: ${action.description}`);
+    }
+
+    return { success: true };
+  }
+
+  /**
    * End current entity's turn (US2 - T097)
    */
   @SubscribeMessage('end_turn')
@@ -3493,21 +4521,31 @@ export class GameGateway
         throw new Error('It is not your turn');
       }
 
-      // Move played cards to discard pile before resetting action flags
+      // Move played cards to appropriate piles based on pending destinations (Issue #411)
       if (character.selectedCards) {
         const topCardId = character.selectedCards.topCardId;
         const bottomCardId = character.selectedCards.bottomCardId;
 
-        // Remove cards from hand and add to discard pile
-        character.removeFromHand(topCardId);
-        character.addToDiscard(topCardId);
+        // Get pending destinations for this character
+        const pendingDestinations = this.pendingCardDestinations.get(
+          character.id,
+        );
 
-        character.removeFromHand(bottomCardId);
-        character.addToDiscard(bottomCardId);
+        // Determine destination for each card (default to discard if not tracked)
+        const topDestination = pendingDestinations?.get(topCardId) || 'discard';
+        const bottomDestination =
+          pendingDestinations?.get(bottomCardId) || 'discard';
+
+        // Move cards to their appropriate piles
+        character.moveCardToPile(topCardId, topDestination);
+        character.moveCardToPile(bottomCardId, bottomDestination);
 
         this.logger.log(
-          `Moved played cards to discard: ${topCardId}, ${bottomCardId}. Hand: ${character.hand.length}, Discard: ${character.discardPile.length}`,
+          `Moved played cards: ${topCardId} -> ${topDestination}, ${bottomCardId} -> ${bottomDestination}. Hand: ${character.hand.length}, Discard: ${character.discardPile.length}, Lost: ${character.lostPile.length}`,
         );
+
+        // Clear pending destinations for this character
+        this.pendingCardDestinations.delete(character.id);
       }
 
       // Reset action flags for this character's turn ending
@@ -3645,11 +4683,12 @@ export class GameGateway
         const nextEntity = turnOrder[nextIndex];
 
         // Broadcast turn started for next entity
-        const turnStartedPayload: TurnStartedPayload = {
-          entityId: nextEntity.entityId,
-          entityType: nextEntity.entityType,
-          turnIndex: nextIndex,
-        };
+        // Issue #411: Include turnActionState for character turns
+        const turnStartedPayload = await this.buildTurnStartedPayload(
+          nextEntity.entityId,
+          nextEntity.entityType,
+          nextIndex,
+        );
 
         this.server.to(room.roomCode).emit('turn_started', turnStartedPayload);
 
@@ -4911,7 +5950,9 @@ export class GameGateway
   /**
    * Advance turn after monster activation
    */
-  private advanceTurnAfterMonsterActivation(roomCode: string): void {
+  private async advanceTurnAfterMonsterActivation(
+    roomCode: string,
+  ): Promise<void> {
     // Get room
     const room = roomService.getRoom(roomCode);
     if (!room) {
@@ -4954,11 +5995,12 @@ export class GameGateway
       const nextEntity = turnOrder[nextIndex];
 
       // Broadcast turn started for next entity
-      const turnStartedPayload: TurnStartedPayload = {
-        entityId: nextEntity.entityId,
-        entityType: nextEntity.entityType,
-        turnIndex: nextIndex,
-      };
+      // Issue #411: Include turnActionState for character turns
+      const turnStartedPayload = await this.buildTurnStartedPayload(
+        nextEntity.entityId,
+        nextEntity.entityType,
+        nextIndex,
+      );
 
       this.server.to(roomCode).emit('turn_started', turnStartedPayload);
 

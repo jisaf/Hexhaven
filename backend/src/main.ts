@@ -230,6 +230,28 @@ async function bootstrap() {
     socket.on('acknowledge_narrative', (payload) => {
       gameGateway.handleAcknowledgeNarrative(socket, payload);
     });
+
+    // Card action handlers (Issue #411)
+    socket.on('use_card_action', (payload) => {
+      gameGateway.handleUseCardAction(socket, payload);
+    });
+
+    socket.on('request_summon_placement', (payload) => {
+      gameGateway.handleRequestSummonPlacement(socket, payload);
+    });
+
+    // Item handlers
+    socket.on('use_item', (payload) => {
+      gameGateway.handleUseItem(socket, payload);
+    });
+
+    socket.on('equip_item', (payload) => {
+      gameGateway.handleEquipItem(socket, payload);
+    });
+
+    socket.on('unequip_item', (payload) => {
+      gameGateway.handleUnequipItem(socket, payload);
+    });
   });
 
   logger.log('GameGateway handlers wired up to Socket.IO server');

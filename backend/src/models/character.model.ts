@@ -11,6 +11,7 @@ import type {
   AxialCoordinates,
 } from '../../../shared/types/entities';
 import { Condition } from '../../../shared/types/entities';
+import type { TurnAction } from '../../../shared/types/events';
 import { AbilityCard } from './ability-card.model';
 
 export interface CharacterStats {
@@ -63,6 +64,11 @@ export class Character {
   private _effectiveAttackThisTurn: number = 0; // Attack value from selected card (Gloomhaven: attack comes from cards, not base stats)
   private _effectiveRangeThisTurn: number = 0; // Attack range from selected card
   private _hasAttackedThisTurn: boolean = false;
+  // Issue #411: Track which card actions have been used this turn
+  private _turnActions: {
+    firstAction?: TurnAction;
+    secondAction?: TurnAction;
+  } = {};
   private _userCharacterId?: string; // Database character ID for persistent characters (002)
   private readonly _createdAt: Date;
   private _updatedAt: Date;
@@ -210,6 +216,21 @@ export class Character {
     return this._hasAttackedThisTurn;
   }
 
+  // Issue #411: Turn action tracking getters
+  get turnActions(): {
+    firstAction?: TurnAction;
+    secondAction?: TurnAction;
+  } {
+    return {
+      firstAction: this._turnActions.firstAction
+        ? { ...this._turnActions.firstAction }
+        : undefined,
+      secondAction: this._turnActions.secondAction
+        ? { ...this._turnActions.secondAction }
+        : undefined,
+    };
+  }
+
   get hand(): string[] {
     return [...this._hand];
   }
@@ -273,6 +294,28 @@ export class Character {
   addToLost(cardId: string): void {
     this._lostPile.push(cardId);
     this._updatedAt = new Date();
+  }
+
+  /**
+   * Move a card to the specified destination pile (Issue #411)
+   * Removes the card from hand (if present) and adds to the appropriate pile.
+   * @param cardId - The ID of the card to move
+   * @param destination - Where to move the card: 'discard' or 'lost'
+   * @returns true if the card was successfully moved, false if card wasn't found
+   */
+  moveCardToPile(cardId: string, destination: 'discard' | 'lost'): boolean {
+    // First, try to remove from hand
+    const wasInHand = this.removeFromHand(cardId);
+
+    // Add to the appropriate pile regardless of whether it was in hand
+    // (it might already be in play from selected cards)
+    if (destination === 'lost') {
+      this.addToLost(cardId);
+    } else {
+      this.addToDiscard(cardId);
+    }
+
+    return wasInHand;
   }
 
   removeFromDiscard(cardId: string): boolean {
@@ -419,7 +462,99 @@ export class Character {
     this._effectiveAttackThisTurn = 0; // Reset card attack value for next turn
     this._effectiveRangeThisTurn = 0; // Reset card range value for next turn
     this._hasAttackedThisTurn = false;
+    // Issue #411: Also reset turn action tracking
+    this._turnActions = {};
     this._updatedAt = new Date();
+  }
+
+  // ========== Issue #411: Turn Action Tracking ==========
+
+  /**
+   * Record the first card action taken this turn
+   * @param cardId - The ID of the card used
+   * @param position - Whether the top or bottom action was used
+   */
+  recordFirstAction(cardId: string, position: 'top' | 'bottom'): void {
+    if (this._turnActions.firstAction) {
+      throw new Error('First action already recorded this turn');
+    }
+    this._turnActions.firstAction = { cardId, position };
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Record the second card action taken this turn
+   * @param cardId - The ID of the card used
+   * @param position - Whether the top or bottom action was used
+   */
+  recordSecondAction(cardId: string, position: 'top' | 'bottom'): void {
+    if (!this._turnActions.firstAction) {
+      throw new Error('Cannot record second action before first action');
+    }
+    if (this._turnActions.secondAction) {
+      throw new Error('Second action already recorded this turn');
+    }
+    this._turnActions.secondAction = { cardId, position };
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Reset turn action tracking at end of turn
+   */
+  resetTurnActions(): void {
+    this._turnActions = {};
+    this._updatedAt = new Date();
+  }
+
+  /**
+   * Get available card actions for this turn based on Gloomhaven rules
+   * - First action: Any of 4 options (top/bottom of either card)
+   * - Second action: Only the opposite section of the other card
+   * @returns Array of available action options
+   */
+  getAvailableActions(): TurnAction[] {
+    if (!this._selectedCards) {
+      return [];
+    }
+
+    const { topCardId, bottomCardId } = this._selectedCards;
+
+    // No actions taken yet - all 4 options available
+    if (!this._turnActions.firstAction) {
+      return [
+        { cardId: topCardId, position: 'top' },
+        { cardId: topCardId, position: 'bottom' },
+        { cardId: bottomCardId, position: 'top' },
+        { cardId: bottomCardId, position: 'bottom' },
+      ];
+    }
+
+    // Both actions taken - no options
+    if (this._turnActions.secondAction) {
+      return [];
+    }
+
+    // First action taken - only opposite section of OTHER card available
+    // Per Gloomhaven rules: you use TOP from one card and BOTTOM from the other
+    const { cardId: usedCard, position: usedPosition } =
+      this._turnActions.firstAction;
+    const otherCard = usedCard === topCardId ? bottomCardId : topCardId;
+    const oppositePosition = usedPosition === 'top' ? 'bottom' : 'top';
+
+    return [{ cardId: otherCard, position: oppositePosition }];
+  }
+
+  /**
+   * Check if a specific action is available this turn
+   * @param cardId - The card ID to check
+   * @param position - The position (top/bottom) to check
+   * @returns True if this action can be taken
+   */
+  isActionAvailable(cardId: string, position: 'top' | 'bottom'): boolean {
+    const available = this.getAvailableActions();
+    return available.some(
+      (a) => a.cardId === cardId && a.position === position,
+    );
   }
 
   revive(): void {

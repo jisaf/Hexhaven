@@ -154,6 +154,9 @@ export interface WebSocketEvents {
     goldEarned: number;
   }) => void;
 
+  // Card action events (Issue #411)
+  card_action_executed: (data: import('../../../shared/types/events').CardActionExecutedPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }
@@ -581,9 +584,10 @@ class WebSocketService {
    * @param topCardId - Card ID for top action
    * @param bottomCardId - Card ID for bottom action
    * @param characterId - Optional: which character's cards (for multi-character support)
+   * @param initiativeCardId - Issue #411: Optional: which card determines initiative
    */
-  selectCards(topCardId: string, bottomCardId: string, characterId?: string): void {
-    this.emit('select_cards', { topCardId, bottomCardId, characterId });
+  selectCards(topCardId: string, bottomCardId: string, characterId?: string, initiativeCardId?: string): void {
+    this.emit('select_cards', { topCardId, bottomCardId, characterId, initiativeCardId });
   }
 
   /**

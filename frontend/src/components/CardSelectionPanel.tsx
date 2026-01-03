@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { AbilityCard as AbilityCardType } from '../../../shared/types/entities';
 import { AbilityCard2 } from './AbilityCard2';
 import './CardSelectionPanel.css';
@@ -19,6 +19,9 @@ interface CardSelectionPanelProps {
   activeCharacterName?: string;
   totalCharacters?: number;
   charactersWithSelections?: number;
+  // Issue #411 - Initiative selection
+  selectedInitiativeCardId?: string | null;
+  onInitiativeChange?: (cardId: string) => void;
 }
 
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -35,12 +38,42 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   waiting = false,
   canLongRest = false,
   discardPileCount = 0,
-  activeCharacterName,
+  // activeCharacterName - intentionally omitted (unused)
   totalCharacters = 1,
   charactersWithSelections = 0,
+  // Issue #411 - Initiative selection
+  selectedInitiativeCardId,
+  onInitiativeChange,
 }) => {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const isPortrait = useMediaQuery('(orientation: portrait)');
+
+  // Track which card was selected first (for default initiative)
+  const firstSelectedCardRef = useRef<string | null>(null);
+
+  // Issue #411: Auto-select initiative when first card is selected
+  // Default to the FIRST card selected (not necessarily the faster one)
+  const bothCardsSelected = selectedTopAction !== null && selectedBottomAction !== null;
+
+  // Track first selected card
+  useEffect(() => {
+    if (selectedTopAction && !selectedBottomAction && !firstSelectedCardRef.current) {
+      // First card just selected
+      firstSelectedCardRef.current = selectedTopAction.id;
+    } else if (!selectedTopAction && !selectedBottomAction) {
+      // Selection cleared
+      firstSelectedCardRef.current = null;
+    }
+  }, [selectedTopAction, selectedBottomAction]);
+
+  // Auto-select initiative when both cards selected (use first selected card)
+  useEffect(() => {
+    if (bothCardsSelected && selectedInitiativeCardId === null && onInitiativeChange) {
+      // Default to the first card that was selected
+      const defaultInitiativeCardId = firstSelectedCardRef.current || selectedTopAction!.id;
+      onInitiativeChange(defaultInitiativeCardId);
+    }
+  }, [bothCardsSelected, selectedTopAction, selectedBottomAction, selectedInitiativeCardId, onInitiativeChange]);
 
   const canConfirm = selectedTopAction !== null && selectedBottomAction !== null;
   const mustRest = cards.length < 2 && canLongRest;
@@ -57,8 +90,8 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
   const getInstructionText = () => {
     if (waiting) return 'Waiting for other players...';
     if (mustRest) return `Cannot play 2 cards (${cards.length} in hand). Must rest.`;
-    if (!selectedTopAction) return 'Select a card for your TOP action';
-    if (!selectedBottomAction) return 'Select a card for your BOTTOM action';
+    if (!selectedTopAction) return 'Select your first card';
+    if (!selectedBottomAction) return 'Select your second card';
     if (totalCharacters > 1 && !allCharactersReady) {
       return `Cards selected! Click confirm to select for next character.`;
     }
@@ -77,26 +110,31 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
     return 'Confirm';
   };
 
+  // Handle initiative badge click
+  const handleInitiativeBadgeClick = (e: React.MouseEvent, cardId: string) => {
+    e.stopPropagation(); // Don't trigger card selection
+    if (onInitiativeChange && !disabled && !waiting) {
+      onInitiativeChange(cardId);
+    }
+  };
+
   return (
     <div className={panelClassName}>
-      <div className="selection-instructions">
-        <h3>
-          {activeCharacterName && totalCharacters > 1
-            ? `Select Actions: ${activeCharacterName}`
-            : 'Select Your Actions'}
-        </h3>
+      {/* Status text shown in cards area */}
+      <div className="status-text">
         {totalCharacters > 1 && (
           <span className="character-progress">
-            {charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/{totalCharacters} characters ready
+            {charactersWithSelections + (currentCharacterHasSelection ? 1 : 0)}/{totalCharacters} ready
           </span>
         )}
-        <p>{getInstructionText()}</p>
+        <span className="instruction">{getInstructionText()}</span>
       </div>
 
       <div className="cards-container">
         {cards.map((card) => {
           const isSelected = card.id === selectedTopAction?.id || card.id === selectedBottomAction?.id;
           const isFocused = card.id === focusedId;
+          const isInitiativeCard = card.id === selectedInitiativeCardId;
 
           const wrapperClassName = `card-wrapper ${isFocused ? 'focused' : ''} ${isSelected ? 'selected' : ''}`;
 
@@ -111,16 +149,21 @@ export const CardSelectionPanel: React.FC<CardSelectionPanelProps> = ({
                 card={card}
                 variant="full"
                 isSelected={isSelected}
-                isTop={
-                  card.id === selectedTopAction?.id
-                    ? true
-                    : card.id === selectedBottomAction?.id
-                      ? false
-                      : undefined
-                }
                 disabled={disabled || waiting}
                 onClick={() => !waiting && onCardSelect(card)}
               />
+              {/* Issue #411: Initiative badge - shown only on selected cards */}
+              {isSelected && onInitiativeChange && (
+                <button
+                  className={`initiative-badge ${isInitiativeCard ? 'active' : ''}`}
+                  onClick={(e) => handleInitiativeBadgeClick(e, card.id)}
+                  disabled={disabled || waiting}
+                  title={isInitiativeCard ? 'This card determines initiative' : 'Tap to use this card\'s initiative'}
+                  aria-label={`Initiative ${card.initiative}${isInitiativeCard ? ' (selected)' : ''}`}
+                >
+                  {card.initiative}
+                </button>
+              )}
             </div>
           );
         })}
