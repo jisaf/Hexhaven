@@ -4377,9 +4377,6 @@ export class GameGateway
           // Generate unique request ID to prevent race conditions
           const requestId = randomUUID();
 
-          // Capture targetId for closure to avoid undefined issues
-          const targetId = payload.targetId;
-
           // Set up auto-skip timeout for unresponsive players
           const timeoutId = setTimeout(() => {
             const pending = this.pendingForcedMovement.get(roomCode);
