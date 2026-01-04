@@ -1,0 +1,272 @@
+{
+  "class": {
+    "id": "void-operative",
+    "campaign": "void-expansion",
+    "name": "Void Operative",
+    "description": "A tactical soldier enhanced with alien technology salvaged from first contact. Expert at tactical strikes, defensive positioning, and adapting to alien threats through rapid technology deployment.",
+    "health": {
+      "level1": 8,
+      "level2": 16,
+      "level3": 24
+    },
+    "handSize": 10,
+    "startingHandSize": 10,
+    "lore": "You were enhanced with salvaged alien technology after the first colony ship breach. Your weapons emit bursts of exotic energy, your armor adapts to threats in real-time, and your tactical training exceeds all known standards. You are humanity's answer to the alien threat."
+  },
+  "cards": [
+    {
+      "id": "void-op-001",
+      "name": "Plasma Burst",
+      "level": 1,
+      "initiative": 22,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 3,
+        "modifiers": [
+          {"type": "pierce", "value": 1}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "void-op-002",
+      "name": "Tactical Repositioning",
+      "level": 1,
+      "initiative": 35,
+      "topAction": {
+        "type": "move",
+        "value": 4,
+        "modifiers": [
+          {"type": "jump"}
+        ]
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 2
+      }
+    },
+    {
+      "id": "void-op-003",
+      "name": "Adaptive Shield",
+      "level": 1,
+      "initiative": 28,
+      "topAction": {
+        "type": "text",
+        "text": "Gain immunity to next attack damage. Can be used by allies within range 2"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "void-op-004",
+      "name": "Pulse Wave",
+      "level": 1,
+      "initiative": 48,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 2,
+        "modifiers": [
+          {"type": "push", "value": 1},
+          {"type": "aoe", "pattern": "burst-1"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "void-op-005",
+      "name": "Alien Weapon Cache",
+      "level": 1,
+      "initiative": 32,
+      "topAction": {
+        "type": "text",
+        "text": "Gain one of these bonuses: +2 attack range, +2 attack damage, or heal 2"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "void-op-006",
+      "name": "Concentrated Strike",
+      "level": 2,
+      "initiative": 41,
+      "topAction": {
+        "type": "attack",
+        "value": 5,
+        "range": 2,
+        "modifiers": [
+          {"type": "pierce", "value": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "void-op-007",
+      "name": "Multi-Target Suppression",
+      "level": 2,
+      "initiative": 58,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 3,
+        "modifiers": [
+          {"type": "stun", "count": 1},
+          {"type": "aoe", "pattern": "burst-2"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "void-op-008",
+      "name": "Quantum Entanglement",
+      "level": 2,
+      "initiative": 62,
+      "topAction": {
+        "type": "text",
+        "text": "Target enemy cannot move for 2 rounds. Adjacent allies gain +2 attack damage"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "void-op-009",
+      "name": "Emergency Protocols",
+      "level": 2,
+      "initiative": 24,
+      "topAction": {
+        "type": "text",
+        "text": "If you are about to take damage that would defeat you, reduce it to 1 instead. Once per scenario"
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 2
+      }
+    },
+    {
+      "id": "void-op-010",
+      "name": "Dimensional Anchor",
+      "level": 2,
+      "initiative": 44,
+      "topAction": {
+        "type": "move",
+        "value": 3
+      },
+      "bottomAction": {
+        "type": "text",
+        "text": "Create a zone (2 hex radius) where alien enemies cannot use special abilities"
+      }
+    },
+    {
+      "id": "void-op-011",
+      "name": "Satellite Strike",
+      "level": 3,
+      "initiative": 70,
+      "topAction": {
+        "type": "attack",
+        "value": 6,
+        "range": 5,
+        "modifiers": [
+          {"type": "pierce", "value": 3},
+          {"type": "aoe", "pattern": "burst-2"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "void-op-012",
+      "name": "Reality Stabilizer",
+      "level": 3,
+      "initiative": 52,
+      "topAction": {
+        "type": "text",
+        "text": "All allies within range 3 gain immunity to dimensional effects next turn"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "void-op-013",
+      "name": "Overcharge Protocol",
+      "level": 3,
+      "initiative": 38,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 4,
+        "modifiers": [
+          {"type": "stun", "count": 2},
+          {"type": "aoe", "pattern": "burst-1"}
+        ]
+      },
+      "bottomAction": {
+        "type": "text",
+        "text": "Lose 1 health. Next attack deals +2 damage"
+      }
+    },
+    {
+      "id": "void-op-014",
+      "name": "Alien Technology Mastery",
+      "level": 3,
+      "initiative": 55,
+      "topAction": {
+        "type": "attack",
+        "value": 5,
+        "range": 3,
+        "modifiers": [
+          {"type": "pierce", "value": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "text",
+        "text": "Heal 3 health. Gain +1 range on attacks until end of round"
+      }
+    },
+    {
+      "id": "void-op-015",
+      "name": "Void Walker Protocol",
+      "level": 3,
+      "initiative": 66,
+      "topAction": {
+        "type": "move",
+        "value": 5,
+        "modifiers": [
+          {"type": "jump"}
+        ]
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 2,
+        "modifiers": [
+          {"type": "aoe", "pattern": "burst-1"}
+        ]
+      }
+    }
+  ]
+}

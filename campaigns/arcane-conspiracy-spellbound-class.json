@@ -1,0 +1,267 @@
+{
+  "class": {
+    "id": "spellbound-mage",
+    "campaign": "arcane-conspiracy",
+    "name": "Spellbound Mage",
+    "description": "A mage who has learned to channel magical energy from cursed artifacts. Excels at area-of-effect spells and controlling the battlefield through elemental magic.",
+    "health": {
+      "level1": 6,
+      "level2": 12,
+      "level3": 18
+    },
+    "handSize": 8,
+    "startingHandSize": 8,
+    "lore": "Once a scholar, you discovered ancient tomes about elemental magic hidden in the ruins of Malachar's outposts. Your newfound powers come from binding magical spirits to your will. You channel their energy to devastate your enemies."
+  },
+  "cards": [
+    {
+      "id": "sb-mage-001",
+      "name": "Arcane Missile",
+      "level": 1,
+      "initiative": 15,
+      "topAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 4,
+        "modifiers": [
+          {"type": "range", "value": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "sb-mage-002",
+      "name": "Fireball",
+      "level": 1,
+      "initiative": 45,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 3,
+        "modifiers": [
+          {"type": "aoe", "pattern": "burst-2"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "sb-mage-003",
+      "name": "Mana Shield",
+      "level": 1,
+      "initiative": 33,
+      "topAction": {
+        "type": "text",
+        "text": "Reduce damage taken this round by 2"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "sb-mage-004",
+      "name": "Frost Nova",
+      "level": 1,
+      "initiative": 52,
+      "topAction": {
+        "type": "attack",
+        "value": 1,
+        "range": 2,
+        "modifiers": [
+          {"type": "stun", "count": 1},
+          {"type": "aoe", "pattern": "burst-1"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "sb-mage-005",
+      "name": "Spell Weave",
+      "level": 1,
+      "initiative": 28,
+      "topAction": {
+        "type": "text",
+        "text": "Use any two top or bottom actions from other played cards this turn"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "sb-mage-006",
+      "name": "Lightning Strike",
+      "level": 2,
+      "initiative": 38,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 5,
+        "modifiers": [
+          {"type": "pierce", "value": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "sb-mage-007",
+      "name": "Infernal Chains",
+      "level": 2,
+      "initiative": 55,
+      "topAction": {
+        "type": "text",
+        "text": "Target all enemies in a line. They cannot move next turn"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "sb-mage-008",
+      "name": "Arcane Amplification",
+      "level": 2,
+      "initiative": 42,
+      "topAction": {
+        "type": "text",
+        "text": "Next attack you make this round deals +3 damage"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "sb-mage-009",
+      "name": "Temporal Warp",
+      "level": 2,
+      "initiative": 68,
+      "topAction": {
+        "type": "move",
+        "value": 4,
+        "modifiers": [
+          {"type": "jump"}
+        ]
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 3
+      }
+    },
+    {
+      "id": "sb-mage-010",
+      "name": "Essence Drain",
+      "level": 2,
+      "initiative": 25,
+      "topAction": {
+        "type": "attack",
+        "value": 3,
+        "range": 3,
+        "modifiers": [
+          {"type": "heal", "value": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "sb-mage-011",
+      "name": "Meteor Storm",
+      "level": 3,
+      "initiative": 65,
+      "topAction": {
+        "type": "attack",
+        "value": 5,
+        "range": 4,
+        "modifiers": [
+          {"type": "aoe", "pattern": "burst-3"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 1
+      }
+    },
+    {
+      "id": "sb-mage-012",
+      "name": "Spell Reflection",
+      "level": 3,
+      "initiative": 48,
+      "topAction": {
+        "type": "text",
+        "text": "All attacks against you this round are redirected to an adjacent enemy"
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 2
+      }
+    },
+    {
+      "id": "sb-mage-013",
+      "name": "Reality Tear",
+      "level": 3,
+      "initiative": 72,
+      "topAction": {
+        "type": "attack",
+        "value": 6,
+        "range": 3,
+        "modifiers": [
+          {"type": "pierce", "value": 3},
+          {"type": "aoe", "pattern": "burst-1"}
+        ]
+      },
+      "bottomAction": {
+        "type": "move",
+        "value": 3
+      }
+    },
+    {
+      "id": "sb-mage-014",
+      "name": "Mana Overload",
+      "level": 3,
+      "initiative": 36,
+      "topAction": {
+        "type": "attack",
+        "value": 4,
+        "range": 2,
+        "modifiers": [
+          {"type": "stun", "count": 2}
+        ]
+      },
+      "bottomAction": {
+        "type": "text",
+        "text": "Lose 2 health. Draw 3 cards next turn"
+      }
+    },
+    {
+      "id": "sb-mage-015",
+      "name": "Arcane Mastery",
+      "level": 3,
+      "initiative": 50,
+      "topAction": {
+        "type": "text",
+        "text": "Cast the top or bottom action of any spell card played this turn again (without consuming it)"
+      },
+      "bottomAction": {
+        "type": "attack",
+        "value": 2,
+        "range": 4
+      }
+    }
+  ]
+}

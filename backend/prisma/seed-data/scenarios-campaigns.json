@@ -1,0 +1,9061 @@
+[
+  {
+    "name": "Village Under Siege",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-1",
+        "x": 3,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-4-1",
+        "x": 4,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-2",
+        "x": 3,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-2",
+        "x": 4,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-3",
+        "x": 3,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-3",
+        "x": -2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-3",
+        "x": 4,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-4",
+        "x": 3,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-4",
+        "x": 4,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-5-3",
+        "x": 5,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-6",
+        "x": 2,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-5",
+        "x": 3,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-5",
+        "x": -2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-5",
+        "x": 4,
+        "y": 7,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-7",
+        "x": 2,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-6",
+        "x": -2,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-6",
+        "x": 3,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-8",
+        "x": 2,
+        "y": 9,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-7",
+        "x": 3,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-6",
+        "x": 4,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-9",
+        "x": 0,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-9",
+        "x": 1,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-9",
+        "x": 2,
+        "y": 10,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-8",
+        "x": 3,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 0,
+        "y": 1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "bandit-guard",
+        "positions": [
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "bandit-archer",
+        "positions": [
+          {
+            "x": 4,
+            "y": 7
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "living-bones",
+        "positions": [
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-enemies",
+          "type": "collect_treasure",
+          "description": "Defeat all enemies",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        },
+        {
+          "id": "open-gate",
+          "type": "collect_treasure",
+          "description": "Open the sealed gate to progress",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 4,
+        "id": "gold-pouch"
+      },
+      {
+        "x": -1,
+        "y": 6,
+        "id": "scroll"
+      }
+    ],
+    "backgroundImageUrl": "village-under-siege.png",
+    "backgroundOpacity": 0.7,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Cursed Crypt",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-0",
+        "x": 3,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-1",
+        "x": 3,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-4-1",
+        "x": 4,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-2",
+        "x": 3,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-4-2",
+        "x": 4,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-3",
+        "x": 3,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-4-3",
+        "x": 4,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-4",
+        "x": 3,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-6",
+        "x": 2,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-3-5",
+        "x": 3,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-7",
+        "x": 2,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-6",
+        "x": 3,
+        "y": 7,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-8",
+        "x": 2,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-7",
+        "x": 3,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-9",
+        "x": 0,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-9",
+        "x": 1,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-9",
+        "x": 2,
+        "y": 10,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 0,
+        "y": 1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "living-bones",
+        "positions": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 3,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "bandit-guard",
+        "positions": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "living-bones-mage",
+        "positions": [
+          {
+            "x": 1,
+            "y": 9
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "destroy-curse-focus",
+          "type": "collect_treasure",
+          "description": "Reach the inner sanctum and destroy the curse focus",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        },
+        {
+          "id": "collect-relics",
+          "type": "collect_treasure",
+          "description": "Collect all 3 ancient relics",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 4,
+        "id": "cursed-amulet"
+      },
+      {
+        "x": 0,
+        "y": 5,
+        "id": "tome-1"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "id": "relic-1"
+      }
+    ],
+    "backgroundImageUrl": "cursed-crypt.png",
+    "backgroundOpacity": 0.75,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Ancient Library",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-3",
+        "x": -2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "cultist",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "wraith",
+        "positions": [
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "collect-knowledge",
+          "type": "collect_treasure",
+          "description": "Collect wizard's research notes",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "grimoire-1"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "gold-chest"
+      }
+    ],
+    "backgroundImageUrl": "ancient-library.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Wizard's Outpost",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "inox-guard",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "inox-shaman",
+        "positions": [
+          {
+            "x": 0,
+            "y": 6
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-shaman",
+          "type": "collect_treasure",
+          "description": "Defeat the Inox Shaman",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 4,
+        "id": "mana-crystal"
+      },
+      {
+        "x": 0,
+        "y": 5,
+        "id": "tower-key"
+      }
+    ],
+    "backgroundImageUrl": "wizards-outpost.png",
+    "backgroundOpacity": 0.75,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Goblin Mines",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "goblin-worker",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ],
+        "elite": [
+          false,
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "goblin-overseer",
+        "positions": [
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "free-slaves",
+          "type": "collect_treasure",
+          "description": "Free the enslaved goblins",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 3,
+        "id": "ore-vein"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "slave-key"
+      }
+    ],
+    "backgroundImageUrl": "goblin-mines.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Spectral Halls",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "wraith",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "phantom-knight",
+        "positions": [
+          {
+            "x": 1,
+            "y": 6
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "obtain-spirit-knowledge",
+          "type": "collect_treasure",
+          "description": "Reach the heart of the haunted palace",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "ghost-crown"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "gold-buried"
+      }
+    ],
+    "backgroundImageUrl": "spectral-halls.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Tower Entry Hall",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-2",
+        "x": 3,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-8",
+        "x": -1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-3",
+        "x": 3,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "inox-guard",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "inox-shaman",
+        "positions": [
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "golem",
+        "positions": [
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-guardian",
+          "type": "collect_treasure",
+          "description": "Defeat the tower's guardian golems",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "arcane-focus"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "mage-ring"
+      }
+    ],
+    "backgroundImageUrl": "tower-entry-hall.png",
+    "backgroundOpacity": 0.75,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Tower Library",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "cultist-scholar",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "wraith-librarian",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "find-ritual-scroll",
+          "type": "collect_treasure",
+          "description": "Find the ritual scroll",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 5,
+        "id": "ritual-scroll"
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "id": "gold-hoard"
+      }
+    ],
+    "backgroundImageUrl": "tower-library.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Tower Dungeons",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "torturer-guard",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "imprisoned-monster",
+        "positions": [
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "free-prisoners",
+          "type": "collect_treasure",
+          "description": "Free the prisoners",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 3,
+        "id": "prison-key"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "escaped-prisoner"
+      }
+    ],
+    "backgroundImageUrl": "tower-dungeons.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Alchemy Lab",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alchemist-guard",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "experiment-abomination",
+        "positions": [
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "destroy-rituals",
+          "type": "collect_treasure",
+          "description": "Destroy the ritual components",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "alchemical-formula"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "philosopher-stone"
+      }
+    ],
+    "backgroundImageUrl": "alchemy-lab.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Artifact Chamber",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "artifact-guardian",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "collector-wraith",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "seize-artifacts",
+          "type": "collect_treasure",
+          "description": "Claim the artifacts for yourself",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "ancient-amulet"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "power-crystal"
+      }
+    ],
+    "backgroundImageUrl": "artifact-chamber.png",
+    "backgroundOpacity": 0.75,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Portal Guardian",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "portal-sentinel",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 3
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "summoned-horror",
+        "positions": [
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "seal-portal",
+          "type": "collect_treasure",
+          "description": "Seal the portal",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "seal-stone"
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "id": "planar-knowledge"
+      }
+    ],
+    "backgroundImageUrl": "portal-guardian.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Descent",
+    "difficulty": 5,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-8",
+        "x": -1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-9",
+        "x": 0,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "cultist",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "arcane-guardian",
+        "positions": [
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "reach-ritual-chamber",
+          "type": "collect_treasure",
+          "description": "Reach the ritual chamber",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 5,
+        "id": "sacred-rune"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "final-key"
+      }
+    ],
+    "backgroundImageUrl": "the-descent.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Ritual Chambers",
+    "difficulty": 6,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-8",
+        "x": -1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "ritual-guardian",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "ritual-commander",
+        "positions": [
+          {
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "disrupt-ritual",
+          "type": "collect_treasure",
+          "description": "Defeat the ritual commander",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "freed-soul"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "ritual-gem"
+      }
+    ],
+    "backgroundImageUrl": "ritual-chambers.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Arcane Core",
+    "difficulty": 7,
+    "mapLayout": [
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-3",
+        "x": -2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -2,
+        "y": -1
+      },
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "malachar-ascended",
+        "positions": [
+          {
+            "x": 0,
+            "y": 4
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-malachar",
+          "type": "collect_treasure",
+          "description": "Defeat Malachar the Ascended",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "malachar-crown"
+      },
+      {
+        "x": 0,
+        "y": 6,
+        "id": "arcane-artifact"
+      }
+    ],
+    "backgroundImageUrl": "arcane-core.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Colony Ship Breach",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-0",
+        "x": 3,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-1",
+        "x": 3,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-2",
+        "x": 3,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-5",
+        "x": 2,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-3-3",
+        "x": 3,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-3-4",
+        "x": 3,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": -1,
+        "y": -1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-drone",
+        "positions": [
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 2,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "alien-scout",
+        "positions": [
+          {
+            "x": 1,
+            "y": 6
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "seal-breach",
+          "type": "collect_treasure",
+          "description": "Seal the breach",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        },
+        {
+          "id": "protect-core",
+          "type": "collect_treasure",
+          "description": "Protect the ship's core",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 1,
+        "y": 4,
+        "id": "emergency-power"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "tech-upgrade"
+      }
+    ],
+    "backgroundImageUrl": "colony-ship-breach.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Station Alpha Defense",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-warrior",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "alien-tech",
+        "positions": [
+          {
+            "x": 1,
+            "y": 6
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-commander",
+          "type": "collect_treasure",
+          "description": "Defeat the alien commander",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "station-power-core"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "alien-tech-salvage"
+      }
+    ],
+    "backgroundImageUrl": "station-alpha-defense.png",
+    "backgroundOpacity": 0.75,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Alien Wreckage Salvage",
+    "difficulty": 1,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-swarm",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "scavenger-alien",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "collect-intel",
+          "type": "collect_treasure",
+          "description": "Collect alien technology samples",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "tech-sample-1"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "tech-sample-2"
+      }
+    ],
+    "backgroundImageUrl": "alien-wreckage-salvage.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Mining Station Overrun",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "xenomorph",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "hive-commander",
+        "positions": [
+          {
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "contain-infestation",
+          "type": "collect_treasure",
+          "description": "Eliminate the hive commander",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "mining-ore"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "research-data"
+      }
+    ],
+    "backgroundImageUrl": "mining-station-overrun.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Kepler-442 Expedition",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "hybrid-creature",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "hive-queen",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "rescue-researchers",
+          "type": "collect_treasure",
+          "description": "Reach the research station",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "research-station-data"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "genetic-sample"
+      }
+    ],
+    "backgroundImageUrl": "kepler-442-expedition.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Void Scouts",
+    "difficulty": 2,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "consciousness-fragment",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "void-predator",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "collect-data",
+          "type": "collect_treasure",
+          "description": "Collect dimensional gateway data",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "navigation-data"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "gateway-coords"
+      }
+    ],
+    "backgroundImageUrl": "void-scouts.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Research Station Lockdown",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-warrior",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "swarm-leader",
+        "positions": [
+          {
+            "x": 1,
+            "y": 6
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "hold-station",
+          "type": "collect_treasure",
+          "description": "Hold the station until reinforcements arrive",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "research-breakthrough"
+      },
+      {
+        "x": 1,
+        "y": 6,
+        "id": "weapon-prototype"
+      }
+    ],
+    "backgroundImageUrl": "research-station-lockdown.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Genetic Lab Containment",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "hybrid-creature",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "genetic-abomination",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "contain-outbreak",
+          "type": "collect_treasure",
+          "description": "Eliminate the genetic abomination",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "research-notes"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "genetic-cure"
+      }
+    ],
+    "backgroundImageUrl": "genetic-lab-containment.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Quantum Observatory",
+    "difficulty": 3,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "consciousness-fragment",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "quantum-entity",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "map-gateways",
+          "type": "collect_treasure",
+          "description": "Access the observatory data",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "dimensional-map"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "gateway-key"
+      }
+    ],
+    "backgroundImageUrl": "quantum-observatory.png",
+    "backgroundOpacity": 0.8,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Hive World",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-3",
+        "x": -2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -2,
+        "y": -1
+      },
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "hive-drone",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ],
+        "elite": [
+          false,
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "hive-warrior",
+        "positions": [
+          {
+            "x": -1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          false,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "hive-priest",
+        "positions": [
+          {
+            "x": 0,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-priest",
+          "type": "collect_treasure",
+          "description": "Defeat the hive priest",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "biomass-core"
+      },
+      {
+        "x": 0,
+        "y": 7,
+        "id": "consciousness-shard"
+      }
+    ],
+    "backgroundImageUrl": "hive-world.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Crystalline Caverns",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "crystal-guardian",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "resonance-entity",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "disable-gateway",
+          "type": "collect_treasure",
+          "description": "Disable the dimensional gateway",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "crystal-shard"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "gateway-disabler"
+      }
+    ],
+    "backgroundImageUrl": "crystalline-caverns.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "Orbital Platform",
+    "difficulty": 4,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-commander",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "elite": [
+          true,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "invasion-general",
+        "positions": [
+          {
+            "x": 1,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "eliminate-command",
+          "type": "collect_treasure",
+          "description": "Eliminate the invasion command",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 3,
+        "id": "command-codes"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "id": "fleet-data"
+      }
+    ],
+    "backgroundImageUrl": "orbital-platform.png",
+    "backgroundOpacity": 0.85,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Wormhole Transit",
+    "difficulty": 5,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-8",
+        "x": -1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-9",
+        "x": 0,
+        "y": 9,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "dimensional-guardian",
+        "positions": [
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 6
+          }
+        ],
+        "elite": [
+          false,
+          false
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "wormhole-entity",
+        "positions": [
+          {
+            "x": 0,
+            "y": 8
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "traverse-wormhole",
+          "type": "collect_treasure",
+          "description": "Traverse the wormhole to the origin dimension",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "dimensional-artifact"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "origin-key"
+      }
+    ],
+    "backgroundImageUrl": "wormhole-transit.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Infected Sector",
+    "difficulty": 6,
+    "mapLayout": [
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "obstacle",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-8",
+        "x": 0,
+        "y": 8,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-8",
+        "x": 1,
+        "y": 8,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-8",
+        "x": -1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": -1,
+        "y": 0
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "alien-fleet-commander",
+        "positions": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "elite": [
+          true,
+          true
+        ],
+        "level": "normal"
+      },
+      {
+        "type": "hive-overseer",
+        "positions": [
+          {
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-overseer",
+          "type": "collect_treasure",
+          "description": "Defeat the hive overseer",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "war-prize"
+      },
+      {
+        "x": 1,
+        "y": 7,
+        "id": "architect-sigil"
+      }
+    ],
+    "backgroundImageUrl": "infected-sector.png",
+    "backgroundOpacity": 0.9,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  },
+  {
+    "name": "The Origin Nexus",
+    "difficulty": 7,
+    "mapLayout": [
+      {
+        "id": "hex--2-0",
+        "x": -2,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-0",
+        "x": -1,
+        "y": -1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-0",
+        "x": 0,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-0",
+        "x": 1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-0",
+        "x": 2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-1",
+        "x": -2,
+        "y": 0,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-1",
+        "x": -1,
+        "y": 0,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-1",
+        "x": 0,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-1",
+        "x": 1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-1",
+        "x": 2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-2",
+        "x": -2,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-2",
+        "x": -1,
+        "y": 1,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-2",
+        "x": 0,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-2",
+        "x": 1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-2",
+        "x": 2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--2-3",
+        "x": -2,
+        "y": 2,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--1-3",
+        "x": -1,
+        "y": 2,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-3",
+        "x": 0,
+        "y": 3,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-3",
+        "x": 1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-3",
+        "x": 2,
+        "y": 4,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex--2-4",
+        "x": -2,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-4",
+        "x": -1,
+        "y": 3,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-4",
+        "x": 0,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-4",
+        "x": 1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-2-4",
+        "x": 2,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-5",
+        "x": -1,
+        "y": 4,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-5",
+        "x": 0,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-5",
+        "x": 1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-6",
+        "x": -1,
+        "y": 5,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-6",
+        "x": 0,
+        "y": 6,
+        "terrain": "difficult",
+        "features": []
+      },
+      {
+        "id": "hex-1-6",
+        "x": 1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex--1-7",
+        "x": -1,
+        "y": 6,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-0-7",
+        "x": 0,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      },
+      {
+        "id": "hex-1-7",
+        "x": 1,
+        "y": 7,
+        "terrain": "normal",
+        "features": []
+      }
+    ],
+    "playerStartPositions": [
+      {
+        "x": -2,
+        "y": -1
+      },
+      {
+        "x": -1,
+        "y": -1
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      }
+    ],
+    "monsterGroups": [
+      {
+        "type": "architect-prime",
+        "positions": [
+          {
+            "x": 0,
+            "y": 4
+          }
+        ],
+        "elite": [
+          true
+        ],
+        "level": "normal"
+      }
+    ],
+    "objectives": {
+      "primary": {
+        "id": "primary-kill-all",
+        "type": "kill_all_monsters",
+        "description": "Defeat all enemies",
+        "trackProgress": true,
+        "milestones": [
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "secondary": [
+        {
+          "id": "defeat-architect",
+          "type": "collect_treasure",
+          "description": "Defeat the Architect Prime",
+          "trackProgress": true,
+          "rewards": {
+            "experience": 5
+          }
+        }
+      ]
+    },
+    "treasures": [
+      {
+        "x": 0,
+        "y": 4,
+        "id": "architect-heart"
+      },
+      {
+        "x": 0,
+        "y": 6,
+        "id": "genesis-source"
+      }
+    ],
+    "backgroundImageUrl": "origin-nexus.png",
+    "backgroundOpacity": 0.95,
+    "backgroundOffsetX": 0,
+    "backgroundOffsetY": 0,
+    "backgroundScale": 1
+  }
+]

@@ -58,6 +58,23 @@ interface ScenarioSeed {
   backgroundScale?: number;
 }
 
+interface CampaignTemplateSeed {
+  name: string;
+  description: string;
+  deathMode: string;
+  minPlayers: number;
+  maxPlayers: number;
+  requireUniqueClasses: boolean;
+  scenarios: Array<{
+    scenarioId: string;
+    name: string;
+    description: string | null;
+    unlocksScenarios: string[];
+    isStarting: boolean;
+    sequence: number;
+  }>;
+}
+
 interface CardLayoutTemplateSeed {
   name: string;
   description?: string;
@@ -824,6 +841,119 @@ He tosses you a small pouch of coins.`,
   console.log('✓ Seeded narratives for Trivial Training campaign (2 scenarios with triggers)');
 }
 
+async function seedCampaignScenariosAndTemplates() {
+  console.log('Seeding campaign scenarios and templates...');
+
+  try {
+    // Load campaign scenarios
+    const campaignScenarios = await loadJSON<ScenarioSeed>('scenarios-campaigns.json');
+
+    // Seed all campaign scenarios first
+    for (const scenarioData of campaignScenarios) {
+      await prisma.scenario.upsert({
+        where: { name: scenarioData.name },
+        update: {
+          difficulty: scenarioData.difficulty,
+          mapLayout: scenarioData.mapLayout,
+          monsterGroups: scenarioData.monsterGroups,
+          objectives: scenarioData.objectives,
+          treasures: scenarioData.treasures,
+          playerStartPositions: scenarioData.playerStartPositions,
+          backgroundImageUrl: scenarioData.backgroundImageUrl,
+          backgroundOpacity: scenarioData.backgroundOpacity,
+          backgroundOffsetX: scenarioData.backgroundOffsetX,
+          backgroundOffsetY: scenarioData.backgroundOffsetY,
+          backgroundScale: scenarioData.backgroundScale,
+        },
+        create: {
+          name: scenarioData.name,
+          difficulty: scenarioData.difficulty,
+          mapLayout: scenarioData.mapLayout,
+          monsterGroups: scenarioData.monsterGroups,
+          objectives: scenarioData.objectives,
+          treasures: scenarioData.treasures,
+          playerStartPositions: scenarioData.playerStartPositions,
+          backgroundImageUrl: scenarioData.backgroundImageUrl,
+          backgroundOpacity: scenarioData.backgroundOpacity,
+          backgroundOffsetX: scenarioData.backgroundOffsetX,
+          backgroundOffsetY: scenarioData.backgroundOffsetY,
+          backgroundScale: scenarioData.backgroundScale,
+        },
+      });
+    }
+
+    console.log(`✓ Seeded ${campaignScenarios.length} campaign scenarios`);
+
+    // Load campaign templates
+    const campaignTemplates = await loadJSON<CampaignTemplateSeed>('campaign-templates.json');
+
+    // Seed campaign templates
+    for (const templateData of campaignTemplates) {
+      // Check if template already exists
+      const existingTemplate = await prisma.campaignTemplate.findUnique({
+        where: { name: templateData.name },
+        include: { scenarios: true },
+      });
+
+      if (existingTemplate) {
+        // Delete old scenarios
+        await prisma.campaignTemplateScenario.deleteMany({
+          where: { templateId: existingTemplate.id },
+        });
+      }
+
+      // Get scenario IDs from the database
+      const templateScenarios = [];
+      for (const scenario of templateData.scenarios) {
+        const dbScenario = await prisma.scenario.findUnique({
+          where: { name: scenario.name },
+        });
+
+        if (dbScenario) {
+          templateScenarios.push({
+            scenarioId: dbScenario.id,
+            name: scenario.name,
+            description: scenario.description,
+            unlocksScenarios: scenario.unlocksScenarios,
+            isStarting: scenario.isStarting,
+            sequence: scenario.sequence,
+          });
+        }
+      }
+
+      await prisma.campaignTemplate.upsert({
+        where: { name: templateData.name },
+        update: {
+          description: templateData.description,
+          deathMode: templateData.deathMode,
+          minPlayers: templateData.minPlayers,
+          maxPlayers: templateData.maxPlayers,
+          requireUniqueClasses: templateData.requireUniqueClasses,
+          scenarios: {
+            create: templateScenarios,
+          },
+        },
+        create: {
+          name: templateData.name,
+          description: templateData.description,
+          deathMode: templateData.deathMode,
+          minPlayers: templateData.minPlayers,
+          maxPlayers: templateData.maxPlayers,
+          requireUniqueClasses: templateData.requireUniqueClasses,
+          scenarios: {
+            create: templateScenarios,
+          },
+        },
+      });
+    }
+
+    console.log(`✓ Seeded ${campaignTemplates.length} campaign templates with scenarios`);
+  } catch (error) {
+    console.error('Error seeding campaign scenarios and templates:', error);
+    throw error;
+  }
+}
+
 async function main() {
   console.log('Starting database seed...\n');
 
@@ -836,6 +966,7 @@ async function main() {
     await seedScenarios();
     await seedCampaignTemplates(); // Issue #244 - Campaign Mode (DB-driven templates)
     await seedTrivialCampaignTemplate(); // Trivial 2-scenario campaign for demos
+    await seedCampaignScenariosAndTemplates(); // Arcane Conspiracy & Void Expansion campaigns
     await seedTrivialTrainingNarratives(); // Narrative content for Trivial Training campaign
     await seedCharacterInventory(); // Seed random items to characters for testing
 

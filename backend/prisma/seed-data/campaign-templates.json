@@ -1,0 +1,326 @@
+[
+  {
+    "name": "arcane-conspiracy",
+    "description": "15 scenario campaign",
+    "deathMode": "configurable",
+    "minPlayers": 1,
+    "maxPlayers": 4,
+    "requireUniqueClasses": false,
+    "scenarios": [
+      {
+        "scenarioId": "ac_01_village_under_siege",
+        "name": "Village Under Siege",
+        "description": "The peaceful village of Millhaven is under attack by cursed creatures summoned by dark magic.",
+        "unlocksScenarios": [
+          "ac_02_cursed_crypt"
+        ],
+        "isStarting": true,
+        "sequence": 1
+      },
+      {
+        "scenarioId": "ac_02_cursed_crypt",
+        "name": "Cursed Crypt",
+        "description": "An ancient burial ground twisted by dark magic.",
+        "unlocksScenarios": [
+          "ac_03_ancient_library",
+          "ac_04_wizards_outpost"
+        ],
+        "isStarting": false,
+        "sequence": 2
+      },
+      {
+        "scenarioId": "ac_03_ancient_library",
+        "name": "Ancient Library",
+        "description": "A crumbling library filled with magical knowledge and cursed tomes.",
+        "unlocksScenarios": [
+          "ac_04_wizards_outpost"
+        ],
+        "isStarting": false,
+        "sequence": 3
+      },
+      {
+        "scenarioId": "ac_04_wizards_outpost",
+        "name": "Wizard's Outpost",
+        "description": "A fortified tower where Malachar's minions guard his power.",
+        "unlocksScenarios": [
+          "ac_05_goblin_mines",
+          "ac_06_spectral_halls"
+        ],
+        "isStarting": false,
+        "sequence": 4
+      },
+      {
+        "scenarioId": "ac_05_goblin_mines",
+        "name": "Goblin Mines",
+        "description": "Underground mines where goblin slaves serve the wizard's dark agenda.",
+        "unlocksScenarios": [
+          "ac_07_tower_entry_hall"
+        ],
+        "isStarting": false,
+        "sequence": 5
+      },
+      {
+        "scenarioId": "ac_06_spectral_halls",
+        "name": "The Spectral Halls",
+        "description": "Haunted ruins where ghostly figures guard forgotten treasure.",
+        "unlocksScenarios": [
+          "ac_07_tower_entry_hall"
+        ],
+        "isStarting": false,
+        "sequence": 6
+      },
+      {
+        "scenarioId": "ac_07_tower_entry_hall",
+        "name": "Tower Entry Hall",
+        "description": "The grand entrance to Malachar's tower\u2014a place of immense magical power.",
+        "unlocksScenarios": [
+          "ac_08_tower_library",
+          "ac_09_tower_dungeons"
+        ],
+        "isStarting": false,
+        "sequence": 7
+      },
+      {
+        "scenarioId": "ac_08_tower_library",
+        "name": "Tower Library",
+        "description": "A vast magical library holding the wizard's greatest secrets.",
+        "unlocksScenarios": [
+          "ac_10_alchemy_lab"
+        ],
+        "isStarting": false,
+        "sequence": 8
+      },
+      {
+        "scenarioId": "ac_09_tower_dungeons",
+        "name": "Tower Dungeons",
+        "description": "Dark dungeons where the wizard imprisons his enemies.",
+        "unlocksScenarios": [
+          "ac_10_alchemy_lab"
+        ],
+        "isStarting": false,
+        "sequence": 9
+      },
+      {
+        "scenarioId": "ac_10_alchemy_lab",
+        "name": "The Alchemy Lab",
+        "description": "A laboratory where dark rituals are prepared.",
+        "unlocksScenarios": [
+          "ac_11_artifact_chamber",
+          "ac_12_portal_guardian"
+        ],
+        "isStarting": false,
+        "sequence": 10
+      },
+      {
+        "scenarioId": "ac_11_artifact_chamber",
+        "name": "Artifact Chamber",
+        "description": "A vault of ancient artifacts that fuel the wizard's power.",
+        "unlocksScenarios": [
+          "ac_13_descent"
+        ],
+        "isStarting": false,
+        "sequence": 11
+      },
+      {
+        "scenarioId": "ac_12_portal_guardian",
+        "name": "Portal Guardian",
+        "description": "A planar gateway guarded by otherworldly creatures.",
+        "unlocksScenarios": [
+          "ac_13_descent"
+        ],
+        "isStarting": false,
+        "sequence": 12
+      },
+      {
+        "scenarioId": "ac_13_descent",
+        "name": "The Descent",
+        "description": "A final descent to the ritual chamber where the wizard prepares his apotheosis.",
+        "unlocksScenarios": [
+          "ac_14_ritual_chambers"
+        ],
+        "isStarting": false,
+        "sequence": 13
+      },
+      {
+        "scenarioId": "ac_14_ritual_chambers",
+        "name": "Ritual Chambers",
+        "description": "The heart of the wizard's dark ritual where lieutenants defend the process.",
+        "unlocksScenarios": [
+          "ac_15_arcane_core"
+        ],
+        "isStarting": false,
+        "sequence": 14
+      },
+      {
+        "scenarioId": "ac_15_arcane_core",
+        "name": "The Arcane Core",
+        "description": "The ultimate confrontation with Malachar the Ascended, transformed into a being of pure magical power.",
+        "unlocksScenarios": [],
+        "isStarting": false,
+        "sequence": 15
+      }
+    ]
+  },
+  {
+    "name": "void-expansion",
+    "description": "15 scenario campaign",
+    "deathMode": "configurable",
+    "minPlayers": 1,
+    "maxPlayers": 4,
+    "requireUniqueClasses": false,
+    "scenarios": [
+      {
+        "scenarioId": "ve_01_colony_ship_breach",
+        "name": "Colony Ship Breach",
+        "description": "The colony ship's defenses are breached by alien forces. Players must protect critical systems.",
+        "unlocksScenarios": [
+          "ve_02_station_alpha_defense",
+          "ve_03_alien_wreckage_salvage"
+        ],
+        "isStarting": true,
+        "sequence": 1
+      },
+      {
+        "scenarioId": "ve_02_station_alpha_defense",
+        "name": "Station Alpha Defense",
+        "description": "A major space station comes under heavy alien assault.",
+        "unlocksScenarios": [
+          "ve_04_mining_station_overrun"
+        ],
+        "isStarting": false,
+        "sequence": 2
+      },
+      {
+        "scenarioId": "ve_03_alien_wreckage_salvage",
+        "name": "Alien Wreckage Salvage",
+        "description": "A graveyard of alien ships offers technology and intelligence.",
+        "unlocksScenarios": [
+          "ve_04_mining_station_overrun"
+        ],
+        "isStarting": false,
+        "sequence": 3
+      },
+      {
+        "scenarioId": "ve_04_mining_station_overrun",
+        "name": "Mining Station Overrun",
+        "description": "An industrial mining complex falls under alien control.",
+        "unlocksScenarios": [
+          "ve_05_kepler_expedition",
+          "ve_06_void_scouts"
+        ],
+        "isStarting": false,
+        "sequence": 4
+      },
+      {
+        "scenarioId": "ve_05_kepler_expedition",
+        "name": "Kepler-442 Expedition",
+        "description": "An alien world transformed by biomass explores the scope of the threat.",
+        "unlocksScenarios": [
+          "ve_07_research_station_lockdown"
+        ],
+        "isStarting": false,
+        "sequence": 5
+      },
+      {
+        "scenarioId": "ve_06_void_scouts",
+        "name": "The Void Scouts",
+        "description": "Deep space exploration reveals the scope of the alien presence.",
+        "unlocksScenarios": [
+          "ve_07_research_station_lockdown"
+        ],
+        "isStarting": false,
+        "sequence": 6
+      },
+      {
+        "scenarioId": "ve_07_research_station_lockdown",
+        "name": "Research Station Lockdown",
+        "description": "A major research facility becomes a fortress against alien assault.",
+        "unlocksScenarios": [
+          "ve_08_genetic_lab_containment",
+          "ve_09_quantum_observatory"
+        ],
+        "isStarting": false,
+        "sequence": 7
+      },
+      {
+        "scenarioId": "ve_08_genetic_lab_containment",
+        "name": "Genetic Lab Containment",
+        "description": "A biogenetics laboratory with failed containment reveals the aliens' true nature.",
+        "unlocksScenarios": [
+          "ve_10_hive_world"
+        ],
+        "isStarting": false,
+        "sequence": 8
+      },
+      {
+        "scenarioId": "ve_09_quantum_observatory",
+        "name": "Quantum Observatory",
+        "description": "A cutting-edge observatory reveals multiple wormholes destabilizing space itself.",
+        "unlocksScenarios": [
+          "ve_10_hive_world"
+        ],
+        "isStarting": false,
+        "sequence": 9
+      },
+      {
+        "scenarioId": "ve_10_hive_world",
+        "name": "The Hive World",
+        "description": "An entire planet converted into alien hive infrastructure.",
+        "unlocksScenarios": [
+          "ve_11_crystalline_caverns",
+          "ve_12_orbital_platform"
+        ],
+        "isStarting": false,
+        "sequence": 10
+      },
+      {
+        "scenarioId": "ve_11_crystalline_caverns",
+        "name": "Crystalline Caverns",
+        "description": "Underground caverns where alien technology interfaces with ancient crystals.",
+        "unlocksScenarios": [
+          "ve_13_wormhole_transit"
+        ],
+        "isStarting": false,
+        "sequence": 11
+      },
+      {
+        "scenarioId": "ve_12_orbital_platform",
+        "name": "Orbital Platform",
+        "description": "A massive military installation controlling invasion logistics.",
+        "unlocksScenarios": [
+          "ve_13_wormhole_transit"
+        ],
+        "isStarting": false,
+        "sequence": 12
+      },
+      {
+        "scenarioId": "ve_13_wormhole_transit",
+        "name": "The Wormhole Transit",
+        "description": "A journey through dimensional space itself to reach the alien origin.",
+        "unlocksScenarios": [
+          "ve_14_infected_sector"
+        ],
+        "isStarting": false,
+        "sequence": 13
+      },
+      {
+        "scenarioId": "ve_14_infected_sector",
+        "name": "The Infected Sector",
+        "description": "A war-torn sector under full invasion and alien civilization.",
+        "unlocksScenarios": [
+          "ve_15_origin_nexus"
+        ],
+        "isStarting": false,
+        "sequence": 14
+      },
+      {
+        "scenarioId": "ve_15_origin_nexus",
+        "name": "The Origin Nexus",
+        "description": "The ultimate fortress-temple of the hive consciousness and the Architect Prime itself.",
+        "unlocksScenarios": [],
+        "isStarting": false,
+        "sequence": 15
+      }
+    ]
+  }
+]
