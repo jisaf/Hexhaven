@@ -102,18 +102,18 @@ describe('FloatingChip', () => {
       expect(chip).toHaveClass('active');
     });
 
-    it('should apply current-turn class when isTurn is true', () => {
+    it('should apply currentTurn class when isTurn is true', () => {
       render(<FloatingChip {...defaultProps} isTurn testId="test-chip" />);
 
       const chip = screen.getByTestId('test-chip');
-      expect(chip).toHaveClass('current-turn');
+      expect(chip).toHaveClass('currentTurn');
     });
 
     it('should render turn indicator when isTurn is true', () => {
       render(<FloatingChip {...defaultProps} isTurn testId="test-chip" />);
 
       const chip = screen.getByTestId('test-chip');
-      const turnIndicator = chip.querySelector('.turn-indicator');
+      const turnIndicator = chip.querySelector('.turnIndicator');
       expect(turnIndicator).toBeInTheDocument();
     });
   });
@@ -130,7 +130,7 @@ describe('FloatingChip', () => {
       render(<FloatingChip {...defaultProps} overlay="💀" testId="test-chip" />);
 
       const chip = screen.getByTestId('test-chip');
-      expect(chip).toHaveClass('has-overlay');
+      expect(chip).toHaveClass('hasOverlay');
       expect(chip).toHaveTextContent('💀');
     });
   });
@@ -147,7 +147,7 @@ describe('FloatingChip', () => {
       );
 
       const chip = screen.getByTestId('test-chip');
-      const ring = chip.querySelector('.health-ring');
+      const ring = chip.querySelector('.healthRing');
       expect(ring).toBeInTheDocument();
     });
 
@@ -155,7 +155,7 @@ describe('FloatingChip', () => {
       render(<FloatingChip {...defaultProps} testId="test-chip" />);
 
       const chip = screen.getByTestId('test-chip');
-      const ring = chip.querySelector('.health-ring');
+      const ring = chip.querySelector('.healthRing');
       expect(ring).not.toBeInTheDocument();
     });
   });

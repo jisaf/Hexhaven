@@ -1,0 +1,153 @@
+/**
+ * FloatingChip Component Styles
+ *
+ * A reusable circular chip component for floating game UI elements.
+ * Used by EntityChipsPanel (characters/monsters) and ElementsPanel (elements).
+ */
+
+.chip {
+  /* Chip dimension variables for easy customization */
+  --chip-size: 44px;
+  --chip-icon-size: 32px;
+
+  position: relative;
+  width: var(--chip-size);
+  height: var(--chip-size);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  transform: scale(1.1);
+}
+
+.chip.active {
+  transform: scale(1.15);
+}
+
+.chip.active .icon {
+  box-shadow: 0 0 0 3px var(--chip-color), 0 0 12px rgba(90, 159, 212, 0.5);
+}
+
+.chip.waning {
+  opacity: 0.5;
+}
+
+.chip.waning .icon {
+  filter: brightness(0.7);
+}
+
+.chip.infusing .icon {
+  filter: brightness(0.5) saturate(0.6);
+  box-shadow: 0 0 0 3px var(--chip-color, currentColor);
+}
+
+.chip.currentTurn {
+  animation: chipPulse 1.5s ease-in-out infinite;
+}
+
+.icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--chip-icon-size);
+  height: var(--chip-icon-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.healthRing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.intensityBorder {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  border: 3px solid var(--chip-border-color);
+  border-radius: 50%;
+  z-index: 0;
+  box-shadow: 0 0 8px var(--chip-border-color);
+}
+
+.turnIndicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: #fbbf24;
+  border: 2px solid #000;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fbbf24;
+  background: #000;
+  border: 1px solid #fbbf24;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  z-index: 4;
+}
+
+.chip.hasOverlay .icon {
+  opacity: 0.4;
+  filter: grayscale(100%);
+}
+
+@keyframes chipPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .chip {
+    --chip-size: 36px;
+    --chip-icon-size: 26px;
+  }
+
+  .icon {
+    font-size: 14px;
+  }
+}

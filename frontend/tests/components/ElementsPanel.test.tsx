@@ -39,6 +39,15 @@ describe('ElementsPanel', () => {
     dark: ElementState.STRONG,
   };
 
+  const stateWithInfusing: ElementalInfusion = {
+    fire: ElementState.INFUSING,
+    ice: ElementState.STRONG,
+    air: ElementState.INERT,
+    earth: ElementState.INFUSING,
+    light: ElementState.WANING,
+    dark: ElementState.INERT,
+  };
+
   describe('null state handling', () => {
     it('should not render when elementalState is null', () => {
       render(<ElementsPanel elementalState={null} />);
@@ -108,7 +117,7 @@ describe('ElementsPanel', () => {
       render(<ElementsPanel elementalState={mixedState} />);
 
       const fireChip = screen.getByTestId('element-chip-fire');
-      expect(fireChip).toHaveClass('current-turn');
+      expect(fireChip).toHaveClass('currentTurn');
     });
 
     it('should apply waning styling for WANING elements', () => {
@@ -122,7 +131,56 @@ describe('ElementsPanel', () => {
       render(<ElementsPanel elementalState={mixedState} />);
 
       const iceChip = screen.getByTestId('element-chip-ice');
-      expect(iceChip).not.toHaveClass('current-turn');
+      expect(iceChip).not.toHaveClass('currentTurn');
+    });
+  });
+
+  describe('INFUSING state', () => {
+    it('should render INFUSING elements (visible, not hidden)', () => {
+      render(<ElementsPanel elementalState={stateWithInfusing} />);
+
+      // INFUSING elements should be visible
+      expect(screen.getByTestId('element-chip-fire')).toBeInTheDocument();
+      expect(screen.getByTestId('element-chip-earth')).toBeInTheDocument();
+
+      // Verify INERT elements are still hidden
+      expect(screen.queryByTestId('element-chip-air')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('element-chip-dark')).not.toBeInTheDocument();
+    });
+
+    it('should apply infusing class for INFUSING elements', () => {
+      render(<ElementsPanel elementalState={stateWithInfusing} />);
+
+      const fireChip = screen.getByTestId('element-chip-fire');
+      expect(fireChip).toHaveClass('infusing');
+
+      const earthChip = screen.getByTestId('element-chip-earth');
+      expect(earthChip).toHaveClass('infusing');
+    });
+
+    it('should NOT apply pulse animation (currentTurn) for INFUSING elements', () => {
+      render(<ElementsPanel elementalState={stateWithInfusing} />);
+
+      // INFUSING elements should NOT have the pulse animation (isTurn=false)
+      const fireChip = screen.getByTestId('element-chip-fire');
+      expect(fireChip).not.toHaveClass('currentTurn');
+
+      const earthChip = screen.getByTestId('element-chip-earth');
+      expect(earthChip).not.toHaveClass('currentTurn');
+
+      // Verify STRONG elements still have pulse
+      const iceChip = screen.getByTestId('element-chip-ice');
+      expect(iceChip).toHaveClass('currentTurn');
+    });
+
+    it('should display correct tooltip for INFUSING elements', () => {
+      render(<ElementsPanel elementalState={stateWithInfusing} />);
+
+      const fireChip = screen.getByTestId('element-chip-fire');
+      expect(fireChip).toHaveAttribute('title', 'Fire - infusing');
+
+      const earthChip = screen.getByTestId('element-chip-earth');
+      expect(earthChip).toHaveAttribute('title', 'Earth - infusing');
     });
   });
 
