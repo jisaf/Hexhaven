@@ -162,6 +162,9 @@ export interface WebSocketEvents {
   entity_forced_moved: (data: import('../../../shared/types/events').EntityForcedMovedPayload) => void;
   forced_movement_skipped: (data: import('../../../shared/types/events').ForcedMovementSkippedPayload) => void;
 
+  // Elemental state events
+  elemental_state_changed: (data: import('../../../shared/types/events').ElementalStateChangedPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }

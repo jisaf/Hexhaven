@@ -18,17 +18,19 @@
   padding: 8px;
   background-color: rgba(13, 26, 46, 0.98);
   border-top: 2px solid #c9a444;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* Cards container - fills available height */
+/* Cards container - takes most space but allows siblings to show */
 .cardsContainer {
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
   gap: 12px;
   padding: 8px;
-  flex-grow: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* Allow shrinking below content size */
   justify-content: center;
   align-items: stretch;
 }
@@ -184,6 +186,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0; /* Don't shrink help text */
 }
 
 /* Targeting mode hint - more prominent */
@@ -307,5 +310,73 @@
   to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* ===== Consume Element Button ===== */
+
+.consumeContainer {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  flex-shrink: 0; /* Don't shrink consume button area */
+}
+
+.consumeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  border: 2px solid #c9a444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  animation: consumePulse 2s ease-in-out infinite;
+}
+
+.consumeButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.5);
+}
+
+.consumeButton:active {
+  transform: scale(0.98);
+}
+
+.consumeIcon {
+  font-size: 18px;
+}
+
+.consumeText {
+  text-transform: capitalize;
+}
+
+@keyframes consumePulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(255, 107, 53, 0.6);
+  }
+}
+
+/* Portrait mode adjustments */
+@media (orientation: portrait) {
+  .consumeContainer {
+    padding: 4px 0;
+  }
+
+  .consumeButton {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .consumeIcon {
+    font-size: 16px;
   }
 }

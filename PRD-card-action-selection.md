@@ -322,6 +322,14 @@ Server Events:
 - turn_complete (EXISTING): Signals turn end
 ```
 
+### Element Consumption (FR-EC) - Implemented
+
+- **FR-EC-1**: When a card action has a consume modifier and the required element is STRONG or WANING, a "Consume Element" button appears
+- **FR-EC-2**: Clicking the consume button marks the action to consume the element and grants the bonus (e.g., +2 movement)
+- **FR-EC-3**: For targeting actions (move/attack), clicking consume recalculates valid target hexes with the boosted range
+- **FR-EC-4**: The element consumption flag is passed to the backend when the action is executed
+- **FR-EC-5**: Backend consumes the element (sets to INERT) and applies the bonus effect
+
 ## Out of Scope
 
 The following are explicitly NOT covered by this PRD:
@@ -330,10 +338,9 @@ The following are explicitly NOT covered by this PRD:
 2. **Attack Modifier Deck UI** - Improvements to modifier card display (separate feature)
 3. **Rest Mechanics Changes** - Short/long rest behavior (covered by existing implementation)
 4. **Multi-target Attack UI** - Advanced targeting for multi-target attacks (can be follow-up)
-5. **Elemental Infusion UI** - Visual improvements to element consumption/generation (can be follow-up)
-6. **Card Ability Tooltips** - Detailed hover explanations of modifiers (can be follow-up)
-7. **Animation Polish** - Advanced animations for card actions (can be follow-up)
-8. **Undo Action** - Ability to undo a selected card action (not in Gloomhaven rules)
+5. **Card Ability Tooltips** - Detailed hover explanations of modifiers (can be follow-up)
+6. **Animation Polish** - Advanced animations for card actions (can be follow-up)
+7. **Undo Action** - Ability to undo a selected card action (not in Gloomhaven rules)
 
 ## Design Decisions (Resolved)
 
@@ -435,10 +442,13 @@ None - All required systems are already in place
 - [ ] Test coverage >80% for new code
 - [ ] Mobile and desktop both fully functional
 - [ ] No console errors or warnings during gameplay
+- [x] Element consumption button appears when action has consume modifier and element is STRONG or WANING
+- [x] Clicking consume recalculates valid hexes with boosted range
+- [x] Element is consumed and bonus applied when action executes
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2025-12-31
+**Document Version:** 1.1
+**Last Updated:** 2026-01-04
 **Author:** Claude (PRD Architect Agent)
 **Reviewers:** [To be assigned]

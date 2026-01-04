@@ -23,15 +23,212 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AbilityCard } from '../../../../shared/types/entities';
+import type { AbilityCard, ElementalInfusion } from '../../../../shared/types/entities';
+import { ElementState, ElementType } from '../../../../shared/types/entities';
 import type { TurnActionState, TurnAction } from '../../../../shared/types/events';
+import type { ConsumeModifier } from '../../../../shared/types/modifiers';
+import { getConsumeModifier } from '../../../../shared/types/modifiers';
 import { AbilityCard2 } from '../AbilityCard2';
 import { TAP_MOVEMENT_THRESHOLD_PX } from '../../utils/touch-constants';
 import styles from './TurnActionPanel.module.css';
 
+// Element emoji mapping for consume button display
+const ELEMENT_ICONS: Record<ElementType, string> = {
+  [ElementType.FIRE]: '🔥',
+  [ElementType.ICE]: '❄️',
+  [ElementType.AIR]: '💨',
+  [ElementType.EARTH]: '🪨',
+  [ElementType.LIGHT]: '✨',
+  [ElementType.DARK]: '🌑',
+};
+
 const LONG_PRESS_DURATION = 350; // ms before zoom activates
 
 export type CardActionState = 'available' | 'selected' | 'used' | 'disabled';
+
+/**
+ * Props interface for ActionOverlay component
+ */
+interface ActionOverlayProps {
+  card: AbilityCard;
+  cardId: string;
+  position: 'top' | 'bottom';
+  state: CardActionState;
+  actionLabel: string;
+  isInTargetingMode: boolean;
+  zoomedCard: AbilityCard | null;
+  onActionClick: (cardId: string, position: 'top' | 'bottom') => void;
+  onSetZoomedCard: (card: AbilityCard | null) => void;
+}
+
+/**
+ * ActionOverlay Component - handles long-press for card zoom
+ * Separated into a component to properly manage refs and effects per overlay.
+ * Extracted to module scope to prevent recreation on every render.
+ */
+function ActionOverlay({
+  card,
+  cardId,
+  position,
+  state,
+  actionLabel,
+  isInTargetingMode,
+  zoomedCard,
+  onActionClick,
+  onSetZoomedCard,
+}: ActionOverlayProps) {
+  const isInteractive = state === 'available' || state === 'selected';
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPress = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleOverlayClick = useCallback(() => {
+    // Cancel any pending long press timer (for safety)
+    cancelLongPress();
+
+    // Don't trigger click if it was a long press
+    if (isLongPress.current) {
+      isLongPress.current = false;
+      return;
+    }
+    if (isInteractive) {
+      onActionClick(cardId, position);
+    }
+  }, [isInteractive, cardId, position, cancelLongPress, onActionClick]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onActionClick(cardId, position);
+    }
+  };
+
+  // Native touch event handlers for long-press detection
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      // Store touch position to detect movement
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      isLongPress.current = false;
+
+      longPressTimer.current = setTimeout(() => {
+        isLongPress.current = true;
+        onSetZoomedCard(card);
+      }, LONG_PRESS_DURATION);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // If user moves finger significantly, cancel long press
+      if (touchStartPos.current && e.touches[0]) {
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+        const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+        if (dx > TAP_MOVEMENT_THRESHOLD_PX || dy > TAP_MOVEMENT_THRESHOLD_PX) {
+          cancelLongPress();
+          touchStartPos.current = null;
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      cancelLongPress();
+      touchStartPos.current = null;
+
+      if (zoomedCard) {
+        // Close zoom modal on touch end
+        e.preventDefault();
+        setTimeout(() => onSetZoomedCard(null), 50);
+      }
+    };
+
+    const handleTouchCancel = () => {
+      cancelLongPress();
+      touchStartPos.current = null;
+      onSetZoomedCard(null);
+    };
+
+    const handleContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    overlay.addEventListener('touchstart', handleTouchStart, { passive: false });
+    overlay.addEventListener('touchmove', handleTouchMove, { passive: false });
+    overlay.addEventListener('touchend', handleTouchEnd, { passive: false });
+    overlay.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+    overlay.addEventListener('contextmenu', handleContextMenu, { capture: true });
+
+    return () => {
+      overlay.removeEventListener('touchstart', handleTouchStart);
+      overlay.removeEventListener('touchmove', handleTouchMove);
+      overlay.removeEventListener('touchend', handleTouchEnd);
+      overlay.removeEventListener('touchcancel', handleTouchCancel);
+      overlay.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      cancelLongPress();
+    };
+  }, [card, cancelLongPress, zoomedCard, onSetZoomedCard]);
+
+  // Mouse long-press handlers for desktop
+  const handleMouseDown = useCallback(() => {
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      onSetZoomedCard(card);
+    }, LONG_PRESS_DURATION);
+  }, [card, onSetZoomedCard]);
+
+  const handleMouseUp = useCallback(() => {
+    cancelLongPress();
+    // Close zoom if it was open
+    setTimeout(() => onSetZoomedCard(null), 50);
+  }, [cancelLongPress, onSetZoomedCard]);
+
+  const handleMouseLeave = useCallback(() => {
+    cancelLongPress();
+  }, [cancelLongPress]);
+
+  return (
+    <div
+      ref={overlayRef}
+      className={`${styles.actionOverlay} ${styles[position]} ${styles[state]}`}
+      onClick={handleOverlayClick}
+      onKeyDown={handleKeyDown}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      role="button"
+      tabIndex={isInteractive ? 0 : -1}
+      aria-label={`${position} action: ${actionLabel}`}
+      aria-disabled={!isInteractive}
+    >
+      {/* Used overlay label */}
+      {state === 'used' && (
+        <div className={styles.usedOverlay}>
+          <span>Used</span>
+        </div>
+      )}
+
+      {/* Selected state - show "Tap again" hint only for non-targeting actions */}
+      {state === 'selected' && !isInTargetingMode && (
+        <div className={styles.selectedOverlay}>
+          <span>Tap again to confirm</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export interface TurnActionPanelProps {
   /** First selected card for the turn */
@@ -53,6 +250,10 @@ export interface TurnActionPanelProps {
   } | null;
   /** Callback when player wants to skip forced movement */
   onSkipForcedMovement?: () => void;
+  /** Current elemental infusion state for consume element display */
+  elementalState?: ElementalInfusion | null;
+  /** Callback when user chooses to consume an element for bonus */
+  onConsumeElement?: (element: ElementType, cardId: string, position: 'top' | 'bottom') => void;
 }
 
 /**
@@ -96,6 +297,8 @@ export function TurnActionPanel({
   targetingMode,
   pendingForcedMovement,
   onSkipForcedMovement,
+  elementalState,
+  onConsumeElement,
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
@@ -105,8 +308,10 @@ export function TurnActionPanel({
   const prevTargetingMode = useRef(targetingMode);
 
   // Clear pendingAction when targeting mode exits (action confirmed via hex selection)
+  // This is a valid synchronization pattern - we reset local state when a prop changes
   useEffect(() => {
     if (prevTargetingMode.current && !targetingMode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid sync: resetting state when prop changes
       setPendingAction(null);
     }
     prevTargetingMode.current = targetingMode;
@@ -119,6 +324,39 @@ export function TurnActionPanel({
     if (turnActionState.secondAction) count++;
     return count;
   }, [turnActionState]);
+
+  // Calculate available consume element for the pending action
+  const availableConsume = useMemo((): { modifier: ConsumeModifier; element: ElementType } | null => {
+    if (!pendingAction || !elementalState || !onConsumeElement) {
+      return null;
+    }
+
+    // Get the selected action's modifiers
+    const card = pendingAction.cardId === card1.id ? card1 : card2;
+    const action = pendingAction.position === 'top' ? card.topAction : card.bottomAction;
+    const consumeModifier = getConsumeModifier(action.modifiers || []);
+
+    if (!consumeModifier) {
+      return null;
+    }
+
+    // Check if the element is STRONG or WANING (both are consumable in Gloomhaven)
+    const elementState = elementalState[consumeModifier.element];
+    const isConsumable = elementState === ElementState.STRONG || elementState === ElementState.WANING;
+
+    if (!isConsumable) {
+      return null;
+    }
+
+    return { modifier: consumeModifier, element: consumeModifier.element };
+  }, [pendingAction, elementalState, onConsumeElement, card1, card2]);
+
+  // Handle consume element button click
+  const handleConsumeElement = useCallback(() => {
+    if (availableConsume && pendingAction && onConsumeElement) {
+      onConsumeElement(availableConsume.element, pendingAction.cardId, pendingAction.position);
+    }
+  }, [availableConsume, pendingAction, onConsumeElement]);
 
   // Handle action region click
   // - Targeting actions (move, attack, heal, summon): first tap enters targeting mode, hex tap confirms
@@ -155,178 +393,6 @@ export function TurnActionPanel({
   const card2TopState = getActionRegionState(card2.id, 'top', turnActionState, pendingAction);
   const card2BottomState = getActionRegionState(card2.id, 'bottom', turnActionState, pendingAction);
 
-  /**
-   * ActionOverlay Component - handles long-press for card zoom
-   * Separated into a component to properly manage refs and effects per overlay
-   */
-  const ActionOverlay = ({
-    card,
-    cardId,
-    position,
-    state,
-    actionLabel,
-    isInTargetingMode,
-  }: {
-    card: AbilityCard;
-    cardId: string;
-    position: 'top' | 'bottom';
-    state: CardActionState;
-    actionLabel: string;
-    isInTargetingMode: boolean;
-  }) => {
-    const isInteractive = state === 'available' || state === 'selected';
-    const overlayRef = useRef<HTMLDivElement>(null);
-    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isLongPress = useRef(false);
-    const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-    const cancelLongPress = useCallback(() => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-    }, []);
-
-    const handleOverlayClick = useCallback(() => {
-      // Cancel any pending long press timer (for safety)
-      cancelLongPress();
-
-      // Don't trigger click if it was a long press
-      if (isLongPress.current) {
-        isLongPress.current = false;
-        return;
-      }
-      if (isInteractive) {
-        handleActionClick(cardId, position);
-      }
-    }, [isInteractive, cardId, position, cancelLongPress, handleActionClick]);
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        handleActionClick(cardId, position);
-      }
-    };
-
-    // Native touch event handlers for long-press detection
-    useEffect(() => {
-      const overlay = overlayRef.current;
-      if (!overlay) return;
-
-      const handleTouchStart = (e: TouchEvent) => {
-        // Store touch position to detect movement
-        const touch = e.touches[0];
-        touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-        isLongPress.current = false;
-
-        longPressTimer.current = setTimeout(() => {
-          isLongPress.current = true;
-          setZoomedCard(card);
-        }, LONG_PRESS_DURATION);
-      };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        // If user moves finger significantly, cancel long press
-        if (touchStartPos.current && e.touches[0]) {
-          const touch = e.touches[0];
-          const dx = Math.abs(touch.clientX - touchStartPos.current.x);
-          const dy = Math.abs(touch.clientY - touchStartPos.current.y);
-          if (dx > TAP_MOVEMENT_THRESHOLD_PX || dy > TAP_MOVEMENT_THRESHOLD_PX) {
-            cancelLongPress();
-            touchStartPos.current = null;
-          }
-        }
-      };
-
-      const handleTouchEnd = (e: TouchEvent) => {
-        cancelLongPress();
-        touchStartPos.current = null;
-
-        if (zoomedCard) {
-          // Close zoom modal on touch end
-          e.preventDefault();
-          setTimeout(() => setZoomedCard(null), 50);
-        }
-      };
-
-      const handleTouchCancel = () => {
-        cancelLongPress();
-        touchStartPos.current = null;
-        setZoomedCard(null);
-      };
-
-      const handleContextMenu = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      };
-
-      overlay.addEventListener('touchstart', handleTouchStart, { passive: false });
-      overlay.addEventListener('touchmove', handleTouchMove, { passive: false });
-      overlay.addEventListener('touchend', handleTouchEnd, { passive: false });
-      overlay.addEventListener('touchcancel', handleTouchCancel, { passive: false });
-      overlay.addEventListener('contextmenu', handleContextMenu, { capture: true });
-
-      return () => {
-        overlay.removeEventListener('touchstart', handleTouchStart);
-        overlay.removeEventListener('touchmove', handleTouchMove);
-        overlay.removeEventListener('touchend', handleTouchEnd);
-        overlay.removeEventListener('touchcancel', handleTouchCancel);
-        overlay.removeEventListener('contextmenu', handleContextMenu, { capture: true });
-        cancelLongPress();
-      };
-    }, [card, cancelLongPress, zoomedCard]);
-
-    // Mouse long-press handlers for desktop
-    const handleMouseDown = useCallback(() => {
-      isLongPress.current = false;
-      longPressTimer.current = setTimeout(() => {
-        isLongPress.current = true;
-        setZoomedCard(card);
-      }, LONG_PRESS_DURATION);
-    }, [card]);
-
-    const handleMouseUp = useCallback(() => {
-      cancelLongPress();
-      // Close zoom if it was open - setZoomedCard is stable so we don't need it in deps
-      setTimeout(() => setZoomedCard(null), 50);
-    }, [cancelLongPress]);
-
-    const handleMouseLeave = useCallback(() => {
-      cancelLongPress();
-    }, [cancelLongPress]);
-
-    return (
-      <div
-        ref={overlayRef}
-        className={`${styles.actionOverlay} ${styles[position]} ${styles[state]}`}
-        onClick={handleOverlayClick}
-        onKeyDown={handleKeyDown}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        role="button"
-        tabIndex={isInteractive ? 0 : -1}
-        aria-label={`${position} action: ${actionLabel}`}
-        aria-disabled={!isInteractive}
-      >
-        {/* Used overlay label */}
-        {state === 'used' && (
-          <div className={styles.usedOverlay}>
-            <span>Used</span>
-          </div>
-        )}
-
-        {/* Selected state - show "Tap again" hint only for non-targeting actions */}
-        {state === 'selected' && !isInTargetingMode && (
-          <div className={styles.selectedOverlay}>
-            <span>Tap again to confirm</span>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className={styles.panel}>
       {/* Cards container */}
@@ -347,6 +413,9 @@ export function TurnActionPanel({
               state={card1TopState}
               actionLabel={`${card1.name} - ${card1.topAction.type}`}
               isInTargetingMode={!!targetingMode}
+              zoomedCard={zoomedCard}
+              onActionClick={handleActionClick}
+              onSetZoomedCard={setZoomedCard}
             />
             <ActionOverlay
               card={card1}
@@ -355,6 +424,9 @@ export function TurnActionPanel({
               state={card1BottomState}
               actionLabel={`${card1.name} - ${card1.bottomAction.type}`}
               isInTargetingMode={!!targetingMode}
+              zoomedCard={zoomedCard}
+              onActionClick={handleActionClick}
+              onSetZoomedCard={setZoomedCard}
             />
           </div>
         </div>
@@ -375,6 +447,9 @@ export function TurnActionPanel({
               state={card2TopState}
               actionLabel={`${card2.name} - ${card2.topAction.type}`}
               isInTargetingMode={!!targetingMode}
+              zoomedCard={zoomedCard}
+              onActionClick={handleActionClick}
+              onSetZoomedCard={setZoomedCard}
             />
             <ActionOverlay
               card={card2}
@@ -383,12 +458,15 @@ export function TurnActionPanel({
               state={card2BottomState}
               actionLabel={`${card2.name} - ${card2.bottomAction.type}`}
               isInTargetingMode={!!targetingMode}
+              zoomedCard={zoomedCard}
+              onActionClick={handleActionClick}
+              onSetZoomedCard={setZoomedCard}
             />
           </div>
         </div>
       </div>
 
-      {/* Help text */}
+      {/* Help text and consume element button */}
       <div className={styles.helpText}>
         {targetingMode === 'move' ? (
           <span className={styles.targetingHint}>Tap a green hex to move there</span>
@@ -418,6 +496,25 @@ export function TurnActionPanel({
             type="button"
           >
             Skip {targetingMode === 'push' ? 'Push' : 'Pull'}
+          </button>
+        </div>
+      )}
+
+      {/* Consume element button - shows when action has consume modifier and element is STRONG */}
+      {availableConsume && (
+        <div className={styles.consumeContainer}>
+          <button
+            className={styles.consumeButton}
+            onClick={handleConsumeElement}
+            type="button"
+            aria-label={`Consume ${availableConsume.element} for +${availableConsume.modifier.bonus.value} ${availableConsume.modifier.bonus.effect}`}
+          >
+            <span className={styles.consumeIcon}>
+              {ELEMENT_ICONS[availableConsume.element]}
+            </span>
+            <span className={styles.consumeText}>
+              Consume for +{availableConsume.modifier.bonus.value} {availableConsume.modifier.bonus.effect}
+            </span>
           </button>
         </div>
       )}

@@ -1,0 +1,392 @@
+================================================================================
+HEXHAVEN CARD TESTING RESULTS - CARDS 1-10
+================================================================================
+
+Test Date: 2026-01-03
+Tester: [Your Name]
+Session: Cards 1-10 (Basic Strike through Trap Setter)
+TurnActionPanel Fix: VERIFIED ✅ (should appear when cards selected)
+
+================================================================================
+CARD 1: BASIC STRIKE (Initiative 10)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: attack 3 + xp 1
+  Expected: Deal 3 damage, gain 1 XP
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: move 3
+  Expected: Move character 3 hexes
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - xp 1: [✅ gained XP / ❌ no XP / ⚠️ wrong amount]
+
+Game State:
+  - Monster health: [Should be -3]
+  - Player health: [Should be unchanged]
+  - Player XP: [Should be +1]
+  - Hand/Discard/Lost count: [Should be updated correctly]
+
+Console Errors: [None / List any errors seen in F12 console]
+
+Notes: [Any observations, issues, or edge cases]
+
+================================================================================
+CARD 2: MULTI-TARGET (Initiative 12)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: attack 2 + range 3 + target 2 (hit up to 2 enemies)
+  Expected: Can attack 2 enemies within range 3, deal 2 damage each
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: move 3
+  Expected: Move character 3 hexes
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - range 3: [✅ works / ❌ failed / ⚠️ issue]
+  - target 2: [✅ can select 2 / ❌ can't select / ⚠️ wrong number]
+
+Game State:
+  - Monster health: [Should be -2 if solo game]
+  - Player position: [Should move 3 hexes]
+
+Console Errors: [None / List any]
+
+Notes: [Any observations]
+
+================================================================================
+CARD 3: HEALING TOUCH (Initiative 15)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: heal 4 + range 2
+  Expected: Heal 4 HP to self (or targeted ally) within range 2
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: loot 2
+  Expected: Gain 2 gold/loot
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - range 2: [✅ works / ❌ failed / ⚠️ issue]
+  - heal amount: [✅ heal 4 / ❌ wrong amount / ⚠️ partial]
+
+Game State:
+  - Player health: [Should increase by 4]
+  - Player gold/loot: [Should increase by 2]
+
+Console Errors: [None / List any]
+
+Notes: [Any observations]
+
+================================================================================
+CARD 4: RECOVERY (Initiative 18)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: special + recover 2 cards + lost
+  Expected: Select 2 cards from discard to recover, Recovery card goes to lost
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: heal 3
+  Expected: Heal 3 HP
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - recover 2: [✅ recovered 2 / ❌ failed / ⚠️ wrong amount]
+  - lost: [✅ card in lost pile / ❌ card still in hand / ⚠️ other issue]
+
+Game State:
+  - Hand count: [Should decrease by 1 if Recovery was selected (goes to lost)]
+  - Discard count: [Should decrease by 2 (cards recovered)]
+  - Lost count: [Should increase by 1 (Recovery card goes here)]
+  - Player health: [Should increase by 3]
+
+Console Errors: [None / List any]
+
+Notes: [Any observations]
+
+================================================================================
+CARD 5: FIRE BLAST (Initiative 20)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: attack 3 + range 3 + generate fire
+  Expected: Deal 3 damage from range 3, generate fire element
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: move 2 + consume fire (bonus: move +2)
+  Expected: Move 2 hexes, consume fire for +2 movement = 4 total
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - range 3: [✅ works / ❌ failed / ⚠️ issue]
+  - infuse fire: [✅ fire generated / ❌ not generated / ⚠️ other]
+  - consume fire: [✅ consumed / ❌ not consumed / ⚠️ other]
+  - move bonus: [✅ move 4 total / ❌ move 2 / ⚠️ wrong amount]
+
+Element Tracking:
+  - Fire generated on top action: [Yes / No]
+  - Fire consumed on bottom action: [Yes / No]
+  - Movement bonus applied: [Yes / No]
+
+Game State:
+  - Monster health: [Should be -3]
+  - Player position: [Should move 4 hexes if fire consumed]
+  - Fire indicator: [Should appear then disappear]
+
+Console Errors: [None / List any]
+
+Notes: [Element persistence is CRITICAL - fire must stay between actions]
+
+================================================================================
+CARD 6: MIND CONTROL (Initiative 22)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: special + range 3 + lost + xp 2
+  Expected: Control enemy (range 3), gain 2 XP, card goes to lost
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: move 3
+  Expected: Move character 3 hexes
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - range 3: [✅ works / ❌ failed / ⚠️ issue]
+  - xp 2: [✅ gained 2 XP / ❌ no XP / ⚠️ wrong amount]
+  - lost: [✅ card in lost / ❌ still in hand / ⚠️ other]
+
+Game State:
+  - Player XP: [Should increase by 2]
+  - Lost pile count: [Should increase by 1]
+  - Hand count: [Should be correct]
+  - Mind Control card: [Should NOT be in hand anymore]
+
+Console Errors: [None / List any]
+
+Notes: [Lost modifier is CRITICAL - card must move to lost pile]
+
+================================================================================
+CARD 7: ICE SHIELD (Initiative 25)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: special + generate ice + shield 2
+  Expected: Generate ice element, apply shield 2 (reduce incoming damage by 2)
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: attack 2 + consume ice (bonus: damage +2)
+  Expected: Attack for 2 damage, consume ice for +2 = 4 total
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - infuse ice: [✅ ice generated / ❌ not generated / ⚠️ other]
+  - shield 2: [✅ blocks 2 damage / ❌ no shield / ⚠️ other amount]
+  - consume ice: [✅ consumed / ❌ not consumed / ⚠️ other]
+  - damage bonus: [✅ attack 4 / ❌ attack 2 / ⚠️ wrong amount]
+
+Element Tracking:
+  - Ice generated: [Yes / No]
+  - Ice persists to next action: [Yes / No]
+  - Ice consumed: [Yes / No]
+
+Game State:
+  - Shield indicator: [Visible / Not visible]
+  - Monster damage taken: [4 (if ice consumed) / 2 / other]
+  - Shield effectiveness: [Blocks 2 damage on monster attack / Doesn't work]
+
+Console Errors: [None / List any]
+
+Notes: [This tests BOTH element persistence AND shield mechanic]
+
+================================================================================
+CARD 8: AUGMENTED POWER (Initiative 28)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: text action + persistent
+  Expected: Display text "Add +2 Attack to all your attacks this round" with quote
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: attack 2
+  Expected: Normal attack for 2 damage
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - text display: [✅ text visible / ❌ not visible / ⚠️ unclear]
+  - persistent: [✅ buff lasts round / ❌ one-time / ⚠️ other]
+  - +2 attack bonus: [✅ applies to all attacks / ❌ no bonus / ⚠️ other]
+
+Buff Tracking:
+  - Buff displays on character: [Yes / No]
+  - Buff text clear: [Yes / No]
+  - Quote visible: "Channel the power within." [Yes / No]
+  - Bonus applies to subsequent attacks: [Yes / No]
+
+Game State:
+  - Buff indicator: [Visible / Not visible]
+  - Attack damage with buff: [4 (with +2 bonus) / 2 (no bonus) / other]
+
+Console Errors: [None / List any]
+
+Notes: [TEXT action type is unique - verify it displays correctly]
+
+================================================================================
+CARD 9: WIND RUSH (Initiative 30)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: attack 2 + generate air + push 2
+  Expected: Deal 2 damage, generate air, push monster 2 hexes away
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: move 4 + jump
+  Expected: Move 4 hexes, jump allows moving through obstacles
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - attack 2: [✅ dealt 2 / ❌ no damage / ⚠️ wrong amount]
+  - infuse air: [✅ generated / ❌ not generated / ⚠️ other]
+  - push 2: [✅ pushed 2 hexes / ❌ not pushed / ⚠️ wrong distance]
+  - jump: [✅ can move through obstacles / ❌ blocked / ⚠️ other]
+  - move 4: [✅ moved 4 / ❌ moved less / ⚠️ other]
+
+Position Tracking:
+  - Monster position after push: [Should move away by 2 hexes]
+  - Player movement: [Should move 4 hexes with jump]
+
+Game State:
+  - Monster health: [Should be -2]
+  - Monster position: [Should be 2 hexes further away]
+  - Player position: [Should move 4 hexes]
+  - Air indicator: [Visible / Not visible]
+
+Console Errors: [None / List any]
+
+Notes: [PUSH modifier and JUMP modifier both important to verify]
+
+================================================================================
+CARD 10: TRAP SETTER (Initiative 32)
+================================================================================
+
+Status: ⏳ [Choose: ✅ PASS / ❌ FAIL / ⚠️ PARTIAL]
+
+Top Action: attack 2
+  Expected: Deal 2 damage to monster
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Bottom Action: special + create trap + range 2
+  Expected: Place trap on hex within range 2, trap damages enemies on contact
+  Actual: [Describe what happened]
+  Result: [✅ / ❌ / ⚠️]
+
+Modifiers Tested:
+  - attack 2: [✅ dealt 2 / ❌ no damage / ⚠️ wrong amount]
+  - range 2: [✅ can place trap at range 2 / ❌ no range / ⚠️ wrong range]
+  - create trap: [✅ trap visible / ❌ not visible / ⚠️ other]
+
+Trap Mechanics:
+  - Trap appears on map: [Yes / No]
+  - Trap is visual: [Yes / No / Unclear]
+  - Trap triggers on enemy contact: [Yes / No / Not tested]
+  - Trap damage: [Not tested / Working / Not working]
+
+Game State:
+  - Monster health: [Should be -2]
+  - Trap placement: [Visible on hex]
+  - Trap persists: [Yes / No]
+
+Console Errors: [None / List any]
+
+Notes: [Trap creation is a spatial mechanic - verify placement works]
+
+================================================================================
+SUMMARY - CARDS 1-10
+================================================================================
+
+Total Cards Tested: 10
+Total Actions Tested: 20 (10 cards × 2 actions)
+
+Results:
+  ✅ PASS:     [  ] cards
+  ❌ FAIL:     [  ] cards
+  ⚠️  PARTIAL: [  ] cards
+  ⏳ NOT YET:  [  ] cards
+
+Critical Success:
+  - TurnActionPanel appears: [YES / NO] - MUST BE YES FOR FIX TO WORK
+  - All actions executable: [YES / NO / PARTIAL]
+  - All modifiers display: [YES / NO / PARTIAL]
+  - Game state updates: [YES / NO / PARTIAL]
+
+Modifier Coverage (Cards 1-10):
+  ✅ xp: [working / failed]
+  ✅ range: [working / failed]
+  ✅ target: [working / failed]
+  ✅ infuse (fire, air): [working / failed]
+  ✅ consume (fire): [working / failed]
+  ✅ push: [working / failed]
+  ✅ jump: [working / failed]
+  ✅ shield: [working / failed]
+  ✅ lost: [working / failed]
+  ✅ recover: [working / failed]
+  ✅ persistent: [working / failed]
+  ✅ special (trapCreation, text): [working / failed]
+
+Most Complex Card Tested:
+  [Fire Blast OR Ice Shield OR Wind Rush - all have multiple element/modifier interactions]
+
+Recommended Next Steps:
+  - [ ] If all PASS: Continue to cards 11-20
+  - [ ] If failures: Create GitHub issues for each failure
+  - [ ] If partial: Document which modifiers have issues
+
+Critical Issues Found:
+  [List any critical issues that block gameplay]
+
+Notes:
+  [Any general observations about the testing process or card mechanics]
+
+================================================================================
+TESTER SIGNATURE
+================================================================================
+
+Tester Name: _______________________
+Date Completed: _______________________
+Time Spent: _______________________
+Next Session: Cards [11-20 / 21-30 / TBD]
+
+================================================================================

@@ -1,0 +1,132 @@
+/**
+ * ConnectionStatus Component Styles (Phase 1 - WebSocket Reliability)
+ *
+ * Provides visual styling for connection status indicator.
+ * Uses CSS variables for theming consistency.
+ */
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  font-size: 12px;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.status-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Connected state - green */
+.status-connected .status-dot {
+  background-color: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+}
+
+/* Reconnecting state - yellow with spinner */
+.status-reconnecting .status-dot {
+  background-color: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.status-spinner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Disconnected state - red */
+.status-disconnected .status-dot {
+  background-color: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Label styling */
+.status-label {
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-connected .status-label {
+  color: #4ade80;
+}
+
+.status-reconnecting .status-label {
+  color: #fbbf24;
+}
+
+.status-disconnected .status-label {
+  color: #f87171;
+}
+
+/* Hover effect for interactive hint */
+.connection-status:hover {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Position utility class - used when fixed positioning is needed */
+.connection-status.fixed-position {
+  position: fixed;
+  z-index: 1000;
+}
+
+.connection-status.top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.connection-status.top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.connection-status.bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.connection-status.bottom-left {
+  bottom: 16px;
+  left: 16px;
+}

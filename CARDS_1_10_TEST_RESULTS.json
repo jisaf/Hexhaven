@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-01-03T12:45:12.845Z",
+  "turnActionPanelWorking": true,
+  "cards": {
+    "1": {
+      "name": "Basic Strike",
+      "initiative": 10,
+      "status": "PARTIAL",
+      "turnActionPanelVisible": true,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Basic Strike"
+      ]
+    },
+    "2": {
+      "name": "Multi-Target",
+      "initiative": 12,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Multi-Target",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "3": {
+      "name": "Healing Touch",
+      "initiative": 15,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Healing Touch",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "4": {
+      "name": "Recovery",
+      "initiative": 18,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Recovery",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "5": {
+      "name": "Fire Blast",
+      "initiative": 20,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Fire Blast",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "6": {
+      "name": "Mind Control",
+      "initiative": 22,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Mind Control",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "7": {
+      "name": "Ice Shield",
+      "initiative": 25,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Ice Shield",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "8": {
+      "name": "Augmented Power",
+      "initiative": 28,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Augmented Power",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "9": {
+      "name": "Wind Rush",
+      "initiative": 30,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Wind Rush",
+        "TurnActionPanel not visible"
+      ]
+    },
+    "10": {
+      "name": "Trap Setter",
+      "initiative": 32,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Could not find card button for Trap Setter",
+        "TurnActionPanel not visible"
+      ]
+    }
+  }
+}
