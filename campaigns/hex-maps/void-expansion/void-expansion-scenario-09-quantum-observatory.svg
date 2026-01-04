@@ -4,16 +4,11 @@
 .hex-normal { fill: #90EE90; stroke: #00AA00; stroke-width: 1; }
 .hex-difficult { fill: #FFA500; stroke: #00AA00; stroke-width: 1; }
 .hex-obstacle { fill: #8B0000; stroke: #FF0000; stroke-width: 1.5; }
-.hex-empty { fill: none; stroke: #00AA00; stroke-width: 0.5; opacity: 0.2; }
-.grid-line { stroke: #00AA00; stroke-width: 1; opacity: 0.3; }
-.monster { fill: #FF4444; opacity: 0.7; }
-.player { fill: #4444FF; opacity: 0.8; }
-.objective { fill: #FFD700; opacity: 0.9; }
 .label { font-size: 10px; font-family: Arial; fill: #333; text-anchor: middle; }
 .coord { font-size: 8px; font-family: Arial; fill: #666; text-anchor: middle; }
 </style>
 </defs>
-<rect width="510.0" height="666.217782649107" fill="#F5F5F5"/>
+<rect width="510.0" height="666.217782649107" fill="white"/>
 <g id="map">
 <polygon points="192.5,29.999999999999993 167.5,73.30127018922192 117.50000000000001,73.30127018922192 92.5,30.0 117.49999999999997,-13.301270189221924 167.49999999999997,-13.30127018922196" class="hex-normal"/>
 <text x="142.5" y="32.99999999999999" class="coord">-1,0</text>
@@ -61,38 +56,36 @@
 <text x="367.5" y="422.7114317029974" class="coord">2,3</text>
 </g>
 <g id="starting-positions">
-<circle cx="142.5" cy="29.999999999999993" r="8" class="player"/>
+<circle cx="142.5" cy="29.999999999999993" r="8" fill="#4444FF" opacity="0.8"/>
 <text x="142.5" y="49.99999999999999" class="label">P1</text>
-<circle cx="217.5" cy="73.30127018922192" r="8" class="player"/>
+<circle cx="217.5" cy="73.30127018922192" r="8" fill="#4444FF" opacity="0.8"/>
 <text x="217.5" y="93.30127018922192" class="label">P2</text>
-<circle cx="292.5" cy="116.60254037844385" r="8" class="player"/>
+<circle cx="292.5" cy="116.60254037844385" r="8" fill="#4444FF" opacity="0.8"/>
 <text x="292.5" y="136.60254037844385" class="label">P3</text>
-<circle cx="142.5" cy="116.60254037844385" r="8" class="player"/>
+<circle cx="142.5" cy="116.60254037844385" r="8" fill="#4444FF" opacity="0.8"/>
 <text x="142.5" y="136.60254037844385" class="label">P4</text>
 </g>
 <g id="monsters">
-<circle cx="217.5" cy="246.50635094610965" r="6" class="monster"/>
-<circle cx="292.5" cy="463.0127018922193" r="6" class="monster"/>
-<circle cx="292.5" cy="549.6152422706632" r="8" class="monster"/>
+<circle cx="217.5" cy="246.50635094610965" r="6" fill="#FF4444" opacity="0.7"/>
+<circle cx="292.5" cy="463.0127018922193" r="6" fill="#FF4444" opacity="0.7"/>
+<circle cx="292.5" cy="549.6152422706632" r="8" fill="#FF4444" opacity="0.7"/>
 </g>
 <g id="objectives">
-<rect x="286.5" y="543.6152422706632" width="12" height="12" class="objective" fill="none" stroke="#FFD700" stroke-width="2"/>
+<rect x="286.5" y="543.6152422706632" width="12" height="12" fill="none" stroke="#FFD700" stroke-width="2"/>
 </g>
 <g id="treasures">
-<star points="217.5,326.1088913245535 220.5,331.1088913245535 224.5,331.1088913245535 221.5,334.1088913245535 222.5,339.1088913245535 217.5,336.1088913245535 212.5,339.1088913245535 213.5,334.1088913245535 210.5,331.1088913245535 214.5,331.1088913245535" fill="#FFD700"/>
 <circle cx="217.5" cy="333.1088913245535" r="5" fill="#FFD700" opacity="0.8"/>
-<star points="292.5,542.6152422706632 295.5,547.6152422706632 299.5,547.6152422706632 296.5,550.6152422706632 297.5,555.6152422706632 292.5,552.6152422706632 287.5,555.6152422706632 288.5,550.6152422706632 285.5,547.6152422706632 289.5,547.6152422706632" fill="#FFD700"/>
 <circle cx="292.5" cy="549.6152422706632" r="5" fill="#FFD700" opacity="0.8"/>
 </g>
 <g id="legend">
 <rect x="10" y="10" width="200" height="120" fill="white" stroke="#999" stroke-width="1" opacity="0.9"/>
 <text x="20" y="30" class="label" style="text-anchor: start; font-weight: bold;">Quantum Observatory</text>
 <text x="20" y="45" class="label" style="text-anchor: start; font-size: 9px;">Difficulty: 3</text>
-<rect x="15" y="52" width="12" height="12" class="hex-normal"/>
+<rect x="15" y="52" width="12" height="12" fill="#90EE90" stroke="#00AA00"/>
 <text x="35" y="62" class="label" style="text-anchor: start; font-size: 9px;">Normal</text>
-<rect x="15" y="72" width="12" height="12" class="hex-difficult"/>
+<rect x="15" y="72" width="12" height="12" fill="#FFA500" stroke="#00AA00"/>
 <text x="35" y="82" class="label" style="text-anchor: start; font-size: 9px;">Difficult</text>
-<rect x="15" y="92" width="12" height="12" class="hex-obstacle"/>
+<rect x="15" y="92" width="12" height="12" fill="#8B0000" stroke="#FF0000"/>
 <text x="35" y="102" class="label" style="text-anchor: start; font-size: 9px;">Obstacle</text>
 </g>
 </svg>
