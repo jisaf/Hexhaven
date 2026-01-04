@@ -126,6 +126,7 @@ import {
   RoomStatus,
   getRange,
   ElementType,
+  ElementState,
   type AxialCoordinates,
   type CharacterClass,
   type Monster,
@@ -498,8 +499,8 @@ export class GameGateway
     const elements = ['fire', 'ice', 'air', 'earth', 'light', 'dark'] as const;
     for (const element of elements) {
       if (
-        previousStates[element] === 'infusing' &&
-        elementalState[element] === 'strong'
+        previousStates[element] === ElementState.INFUSING &&
+        elementalState[element] === ElementState.STRONG
       ) {
         this.server.to(roomCode).emit('elemental_state_changed', {
           element,
