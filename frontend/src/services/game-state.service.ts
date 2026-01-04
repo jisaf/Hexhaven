@@ -1775,7 +1775,7 @@ class GameStateManager {
       );
 
       console.log('[GameStateManager] Recalculated move range:', boostedRange, 'valid hexes:', this.state.validMovementHexes.length);
-    } else if (this.state.cardActionTargetingMode === 'attack' && bonusEffect === 'attack') {
+    } else if (this.state.cardActionTargetingMode === 'attack' && bonusEffect === 'range') {
       const boostedRange = this.state.cardActionRange + bonusValue;
 
       const hasTarget = (hex: { q: number; r: number }) =>
