@@ -3,7 +3,7 @@ import { roomSessionManager } from './room-session.service';
 import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload, RoundEndedPayload, ElementalStateChangedPayload } from '../../../shared/types';
 import { ElementState } from '../../../shared/types/entities';
 import type { Character, ElementalInfusion } from '../../../shared/types/entities';
-import { getRange, type CardAction } from '../../../shared/types/modifiers';
+import { getRange, getConsumeModifier, type CardAction } from '../../../shared/types/modifiers';
 import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
@@ -174,7 +174,7 @@ interface GameState {
   // Issue #411: Card action selection during turn
   turnActionState: TurnActionState | null;
   selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
-  pendingAction: { cardId: string; position: 'top' | 'bottom' } | null;
+  pendingAction: { cardId: string; position: 'top' | 'bottom'; consumeElement?: boolean } | null;
   // Issue #411: Targeting mode for actions from cards (extensible for heal, summon, etc.)
   cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | null;
   cardActionRange: number; // The range/value from the card action
@@ -572,6 +572,12 @@ class GameStateManager {
       console.log(`[GameStateManager] Restored ${data.gameLog.length} log entries from server`);
     }
 
+    // Restore elemental state from payload if available (for rejoin)
+    if (data.elementalState) {
+      this.state.elementalState = data.elementalState;
+      console.log(`[GameStateManager] Restored elemental state from server:`, data.elementalState);
+    }
+
     console.log(`[GameStateManager] Game started with ${myCharacters.length} characters for player (round ${this.state.currentRound})`);
     this.emitStateUpdate();
   }
@@ -718,10 +724,11 @@ class GameStateManager {
     }
 
     // Update the specific element - map string to ElementState enum
-    // ElementalStateChangedPayload.newState is typed as 'inert' | 'waning' | 'strong'
+    // ElementalStateChangedPayload.newState is typed as 'inert' | 'infusing' | 'waning' | 'strong'
     // which matches ElementState enum values exactly
     const stateMap: Record<string, ElementState> = {
       'inert': ElementState.INERT,
+      'infusing': ElementState.INFUSING,
       'waning': ElementState.WANING,
       'strong': ElementState.STRONG,
     };
@@ -1669,9 +1676,127 @@ class GameStateManager {
   }
 
   /**
+   * Consume an element for bonus effect on the pending action
+   * Called when player clicks the "Consume Element" button
+   * For targeting actions (move/attack), this marks the pending action to consume on execution
+   * and recalculates valid hexes with the boosted range
+   * For non-targeting actions, this immediately executes with consumption
+   */
+  public consumeElement(element: string, cardId: string, position: 'top' | 'bottom'): void {
+    if (!this.state.isMyTurn || !this.state.myCharacterId) {
+      console.warn('[GameStateManager] Cannot consume element: not my turn or no character');
+      return;
+    }
+
+    // Verify the pending action matches
+    if (
+      !this.state.pendingAction ||
+      this.state.pendingAction.cardId !== cardId ||
+      this.state.pendingAction.position !== position
+    ) {
+      console.warn('[GameStateManager] Cannot consume element: pending action mismatch');
+      return;
+    }
+
+    console.log('[GameStateManager] Marking element consumption:', element, 'for action:', cardId, position);
+
+    // Mark that this action should consume the element
+    this.state.pendingAction = {
+      ...this.state.pendingAction,
+      consumeElement: true,
+    };
+
+    // If in targeting mode, recalculate valid hexes with boosted range
+    if (this.state.cardActionTargetingMode) {
+      this.recalculateTargetingWithConsume(cardId, position);
+    } else {
+      // Not in targeting mode (non-targeting action), execute immediately with consume flag
+      this.emitCardAction(undefined, undefined, true);
+    }
+  }
+
+  /**
+   * Recalculate valid target hexes after consuming an element for bonus
+   */
+  private recalculateTargetingWithConsume(cardId: string, position: 'top' | 'bottom'): void {
+    // Find the selected card and action
+    const card = this.state.selectedTurnCards?.card1.id === cardId
+      ? this.state.selectedTurnCards.card1
+      : this.state.selectedTurnCards?.card2;
+
+    if (!card) {
+      console.warn('[GameStateManager] Cannot recalculate: card not found');
+      this.emitStateUpdate();
+      return;
+    }
+
+    const action = position === 'top' ? card.topAction : card.bottomAction;
+    const consumeModifier = getConsumeModifier(action.modifiers || []);
+
+    if (!consumeModifier?.bonus) {
+      console.warn('[GameStateManager] Cannot recalculate: no consume bonus found');
+      this.emitStateUpdate();
+      return;
+    }
+
+    const bonusValue = consumeModifier.bonus.value;
+    const bonusEffect = consumeModifier.bonus.effect;
+
+    console.log('[GameStateManager] Consume bonus:', { bonusValue, bonusEffect, targetingMode: this.state.cardActionTargetingMode });
+
+    // Get character position
+    const character = this.state.gameData?.characters.find(c => c.id === this.state.myCharacterId);
+    if (!character?.currentHex) {
+      console.warn('[GameStateManager] Cannot recalculate: character position not found');
+      this.emitStateUpdate();
+      return;
+    }
+
+    // Build monster positions for blocking/targeting
+    const monsterPositions = new Set<string>();
+    this.state.gameData?.monsters.forEach(m => {
+      if (m.health > 0 && m.currentHex) {
+        monsterPositions.add(`${m.currentHex.q},${m.currentHex.r}`);
+      }
+    });
+
+    // Recalculate based on targeting mode and bonus effect
+    if (this.state.cardActionTargetingMode === 'move' && bonusEffect === 'move') {
+      const boostedRange = this.state.cardActionRange + bonusValue;
+      this.state.currentMovementPoints = boostedRange;
+
+      const blockedByMonsters = (hex: { q: number; r: number }) =>
+        monsterPositions.has(`${hex.q},${hex.r}`);
+
+      this.state.validMovementHexes = hexRangeReachable(
+        character.currentHex,
+        boostedRange,
+        blockedByMonsters
+      );
+
+      console.log('[GameStateManager] Recalculated move range:', boostedRange, 'valid hexes:', this.state.validMovementHexes.length);
+    } else if (this.state.cardActionTargetingMode === 'attack' && bonusEffect === 'attack') {
+      const boostedRange = this.state.cardActionRange + bonusValue;
+
+      const hasTarget = (hex: { q: number; r: number }) =>
+        monsterPositions.has(`${hex.q},${hex.r}`);
+
+      this.state.validAttackHexes = hexAttackRange(character.currentHex, boostedRange, hasTarget);
+
+      console.log('[GameStateManager] Recalculated attack range:', boostedRange, 'valid hexes:', this.state.validAttackHexes.length);
+    }
+
+    this.emitStateUpdate();
+  }
+
+  /**
    * Issue #411: Internal method to emit the card action to backend
    */
-  private emitCardAction(targetId?: string, targetHex?: { q: number; r: number }): void {
+  private emitCardAction(
+    targetId?: string,
+    targetHex?: { q: number; r: number },
+    consumeElement?: boolean
+  ): void {
     if (!this.state.pendingAction || !this.state.myCharacterId) {
       console.warn('[GameStateManager] Cannot emit card action: missing pending action or character');
       return;
@@ -1683,6 +1808,7 @@ class GameStateManager {
       position: this.state.pendingAction.position,
       targetId,
       targetHex,
+      consumeElement,
     };
 
     console.log('[GameStateManager] Emitting use_card_action:', payload);
@@ -1717,7 +1843,7 @@ class GameStateManager {
       console.warn('[GameStateManager] Not in move targeting mode');
       return;
     }
-    this.emitCardAction(undefined, targetHex);
+    this.emitCardAction(undefined, targetHex, this.state.pendingAction.consumeElement);
   }
 
   /**
@@ -1728,7 +1854,7 @@ class GameStateManager {
       console.warn('[GameStateManager] Not in attack targeting mode');
       return;
     }
-    this.emitCardAction(targetId, undefined);
+    this.emitCardAction(targetId, undefined, this.state.pendingAction.consumeElement);
   }
 
   /**
@@ -1739,7 +1865,7 @@ class GameStateManager {
       console.warn('[GameStateManager] Not in heal targeting mode');
       return;
     }
-    this.emitCardAction(targetId, undefined);
+    this.emitCardAction(targetId, undefined, this.state.pendingAction.consumeElement);
   }
 
   /**
@@ -1750,7 +1876,7 @@ class GameStateManager {
       console.warn('[GameStateManager] Not in summon targeting mode');
       return;
     }
-    this.emitCardAction(undefined, targetHex);
+    this.emitCardAction(undefined, targetHex, this.state.pendingAction.consumeElement);
   }
 
   /**

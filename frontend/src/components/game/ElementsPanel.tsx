@@ -44,13 +44,15 @@ interface ElementsPanelProps {
  * Map ElementState to FloatingChip intensity
  * Returns 'off' for undefined or invalid states to handle malformed data gracefully
  */
-function mapStateToIntensity(state: ElementState | undefined): 'full' | 'waning' | 'off' {
+function mapStateToIntensity(state: ElementState | undefined): 'full' | 'infusing' | 'waning' | 'off' {
   if (!state) {
     return 'off';
   }
   switch (state) {
     case ElementState.STRONG:
       return 'full';
+    case ElementState.INFUSING:
+      return 'infusing';
     case ElementState.WANING:
       return 'waning';
     case ElementState.INERT:
@@ -65,7 +67,7 @@ export function ElementsPanel({ elementalState }: ElementsPanelProps) {
     return null;
   }
 
-  // Filter to only active elements (STRONG or WANING)
+  // Filter to only active elements (STRONG, INFUSING, or WANING)
   // Also verify the element exists in ELEMENT_CONFIG for defensive coding
   const activeElements = ELEMENT_ORDER.filter((element) => {
     // Skip elements not in config (defensive check)
@@ -77,7 +79,7 @@ export function ElementsPanel({ elementalState }: ElementsPanelProps) {
     if (!state) {
       return false;
     }
-    return state === ElementState.STRONG || state === ElementState.WANING;
+    return state === ElementState.STRONG || state === ElementState.INFUSING || state === ElementState.WANING;
   });
 
   // Don't render if no active elements

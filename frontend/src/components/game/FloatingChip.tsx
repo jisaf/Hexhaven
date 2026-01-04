@@ -55,6 +55,11 @@ const FLOATING_CHIP_STYLES = `
     filter: brightness(0.7);
   }
 
+  .floating-chip.infusing .chip-icon {
+    filter: brightness(0.5) saturate(0.6);
+    box-shadow: 0 0 0 3px var(--chip-color, currentColor);
+  }
+
   .floating-chip.current-turn {
     animation: chip-pulse 1.5s ease-in-out infinite;
   }
@@ -186,8 +191,8 @@ export interface FloatingChipProps {
   color: string;
   /** Optional deep border color for "full" state */
   borderColor?: string;
-  /** Intensity: 'full' (bright), 'waning' (dim), or 'off' (hidden) */
-  intensity: 'full' | 'waning' | 'off';
+  /** Intensity: 'full' (bright), 'infusing' (pending - strong border, dull fill), 'waning' (dim), or 'off' (hidden) */
+  intensity: 'full' | 'infusing' | 'waning' | 'off';
   /** Optional ring percentage (0-100) for health display */
   ringPercent?: number;
   /** Optional ring color */
@@ -240,7 +245,8 @@ export const FloatingChip = React.memo(function FloatingChip({
   }
 
   const isWaning = intensity === 'waning';
-  const hasBorder = intensity === 'full' && borderColor;
+  const isInfusing = intensity === 'infusing';
+  const hasBorder = (intensity === 'full' || intensity === 'infusing') && borderColor;
 
   // Build class names
   const chipClasses = [
@@ -248,6 +254,7 @@ export const FloatingChip = React.memo(function FloatingChip({
     isActive ? 'active' : '',
     isTurn ? 'current-turn' : '',
     isWaning ? 'waning' : '',
+    isInfusing ? 'infusing' : '',
     overlay ? 'has-overlay' : '',
     className,
   ]

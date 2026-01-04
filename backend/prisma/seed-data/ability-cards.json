@@ -589,7 +589,9 @@
     "bottomAction": {
       "type": "move",
       "value": 3,
-      "modifiers": []
+      "modifiers": [
+        { "type": "consume", "element": "fire", "bonus": { "effect": "move", "value": 2 } }
+      ]
     }
   },
   {

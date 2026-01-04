@@ -654,6 +654,10 @@ export function GameBoard() {
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
               targetingMode={gameState.cardActionTargetingMode}
+              elementalState={gameState.elementalState}
+              onConsumeElement={(element, cardId, position) =>
+                gameStateManager.consumeElement(element, cardId, position)
+              }
             />
           ) : selectedPile === 'inventory' ? (
             <InventoryTabContent

@@ -23,11 +23,24 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { AbilityCard } from '../../../../shared/types/entities';
+import type { AbilityCard, ElementalInfusion } from '../../../../shared/types/entities';
+import { ElementState, ElementType } from '../../../../shared/types/entities';
 import type { TurnActionState, TurnAction } from '../../../../shared/types/events';
+import type { ConsumeModifier } from '../../../../shared/types/modifiers';
+import { getConsumeModifier } from '../../../../shared/types/modifiers';
 import { AbilityCard2 } from '../AbilityCard2';
 import { TAP_MOVEMENT_THRESHOLD_PX } from '../../utils/touch-constants';
 import styles from './TurnActionPanel.module.css';
+
+// Element emoji mapping for consume button display
+const ELEMENT_ICONS: Record<ElementType, string> = {
+  [ElementType.FIRE]: '🔥',
+  [ElementType.ICE]: '❄️',
+  [ElementType.AIR]: '💨',
+  [ElementType.EARTH]: '🪨',
+  [ElementType.LIGHT]: '✨',
+  [ElementType.DARK]: '🌑',
+};
 
 const LONG_PRESS_DURATION = 350; // ms before zoom activates
 
@@ -46,6 +59,10 @@ export interface TurnActionPanelProps {
   onActionConfirm: () => void;
   /** Issue #411: Current targeting mode (actions that need hex/target selection) */
   targetingMode?: 'move' | 'attack' | 'heal' | 'summon' | null;
+  /** Current elemental infusion state for consume element display */
+  elementalState?: ElementalInfusion | null;
+  /** Callback when user chooses to consume an element for bonus */
+  onConsumeElement?: (element: ElementType, cardId: string, position: 'top' | 'bottom') => void;
 }
 
 /**
@@ -87,6 +104,8 @@ export function TurnActionPanel({
   onActionSelect,
   onActionConfirm,
   targetingMode,
+  elementalState,
+  onConsumeElement,
 }: TurnActionPanelProps) {
   // Track the currently selected (pending) action
   const [pendingAction, setPendingAction] = useState<TurnAction | null>(null);
@@ -110,6 +129,58 @@ export function TurnActionPanel({
     if (turnActionState.secondAction) count++;
     return count;
   }, [turnActionState]);
+
+  // Calculate available consume element for the pending action
+  const availableConsume = useMemo((): { modifier: ConsumeModifier; element: ElementType } | null => {
+    console.log('[TurnActionPanel] Checking consume:', {
+      hasPendingAction: !!pendingAction,
+      hasElementalState: !!elementalState,
+      hasOnConsumeElement: !!onConsumeElement,
+      elementalState,
+    });
+
+    if (!pendingAction || !elementalState || !onConsumeElement) {
+      return null;
+    }
+
+    // Get the selected action's modifiers
+    const card = pendingAction.cardId === card1.id ? card1 : card2;
+    const action = pendingAction.position === 'top' ? card.topAction : card.bottomAction;
+    const consumeModifier = getConsumeModifier(action.modifiers || []);
+
+    console.log('[TurnActionPanel] Action modifiers:', {
+      cardId: card.id,
+      position: pendingAction.position,
+      modifiers: action.modifiers,
+      consumeModifier,
+    });
+
+    if (!consumeModifier) {
+      return null;
+    }
+
+    // Check if the element is STRONG or WANING (both are consumable in Gloomhaven)
+    const elementState = elementalState[consumeModifier.element];
+    const isConsumable = elementState === ElementState.STRONG || elementState === ElementState.WANING;
+    console.log('[TurnActionPanel] Element state check:', {
+      element: consumeModifier.element,
+      elementState,
+      isConsumable,
+    });
+
+    if (!isConsumable) {
+      return null;
+    }
+
+    return { modifier: consumeModifier, element: consumeModifier.element };
+  }, [pendingAction, elementalState, onConsumeElement, card1, card2]);
+
+  // Handle consume element button click
+  const handleConsumeElement = useCallback(() => {
+    if (availableConsume && pendingAction && onConsumeElement) {
+      onConsumeElement(availableConsume.element, pendingAction.cardId, pendingAction.position);
+    }
+  }, [availableConsume, pendingAction, onConsumeElement]);
 
   // Handle action region click
   // - Targeting actions (move, attack, heal, summon): first tap enters targeting mode, hex tap confirms
@@ -379,7 +450,7 @@ export function TurnActionPanel({
         </div>
       </div>
 
-      {/* Help text */}
+      {/* Help text and consume element button */}
       <div className={styles.helpText}>
         {targetingMode === 'move' ? (
           <span className={styles.targetingHint}>Tap a green hex to move there</span>
@@ -395,6 +466,25 @@ export function TurnActionPanel({
           <span>Tap an action to select it</span>
         ) : null}
       </div>
+
+      {/* Consume element button - shows when action has consume modifier and element is STRONG */}
+      {availableConsume && (
+        <div className={styles.consumeContainer}>
+          <button
+            className={styles.consumeButton}
+            onClick={handleConsumeElement}
+            type="button"
+            aria-label={`Consume ${availableConsume.element} for +${availableConsume.modifier.bonus.value} ${availableConsume.modifier.bonus.effect}`}
+          >
+            <span className={styles.consumeIcon}>
+              {ELEMENT_ICONS[availableConsume.element]}
+            </span>
+            <span className={styles.consumeText}>
+              Consume for +{availableConsume.modifier.bonus.value} {availableConsume.modifier.bonus.effect}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Zoomed card modal - rendered via portal */}
       {zoomedCard && createPortal(
