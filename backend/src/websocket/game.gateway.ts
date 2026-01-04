@@ -231,8 +231,10 @@ export class GameGateway
         };
         basePayload.turnActionState = turnActionState;
 
-        // Include selected cards info if available
-        if (character.selectedCards) {
+        // Include selected cards info if available (skip if resting - card IDs are 'rest')
+        if (character.selectedCards &&
+            character.selectedCards.topCardId !== 'rest' &&
+            character.selectedCards.bottomCardId !== 'rest') {
           const card1 = await this.abilityCardService.getCardById(
             character.selectedCards.topCardId,
           );
@@ -872,6 +874,12 @@ export class GameGateway
    */
   handleConnection(client: Socket): void {
     const userId = client.data.userId;
+
+    // Debug: Log ALL incoming events from this client
+    client.onAny((eventName, ...args) => {
+      this.logger.log(`[DEBUG] Received event: ${eventName}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 200) : '');
+    });
+
     if (userId) {
       // Clean up any stale mapping for this user (handles reconnection with new socket ID)
       const oldSocketId = this.playerToSocket.get(userId);
@@ -3809,6 +3817,7 @@ export class GameGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: ConfirmForcedMovementPayload,
   ): void {
+    this.logger.log(`confirm_forced_movement received:`, payload);
     try {
       const userId = this.socketToPlayer.get(client.id);
       if (!userId) {
@@ -3896,6 +3905,7 @@ export class GameGateway
         toHex: payload.destinationHex,
         movementType: pending.movementType,
         causedBy: pending.attackerId,
+        path: payload.path, // Include step-by-step path for animation
       };
 
       this.server.to(roomCode).emit('entity_forced_moved', movedPayload);

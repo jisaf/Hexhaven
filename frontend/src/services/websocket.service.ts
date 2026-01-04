@@ -486,6 +486,7 @@ class WebSocketService {
       return;
     }
 
+    console.log(`[WebSocketService] Emitting event: ${event}`, data);
     this.socket.emit(event, data);
   }
 

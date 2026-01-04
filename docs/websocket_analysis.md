@@ -447,17 +447,19 @@ Attack with Push/Pull lands
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `forced_movement_required` | `{ requestId, attackerId, targetId, targetName, movementType, distance, validDestinations[], currentPosition }` | Signals player must choose a destination hex (requestId added in #448) |
-| `entity_forced_moved` | `{ entityId, entityType, fromHex, toHex, movementType }` | Entity was moved via push/pull |
+| `entity_forced_moved` | `{ entityId, entityType, fromHex, toHex, movementType, causedBy, path? }` | Entity was moved via push/pull. `path` contains step-by-step animation coordinates (feat/push-pull-targeting) |
 | `forced_movement_skipped` | `{ attackerId, targetId, movementType, reason }` | Push/pull was skipped |
 
 **Client → Server:**
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `confirm_forced_movement` | `{ requestId, attackerId, targetId, destinationHex, movementType }` | Player selected a destination (requestId added in #448) |
+| `confirm_forced_movement` | `{ requestId, attackerId, targetId, destinationHex, movementType, path? }` | Player selected a destination. `path` is auto-calculated by frontend and sent to backend (feat/push-pull-targeting) |
 | `skip_forced_movement` | `{ requestId, attackerId, targetId }` | Player chose to skip (requestId added in #448) |
 
 **Note on requestId (Issue #448):** The `requestId` field was added to prevent race conditions when multiple forced movement requests could be pending. The client must echo back the same `requestId` it received in `forced_movement_required`. The backend validates this ID matches the pending request before processing the confirmation or skip action.
+
+**Note on path (feat/push-pull-targeting):** The `path` field contains the step-by-step movement coordinates for smooth animation. The frontend auto-calculates this path based on push/pull direction when the player clicks a destination hex, then sends it to the backend. The backend echoes the path back in `entity_forced_moved` for all clients to animate consistently.
 
 ### 10.3. Frontend State
 
@@ -572,8 +574,103 @@ Pending forced movement state is now properly cleaned up in the following scenar
 - ✅ Ensures clean state when players reconnect
 - ✅ No stale forced movement requests across turns or sessions
 
-### 10.4. Visual Feedback
+### 10.4. Path Calculation and Animation (feat/push-pull-targeting)
 
-- **Yellow highlights**: Valid destination hexes are highlighted in yellow (0xffff00)
+**Frontend Path Calculation:**
+
+When a player clicks a valid destination hex, the `GameStateManager` auto-calculates the step-by-step path:
+
+```typescript
+private calculateForcedMovementPath(
+  startPos: Axial,
+  destPos: Axial,
+  attackerPos: Axial,
+  movementType: 'push' | 'pull'
+): Axial[] {
+  const path: Axial[] = [];
+  let currentPos = { ...startPos };
+
+  // Step through hexes in push/pull direction until reaching destination
+  while (path.length < maxSteps) {
+    const neighbors = hexNeighbors(currentPos);
+
+    // Filter neighbors that move in the correct direction
+    const validNeighbors = neighbors.filter(n =>
+      movementType === 'push'
+        ? hexDistance(n, attackerPos) > hexDistance(currentPos, attackerPos)
+        : hexDistance(n, attackerPos) < hexDistance(currentPos, attackerPos)
+    );
+
+    // Choose neighbor closest to destination
+    const nextHex = validNeighbors.reduce((closest, hex) =>
+      hexDistance(hex, destPos) < hexDistance(closest, destPos) ? hex : closest
+    );
+
+    path.push(nextHex);
+    currentPos = nextHex;
+
+    if (currentPos.q === destPos.q && currentPos.r === destPos.r) {
+      break; // Reached destination
+    }
+  }
+
+  return path;
+}
+```
+
+**Monster Sprite Animation:**
+
+The `MonsterSprite` class now supports animated movement via `animateMoveTo()`:
+
+```typescript
+// MonsterSprite.ts
+public async animateMoveTo(path: Axial[], speed: number = 200): Promise<void> {
+  for (const targetHex of path) {
+    const startPos = this.position.clone();
+    const endPos = axialToScreen(targetHex);
+    const distance = Math.sqrt(Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2));
+    const duration = (distance / speed) * 1000;
+
+    await new Promise<void>((resolve) => {
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+
+        this.position.x = startPos.x + (endPos.x - startPos.x) * eased;
+        this.position.y = startPos.y + (endPos.y - startPos.y) * eased;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          this.updatePosition(targetHex); // Snap to final position
+          resolve();
+        }
+      };
+      animate();
+    });
+  }
+}
+```
+
+**Animation Flow:**
+
+1. Player clicks destination hex → Frontend calculates path
+2. Frontend sends `confirm_forced_movement` with `path` field to backend
+3. Backend validates and broadcasts `entity_forced_moved` with same `path`
+4. All clients receive path and animate monster step-by-step using `MonsterSprite.animateMoveTo()`
+5. Monster visually moves through each hex in the path with smooth easing
+
+**Benefits:**
+- ✅ Smooth, step-by-step animation instead of instant teleportation
+- ✅ Clear visual feedback showing the push/pull direction
+- ✅ All clients see identical animation (path calculated once on frontend, echoed by backend)
+- ✅ Reuses existing animation infrastructure from `CharacterSprite`
+
+### 10.5. Visual Feedback
+
+- **Yellow highlights**: ALL valid destination hexes are highlighted in yellow (0xffff00), similar to movement range display
+- **Click-to-confirm**: Clicking any yellow hex immediately calculates the path and applies the movement (no confirmation dialog)
 - **Skip button**: Displayed in TurnActionPanel when push/pull targeting is active
 - **Hint text**: "Tap a yellow hex to push/pull [target name]"
+- **Animated movement**: Monster sprite smoothly animates along the calculated path with ease-out cubic easing

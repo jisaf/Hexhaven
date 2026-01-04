@@ -326,6 +326,41 @@ export class MonsterSprite extends PIXI.Container {
   }
 
   /**
+   * Animate movement along a path (for push/pull forced movement)
+   * Similar to CharacterSprite.animateMoveTo
+   */
+  public async animateMoveTo(path: Axial[], speed: number = 200): Promise<void> {
+    for (const targetHex of path) {
+      const startPos = this.position.clone();
+      const endPos = axialToScreen(targetHex);
+      const distance = Math.sqrt(Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2));
+      const duration = (distance / speed) * 1000;
+      const startTime = Date.now();
+
+      await new Promise<void>((resolve) => {
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const eased = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+
+          this.position.x = startPos.x + (endPos.x - startPos.x) * eased;
+          this.position.y = startPos.y + (endPos.y - startPos.y) * eased;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            this.updatePosition(targetHex); // Snap to final position
+            resolve();
+          }
+        };
+
+        animate();
+      });
+    }
+  }
+
+  /**
    * Animate death effect
    */
   public animateDeath(): Promise<void> {

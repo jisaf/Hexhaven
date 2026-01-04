@@ -767,6 +767,7 @@ export interface ConfirmForcedMovementPayload {
   targetId: string;
   destinationHex: AxialCoordinates;
   movementType: 'push' | 'pull';
+  path?: AxialCoordinates[]; // Optional: step-by-step path for animation (if not provided, straight line is calculated)
 }
 
 /**
@@ -805,6 +806,7 @@ export interface EntityForcedMovedPayload {
   toHex: AxialCoordinates;
   movementType: 'push' | 'pull';
   causedBy: string; // attacker ID
+  path?: AxialCoordinates[]; // Optional: step-by-step path for animation
 }
 
 /**

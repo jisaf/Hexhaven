@@ -1,8 +1,8 @@
 # Hexhaven Multiplayer - System Architecture
 
-**Version**: 1.4
-**Last Updated**: 2026-01-03
-**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles + WebSocket Improvements + Push/Pull Targeting)
+**Version**: 1.5
+**Last Updated**: 2026-01-04
+**Status**: Production-Ready (MVP + Campaign Mode + Narrative System + Summons + Unified Card Piles + WebSocket Improvements + Push/Pull Targeting with Animation)
 
 ---
 

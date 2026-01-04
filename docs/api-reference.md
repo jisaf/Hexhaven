@@ -6,10 +6,11 @@ Complete REST API documentation for Hexhaven Multiplayer.
 
 1. [Overview](#overview)
 2. [Authentication](#authentication)
-3. [Match History API](#match-history-api)
-4. [Error Handling](#error-handling)
-5. [Rate Limiting](#rate-limiting)
-6. [Examples](#examples)
+3. [WebSocket API](#websocket-api)
+4. [Match History API](#match-history-api)
+5. [Error Handling](#error-handling)
+6. [Rate Limiting](#rate-limiting)
+7. [Examples](#examples)
 
 ---
 
@@ -77,6 +78,313 @@ Users receive JWT tokens after logging in. For details on authentication, see th
 ```
 Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
+
+---
+
+## WebSocket API
+
+Hexhaven uses Socket.IO for real-time game communication. All game actions and state updates are synchronized via WebSocket events.
+
+### Connection
+
+**URL**: `ws://localhost:3001` (development) or production WebSocket endpoint
+
+**Protocol**: Socket.IO (WebSocket with fallback to HTTP long-polling)
+
+**Authentication**: JWT token passed in Socket.IO handshake auth
+
+```typescript
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3001', {
+  auth: {
+    token: 'your_jwt_token'
+  }
+});
+```
+
+---
+
+### Push/Pull Forced Movement Events
+
+Push and pull effects allow attackers to move targets away from or toward themselves. The implementation uses an interactive targeting system with animated movement.
+
+#### forced_movement_required
+
+**Direction**: Server → Client
+
+**When**: Emitted after an attack with push/pull modifier lands and target survives
+
+**Payload**:
+
+```typescript
+{
+  requestId: string;           // Unique ID to prevent race conditions (Issue #448)
+  attackerId: string;          // Character performing the push/pull
+  targetId: string;            // Monster or character being pushed/pulled
+  targetName: string;          // Display name of target
+  movementType: 'push' | 'pull';
+  distance: number;            // Maximum hexes to move (e.g., Push 2)
+  validDestinations: AxialCoordinates[]; // ALL valid destination hexes
+  currentPosition: AxialCoordinates;     // Target's current position
+}
+```
+
+**Example**:
+
+```json
+{
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "attackerId": "char-uuid-1",
+  "targetId": "monster-uuid-5",
+  "targetName": "Bandit Guard",
+  "movementType": "push",
+  "distance": 2,
+  "validDestinations": [
+    { "q": 3, "r": 4 },
+    { "q": 4, "r": 4 },
+    { "q": 4, "r": 5 }
+  ],
+  "currentPosition": { "q": 2, "r": 3 }
+}
+```
+
+**Client Behavior**:
+- Highlights ALL valid destination hexes in yellow
+- Player clicks any yellow hex
+- Frontend auto-calculates step-by-step path
+- Sends `confirm_forced_movement` with calculated path
+
+---
+
+#### confirm_forced_movement
+
+**Direction**: Client → Server
+
+**When**: Player selects a destination hex for push/pull
+
+**Payload**:
+
+```typescript
+{
+  requestId: string;           // Must match requestId from forced_movement_required
+  attackerId: string;
+  targetId: string;
+  destinationHex: AxialCoordinates;
+  movementType: 'push' | 'pull';
+  path?: AxialCoordinates[];   // Step-by-step path (feat/push-pull-targeting)
+}
+```
+
+**Example**:
+
+```json
+{
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "attackerId": "char-uuid-1",
+  "targetId": "monster-uuid-5",
+  "destinationHex": { "q": 4, "r": 5 },
+  "movementType": "push",
+  "path": [
+    { "q": 3, "r": 4 },
+    { "q": 4, "r": 5 }
+  ]
+}
+```
+
+**Path Calculation** (feat/push-pull-targeting):
+
+The `path` field is optional but recommended. If provided, it contains the step-by-step hexes the target will move through. The frontend calculates this path by:
+
+1. Starting at current position
+2. For each step, finding neighbor hex that:
+   - Moves in correct direction (farther/closer to attacker)
+   - Gets closer to destination hex
+   - Is not blocked
+3. Repeating until destination is reached
+
+**Backend Validation**:
+- Verifies `requestId` matches pending request
+- Validates destination is in `validDestinations` list
+- Checks attacker owns the character (authorization)
+- Applies movement and broadcasts `entity_forced_moved`
+
+---
+
+#### entity_forced_moved
+
+**Direction**: Server → Client
+
+**When**: After forced movement is confirmed and applied
+
+**Payload**:
+
+```typescript
+{
+  entityId: string;
+  entityType: 'character' | 'monster';
+  fromHex: AxialCoordinates;
+  toHex: AxialCoordinates;
+  movementType: 'push' | 'pull';
+  causedBy: string;            // Attacker ID
+  path?: AxialCoordinates[];   // Step-by-step animation path (feat/push-pull-targeting)
+}
+```
+
+**Example**:
+
+```json
+{
+  "entityId": "monster-uuid-5",
+  "entityType": "monster",
+  "fromHex": { "q": 2, "r": 3 },
+  "toHex": { "q": 4, "r": 5 },
+  "movementType": "push",
+  "causedBy": "char-uuid-1",
+  "path": [
+    { "q": 3, "r": 4 },
+    { "q": 4, "r": 5 }
+  ]
+}
+```
+
+**Client Behavior** (feat/push-pull-targeting):
+
+If `path` is provided:
+- Animates monster sprite step-by-step through each hex
+- Uses `MonsterSprite.animateMoveTo(path)` method
+- Smooth ease-out cubic easing at 200 pixels/second
+- All clients see identical animation
+
+If `path` is missing (fallback):
+- Monster instantly teleports to final position
+
+---
+
+#### skip_forced_movement
+
+**Direction**: Client → Server
+
+**When**: Player chooses to skip the push/pull
+
+**Payload**:
+
+```typescript
+{
+  requestId: string;  // Must match requestId from forced_movement_required
+  attackerId: string;
+  targetId: string;
+}
+```
+
+**Example**:
+
+```json
+{
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "attackerId": "char-uuid-1",
+  "targetId": "monster-uuid-5"
+}
+```
+
+**Backend Validation** (Issue #448):
+- Verifies `requestId` matches pending request
+- Checks attacker owns the character (authorization)
+- Clears pending state and broadcasts `forced_movement_skipped`
+
+---
+
+#### forced_movement_skipped
+
+**Direction**: Server → Client
+
+**When**: Push/pull was skipped or has no valid destinations
+
+**Payload**:
+
+```typescript
+{
+  attackerId: string;
+  targetId: string;
+  movementType: 'push' | 'pull';
+  reason: 'player_skipped' | 'no_valid_destinations' | 'target_died' | 'timeout';
+}
+```
+
+**Example**:
+
+```json
+{
+  "attackerId": "char-uuid-1",
+  "targetId": "monster-uuid-5",
+  "movementType": "push",
+  "reason": "player_skipped"
+}
+```
+
+**Reasons**:
+- `player_skipped`: Player clicked "Skip Push/Pull" button
+- `no_valid_destinations`: Target is backed against wall or no valid hexes
+- `target_died`: Target died before movement could be applied
+- `timeout`: Player didn't respond within timeout period (30 seconds)
+
+---
+
+### Push/Pull Event Flow
+
+```
+1. Attack with Push/Pull lands → Target survives
+2. Server calculates valid destinations
+3. Server emits forced_movement_required
+4. Client highlights all valid hexes in yellow
+5. Player clicks destination hex
+6. Client calculates step-by-step path
+7. Client emits confirm_forced_movement (with path)
+8. Server validates requestId, authorization, destination
+9. Server applies movement
+10. Server emits entity_forced_moved (with path)
+11. All clients animate monster along path
+```
+
+**Race Condition Prevention** (Issue #448):
+
+The `requestId` field prevents race conditions when multiple forced movement requests could overlap:
+
+- Each request has a unique UUID
+- Client must echo the `requestId` in confirmation/skip
+- Server validates the ID matches the pending request
+- Stale requests are rejected with error
+
+**Authorization** (Issue #448):
+
+Only the attacking player can confirm or skip their own forced movement:
+
+```typescript
+// Backend validation
+const isOwner = userCharacters.some(c => c.id === pending.attackerId);
+if (!isOwner) {
+  throw new Error('Not authorized to skip this forced movement');
+}
+```
+
+---
+
+### Data Types
+
+```typescript
+interface AxialCoordinates {
+  q: number;  // Axial coordinate Q (column)
+  r: number;  // Axial coordinate R (row)
+}
+```
+
+---
+
+### Related Documentation
+
+For complete WebSocket event documentation, see:
+- [websocket_analysis.md](./websocket_analysis.md) - Complete WebSocket architecture and all game events
+- [game-rules/combat.md](./game-rules/combat.md) - Push/pull game rules and UI behavior
 
 ---
 
@@ -874,5 +1182,5 @@ Create a new game room.
 
 ---
 
-**Last Updated**: 2025-12-25
-**Version**: 1.1.0 (Issue #318 - Campaign Context in Room Metadata)
+**Last Updated**: 2026-01-04
+**Version**: 1.2.0 (WebSocket API - Push/Pull Targeting with Animation)
