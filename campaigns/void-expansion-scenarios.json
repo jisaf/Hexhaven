@@ -17,37 +17,252 @@
         "opacity": 0.8
       },
       "mapHexes": [
-        {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 0, "terrain": "difficult"}, {"q": 3, "r": 0, "terrain": "normal"},
-        {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 3, "r": 1, "terrain": "difficult"},
-        {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 3, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 5, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": -1, "r": 6, "terrain": "difficult"}, {"q": 3, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
-        {"q": 3, "r": 4, "terrain": "difficult"}
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 3,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 3,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 3,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "difficult"
+        },
+        {
+          "q": 3,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 3,
+          "r": 4,
+          "terrain": "difficult"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": 0, "r": 0},
-        {"player": 1, "q": 1, "r": 0},
-        {"player": 2, "q": 2, "r": 0},
-        {"player": 3, "q": -1, "r": 0}
+        {
+          "player": 0,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 2,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 0
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-drone", "count": 2, "positions": [{"q": 1, "r": 3}, {"q": 2, "r": 4}], "elite": [false, false]},
-        {"type": "alien-scout", "count": 1, "positions": [{"q": 1, "r": 6}], "elite": [false]}
+        {
+          "type": "alien-drone",
+          "count": 2,
+          "positions": [
+            {
+              "q": 1,
+              "r": 3
+            },
+            {
+              "q": 2,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "alien-scout",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 6
+            }
+          ],
+          "elite": [
+            false
+          ]
+        }
       ],
       "objectives": [
-        {"id": "seal-breach", "type": "location-reach", "description": "Seal the breach", "hexes": [{"q": 1, "r": 7}]},
-        {"id": "protect-core", "type": "defeat-all-monsters", "description": "Protect the ship's core"}
+        {
+          "id": "seal-breach",
+          "type": "location-reach",
+          "description": "Seal the breach",
+          "hexes": [
+            {
+              "q": 1,
+              "r": 7
+            }
+          ]
+        },
+        {
+          "id": "protect-core",
+          "type": "defeat-all-monsters",
+          "description": "Protect the ship's core"
+        }
       ],
       "treasures": [
-        {"id": "emergency-power", "position": {"q": 1, "r": 4}, "reward": "gold:50"},
-        {"id": "tech-upgrade", "position": {"q": 1, "r": 6}, "reward": "item:tech-upgrade"}
+        {
+          "id": "emergency-power",
+          "position": {
+            "q": 1,
+            "r": 4
+          },
+          "reward": "gold:50"
+        },
+        {
+          "id": "tech-upgrade",
+          "position": {
+            "q": 1,
+            "r": 6
+          },
+          "reward": "item:tech-upgrade"
+        }
       ],
       "narrative": {
         "intro": "Red alert! The colony ship is under attack! Alien forces have breached the hull. You must protect the ship and seal the breach before it's too late!",
@@ -55,7 +270,9 @@
           {
             "id": "enemies-defeated-2",
             "type": "monster-count",
-            "condition": {"monstersDefeated": 2},
+            "condition": {
+              "monstersDefeated": 2
+            },
             "text": "Two alien intruders fall! But more are coming through the breach. You hear screams from the command center!"
           }
         ],
@@ -63,7 +280,10 @@
           "text": "You've repelled the initial assault and sealed the breach! The ship is safe for now. But humanity's troubles are only beginning. Command is gathering intelligence on these aliens..."
         }
       },
-      "unlocksScenarios": ["ve_02_station_alpha_defense", "ve_03_alien_wreckage_salvage"]
+      "unlocksScenarios": [
+        "ve_02_station_alpha_defense",
+        "ve_03_alien_wreckage_salvage"
+      ]
     },
     {
       "id": "ve_02_station_alpha_defense",
@@ -80,35 +300,226 @@
         "opacity": 0.75
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": -2, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "difficult"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": -1, "r": 5, "terrain": "difficult"}, {"q": 2, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "difficult"}, {"q": 1, "r": 7, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-warrior", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
-        {"type": "alien-tech", "count": 1, "positions": [{"q": 1, "r": 6}], "elite": [true]}
+        {
+          "type": "alien-warrior",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 3
+            },
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "alien-tech",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 6
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "defeat-commander", "type": "defeat-monsters", "description": "Defeat the alien commander"}
+        {
+          "id": "defeat-commander",
+          "type": "defeat-monsters",
+          "description": "Defeat the alien commander"
+        }
       ],
       "treasures": [
-        {"id": "station-power-core", "position": {"q": 0, "r": 4}, "reward": "gold:75"},
-        {"id": "alien-tech-salvage", "position": {"q": 1, "r": 6}, "reward": "item:alien-tech"}
+        {
+          "id": "station-power-core",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "gold:75"
+        },
+        {
+          "id": "alien-tech-salvage",
+          "position": {
+            "q": 1,
+            "r": 6
+          },
+          "reward": "item:alien-tech"
+        }
       ],
       "narrative": {
         "intro": "Station Alpha is humanity's largest outpost in this sector. Alien forces are attacking with incredible coordination. If we lose this station, humanity loses our foothold in space.",
@@ -116,15 +527,19 @@
           {
             "id": "tech-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "alien-tech"},
-            "text": "The alien technology specialist falls! As it dies, you intercept strange signals—the aliens are communicating on a hive frequency. They're all connected!"
+            "condition": {
+              "monsterType": "alien-tech"
+            },
+            "text": "The alien technology specialist falls! As it dies, you intercept strange signals\u2014the aliens are communicating on a hive frequency. They're all connected!"
           }
         ],
         "victory": {
           "text": "Station Alpha is secure! You've prevented a catastrophic loss of life. Command has decided to mount an investigation into where these aliens come from..."
         }
       },
-      "unlocksScenarios": ["ve_04_mining_station_overrun"]
+      "unlocksScenarios": [
+        "ve_04_mining_station_overrun"
+      ]
     },
     {
       "id": "ve_03_alien_wreckage_salvage",
@@ -142,33 +557,197 @@
         "opacity": 0.8
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "difficult"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "difficult"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-swarm", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
-        {"type": "scavenger-alien", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [false]}
+        {
+          "type": "alien-swarm",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "scavenger-alien",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            false
+          ]
+        }
       ],
       "objectives": [
-        {"id": "collect-intel", "type": "collect-items", "count": 2, "description": "Collect alien technology samples"}
+        {
+          "id": "collect-intel",
+          "type": "collect-items",
+          "count": 2,
+          "description": "Collect alien technology samples"
+        }
       ],
       "treasures": [
-        {"id": "tech-sample-1", "position": {"q": 0, "r": 3}, "reward": "item:tech-sample"},
-        {"id": "tech-sample-2", "position": {"q": 1, "r": 5}, "reward": "item:tech-sample"}
+        {
+          "id": "tech-sample-1",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:tech-sample"
+        },
+        {
+          "id": "tech-sample-2",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:tech-sample"
+        }
       ],
       "narrative": {
         "intro": "In the debris field, you find wrecked alien ships. These vessels contain technology beyond our understanding. We must salvage what we can before the aliens return.",
@@ -176,7 +755,9 @@
           {
             "id": "samples-collected",
             "type": "collect-items",
-            "condition": {"itemsCollected": 2},
+            "condition": {
+              "itemsCollected": 2
+            },
             "text": "You've recovered alien technology samples! Analysis shows these ships predate human space travel by millennia. What are we dealing with?"
           }
         ],
@@ -184,7 +765,9 @@
           "text": "Salvage complete. The technology recovered gives humanity new insights into our enemy. These aliens are far more advanced than we imagined."
         }
       },
-      "unlocksScenarios": ["ve_04_mining_station_overrun"]
+      "unlocksScenarios": [
+        "ve_04_mining_station_overrun"
+      ]
     },
     {
       "id": "ve_04_mining_station_overrun",
@@ -201,36 +784,231 @@
         "opacity": 0.85
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "obstacle"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": -2, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "difficult"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
-        {"q": 2, "r": 4, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "xenomorph", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
-        {"type": "hive-commander", "count": 1, "positions": [{"q": 1, "r": 7}], "elite": [true]}
+        {
+          "type": "xenomorph",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 3
+            },
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "hive-commander",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 7
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "contain-infestation", "type": "defeat-monsters", "description": "Eliminate the hive commander"}
+        {
+          "id": "contain-infestation",
+          "type": "defeat-monsters",
+          "description": "Eliminate the hive commander"
+        }
       ],
       "treasures": [
-        {"id": "mining-ore", "position": {"q": 0, "r": 4}, "reward": "gold:100"},
-        {"id": "research-data", "position": {"q": 1, "r": 6}, "reward": "item:research-data"}
+        {
+          "id": "mining-ore",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "gold:100"
+        },
+        {
+          "id": "research-data",
+          "position": {
+            "q": 1,
+            "r": 6
+          },
+          "reward": "item:research-data"
+        }
       ],
       "narrative": {
         "intro": "The mining station is overrun with alien lifeforms! The ore here is crucial to our war effort. We must retake this facility and eliminate the hive commander.",
@@ -238,15 +1016,20 @@
           {
             "id": "commander-located",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "hive-commander"},
-            "text": "The hive commander falls! As it dies, you intercept communications—there are more worlds like this, already converted. The aliens have been here for longer than we thought!"
+            "condition": {
+              "monsterType": "hive-commander"
+            },
+            "text": "The hive commander falls! As it dies, you intercept communications\u2014there are more worlds like this, already converted. The aliens have been here for longer than we thought!"
           }
         ],
         "victory": {
-          "text": "The mining station is retaken! But the scale of the invasion becomes clear. These aliens aren't just attacking—they're colonizing entire worlds. We need to understand their origins."
+          "text": "The mining station is retaken! But the scale of the invasion becomes clear. These aliens aren't just attacking\u2014they're colonizing entire worlds. We need to understand their origins."
         }
       },
-      "unlocksScenarios": ["ve_05_kepler_expedition", "ve_06_void_scouts"]
+      "unlocksScenarios": [
+        "ve_05_kepler_expedition",
+        "ve_06_void_scouts"
+      ]
     },
     {
       "id": "ve_05_kepler_expedition",
@@ -263,33 +1046,202 @@
         "opacity": 0.85
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "difficult"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "hybrid-creature", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
-        {"type": "hive-queen", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "hybrid-creature",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "hive-queen",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "rescue-researchers", "type": "location-reach", "description": "Reach the research station", "hexes": [{"q": 1, "r": 5}]}
+        {
+          "id": "rescue-researchers",
+          "type": "location-reach",
+          "description": "Reach the research station",
+          "hexes": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ]
+        }
       ],
       "treasures": [
-        {"id": "research-station-data", "position": {"q": 0, "r": 3}, "reward": "item:research-log"},
-        {"id": "genetic-sample", "position": {"q": 1, "r": 5}, "reward": "item:genetic-sample"}
+        {
+          "id": "research-station-data",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:research-log"
+        },
+        {
+          "id": "genetic-sample",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:genetic-sample"
+        }
       ],
       "narrative": {
         "intro": "Kepler-442 is a dead world now. The entire ecosystem has been transformed into alien biomass. We land at the research station to recover any data about what happened here.",
@@ -297,15 +1249,19 @@
           {
             "id": "queen-encountered",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "hive-queen"},
+            "condition": {
+              "monsterType": "hive-queen"
+            },
             "text": "The queen falls! As her body disintegrates, you access the research station's computers. The logs show the invasion happened 2,000 years ago. These aliens have had millennia to spread."
           }
         ],
         "victory": {
-          "text": "You've recovered crucial data. The aliens aren't invaders—they're colonizers. They've already converted entire worlds. The Hive spans across dimensions. We need to find their origin to stop them."
+          "text": "You've recovered crucial data. The aliens aren't invaders\u2014they're colonizers. They've already converted entire worlds. The Hive spans across dimensions. We need to find their origin to stop them."
         }
       },
-      "unlocksScenarios": ["ve_07_research_station_lockdown"]
+      "unlocksScenarios": [
+        "ve_07_research_station_lockdown"
+      ]
     },
     {
       "id": "ve_06_void_scouts",
@@ -322,49 +1278,212 @@
         "opacity": 0.8
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "difficult"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 2, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "consciousness-fragment", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
-        {"type": "void-predator", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "consciousness-fragment",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "void-predator",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "collect-data", "type": "collect-items", "count": 2, "description": "Collect dimensional gateway data"}
+        {
+          "id": "collect-data",
+          "type": "collect-items",
+          "count": 2,
+          "description": "Collect dimensional gateway data"
+        }
       ],
       "treasures": [
-        {"id": "navigation-data", "position": {"q": 0, "r": 3}, "reward": "item:nav-data"},
-        {"id": "gateway-coords", "position": {"q": 1, "r": 5}, "reward": "item:gateway-coords"}
+        {
+          "id": "navigation-data",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:nav-data"
+        },
+        {
+          "id": "gateway-coords",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:gateway-coords"
+        }
       ],
       "narrative": {
-        "intro": "Deep in the void, you detect alien scout ships. Following their coordinates leads to dimensional gateways—holes in space itself. The aliens can traverse dimensions! This changes everything.",
+        "intro": "Deep in the void, you detect alien scout ships. Following their coordinates leads to dimensional gateways\u2014holes in space itself. The aliens can traverse dimensions! This changes everything.",
         "triggers": [
           {
             "id": "data-collected",
             "type": "collect-items",
-            "condition": {"itemsCollected": 2},
-            "text": "You've obtained the dimensional coordinates! Analysis shows multiple gateway systems throughout space. The aliens didn't originate in our dimension—they're invading from beyond!"
+            "condition": {
+              "itemsCollected": 2
+            },
+            "text": "You've obtained the dimensional coordinates! Analysis shows multiple gateway systems throughout space. The aliens didn't originate in our dimension\u2014they're invading from beyond!"
           }
         ],
         "victory": {
           "text": "This discovery is critical. The aliens have access to dimensional technology we can barely comprehend. To stop them, we must pursue them through the gateways to their origin dimension."
         }
       },
-      "unlocksScenarios": ["ve_07_research_station_lockdown"]
+      "unlocksScenarios": [
+        "ve_07_research_station_lockdown"
+      ]
     },
     {
       "id": "ve_07_research_station_lockdown",
@@ -381,34 +1500,211 @@
         "opacity": 0.8
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": -1, "r": 5, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-warrior", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
-        {"type": "swarm-leader", "count": 1, "positions": [{"q": 1, "r": 6}], "elite": [true]}
+        {
+          "type": "alien-warrior",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 3
+            },
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "swarm-leader",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 6
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "hold-station", "type": "defeat-monsters", "description": "Hold the station until reinforcements arrive"}
+        {
+          "id": "hold-station",
+          "type": "defeat-monsters",
+          "description": "Hold the station until reinforcements arrive"
+        }
       ],
       "treasures": [
-        {"id": "research-breakthrough", "position": {"q": 0, "r": 4}, "reward": "gold:125"},
-        {"id": "weapon-prototype", "position": {"q": 1, "r": 6}, "reward": "item:prototype-weapon"}
+        {
+          "id": "research-breakthrough",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "gold:125"
+        },
+        {
+          "id": "weapon-prototype",
+          "position": {
+            "q": 1,
+            "r": 6
+          },
+          "reward": "item:prototype-weapon"
+        }
       ],
       "narrative": {
         "intro": "The research station is locked down! Aliens have breached the outer modules. Scientists work frantically to weaponize our new knowledge. You must hold the line until their work is complete!",
@@ -416,15 +1712,20 @@
           {
             "id": "leader-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "swarm-leader"},
-            "text": "The swarm leader falls! The scientists complete their work—they've developed a weapon! It uses the dimensional gateway technology against the hive itself!"
+            "condition": {
+              "monsterType": "swarm-leader"
+            },
+            "text": "The swarm leader falls! The scientists complete their work\u2014they've developed a weapon! It uses the dimensional gateway technology against the hive itself!"
           }
         ],
         "victory": {
           "text": "The station is secure! We now have a weapon that can disrupt the hive consciousness across dimensional boundaries. It's time to take the fight to them."
         }
       },
-      "unlocksScenarios": ["ve_08_genetic_lab_containment", "ve_09_quantum_observatory"]
+      "unlocksScenarios": [
+        "ve_08_genetic_lab_containment",
+        "ve_09_quantum_observatory"
+      ]
     },
     {
       "id": "ve_08_genetic_lab_containment",
@@ -441,49 +1742,216 @@
         "opacity": 0.9
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "difficult"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "hybrid-creature", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, true]},
-        {"type": "genetic-abomination", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "hybrid-creature",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            true
+          ]
+        },
+        {
+          "type": "genetic-abomination",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "contain-outbreak", "type": "defeat-monsters", "description": "Eliminate the genetic abomination"}
+        {
+          "id": "contain-outbreak",
+          "type": "defeat-monsters",
+          "description": "Eliminate the genetic abomination"
+        }
       ],
       "treasures": [
-        {"id": "research-notes", "position": {"q": 0, "r": 3}, "reward": "item:research-notes"},
-        {"id": "genetic-cure", "position": {"q": 1, "r": 5}, "reward": "item:genetic-cure"}
+        {
+          "id": "research-notes",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:research-notes"
+        },
+        {
+          "id": "genetic-cure",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:genetic-cure"
+        }
       ],
       "narrative": {
-        "intro": "Inside the lab, you discover horrifying experiments—human-alien hybrids created by the hive consciousness. Some are alive, enhanced by alien genetics. This is how they assimilate worlds: by converting the native population.",
+        "intro": "Inside the lab, you discover horrifying experiments\u2014human-alien hybrids created by the hive consciousness. Some are alive, enhanced by alien genetics. This is how they assimilate worlds: by converting the native population.",
         "triggers": [
           {
             "id": "abomination-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "genetic-abomination"},
-            "text": "The abomination falls! Research data reveals the horrifying truth—the aliens aren't just invading. They're upgrading themselves with species from across the dimensions. They've become unstoppable through assimilation."
+            "condition": {
+              "monsterType": "genetic-abomination"
+            },
+            "text": "The abomination falls! Research data reveals the horrifying truth\u2014the aliens aren't just invading. They're upgrading themselves with species from across the dimensions. They've become unstoppable through assimilation."
           }
         ],
         "victory": {
-          "text": "The lab is secure. But the knowledge is terrifying—the hive consciousness can improve itself by absorbing genetic material from civilizations across multiple dimensions. We must strike at their core before they assimilate us completely."
+          "text": "The lab is secure. But the knowledge is terrifying\u2014the hive consciousness can improve itself by absorbing genetic material from civilizations across multiple dimensions. We must strike at their core before they assimilate us completely."
         }
       },
-      "unlocksScenarios": ["ve_10_hive_world"]
+      "unlocksScenarios": [
+        "ve_10_hive_world"
+      ]
     },
     {
       "id": "ve_09_quantum_observatory",
@@ -500,49 +1968,225 @@
         "opacity": 0.8
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "difficult"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "difficult"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "consciousness-fragment", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
-        {"type": "quantum-entity", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "consciousness-fragment",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "quantum-entity",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "map-gateways", "type": "location-reach", "description": "Access the observatory data", "hexes": [{"q": 1, "r": 5}]}
+        {
+          "id": "map-gateways",
+          "type": "location-reach",
+          "description": "Access the observatory data",
+          "hexes": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ]
+        }
       ],
       "treasures": [
-        {"id": "dimensional-map", "position": {"q": 0, "r": 3}, "reward": "item:dimensional-map"},
-        {"id": "gateway-key", "position": {"q": 1, "r": 5}, "reward": "item:gateway-key"}
+        {
+          "id": "dimensional-map",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:dimensional-map"
+        },
+        {
+          "id": "gateway-key",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:gateway-key"
+        }
       ],
       "narrative": {
-        "intro": "The observatory shows something impossible—multiple wormholes are stabilizing throughout our sector. The aliens are opening pathways from their dimension. We can use their own gateways to find their origin!",
+        "intro": "The observatory shows something impossible\u2014multiple wormholes are stabilizing throughout our sector. The aliens are opening pathways from their dimension. We can use their own gateways to find their origin!",
         "triggers": [
           {
             "id": "map-obtained",
             "type": "location-reach",
-            "condition": {"hex": {"q": 1, "r": 5}},
-            "text": "You access the complete gateway map! The data shows a massive concentration point—the source of all invasions. It's in another dimension entirely. That's where their hive mind originates!"
+            "condition": {
+              "hex": {
+                "q": 1,
+                "r": 5
+              }
+            },
+            "text": "You access the complete gateway map! The data shows a massive concentration point\u2014the source of all invasions. It's in another dimension entirely. That's where their hive mind originates!"
           }
         ],
         "victory": {
           "text": "You have the coordinates to the origin nexus. It's time to mount a counteroffensive. We'll cross through the gateways and strike at the heart of their civilization."
         }
       },
-      "unlocksScenarios": ["ve_10_hive_world"]
+      "unlocksScenarios": [
+        "ve_10_hive_world"
+      ]
     },
     {
       "id": "ve_10_hive_world",
@@ -559,32 +2203,269 @@
         "opacity": 0.9
       },
       "mapHexes": [
-        {"q": -2, "r": 0, "terrain": "normal"}, {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 1, "terrain": "difficult"}, {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "difficult"},
-        {"q": -2, "r": 2, "terrain": "normal"}, {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": -2, "r": 3, "terrain": "difficult"}, {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
-        {"q": -2, "r": 4, "terrain": "normal"}, {"q": -1, "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "difficult"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -2, "r": 0},
-        {"player": 1, "q": -1, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": 2, "r": 0}
+        {
+          "player": 0,
+          "q": -2,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": 2,
+          "r": 0
+        }
       ],
       "monsterGroups": [
-        {"type": "hive-drone", "count": 3, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}, {"q": 0, "r": 6}], "elite": [false, false, false]},
-        {"type": "hive-warrior", "count": 2, "positions": [{"q": -1, "r": 3}, {"q": 1, "r": 5}], "elite": [false, true]},
-        {"type": "hive-priest", "count": 1, "positions": [{"q": 0, "r": 7}], "elite": [true]}
+        {
+          "type": "hive-drone",
+          "count": 3,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            },
+            {
+              "q": 0,
+              "r": 6
+            }
+          ],
+          "elite": [
+            false,
+            false,
+            false
+          ]
+        },
+        {
+          "type": "hive-warrior",
+          "count": 2,
+          "positions": [
+            {
+              "q": -1,
+              "r": 3
+            },
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            false,
+            true
+          ]
+        },
+        {
+          "type": "hive-priest",
+          "count": 1,
+          "positions": [
+            {
+              "q": 0,
+              "r": 7
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "defeat-priest", "type": "defeat-monsters", "description": "Defeat the hive priest"}
+        {
+          "id": "defeat-priest",
+          "type": "defeat-monsters",
+          "description": "Defeat the hive priest"
+        }
       ],
       "treasures": [
-        {"id": "biomass-core", "position": {"q": 0, "r": 4}, "reward": "gold:200"},
-        {"id": "consciousness-shard", "position": {"q": 0, "r": 7}, "reward": "item:consciousness-shard"}
+        {
+          "id": "biomass-core",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "gold:200"
+        },
+        {
+          "id": "consciousness-shard",
+          "position": {
+            "q": 0,
+            "r": 7
+          },
+          "reward": "item:consciousness-shard"
+        }
       ],
       "narrative": {
         "intro": "You stand on an alien world completely consumed by the hive. Bioluminescent towers pulse with collective consciousness. Millions of aliens work in perfect synchronization. This is the scope of what we face.",
@@ -592,15 +2473,20 @@
           {
             "id": "priest-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "hive-priest"},
-            "text": "The hive priest falls! The connection to millions of drones weakens. You've struck a blow against the collective consciousness itself. But the origin nexus—the Architect—remains."
+            "condition": {
+              "monsterType": "hive-priest"
+            },
+            "text": "The hive priest falls! The connection to millions of drones weakens. You've struck a blow against the collective consciousness itself. But the origin nexus\u2014the Architect\u2014remains."
           }
         ],
         "victory": {
-          "text": "You've proven that the hive can be wounded. The alien civilization spans worlds and dimensions, but it can be fought. Now we prepare for the final invasion—the crossing into their origin dimension."
+          "text": "You've proven that the hive can be wounded. The alien civilization spans worlds and dimensions, but it can be fought. Now we prepare for the final invasion\u2014the crossing into their origin dimension."
         }
       },
-      "unlocksScenarios": ["ve_11_crystalline_caverns", "ve_12_orbital_platform"]
+      "unlocksScenarios": [
+        "ve_11_crystalline_caverns",
+        "ve_12_orbital_platform"
+      ]
     },
     {
       "id": "ve_11_crystalline_caverns",
@@ -617,33 +2503,202 @@
         "opacity": 0.85
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "difficult"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "crystal-guardian", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
-        {"type": "resonance-entity", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "crystal-guardian",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "resonance-entity",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "disable-gateway", "type": "location-reach", "description": "Disable the dimensional gateway", "hexes": [{"q": 1, "r": 5}]}
+        {
+          "id": "disable-gateway",
+          "type": "location-reach",
+          "description": "Disable the dimensional gateway",
+          "hexes": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ]
+        }
       ],
       "treasures": [
-        {"id": "crystal-shard", "position": {"q": 0, "r": 3}, "reward": "item:crystal-shard"},
-        {"id": "gateway-disabler", "position": {"q": 1, "r": 5}, "reward": "item:gateway-disabler"}
+        {
+          "id": "crystal-shard",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:crystal-shard"
+        },
+        {
+          "id": "gateway-disabler",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:gateway-disabler"
+        }
       ],
       "narrative": {
         "intro": "In the caverns beneath the hive world, you find crystalline structures that amplify the hive's consciousness across dimensions. These crystals power the gateways. Destroying them will weaken the network.",
@@ -651,7 +2706,12 @@
           {
             "id": "gateway-disabled",
             "type": "location-reach",
-            "condition": {"hex": {"q": 1, "r": 5}},
+            "condition": {
+              "hex": {
+                "q": 1,
+                "r": 5
+              }
+            },
             "text": "The gateway disabler activates! The caverns shake as the crystalline network collapses. The connection between this world and the origin nexus weakens. One final push remains."
           }
         ],
@@ -659,7 +2719,9 @@
           "text": "The gateway is disabled! You've severed this world's connection to the hive collective. But the battle for the origin nexus itself awaits. The Architect Prime is still out there, waiting."
         }
       },
-      "unlocksScenarios": ["ve_13_wormhole_transit"]
+      "unlocksScenarios": [
+        "ve_13_wormhole_transit"
+      ]
     },
     {
       "id": "ve_12_orbital_platform",
@@ -676,33 +2738,196 @@
         "opacity": 0.85
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "difficult"},
-        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 2, "r": 3, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-commander", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [true, false]},
-        {"type": "invasion-general", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+        {
+          "type": "alien-commander",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 4
+            }
+          ],
+          "elite": [
+            true,
+            false
+          ]
+        },
+        {
+          "type": "invasion-general",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "eliminate-command", "type": "defeat-monsters", "description": "Eliminate the invasion command"}
+        {
+          "id": "eliminate-command",
+          "type": "defeat-monsters",
+          "description": "Eliminate the invasion command"
+        }
       ],
       "treasures": [
-        {"id": "command-codes", "position": {"q": 0, "r": 3}, "reward": "item:command-codes"},
-        {"id": "fleet-data", "position": {"q": 1, "r": 5}, "reward": "item:fleet-data"}
+        {
+          "id": "command-codes",
+          "position": {
+            "q": 0,
+            "r": 3
+          },
+          "reward": "item:command-codes"
+        },
+        {
+          "id": "fleet-data",
+          "position": {
+            "q": 1,
+            "r": 5
+          },
+          "reward": "item:fleet-data"
+        }
       ],
       "narrative": {
         "intro": "The orbital platform is the nerve center of the invasion. From here, alien commanders coordinate attacks across dozens of worlds. We must eliminate their leadership and seize control.",
@@ -710,15 +2935,19 @@
           {
             "id": "general-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "invasion-general"},
+            "condition": {
+              "monsterType": "invasion-general"
+            },
             "text": "The invasion general falls! As their consciousness dissolves, you intercept the final communication: 'The Architect Prime awaits in the origin nexus. Send everyone. The final war begins now.'"
           }
         ],
         "victory": {
-          "text": "We've decapitated the invasion command! The alien forces are in disarray. Now is the time to strike at their source. We have one final assault—through the wormhole to the origin nexus."
+          "text": "We've decapitated the invasion command! The alien forces are in disarray. Now is the time to strike at their source. We have one final assault\u2014through the wormhole to the origin nexus."
         }
       },
-      "unlocksScenarios": ["ve_13_wormhole_transit"]
+      "unlocksScenarios": [
+        "ve_13_wormhole_transit"
+      ]
     },
     {
       "id": "ve_13_wormhole_transit",
@@ -735,38 +2964,232 @@
         "opacity": 0.9
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "difficult"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
-        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
-        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
-        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": "-1", "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": "-1", "r": 4, "terrain": "normal"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "difficult"},
-        {"q": "-1", "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
-        {"q": 0, "r": 8, "terrain": "difficult"}, {"q": 1, "r": 8, "terrain": "normal"},
-        {"q": "-1", "r": 8, "terrain": "normal"},
-        {"q": 0, "r": 9, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 8,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 8,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 8,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 9,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "dimensional-guardian", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 0, "r": 6}], "elite": [false, false]},
-        {"type": "wormhole-entity", "count": 1, "positions": [{"q": 0, "r": 8}], "elite": [true]}
+        {
+          "type": "dimensional-guardian",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 3
+            },
+            {
+              "q": 0,
+              "r": 6
+            }
+          ],
+          "elite": [
+            false,
+            false
+          ]
+        },
+        {
+          "type": "wormhole-entity",
+          "count": 1,
+          "positions": [
+            {
+              "q": 0,
+              "r": 8
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "traverse-wormhole", "type": "location-reach", "description": "Traverse the wormhole to the origin dimension", "hexes": [{"q": 0, "r": 9}]}
+        {
+          "id": "traverse-wormhole",
+          "type": "location-reach",
+          "description": "Traverse the wormhole to the origin dimension",
+          "hexes": [
+            {
+              "q": 0,
+              "r": 9
+            }
+          ]
+        }
       ],
       "treasures": [
-        {"id": "dimensional-artifact", "position": {"q": 0, "r": 4}, "reward": "item:dimensional-artifact"},
-        {"id": "origin-key", "position": {"q": 1, "r": 7}, "reward": "item:origin-key"}
+        {
+          "id": "dimensional-artifact",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "item:dimensional-artifact"
+        },
+        {
+          "id": "origin-key",
+          "position": {
+            "q": 1,
+            "r": 7
+          },
+          "reward": "item:origin-key"
+        }
       ],
       "narrative": {
         "intro": "You enter the wormhole! Space twists around you in ways your mind cannot process. Colors shift through impossible spectrums. You are traveling between dimensions themselves. On the other side awaits the Architect Prime.",
@@ -774,15 +3197,22 @@
           {
             "id": "nexus-reached",
             "type": "location-reach",
-            "condition": {"hex": {"q": 0, "r": 9}},
-            "text": "You emerge on the other side! Before you spreads the origin nexus—a fortress-temple of impossible geometry. The hive consciousness is here in physical form. The Architect Prime awaits."
+            "condition": {
+              "hex": {
+                "q": 0,
+                "r": 9
+              }
+            },
+            "text": "You emerge on the other side! Before you spreads the origin nexus\u2014a fortress-temple of impossible geometry. The hive consciousness is here in physical form. The Architect Prime awaits."
           }
         ],
         "victory": {
           "text": "You've crossed the dimensional boundary. The origin nexus stands before you. This is where it all began. This is where it ends. Prepare for the final battle."
         }
       },
-      "unlocksScenarios": ["ve_14_infected_sector"]
+      "unlocksScenarios": [
+        "ve_14_infected_sector"
+      ]
     },
     {
       "id": "ve_14_infected_sector",
@@ -799,37 +3229,221 @@
         "opacity": 0.9
       },
       "mapHexes": [
-        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
-        {"q": "-2", "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
-        {"q": "-1", "r": 1, "terrain": "difficult"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "difficult"},
-        {"q": "-1", "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
-        {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
-        {"q": "-1", "r": 3, "terrain": "normal"},
-        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
-        {"q": "-1", "r": 4, "terrain": "difficult"},
-        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": 0, "r": 6, "terrain": "difficult"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": "-1", "r": 6, "terrain": "normal"},
-        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
-        {"q": 0, "r": 8, "terrain": "normal"}, {"q": 1, "r": 8, "terrain": "difficult"},
-        {"q": "-1", "r": 8, "terrain": "normal"}
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "obstacle"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "difficult"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 8,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 8,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 8,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -1, "r": 0},
-        {"player": 1, "q": 0, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": -1, "r": 1}
+        {
+          "player": 0,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": 0,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": -1,
+          "r": 1
+        }
       ],
       "monsterGroups": [
-        {"type": "alien-fleet-commander", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 0, "r": 5}], "elite": [true, true]},
-        {"type": "hive-overseer", "count": 1, "positions": [{"q": 1, "r": 7}], "elite": [true]}
+        {
+          "type": "alien-fleet-commander",
+          "count": 2,
+          "positions": [
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 0,
+              "r": 5
+            }
+          ],
+          "elite": [
+            true,
+            true
+          ]
+        },
+        {
+          "type": "hive-overseer",
+          "count": 1,
+          "positions": [
+            {
+              "q": 1,
+              "r": 7
+            }
+          ],
+          "elite": [
+            true
+          ]
+        }
       ],
       "objectives": [
-        {"id": "defeat-overseer", "type": "defeat-monsters", "description": "Defeat the hive overseer"}
+        {
+          "id": "defeat-overseer",
+          "type": "defeat-monsters",
+          "description": "Defeat the hive overseer"
+        }
       ],
       "treasures": [
-        {"id": "war-prize", "position": {"q": 0, "r": 4}, "reward": "gold:250"},
-        {"id": "architect-sigil", "position": {"q": 1, "r": 7}, "reward": "item:architect-sigil"}
+        {
+          "id": "war-prize",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "gold:250"
+        },
+        {
+          "id": "architect-sigil",
+          "position": {
+            "q": 1,
+            "r": 7
+          },
+          "reward": "item:architect-sigil"
+        }
       ],
       "narrative": {
         "intro": "The sector is a graveyard of civilizations. Alien warships stretch to the horizon. Millions upon millions of aliens work in perfect unison. This is the true scale of the hive consciousness. And yet, we are here. We are ready.",
@@ -837,15 +3451,19 @@
           {
             "id": "overseer-defeated",
             "type": "monster-type-defeated",
-            "condition": {"monsterType": "hive-overseer"},
-            "text": "The overseer falls! As its consciousness shatters, a single thought breaks through the hive network—the Architect Prime itself turns its attention to you. 'Interesting. Humans who reject assimilation. Perhaps you are worthy.'"
+            "condition": {
+              "monsterType": "hive-overseer"
+            },
+            "text": "The overseer falls! As its consciousness shatters, a single thought breaks through the hive network\u2014the Architect Prime itself turns its attention to you. 'Interesting. Humans who reject assimilation. Perhaps you are worthy.'"
           }
         ],
         "victory": {
           "text": "The infected sector is no longer under hive control. You've proven humanity can stand against the collective consciousness. Now, one final confrontation remains. The Architect Prime waits in the origin nexus itself."
         }
       },
-      "unlocksScenarios": ["ve_15_origin_nexus"]
+      "unlocksScenarios": [
+        "ve_15_origin_nexus"
+      ]
     },
     {
       "id": "ve_15_origin_nexus",
@@ -863,44 +3481,257 @@
         "opacity": 0.95
       },
       "mapHexes": [
-        {"q": "-2", "r": 0, "terrain": "normal"}, {"q": "-1", "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
-        {"q": "-2", "r": 1, "terrain": "difficult"}, {"q": "-1", "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "difficult"},
-        {"q": "-2", "r": 2, "terrain": "normal"}, {"q": "-1", "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
-        {"q": "-2", "r": 3, "terrain": "difficult"}, {"q": "-1", "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "difficult"},
-        {"q": "-2", "r": 4, "terrain": "normal"}, {"q": "-1", "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
-        {"q": "-1", "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
-        {"q": "-1", "r": 6, "terrain": "normal"}, {"q": 0, "r": 6, "terrain": "difficult"}, {"q": 1, "r": 6, "terrain": "normal"},
-        {"q": "-1", "r": 7, "terrain": "normal"}, {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"}
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "difficult"
+        },
+        {
+          "q": -2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "normal"
+        },
+        {
+          "q": -2,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "difficult"
+        },
+        {
+          "q": -2,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "difficult"
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "normal"
+        },
+        {
+          "q": -1,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "normal"
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "normal"
+        }
       ],
       "startingPositions": [
-        {"player": 0, "q": -2, "r": 0},
-        {"player": 1, "q": -1, "r": 0},
-        {"player": 2, "q": 1, "r": 0},
-        {"player": 3, "q": 2, "r": 0}
+        {
+          "player": 0,
+          "q": -2,
+          "r": 0
+        },
+        {
+          "player": 1,
+          "q": -1,
+          "r": 0
+        },
+        {
+          "player": 2,
+          "q": 1,
+          "r": 0
+        },
+        {
+          "player": 3,
+          "q": 2,
+          "r": 0
+        }
       ],
       "monsterGroups": [
-        {"type": "architect-prime", "count": 1, "positions": [{"q": 0, "r": 4}], "elite": [true], "isBoss": true}
+        {
+          "type": "architect-prime",
+          "count": 1,
+          "positions": [
+            {
+              "q": 0,
+              "r": 4
+            }
+          ],
+          "elite": [
+            true
+          ],
+          "isBoss": true
+        }
       ],
       "objectives": [
-        {"id": "defeat-architect", "type": "defeat-monsters", "description": "Defeat the Architect Prime"}
+        {
+          "id": "defeat-architect",
+          "type": "defeat-monsters",
+          "description": "Defeat the Architect Prime"
+        }
       ],
       "treasures": [
-        {"id": "architect-heart", "position": {"q": 0, "r": 4}, "reward": "item:architect-heart"},
-        {"id": "genesis-source", "position": {"q": 0, "r": 6}, "reward": "item:genesis-source"}
+        {
+          "id": "architect-heart",
+          "position": {
+            "q": 0,
+            "r": 4
+          },
+          "reward": "item:architect-heart"
+        },
+        {
+          "id": "genesis-source",
+          "position": {
+            "q": 0,
+            "r": 6
+          },
+          "reward": "item:genesis-source"
+        }
       ],
       "narrative": {
-        "intro": "You stand before the Architect Prime—the originating consciousness of the entire hive. Its form is incomprehensible: a being of pure thought and dimensional energy. Around you, the very fabric of reality pulses with its power. This is the source of all invasions across all dimensions.",
+        "intro": "You stand before the Architect Prime\u2014the originating consciousness of the entire hive. Its form is incomprehensible: a being of pure thought and dimensional energy. Around you, the very fabric of reality pulses with its power. This is the source of all invasions across all dimensions.",
         "triggers": [
           {
             "id": "architect-damaged-half",
             "type": "damage-threshold",
-            "condition": {"healthBelow": 0.5},
+            "condition": {
+              "healthBelow": 0.5
+            },
             "text": "'Impossible!' the Architect Prime reverberates across dimensions. 'You are fragile, finite, yet you persist. Perhaps assimilation was premature. Perhaps you possess something... valuable.'"
           },
           {
             "id": "final-strike",
             "type": "damage-threshold",
-            "condition": {"healthBelow": 0.1},
+            "condition": {
+              "healthBelow": 0.1
+            },
             "text": "The Architect Prime begins to collapse! Its consciousness, spread across infinite dimensions, starts to fragment. The hive network destabilizes. For the first time in eons, the hive experiences fear!"
           }
         ],
