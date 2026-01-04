@@ -1349,7 +1349,8 @@ class GameStateManager {
             this.state.forcedMovementPath = path;
             this.confirmForcedMovement();
           } else {
-            // Fallback: just use destination as single-step path
+            // Missing position data - log error and use direct path as fallback
+            console.error('[GameStateManager] Missing startPos or attackerPos for path calculation. StartPos:', startPos, 'AttackerPos:', attackerPos);
             this.state.forcedMovementPath = [{ q: hex.q, r: hex.r }];
             this.confirmForcedMovement();
           }
@@ -1790,6 +1791,12 @@ class GameStateManager {
   private handleForcedMovementRequired(data: ForcedMovementRequiredPayload): void {
     console.log('[GameStateManager] Forced movement required:', data.movementType, data.distance, 'destinations:', data.validDestinations?.length);
 
+    // Validate that we have destinations to show
+    if (!data.validDestinations || data.validDestinations.length === 0) {
+      console.warn('[GameStateManager] No valid destinations for forced movement - skipping targeting mode');
+      return;
+    }
+
     // Get attacker position for direction calculation
     const attacker = this.state.gameData?.characters.find(c => c.id === data.attackerId);
     const attackerPosition = attacker?.currentHex || null;
@@ -1830,6 +1837,9 @@ class GameStateManager {
     this.emitStateUpdate();
   }
 
+  // Maximum path calculation steps (safety limit to prevent infinite loops in edge cases)
+  private readonly MAX_FORCED_MOVEMENT_PATH_STEPS = 10;
+
   /**
    * Calculate the path from start to destination for forced movement.
    * Steps through hexes in the direction of push/pull until reaching destination.
@@ -1844,8 +1854,7 @@ class GameStateManager {
     let currentPos = { ...startPos };
 
     // Step until we reach destination (max iterations for safety)
-    const maxSteps = 10;
-    for (let step = 0; step < maxSteps; step++) {
+    for (let step = 0; step < this.MAX_FORCED_MOVEMENT_PATH_STEPS; step++) {
       // Find the neighbor that gets us closer to destination
       // while still respecting push/pull direction
       const neighbors = hexNeighbors(currentPos);

@@ -232,9 +232,11 @@ export class GameGateway
         basePayload.turnActionState = turnActionState;
 
         // Include selected cards info if available (skip if resting - card IDs are 'rest')
-        if (character.selectedCards &&
-            character.selectedCards.topCardId !== 'rest' &&
-            character.selectedCards.bottomCardId !== 'rest') {
+        if (
+          character.selectedCards &&
+          character.selectedCards.topCardId !== 'rest' &&
+          character.selectedCards.bottomCardId !== 'rest'
+        ) {
           const card1 = await this.abilityCardService.getCardById(
             character.selectedCards.topCardId,
           );
@@ -347,7 +349,7 @@ export class GameGateway
 
   // Pending forced movement: roomCode -> pending data
   // Tracks when we're waiting for player to select push/pull destination
-  // Timeout (60s) auto-skips if player doesn't respond
+  // Timeout (60 min) auto-skips if player doesn't respond
   private readonly pendingForcedMovement = new Map<
     string,
     {
@@ -874,11 +876,6 @@ export class GameGateway
    */
   handleConnection(client: Socket): void {
     const userId = client.data.userId;
-
-    // Debug: Log ALL incoming events from this client
-    client.onAny((eventName, ...args) => {
-      this.logger.log(`[DEBUG] Received event: ${eventName}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 200) : '');
-    });
 
     if (userId) {
       // Clean up any stale mapping for this user (handles reconnection with new socket ID)
@@ -3832,20 +3829,28 @@ export class GameGateway
       const { room } = roomData;
       const roomCode = room.roomCode;
 
-      // Get pending forced movement
+      // Validate payload structure before use
+      if (
+        !payload ||
+        typeof payload.requestId !== 'string' ||
+        typeof payload.attackerId !== 'string' ||
+        typeof payload.targetId !== 'string' ||
+        !payload.destinationHex ||
+        typeof payload.destinationHex.q !== 'number' ||
+        typeof payload.destinationHex.r !== 'number'
+      ) {
+        throw new Error(
+          'Invalid payload structure for confirm_forced_movement',
+        );
+      }
+
+      // Get pending forced movement and immediately validate requestId atomically
       const pending = this.pendingForcedMovement.get(roomCode);
       if (!pending) {
         throw new Error('No pending forced movement');
       }
 
-      // Verify the player owns the attacking character (authorization check)
-      const userCharacters = characterService.getCharactersByPlayerId(userId);
-      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
-      if (!isOwner) {
-        throw new Error('Not authorized to confirm this forced movement');
-      }
-
-      // Validate the requestId matches to prevent race conditions
+      // Validate the requestId matches to prevent race conditions (check first)
       if (pending.requestId !== payload.requestId) {
         throw new Error('Stale forced movement request (requestId mismatch)');
       }
@@ -3865,6 +3870,16 @@ export class GameGateway
       );
       if (!isValidDestination) {
         throw new Error('Invalid destination for forced movement');
+      }
+
+      // Clear pending state IMMEDIATELY after validation to prevent race conditions
+      this.clearPendingForcedMovement(roomCode);
+
+      // Verify the player owns the attacking character (authorization check)
+      const userCharacters = characterService.getCharactersByPlayerId(userId);
+      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
+      if (!isOwner) {
+        throw new Error('Not authorized to confirm this forced movement');
       }
 
       // Apply the movement
@@ -3940,7 +3955,7 @@ export class GameGateway
   @SubscribeMessage('skip_forced_movement')
   handleSkipForcedMovement(
     @ConnectedSocket() client: Socket,
-    @MessageBody() _payload: SkipForcedMovementPayload,
+    @MessageBody() payload: SkipForcedMovementPayload,
   ): void {
     try {
       const userId = this.socketToPlayer.get(client.id);
@@ -3956,12 +3971,20 @@ export class GameGateway
       const { room } = roomData;
       const roomCode = room.roomCode;
 
-      // Get pending forced movement
+      // Get pending forced movement and immediately validate requestId atomically
       const pending = this.pendingForcedMovement.get(roomCode);
       if (!pending) {
         this.logger.warn('Skip forced movement called but no pending movement');
         return;
       }
+
+      // Validate the requestId matches to prevent race conditions (check first, before any state changes)
+      if (pending.requestId !== payload.requestId) {
+        throw new Error('Stale forced movement request (requestId mismatch)');
+      }
+
+      // Clear pending state IMMEDIATELY after validating requestId to prevent race conditions
+      this.clearPendingForcedMovement(roomCode);
 
       // Verify the player owns the attacking character (authorization check)
       const userCharacters = characterService.getCharactersByPlayerId(userId);
@@ -3969,14 +3992,6 @@ export class GameGateway
       if (!isOwner) {
         throw new Error('Not authorized to skip this forced movement');
       }
-
-      // Validate the requestId matches to prevent race conditions
-      if (pending.requestId !== _payload.requestId) {
-        throw new Error('Stale forced movement request (requestId mismatch)');
-      }
-
-      // Clear pending state (includes timeout cleanup)
-      this.clearPendingForcedMovement(roomCode);
 
       // Emit forced_movement_skipped event
       const skipPayload: ForcedMovementSkippedPayload = {
