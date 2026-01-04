@@ -163,6 +163,7 @@ export enum ElementType {
 
 export enum ElementState {
   INERT = 'inert',
+  INFUSING = 'infusing',
   WANING = 'waning',
   STRONG = 'strong',
 }

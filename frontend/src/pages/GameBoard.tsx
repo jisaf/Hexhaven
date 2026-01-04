@@ -39,6 +39,7 @@ import { ObjectiveTracker } from '../components/game/ObjectiveTracker';
 import { CardPileIndicator, type PileType } from '../components/game/CardPileIndicator';
 import { PileView } from '../components/game/PileView';
 import { EntityChipsPanel } from '../components/game/EntityChipsPanel';
+import { ElementsPanel } from '../components/game/ElementsPanel';
 import { MonsterAbilityOverlay } from '../components/game/MonsterAbilityOverlay';
 import { InventoryTabContent } from '../components/inventory/InventoryTabContent';
 import { NarrativeOverlay } from '../components/narrative';
@@ -543,6 +544,9 @@ export function GameBoard() {
         />
       )}
 
+      {/* Elements Panel - Floating on right side */}
+      <ElementsPanel elementalState={gameState.elementalState} />
+
       {/* Monster Ability Overlay */}
       {selectedMonster && (
         <MonsterAbilityOverlay
@@ -650,6 +654,10 @@ export function GameBoard() {
               onActionSelect={(cardId, position) => gameStateManager.selectCardAction(cardId, position)}
               onActionConfirm={() => gameStateManager.confirmCardAction()}
               targetingMode={gameState.cardActionTargetingMode}
+              elementalState={gameState.elementalState}
+              onConsumeElement={(element, cardId, position) =>
+                gameStateManager.consumeElement(element, cardId, position)
+              }
             />
           ) : selectedPile === 'inventory' ? (
             <InventoryTabContent

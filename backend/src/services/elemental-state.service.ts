@@ -47,6 +47,38 @@ export class ElementalStateService {
   }
 
   /**
+   * Infuse an element (set to infusing - pending activation)
+   * Element becomes strong only when the character's turn ends
+   */
+  infuseElement(
+    state: ElementalInfusion,
+    element: ElementType,
+  ): ElementalInfusion {
+    this.validateElementType(element);
+
+    return {
+      ...state,
+      [element]: ElementState.INFUSING,
+    };
+  }
+
+  /**
+   * Promote all infusing elements to strong
+   * Called when a character's turn ends
+   */
+  promoteInfusingElements(state: ElementalInfusion): ElementalInfusion {
+    const promoted: ElementalInfusion = { ...state };
+
+    (Object.keys(promoted) as ElementType[]).forEach((element) => {
+      if (promoted[element] === ElementState.INFUSING) {
+        promoted[element] = ElementState.STRONG;
+      }
+    });
+
+    return promoted;
+  }
+
+  /**
    * Consume an element (set to inert)
    */
   consumeElement(

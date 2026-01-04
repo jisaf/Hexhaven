@@ -7,6 +7,7 @@ import type {
   AxialCoordinates,
   CharacterClass,
   ElementType,
+  ElementalInfusion,
   AbilityCard,
   ItemSlot,
   ItemState,
@@ -125,6 +126,7 @@ export interface UseCardActionPayload {
   position: 'top' | 'bottom';
   targetId?: string; // For attack/heal targeting
   targetHex?: AxialCoordinates; // For movement/summon placement
+  consumeElement?: boolean; // If true, consume the element specified in the action's consume modifier
 }
 
 /**
@@ -187,6 +189,7 @@ export interface GameStartedPayload {
   scenarioId: string;
   scenarioName: string;
   campaignId?: string | null; // Issue #318 - Campaign context for return navigation
+  elementalState?: ElementalInfusion; // Current elemental infusion state for rejoin
   mapLayout: {
     coordinates: AxialCoordinates;
     terrain: string;
@@ -359,19 +362,19 @@ export interface MonsterActivatedPayload {
 
 export interface ElementalStateChangedPayload {
   element: ElementType;
-  previousState: 'inert' | 'waning' | 'strong';
-  newState: 'inert' | 'waning' | 'strong';
+  previousState: 'inert' | 'infusing' | 'waning' | 'strong';
+  newState: 'inert' | 'infusing' | 'waning' | 'strong';
 }
 
 export interface RoundEndedPayload {
   roundNumber: number;
   elementalState: {
-    fire: 'inert' | 'waning' | 'strong';
-    ice: 'inert' | 'waning' | 'strong';
-    air: 'inert' | 'waning' | 'strong';
-    earth: 'inert' | 'waning' | 'strong';
-    light: 'inert' | 'waning' | 'strong';
-    dark: 'inert' | 'waning' | 'strong';
+    fire: 'inert' | 'infusing' | 'waning' | 'strong';
+    ice: 'inert' | 'infusing' | 'waning' | 'strong';
+    air: 'inert' | 'infusing' | 'waning' | 'strong';
+    earth: 'inert' | 'infusing' | 'waning' | 'strong';
+    light: 'inert' | 'infusing' | 'waning' | 'strong';
+    dark: 'inert' | 'infusing' | 'waning' | 'strong';
   };
 }
 

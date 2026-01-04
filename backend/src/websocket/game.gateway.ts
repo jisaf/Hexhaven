@@ -103,6 +103,7 @@ import {
   getPull,
   getConditions,
   getInfuseModifiers,
+  getConsumeModifier,
   getConsumeModifiers,
   getPierce,
   getXPValue,
@@ -124,6 +125,8 @@ import {
   ConnectionStatus,
   RoomStatus,
   getRange,
+  ElementType,
+  ElementState,
   type AxialCoordinates,
   type CharacterClass,
   type Monster,
@@ -455,22 +458,58 @@ export class GameGateway
     }
 
     for (const infuse of infuseModifiers) {
-      // 'generate' infuses immediately, 'generate-after' would be handled at turn end
+      // 'generate' sets to INFUSING first - becomes STRONG at character turn end
       if (infuse.state === 'generate') {
-        elementalState = this.elementalStateService.generateElement(
+        const previousState = elementalState[infuse.element];
+        elementalState = this.elementalStateService.infuseElement(
           elementalState,
           infuse.element,
         );
-        this.logger.log(`Element infused: ${infuse.element} is now STRONG`);
+        this.logger.log(
+          `Element infusing: ${infuse.element} is now INFUSING (will become STRONG at turn end)`,
+        );
+
+        // Emit per-element change event matching ElementalStateChangedPayload
+        this.server.to(roomCode).emit('elemental_state_changed', {
+          element: infuse.element,
+          previousState,
+          newState: 'infusing',
+        });
       }
     }
 
     this.roomElementalState.set(roomCode, elementalState);
+  }
 
-    // Emit elemental state update to all clients
-    this.server.to(roomCode).emit('elemental_state_updated', {
-      elementalState,
-    });
+  /**
+   * Promote all INFUSING elements to STRONG when character turn ends
+   * This implements the Gloomhaven rule that elements become available
+   * only after the character's turn is complete
+   */
+  private promoteInfusingElements(roomCode: string): void {
+    let elementalState = this.roomElementalState.get(roomCode);
+    if (!elementalState) return;
+
+    const previousStates = { ...elementalState };
+    elementalState =
+      this.elementalStateService.promoteInfusingElements(elementalState);
+    this.roomElementalState.set(roomCode, elementalState);
+
+    // Emit change events for each promoted element
+    const elements = ['fire', 'ice', 'air', 'earth', 'light', 'dark'] as const;
+    for (const element of elements) {
+      if (
+        previousStates[element] === ElementState.INFUSING &&
+        elementalState[element] === ElementState.STRONG
+      ) {
+        this.server.to(roomCode).emit('elemental_state_changed', {
+          element,
+          previousState: 'infusing',
+          newState: 'strong',
+        });
+        this.logger.log(`Element promoted: ${element} is now STRONG`);
+      }
+    }
   }
 
   /**
@@ -502,6 +541,7 @@ export class GameGateway
           consume.element,
         )
       ) {
+        const previousState = elementalState[consume.element];
         elementalState = this.elementalStateService.consumeElement(
           elementalState,
           consume.element,
@@ -515,6 +555,13 @@ export class GameGateway
         this.logger.log(
           `Element consumed: ${consume.element} for +${consume.bonus.value} ${consume.bonus.effect}`,
         );
+
+        // Emit per-element change event matching ElementalStateChangedPayload
+        this.server.to(roomCode).emit('elemental_state_changed', {
+          element: consume.element,
+          previousState,
+          newState: 'inert',
+        });
       } else {
         this.logger.log(
           `Element ${consume.element} not available for consumption (inert)`,
@@ -524,11 +571,6 @@ export class GameGateway
 
     if (anyConsumed) {
       this.roomElementalState.set(roomCode, elementalState);
-
-      // Emit elemental state update to all clients
-      this.server.to(roomCode).emit('elemental_state_updated', {
-        elementalState,
-      });
     }
 
     return { bonuses, consumed: anyConsumed };
@@ -539,16 +581,29 @@ export class GameGateway
    * Issue #220: strong -> waning -> inert
    */
   private decayRoomElements(roomCode: string): void {
-    let elementalState = this.roomElementalState.get(roomCode);
+    const elementalState = this.roomElementalState.get(roomCode);
     if (!elementalState) return;
 
-    elementalState = this.elementalStateService.decayElements(elementalState);
-    this.roomElementalState.set(roomCode, elementalState);
+    // Track which elements changed before decay
+    const previousStates = { ...elementalState };
+    const decayedState =
+      this.elementalStateService.decayElements(elementalState);
+    this.roomElementalState.set(roomCode, decayedState);
 
-    // Emit elemental state update to all clients
-    this.server.to(roomCode).emit('elemental_state_updated', {
-      elementalState,
-    });
+    // Emit per-element change events for elements that decayed
+    const elements = ['fire', 'ice', 'air', 'earth', 'light', 'dark'] as const;
+    for (const element of elements) {
+      if (previousStates[element] !== decayedState[element]) {
+        this.server.to(roomCode).emit('elemental_state_changed', {
+          element,
+          previousState: previousStates[element],
+          newState: decayedState[element],
+        });
+        this.logger.log(
+          `Element decayed: ${element} ${previousStates[element]} → ${decayedState[element]}`,
+        );
+      }
+    }
   }
 
   /**
@@ -766,6 +821,8 @@ export class GameGateway
       backgroundScale: scenario?.backgroundScale,
       // Current game state for rejoin
       currentRound: this.currentRound.get(roomCode) || 1,
+      // Elemental state for rejoin
+      elementalState: this.roomElementalState.get(roomCode) || undefined,
       // Game log for rejoin
       gameLog: this.roomGameLogs.get(roomCode) || [],
       // Loot tokens for rejoin (filter to uncollected only)
@@ -3621,10 +3678,42 @@ export class GameGateway
       }
 
       // Get the action (top or bottom)
-      const action =
+      let action =
         payload.position === 'top' ? card.topAction : card.bottomAction;
       if (!action) {
         throw new Error(`Card has no ${payload.position} action`);
+      }
+
+      // Process element consumption if requested
+      let consumedElement: ElementType | null = null;
+      if (payload.consumeElement && action.modifiers) {
+        const consumeModifier = getConsumeModifier(action.modifiers);
+        if (consumeModifier) {
+          const consumeResult = this.processConsumeModifiers(
+            room.roomCode,
+            action.modifiers,
+          );
+          if (consumeResult.consumed) {
+            consumedElement = consumeModifier.element;
+            // Apply bonus to action value if applicable
+            const bonusValue = consumeResult.bonuses.get(
+              consumeModifier.bonus.effect,
+            );
+            if (
+              bonusValue &&
+              'value' in action &&
+              typeof action.value === 'number'
+            ) {
+              action = {
+                ...action,
+                value: action.value + bonusValue,
+              };
+              this.logger.log(
+                `Applied consume bonus: +${bonusValue} ${consumeModifier.bonus.effect} from ${consumedElement}`,
+              );
+            }
+          }
+        }
       }
 
       // Execute the action based on its type
@@ -3693,6 +3782,9 @@ export class GameGateway
         { text: `${payload.position} action`, color: 'cyan' },
         { text: ` of ` },
         { text: card.name, color: 'yellow' },
+        ...(consumedElement
+          ? [{ text: ` (consumed ${consumedElement})`, color: 'orange' }]
+          : []),
         ...(executionResult.damageDealt !== undefined
           ? [{ text: ` (${executionResult.damageDealt} damage)`, color: 'red' }]
           : []),
@@ -3709,6 +3801,12 @@ export class GameGateway
       this.logger.log(
         `Card action executed: ${character.id} used ${payload.position} of ${card.name} (${action.type})`,
       );
+
+      // Process element infusion from action modifiers (Issue #220)
+      // Elements are generated AFTER the action completes successfully
+      if (executionResult.success) {
+        this.processInfuseModifiers(room.roomCode, actionModifiers);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -4658,6 +4756,10 @@ export class GameGateway
           `Long rest complete for ${character.id}: healed ${healthHealed} HP, cards moved`,
         );
       }
+
+      // Promote INFUSING elements to STRONG now that the character's turn is ending
+      // This implements the Gloomhaven rule that elements become available after turn ends
+      this.promoteInfusingElements(room.roomCode);
 
       // Get next living entity in turn order
       const nextIndex = this.turnOrderService.getNextLivingEntityIndex(

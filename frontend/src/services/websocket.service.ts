@@ -157,6 +157,9 @@ export interface WebSocketEvents {
   // Card action events (Issue #411)
   card_action_executed: (data: import('../../../shared/types/events').CardActionExecutedPayload) => void;
 
+  // Elemental state events
+  elemental_state_changed: (data: import('../../../shared/types/events').ElementalStateChangedPayload) => void;
+
   // Errors
   error: (data: { message: string; code?: string }) => void;
 }
