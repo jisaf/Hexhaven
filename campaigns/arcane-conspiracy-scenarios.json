@@ -1,0 +1,959 @@
+{
+  "campaign": "arcane-conspiracy",
+  "scenarios": [
+    {
+      "id": "ac_01_village_under_siege",
+      "name": "Village Under Siege",
+      "sequence": 1,
+      "difficulty": 1,
+      "isStarting": true,
+      "description": "The peaceful village of Millhaven is under attack by cursed creatures summoned by dark magic.",
+      "background": {
+        "image": "village-under-siege.png",
+        "description": "A quiet farming village with simple stone cottages, wooden fences, and an old mill. Purple cursed vines wrap around buildings. Magical auras swirl in the air. Small garden plots and a central square with a well.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.7
+      },
+      "mapHexes": [
+        {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "difficult"}, {"q": -2, "r": 1, "terrain": "difficult"},
+        {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": 3, "r": 1, "terrain": "difficult"}, {"q": 4, "r": 1, "terrain": "difficult"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": -2, "r": 2, "terrain": "difficult"},
+        {"q": 3, "r": 2, "terrain": "normal"}, {"q": 4, "r": 2, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "difficult"}, {"q": 3, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": -2, "r": 3, "terrain": "normal"}, {"q": 4, "r": 3, "terrain": "difficult"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 5, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 3, "r": 4, "terrain": "normal"}, {"q": 4, "r": 4, "terrain": "normal"},
+        {"q": -2, "r": 4, "terrain": "difficult"}, {"q": 5, "r": 3, "terrain": "difficult"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"}, {"q": 2, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "difficult"}, {"q": 3, "r": 5, "terrain": "normal"},
+        {"q": -2, "r": 5, "terrain": "normal"}, {"q": 4, "r": 5, "terrain": "difficult"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 2, "r": 7, "terrain": "normal"},
+        {"q": -2, "r": 6, "terrain": "difficult"}, {"q": 3, "r": 6, "terrain": "normal"},
+        {"q": 0, "r": 8, "terrain": "difficult"}, {"q": 1, "r": 8, "terrain": "normal"},
+        {"q": -1, "r": 7, "terrain": "normal"}, {"q": 2, "r": 8, "terrain": "difficult"},
+        {"q": 3, "r": 7, "terrain": "normal"}, {"q": 4, "r": 6, "terrain": "normal"},
+        {"q": 0, "r": 9, "terrain": "normal"}, {"q": 1, "r": 9, "terrain": "normal"},
+        {"q": 2, "r": 9, "terrain": "normal"}, {"q": 3, "r": 8, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": 0, "r": 0},
+        {"player": 1, "q": 1, "r": 0},
+        {"player": 2, "q": 2, "r": 0},
+        {"player": 3, "q": 0, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "bandit-guard", "count": 2, "positions": [{"q": 3, "r": 4}, {"q": 2, "r": 6}], "elite": [false, false]},
+        {"type": "bandit-archer", "count": 1, "positions": [{"q": 4, "r": 5}], "elite": [false]},
+        {"type": "living-bones", "count": 2, "positions": [{"q": 1, "r": 8}, {"q": 4, "r": 3}], "elite": [false, false]}
+      ],
+      "objectives": [
+        {"id": "defeat-enemies", "type": "defeat-all-monsters", "description": "Defeat all enemies"},
+        {"id": "open-gate", "type": "door-interaction", "description": "Open the sealed gate to progress", "hexes": [{"q": 3, "r": 8}]}
+      ],
+      "treasures": [
+        {"id": "gold-pouch", "position": {"q": 1, "r": 4}, "reward": "gold:50"},
+        {"id": "scroll", "position": {"q": -1, "r": 7}, "reward": "item:ancient-scroll"}
+      ],
+      "narrative": {
+        "intro": "The peaceful village of Millhaven is under siege! Strange cursed creatures attack at night. The village elder desperately begs for your aid, showing you ancient writings about a crypt in the hills...",
+        "triggers": [
+          {
+            "id": "enemies-defeated-3",
+            "type": "monster-count",
+            "condition": {"monstersDefeated": 3},
+            "text": "A robed figure flees into the darkness, muttering: 'The master will be pleased...'"
+          }
+        ],
+        "victory": {
+          "text": "The village is safe! The elder thanks you profusely and reveals the location of the Cursed Crypt where the curse originates. 'Please, stop this darkness at its source!'"
+        }
+      },
+      "unlocksScenarios": ["ac_02_cursed_crypt"]
+    },
+    {
+      "id": "ac_02_cursed_crypt",
+      "name": "Cursed Crypt",
+      "sequence": 2,
+      "difficulty": 1,
+      "description": "An ancient burial ground twisted by dark magic.",
+      "background": {
+        "image": "cursed-crypt.png",
+        "description": "Underground stone crypt with carved burial chambers. Skeletal remains visible in stone alcoves. Glowing purple curse marks cover the walls. The air feels cold and oppressive. Pillars support the ceiling.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.75
+      },
+      "mapHexes": [
+        {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 0, "terrain": "difficult"}, {"q": 3, "r": 0, "terrain": "normal"},
+        {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 3, "r": 1, "terrain": "difficult"},
+        {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 1, "terrain": "obstacle"}, {"q": 4, "r": 1, "terrain": "normal"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 3, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 2, "terrain": "obstacle"}, {"q": 4, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "difficult"},
+        {"q": -1, "r": 3, "terrain": "difficult"}, {"q": 3, "r": 3, "terrain": "normal"},
+        {"q": 4, "r": 3, "terrain": "difficult"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 5, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 3, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"}, {"q": 2, "r": 6, "terrain": "normal"},
+        {"q": -2, "r": 4, "terrain": "obstacle"}, {"q": 3, "r": 5, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "difficult"}, {"q": 2, "r": 7, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 3, "r": 6, "terrain": "difficult"},
+        {"q": 0, "r": 8, "terrain": "normal"}, {"q": 1, "r": 8, "terrain": "normal"},
+        {"q": 2, "r": 8, "terrain": "normal"}, {"q": 3, "r": 7, "terrain": "normal"},
+        {"q": 0, "r": 9, "terrain": "normal"}, {"q": 1, "r": 9, "terrain": "normal"}, {"q": 2, "r": 9, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": 0, "r": 0},
+        {"player": 1, "q": 1, "r": 0},
+        {"player": 2, "q": 2, "r": 0},
+        {"player": 3, "q": 0, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "living-bones", "count": 3, "positions": [{"q": 2, "r": 5}, {"q": 1, "r": 8}, {"q": 3, "r": 4}], "elite": [false, false, false]},
+        {"type": "bandit-guard", "count": 2, "positions": [{"q": 2, "r": 7}, {"q": 0, "r": 6}], "elite": [false, false]},
+        {"type": "living-bones-mage", "count": 1, "positions": [{"q": 1, "r": 9}], "elite": [false]}
+      ],
+      "objectives": [
+        {"id": "destroy-curse-focus", "type": "location-reach", "description": "Reach the inner sanctum and destroy the curse focus", "hexes": [{"q": 2, "r": 9}]},
+        {"id": "collect-relics", "type": "collect-items", "count": 3, "description": "Collect all 3 ancient relics"}
+      ],
+      "treasures": [
+        {"id": "cursed-amulet", "position": {"q": 1, "r": 4}, "reward": "item:cursed-amulet"},
+        {"id": "tome-1", "position": {"q": 0, "r": 5}, "reward": "item:ancient-tome"},
+        {"id": "relic-1", "position": {"q": 3, "r": 3}, "reward": "item:relic"}
+      ],
+      "narrative": {
+        "intro": "You descend into the crypt. Skeletal remains stir in their alcoves, animated by dark magic. The very air feels oppressive with cursed power.",
+        "triggers": [
+          {
+            "id": "enemies-defeated-half",
+            "type": "monster-count",
+            "condition": {"monstersDefeated": 3},
+            "text": "A phantom materializes before you: 'The wizard's power grows! The ritual approaches!'"
+          },
+          {
+            "id": "sanctuary-reached",
+            "type": "location-reach",
+            "condition": {"hex": {"q": 2, "r": 9}},
+            "text": "The crypt trembles violently as the curse focus shatters. Bones crumble to dust across the chamber."
+          }
+        ],
+        "victory": {
+          "text": "The curse is broken! Ancient scrolls scatter to the ground. You find damning evidence: pages filled with Malachar's name and descriptions of a great tower to the north. This wizard is real, and his ambition knows no bounds."
+        }
+      },
+      "unlocksScenarios": ["ac_03_ancient_library", "ac_04_wizards_outpost"]
+    },
+    {
+      "id": "ac_03_ancient_library",
+      "name": "Ancient Library",
+      "sequence": 3,
+      "difficulty": 1,
+      "isOptional": true,
+      "description": "A crumbling library filled with magical knowledge and cursed tomes.",
+      "background": {
+        "image": "ancient-library.png",
+        "description": "A crumbling library with toppled bookshelves, scattered tomes, magical wards still flickering. Dust motes dance in dim light. Books float eerily around the shelves.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "difficult"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 1, "terrain": "obstacle"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -2, "r": 3, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": -2, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "difficult"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": -1, "r": 7, "terrain": "normal"}, {"q": 2, "r": 5, "terrain": "difficult"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "cultist", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
+        {"type": "wraith", "count": 1, "positions": [{"q": 0, "r": 7}], "elite": [false]}
+      ],
+      "objectives": [
+        {"id": "collect-knowledge", "type": "collect-items", "count": 2, "description": "Collect wizard's research notes"}
+      ],
+      "treasures": [
+        {"id": "grimoire-1", "position": {"q": 0, "r": 4}, "reward": "item:grimoire"},
+        {"id": "gold-chest", "position": {"q": 1, "r": 6}, "reward": "gold:75"}
+      ],
+      "narrative": {
+        "intro": "This library once held the collected knowledge of ages. Now it is a forgotten tomb of books, dust, and restless spirits.",
+        "triggers": [
+          {
+            "id": "knowledge-found",
+            "type": "collect-items",
+            "condition": {"itemsCollected": 2},
+            "text": "The scrolls you've found reveal Malachar's past: he was once a scholar seeking immortality..."
+          }
+        ],
+        "victory": {
+          "text": "You've uncovered Malachar's origins. Armed with this knowledge, you feel better prepared for what lies ahead."
+        }
+      },
+      "unlocksScenarios": ["ac_04_wizards_outpost"]
+    },
+    {
+      "id": "ac_04_wizards_outpost",
+      "name": "Wizard's Outpost",
+      "sequence": 4,
+      "difficulty": 2,
+      "description": "A fortified tower where Malachar's minions guard his power.",
+      "background": {
+        "image": "wizards-outpost.png",
+        "description": "A fortified tower on a rocky hilltop surrounded by dead vegetation. Dark energy crackles in the air. Magical guards patrol. Lightning strikes during the scene.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.75
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "difficult"},
+        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
+        {"q": -2, "r": 1, "terrain": "difficult"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -2, "r": 2, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "difficult"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 3, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "difficult"}, {"q": 2, "r": 5, "terrain": "difficult"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "inox-guard", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
+        {"type": "inox-shaman", "count": 1, "positions": [{"q": 0, "r": 6}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "defeat-shaman", "type": "defeat-monsters", "description": "Defeat the Inox Shaman"}
+      ],
+      "treasures": [
+        {"id": "mana-crystal", "position": {"q": 1, "r": 4}, "reward": "item:mana-crystal"},
+        {"id": "tower-key", "position": {"q": 0, "r": 5}, "reward": "item:tower-key"}
+      ],
+      "narrative": {
+        "intro": "You assault Malachar's outpost! The wizard's minions fight back desperately. Lightning crackles across the sky as dark magic swells.",
+        "triggers": [
+          {
+            "id": "shaman-defeated",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "inox-shaman"},
+            "text": "The Shaman falls! As it dies, it shrieks: 'The tower is sealed! You cannot stop the ritual!'"
+          }
+        ],
+        "victory": {
+          "text": "You've destroyed the outpost and claimed a key to Malachar's tower. The tower itself awaits you to the north..."
+        }
+      },
+      "unlocksScenarios": ["ac_05_goblin_mines", "ac_06_spectral_halls"]
+    },
+    {
+      "id": "ac_05_goblin_mines",
+      "name": "Goblin Mines",
+      "sequence": 5,
+      "difficulty": 2,
+      "description": "Underground mines where goblin slaves serve the wizard's dark agenda.",
+      "background": {
+        "image": "goblin-mines.png",
+        "description": "Sprawling underground mine complex. Wooden support beams creak precariously. Ore glitters in the walls. Dark water pools reflect nothing. Goblins work under supervision.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 1, "terrain": "difficult"}, {"q": 2, "r": 1, "terrain": "difficult"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "difficult"},
+        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "difficult"},
+        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": -1, "r": 7, "terrain": "difficult"}, {"q": 2, "r": 4, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "goblin-worker", "count": 3, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}, {"q": 0, "r": 6}], "elite": [false, false, false]},
+        {"type": "goblin-overseer", "count": 1, "positions": [{"q": 0, "r": 7}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "free-slaves", "type": "collect-items", "count": 2, "description": "Free the enslaved goblins"}
+      ],
+      "treasures": [
+        {"id": "ore-vein", "position": {"q": 1, "r": 3}, "reward": "gold:60"},
+        {"id": "slave-key", "position": {"q": 1, "r": 6}, "reward": "item:slave-key"}
+      ],
+      "narrative": {
+        "intro": "The mines stretch deep beneath the earth. Enslaved goblins work tirelessly, mining ore for the wizard's dark rituals. You must free them.",
+        "triggers": [
+          {
+            "id": "slaves-freed",
+            "type": "collect-items",
+            "condition": {"itemsCollected": 2},
+            "text": "The goblins are grateful. One whispers: 'The tower lies ahead. Go! Stop him before the ritual completes!'"
+          }
+        ],
+        "victory": {
+          "text": "You've freed the goblin slaves. They disappear into the darkness, escape secured. The path forward grows clearer."
+        }
+      },
+      "unlocksScenarios": ["ac_07_tower_entry_hall"]
+    },
+    {
+      "id": "ac_06_spectral_halls",
+      "name": "The Spectral Halls",
+      "sequence": 6,
+      "difficulty": 2,
+      "description": "Haunted ruins where ghostly figures guard forgotten treasure.",
+      "background": {
+        "image": "spectral-halls.png",
+        "description": "Haunted ruins of an ancient palace. Translucent figures drift through stone walls. Moonlight filters through gaps in the ceiling. Everything feels cold and ethereal.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "difficult"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "difficult"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "difficult"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "difficult"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": 2, "r": 4, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "wraith", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 0, "r": 5}], "elite": [false, false]},
+        {"type": "phantom-knight", "count": 1, "positions": [{"q": 1, "r": 6}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "obtain-spirit-knowledge", "type": "location-reach", "description": "Reach the heart of the haunted palace", "hexes": [{"q": 1, "r": 6}]}
+      ],
+      "treasures": [
+        {"id": "ghost-crown", "position": {"q": 0, "r": 4}, "reward": "item:ghost-crown"},
+        {"id": "gold-buried", "position": {"q": 1, "r": 5}, "reward": "gold:80"}
+      ],
+      "narrative": {
+        "intro": "These halls once belonged to nobility. Now only spirits remain, trapped by dark magic. They attack on sight, but perhaps they hold secrets.",
+        "triggers": [
+          {
+            "id": "phantom-defeated",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "phantom-knight"},
+            "text": "The phantom's form dissipates. Its final words echo: 'The tower... the ritual... it must be stopped...'"
+          }
+        ],
+        "victory": {
+          "text": "You've conquered the spectral realm. The spirits finally find peace. You press onward toward the wizard's tower."
+        }
+      },
+      "unlocksScenarios": ["ac_07_tower_entry_hall"]
+    },
+    {
+      "id": "ac_07_tower_entry_hall",
+      "name": "Tower Entry Hall",
+      "sequence": 7,
+      "difficulty": 3,
+      "description": "The grand entrance to Malachar's tower—a place of immense magical power.",
+      "background": {
+        "image": "tower-entry-hall.png",
+        "description": "The soaring entrance hall of Malachar's tower. Columns reach toward a distant ceiling. Magical wards shimmer at doorways. Arcane symbols glow in the floor.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.75
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
+        {"q": -2, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -2, "r": 2, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "difficult"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 3, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "difficult"}, {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "difficult"},
+        {"q": -1, "r": 7, "terrain": "normal"}, {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": 2, "r": 5, "terrain": "difficult"}, {"q": 3, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 8, "terrain": "normal"}, {"q": 1, "r": 8, "terrain": "normal"},
+        {"q": -1, "r": 8, "terrain": "normal"}, {"q": 3, "r": 3, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "inox-guard", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 5}], "elite": [false, false]},
+        {"type": "inox-shaman", "count": 1, "positions": [{"q": 0, "r": 7}], "elite": [false]},
+        {"type": "golem", "count": 1, "positions": [{"q": 1, "r": 8}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "defeat-guardian", "type": "defeat-monsters", "description": "Defeat the tower's guardian golems"}
+      ],
+      "treasures": [
+        {"id": "arcane-focus", "position": {"q": 0, "r": 4}, "reward": "item:arcane-focus"},
+        {"id": "mage-ring", "position": {"q": 1, "r": 7}, "reward": "item:mage-ring"}
+      ],
+      "narrative": {
+        "intro": "You stand before the tower's entrance. The doors are sealed, protected by ancient magic. Golems animate to bar your passage.",
+        "triggers": [
+          {
+            "id": "golem-defeated",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "golem"},
+            "text": "The golem crumbles to dust as the seal weakens. The tower trembles, acknowledging your power."
+          }
+        ],
+        "victory": {
+          "text": "You've breached the tower's outer defenses. Two paths await you within: the library or the dungeons. Choose wisely."
+        }
+      },
+      "unlocksScenarios": ["ac_08_tower_library", "ac_09_tower_dungeons"]
+    },
+    {
+      "id": "ac_08_tower_library",
+      "name": "Tower Library",
+      "sequence": 8,
+      "difficulty": 3,
+      "description": "A vast magical library holding the wizard's greatest secrets.",
+      "background": {
+        "image": "tower-library.png",
+        "description": "A massive circular library within the tower. Books float in mid-air. Floating magical tomes illuminate the space. Reading desks hold dark grimoires. Spiraling shelves reach toward the ceiling.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "difficult"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "difficult"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "difficult"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 3, "terrain": "difficult"}, {"q": 2, "r": 4, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "cultist-scholar", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 4}], "elite": [false, false]},
+        {"type": "wraith-librarian", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "find-ritual-scroll", "type": "collect-items", "count": 1, "description": "Find the ritual scroll"}
+      ],
+      "treasures": [
+        {"id": "ritual-scroll", "position": {"q": 1, "r": 5}, "reward": "item:ritual-scroll"},
+        {"id": "gold-hoard", "position": {"q": 0, "r": 4}, "reward": "gold:100"}
+      ],
+      "narrative": {
+        "intro": "Books fly through the air around you. The library is alive with magic. You must find the ritual scroll before the wizard completes his ascension.",
+        "triggers": [
+          {
+            "id": "scroll-found",
+            "type": "collect-items",
+            "condition": {"itemsCollected": 1},
+            "text": "You grasp the ritual scroll! Its contents reveal the wizard's ultimate goal: immortality through absorption of the arcane core itself!"
+          }
+        ],
+        "victory": {
+          "text": "Armed with knowledge of the ritual, you descend deeper into the tower. The final confrontation awaits."
+        }
+      },
+      "unlocksScenarios": ["ac_10_alchemy_lab"]
+    },
+    {
+      "id": "ac_09_tower_dungeons",
+      "name": "Tower Dungeons",
+      "sequence": 9,
+      "difficulty": 3,
+      "description": "Dark dungeons where the wizard imprisons his enemies.",
+      "background": {
+        "image": "tower-dungeons.png",
+        "description": "Cramped prison cells and torture chambers deep within the tower. Iron bars and chains everywhere. Dried bloodstains. The smell of despair lingers (visual must convey this).",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.9
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "difficult"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "difficult"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": 1, "r": 8, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "torturer-guard", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 0, "r": 5}], "elite": [false, true]},
+        {"type": "imprisoned-monster", "count": 2, "positions": [{"q": 1, "r": 4}, {"q": 0, "r": 7}], "elite": [false, false]}
+      ],
+      "objectives": [
+        {"id": "free-prisoners", "type": "collect-items", "count": 2, "description": "Free the prisoners"}
+      ],
+      "treasures": [
+        {"id": "prison-key", "position": {"q": 1, "r": 3}, "reward": "item:prison-key"},
+        {"id": "escaped-prisoner", "position": {"q": 1, "r": 7}, "reward": "item:escaped-prisoner"}
+      ],
+      "narrative": {
+        "intro": "Screams echo through dark corridors. The wizard's dungeons hold countless victims. Some may still be alive...",
+        "triggers": [
+          {
+            "id": "prisoners-freed",
+            "type": "collect-items",
+            "condition": {"itemsCollected": 2},
+            "text": "The freed prisoners speak of horrors. One points deeper: 'The ritual chamber... go! Stop him now!'"
+          }
+        ],
+        "victory": {
+          "text": "You've freed the prisoners. Their gratitude strengthens your resolve. The ritual must be stopped at any cost."
+        }
+      },
+      "unlocksScenarios": ["ac_10_alchemy_lab"]
+    },
+    {
+      "id": "ac_10_alchemy_lab",
+      "name": "The Alchemy Lab",
+      "sequence": 10,
+      "difficulty": 4,
+      "description": "A laboratory where dark rituals are prepared.",
+      "background": {
+        "image": "alchemy-lab.png",
+        "description": "A massive laboratory filled with bubbling alchemical apparatus. Glowing vials line shelves. Strange formulas cover every surface. Chemical smoke swirls. Alchemical ingredients scattered about.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "difficult"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "difficult"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 2, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "difficult"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "alchemist-guard", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 1, "r": 4}], "elite": [false, false]},
+        {"type": "experiment-abomination", "count": 1, "positions": [{"q": 0, "r": 5}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "destroy-rituals", "type": "defeat-monsters", "description": "Destroy the ritual components"}
+      ],
+      "treasures": [
+        {"id": "alchemical-formula", "position": {"q": 0, "r": 3}, "reward": "item:formula"},
+        {"id": "philosopher-stone", "position": {"q": 1, "r": 5}, "reward": "item:philosopher-stone"}
+      ],
+      "narrative": {
+        "intro": "The lab bubbles with dark alchemy. Impossible creatures lurk in shadows. The wizard is preparing something terrible.",
+        "triggers": [
+          {
+            "id": "ritual-destroyed",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "experiment-abomination"},
+            "text": "The abomination collapses! With its death, the ritual components lose their power. Below, you hear a deep sound—the ritual chamber awakens."
+          }
+        ],
+        "victory": {
+          "text": "You've disrupted the preparations. But time grows short. You must reach the ritual chamber before the wizard completes his transformation."
+        }
+      },
+      "unlocksScenarios": ["ac_11_artifact_chamber", "ac_12_portal_guardian"]
+    },
+    {
+      "id": "ac_11_artifact_chamber",
+      "name": "Artifact Chamber",
+      "sequence": 11,
+      "difficulty": 4,
+      "description": "A vault of ancient artifacts that fuel the wizard's power.",
+      "background": {
+        "image": "artifact-chamber.png",
+        "description": "A vault of ancient artifacts and magical items. Pedestals hold glowing objects. Protective barriers shimmer around treasures. Everything arranged with obsessive precision.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.75
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 2, "r": 2, "terrain": "difficult"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "artifact-guardian", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 0, "r": 4}], "elite": [false, true]},
+        {"type": "collector-wraith", "count": 1, "positions": [{"q": 1, "r": 5}], "elite": [false]}
+      ],
+      "objectives": [
+        {"id": "seize-artifacts", "type": "collect-items", "count": 2, "description": "Claim the artifacts for yourself"}
+      ],
+      "treasures": [
+        {"id": "ancient-amulet", "position": {"q": 0, "r": 3}, "reward": "item:ancient-amulet"},
+        {"id": "power-crystal", "position": {"q": 1, "r": 5}, "reward": "item:power-crystal"}
+      ],
+      "narrative": {
+        "intro": "Artifacts glow with ancient power. These are the sources of the wizard's strength. If you claim them, you weaken him.",
+        "triggers": [
+          {
+            "id": "artifacts-seized",
+            "type": "collect-items",
+            "condition": {"itemsCollected": 2},
+            "text": "As you seize the artifacts, the wizard's power diminishes. You feel the balance shifting in your favor."
+          }
+        ],
+        "victory": {
+          "text": "You've claimed the artifacts. The wizard's advantage is diminished. Now, only the ritual chamber remains."
+        }
+      },
+      "unlocksScenarios": ["ac_13_descent"]
+    },
+    {
+      "id": "ac_12_portal_guardian",
+      "name": "Portal Guardian",
+      "sequence": 12,
+      "difficulty": 4,
+      "description": "A planar gateway guarded by otherworldly creatures.",
+      "background": {
+        "image": "portal-guardian.png",
+        "description": "A planar gateway chamber. Swirling portals open and close. Reality seems unstable here. The floor is marked with summoning circles. Otherworldly energy emanates.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.8
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "difficult"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "difficult"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "difficult"},
+        {"q": -1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": 2, "r": 2, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "portal-sentinel", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 1, "r": 3}], "elite": [false, false]},
+        {"type": "summoned-horror", "count": 1, "positions": [{"q": 1, "r": 4}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "seal-portal", "type": "location-reach", "description": "Seal the portal", "hexes": [{"q": 1, "r": 4}]}
+      ],
+      "treasures": [
+        {"id": "seal-stone", "position": {"q": 0, "r": 3}, "reward": "item:seal-stone"},
+        {"id": "planar-knowledge", "position": {"q": 1, "r": 4}, "reward": "item:planar-knowledge"}
+      ],
+      "narrative": {
+        "intro": "Reality warps before you. The portal allows the wizard to draw power from other dimensions. You must close it.",
+        "triggers": [
+          {
+            "id": "horror-defeated",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "summoned-horror"},
+            "text": "As the horror falls, the portal collapses violently. The remaining gateway seals itself."
+          }
+        ],
+        "victory": {
+          "text": "The portal is sealed! The wizard's link to other dimensions is severed. His power wanes further."
+        }
+      },
+      "unlocksScenarios": ["ac_13_descent"]
+    },
+    {
+      "id": "ac_13_descent",
+      "name": "The Descent",
+      "sequence": 13,
+      "difficulty": 5,
+      "description": "A final descent to the ritual chamber where the wizard prepares his apotheosis.",
+      "background": {
+        "image": "the-descent.png",
+        "description": "A spiraling staircase descending into the earth. Walls covered in ancient runes. Temperature drops visibly. Purple light emanates from below. Time feels distorted.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.85
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "difficult"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
+        {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"},
+        {"q": -1, "r": 2, "terrain": "difficult"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "difficult"},
+        {"q": 0, "r": 3, "terrain": "normal"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "difficult"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "normal"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "normal"}, {"q": 1, "r": 6, "terrain": "difficult"},
+        {"q": -1, "r": 6, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": 0, "r": 8, "terrain": "difficult"}, {"q": 1, "r": 8, "terrain": "normal"},
+        {"q": -1, "r": 8, "terrain": "normal"},
+        {"q": 0, "r": 9, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "cultist", "count": 2, "positions": [{"q": 0, "r": 3}, {"q": 0, "r": 5}], "elite": [false, false]},
+        {"type": "arcane-guardian", "count": 1, "positions": [{"q": 0, "r": 7}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "reach-ritual-chamber", "type": "location-reach", "description": "Reach the ritual chamber", "hexes": [{"q": 0, "r": 9}]}
+      ],
+      "treasures": [
+        {"id": "sacred-rune", "position": {"q": 0, "r": 5}, "reward": "item:sacred-rune"},
+        {"id": "final-key", "position": {"q": 1, "r": 7}, "reward": "item:final-key"}
+      ],
+      "narrative": {
+        "intro": "The air grows colder with each step. Purple light burns your eyes. You hear the wizard's voice chanting—the ritual has begun!",
+        "triggers": [
+          {
+            "id": "ritual-chamber-reached",
+            "type": "location-reach",
+            "condition": {"hex": {"q": 0, "r": 9}},
+            "text": "You burst into the ritual chamber! Malachar stands at the center, his body glowing with raw arcane power. 'Too late!' he roars. 'I am becoming a god!'"
+          }
+        ],
+        "victory": {
+          "text": "You stand at the brink of the ritual chamber. The final confrontation awaits. Everything leads to this moment."
+        }
+      },
+      "unlocksScenarios": ["ac_14_ritual_chambers"]
+    },
+    {
+      "id": "ac_14_ritual_chambers",
+      "name": "Ritual Chambers",
+      "sequence": 14,
+      "difficulty": 6,
+      "description": "The heart of the wizard's dark ritual where lieutenants defend the process.",
+      "background": {
+        "image": "ritual-chambers.png",
+        "description": "A vast underground cathedral. Stone pillars reach toward a distant ceiling. A massive ritual circle dominates the center. Arcane energy crackles everywhere. Captured souls float in crystalline vessels.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.85
+      },
+      "mapHexes": [
+        {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 0, "terrain": "obstacle"}, {"q": 2, "r": 0, "terrain": "obstacle"},
+        {"q": -1, "r": 1, "terrain": "difficult"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "difficult"},
+        {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"},
+        {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"},
+        {"q": -1, "r": 3, "terrain": "normal"},
+        {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 4, "terrain": "difficult"},
+        {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": 0, "r": 6, "terrain": "difficult"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "normal"},
+        {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"},
+        {"q": 0, "r": 8, "terrain": "normal"}, {"q": 1, "r": 8, "terrain": "difficult"},
+        {"q": -1, "r": 8, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -1, "r": 0},
+        {"player": 1, "q": 0, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": -1, "r": 1}
+      ],
+      "monsterGroups": [
+        {"type": "ritual-guardian", "count": 2, "positions": [{"q": 0, "r": 2}, {"q": 0, "r": 5}], "elite": [true, true]},
+        {"type": "ritual-commander", "count": 1, "positions": [{"q": 1, "r": 7}], "elite": [true]}
+      ],
+      "objectives": [
+        {"id": "disrupt-ritual", "type": "defeat-monsters", "description": "Defeat the ritual commander"}
+      ],
+      "treasures": [
+        {"id": "freed-soul", "position": {"q": 0, "r": 4}, "reward": "gold:150"},
+        {"id": "ritual-gem", "position": {"q": 1, "r": 7}, "reward": "item:ritual-gem"}
+      ],
+      "narrative": {
+        "intro": "The ritual chamber throbs with barely contained power. The wizard's most loyal servants stand guard, determined to protect the ritual's completion.",
+        "triggers": [
+          {
+            "id": "commander-defeated",
+            "type": "monster-type-defeated",
+            "condition": {"monsterType": "ritual-commander"},
+            "text": "The commander falls! The ritual's protection crumbles. Malachar's true form manifests—a being of pure arcane power!"
+          }
+        ],
+        "victory": {
+          "text": "The guardians are defeated! The way to Malachar himself is open. Prepare for the final confrontation!"
+        }
+      },
+      "unlocksScenarios": ["ac_15_arcane_core"]
+    },
+    {
+      "id": "ac_15_arcane_core",
+      "name": "The Arcane Core",
+      "sequence": 15,
+      "difficulty": 7,
+      "isFinale": true,
+      "description": "The ultimate confrontation with Malachar the Ascended, transformed into a being of pure magical power.",
+      "background": {
+        "image": "arcane-core.png",
+        "description": "The ultimate chamber - a massive spherical room at the tower's heart. A towering nexus of arcane power dominates the center, pulsing with reality-warping energy. Malachar transformed stands radiant with power.",
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "opacity": 0.9
+      },
+      "mapHexes": [
+        {"q": -2, "r": 0, "terrain": "normal"}, {"q": -1, "r": 0, "terrain": "normal"}, {"q": 0, "r": 0, "terrain": "normal"}, {"q": 1, "r": 0, "terrain": "normal"}, {"q": 2, "r": 0, "terrain": "normal"},
+        {"q": -2, "r": 1, "terrain": "difficult"}, {"q": -1, "r": 1, "terrain": "normal"}, {"q": 0, "r": 1, "terrain": "normal"}, {"q": 1, "r": 1, "terrain": "normal"}, {"q": 2, "r": 1, "terrain": "difficult"},
+        {"q": -2, "r": 2, "terrain": "normal"}, {"q": -1, "r": 2, "terrain": "normal"}, {"q": 0, "r": 2, "terrain": "normal"}, {"q": 1, "r": 2, "terrain": "normal"}, {"q": 2, "r": 2, "terrain": "normal"},
+        {"q": -2, "r": 3, "terrain": "difficult"}, {"q": -1, "r": 3, "terrain": "normal"}, {"q": 0, "r": 3, "terrain": "difficult"}, {"q": 1, "r": 3, "terrain": "normal"}, {"q": 2, "r": 3, "terrain": "difficult"},
+        {"q": -2, "r": 4, "terrain": "normal"}, {"q": -1, "r": 4, "terrain": "normal"}, {"q": 0, "r": 4, "terrain": "normal"}, {"q": 1, "r": 4, "terrain": "normal"}, {"q": 2, "r": 4, "terrain": "normal"},
+        {"q": -1, "r": 5, "terrain": "normal"}, {"q": 0, "r": 5, "terrain": "normal"}, {"q": 1, "r": 5, "terrain": "normal"},
+        {"q": -1, "r": 6, "terrain": "normal"}, {"q": 0, "r": 6, "terrain": "difficult"}, {"q": 1, "r": 6, "terrain": "normal"},
+        {"q": -1, "r": 7, "terrain": "normal"}, {"q": 0, "r": 7, "terrain": "normal"}, {"q": 1, "r": 7, "terrain": "normal"}
+      ],
+      "startingPositions": [
+        {"player": 0, "q": -2, "r": 0},
+        {"player": 1, "q": -1, "r": 0},
+        {"player": 2, "q": 1, "r": 0},
+        {"player": 3, "q": 2, "r": 0}
+      ],
+      "monsterGroups": [
+        {"type": "malachar-ascended", "count": 1, "positions": [{"q": 0, "r": 4}], "elite": [true], "isBoss": true}
+      ],
+      "objectives": [
+        {"id": "defeat-malachar", "type": "defeat-monsters", "description": "Defeat Malachar the Ascended"}
+      ],
+      "treasures": [
+        {"id": "malachar-crown", "position": {"q": 0, "r": 4}, "reward": "item:malachar-crown"},
+        {"id": "arcane-artifact", "position": {"q": 0, "r": 6}, "reward": "item:arcane-artifact"}
+      ],
+      "narrative": {
+        "intro": "You stand before Malachar in his true form—a being of pure arcane power. His body crackles with reality-warping energy. Around him, the very fabric of existence strains under his immense power.",
+        "triggers": [
+          {
+            "id": "malachar-damaged-half",
+            "type": "damage-threshold",
+            "condition": {"healthBelow": 0.5},
+            "text": "'Impossible!' Malachar roars. 'I have transcended mortality! I am eternal!' Reality tears around him as his power intensifies."
+          },
+          {
+            "id": "final-blow",
+            "type": "damage-threshold",
+            "condition": {"healthBelow": 0.1},
+            "text": "Malachar's form begins to unravel. His ascension was incomplete! The wizard's power crumbles!"
+          }
+        ],
+        "victory": {
+          "text": "Malachar falls! His body dissipates into arcane dust. The dark tower shakes and begins to collapse. You've saved the realm from darkness. The curse is broken, the wizard is defeated, and peace can finally return to the land."
+        }
+      },
+      "unlocksScenarios": []
+    }
+  ]
+}
