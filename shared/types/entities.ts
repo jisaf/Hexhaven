@@ -440,7 +440,7 @@ export interface Progression {
 
 // ========== LOGGING TYPES ==========
 
-export type LogColor = 'red' | 'blue' | 'gold' | 'green' | 'orange' | 'lightgreen' | 'lightblue' | 'white';
+export type LogColor = 'red' | 'blue' | 'gold' | 'green' | 'orange' | 'lightgreen' | 'lightblue' | 'white' | 'yellow' | 'gray';
 
 export interface LogMessagePart {
   text: string;

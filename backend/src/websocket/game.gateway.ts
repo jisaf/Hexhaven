@@ -5,6 +5,7 @@
  * Handles room management, character selection, game start, and player actions.
  */
 
+import { randomUUID } from 'crypto';
 import {
   SubscribeMessage,
   MessageBody,
@@ -80,6 +81,11 @@ import type {
   CardActionExecutedPayload,
   TurnActionState,
   UseCardActionPayload,
+  ForcedMovementRequiredPayload,
+  ConfirmForcedMovementPayload,
+  SkipForcedMovementPayload,
+  EntityForcedMovedPayload,
+  ForcedMovementSkippedPayload,
 } from '../../../shared/types/events';
 import { InventoryService } from '../services/inventory.service';
 import { ActionDispatcherService } from '../services/action-dispatcher.service';
@@ -124,12 +130,14 @@ import type {
 import {
   ConnectionStatus,
   RoomStatus,
+  TerrainType,
   getRange,
   ElementType,
   ElementState,
   type AxialCoordinates,
   type CharacterClass,
   type Monster,
+  type HexFeature,
 } from '../../../shared/types/entities';
 import type { ScenarioCompletionCheckOptions } from '../types/game-state.types';
 import { hexDistance } from '../utils/hex-utils';
@@ -226,8 +234,12 @@ export class GameGateway
         };
         basePayload.turnActionState = turnActionState;
 
-        // Include selected cards info if available
-        if (character.selectedCards) {
+        // Include selected cards info if available (skip if resting - card IDs are 'rest')
+        if (
+          character.selectedCards &&
+          character.selectedCards.topCardId !== 'rest' &&
+          character.selectedCards.bottomCardId !== 'rest'
+        ) {
           const card1 = await this.abilityCardService.getCardById(
             character.selectedCards.topCardId,
           );
@@ -338,6 +350,28 @@ export class GameGateway
     Map<string, 'discard' | 'lost'>
   >();
 
+  // Pending forced movement: roomCode -> pending data
+  // Tracks when we're waiting for player to select push/pull destination
+  // Timeout (60 min) auto-skips if player doesn't respond
+  private readonly pendingForcedMovement = new Map<
+    string,
+    {
+      requestId: string; // Unique ID to prevent race conditions
+      attackerId: string;
+      targetId: string;
+      targetName: string;
+      isMonsterTarget: boolean;
+      movementType: 'push' | 'pull';
+      distance: number;
+      validDestinations: AxialCoordinates[];
+      currentPosition: AxialCoordinates;
+      timeoutId: ReturnType<typeof setTimeout>; // Auto-skip timeout
+    }
+  >();
+
+  // Forced movement timeout duration (60 minutes)
+  private readonly FORCED_MOVEMENT_TIMEOUT_MS = 60 * 60 * 1000;
+
   /**
    * Get the room that a Socket.IO client is currently in
    * Multi-room support: Uses Socket.IO rooms to determine which game room the client is active in
@@ -406,6 +440,50 @@ export class GameGateway
       .forEach((s) => occupiedHexes.push(s.position));
 
     return occupiedHexes;
+  }
+
+  /**
+   * Clear pending forced movement for a room, including its timeout.
+   * Prevents memory leaks and stale timeout callbacks.
+   */
+  private clearPendingForcedMovement(roomCode: string): void {
+    const pending = this.pendingForcedMovement.get(roomCode);
+    if (pending) {
+      clearTimeout(pending.timeoutId);
+      this.pendingForcedMovement.delete(roomCode);
+    }
+  }
+
+  /**
+   * Check if a hex position is occupied by a character, monster, or summon.
+   * Used for forced movement validation and other occupancy checks.
+   *
+   * @param pos - The hex position to check
+   * @param monsters - Array of monsters in the room
+   * @param characters - Array of characters in the room
+   * @returns true if the hex is occupied, false otherwise
+   */
+  private isHexOccupied(
+    pos: AxialCoordinates,
+    monsters: Monster[],
+    characters: Character[],
+  ): boolean {
+    // Check monsters
+    if (
+      monsters.some(
+        (m) =>
+          !m.isDead && m.currentHex.q === pos.q && m.currentHex.r === pos.r,
+      )
+    ) {
+      return true;
+    }
+    // Check characters (Character model uses 'position' not 'currentHex')
+    if (
+      characters.some((c) => c.position?.q === pos.q && c.position?.r === pos.r)
+    ) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -855,6 +933,7 @@ export class GameGateway
    */
   handleConnection(client: Socket): void {
     const userId = client.data.userId;
+
     if (userId) {
       // Clean up any stale mapping for this user (handles reconnection with new socket ID)
       const oldSocketId = this.playerToSocket.get(userId);
@@ -915,6 +994,9 @@ export class GameGateway
 
             // Track disconnected player for narrative timeout handling
             this.narrativeService.markPlayerDisconnected(room.roomCode, userId);
+
+            // Clear any pending forced movement for this room to prevent stale state
+            this.clearPendingForcedMovement(roomCode);
 
             this.logger.log(
               `Session saved for disconnected player ${userId} in room ${room.roomCode}`,
@@ -1346,6 +1428,9 @@ export class GameGateway
         // Issue #228: Summon state cleanup
         this.roomSummons.delete(roomCode);
         this.summonsActedThisTurn.delete(roomCode);
+        // Issue #448: Forced movement state cleanup
+        this.clearPendingForcedMovement(roomCode);
+        this.pendingCardDestinations.delete(roomCode);
         this.logger.log(`Room ${roomCode} is empty, all state cleaned up`);
 
         // Delete the room
@@ -3819,6 +3904,217 @@ export class GameGateway
   }
 
   /**
+   * Handle confirm_forced_movement event from player.
+   * Player has selected a destination for push/pull.
+   */
+  @SubscribeMessage('confirm_forced_movement')
+  handleConfirmForcedMovement(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: ConfirmForcedMovementPayload,
+  ): void {
+    this.logger.log(`confirm_forced_movement received:`, payload);
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room');
+      }
+
+      const { room } = roomData;
+      const roomCode = room.roomCode;
+
+      // Validate payload structure before use
+      if (
+        !payload ||
+        typeof payload.requestId !== 'string' ||
+        typeof payload.attackerId !== 'string' ||
+        typeof payload.targetId !== 'string' ||
+        !payload.destinationHex ||
+        typeof payload.destinationHex.q !== 'number' ||
+        typeof payload.destinationHex.r !== 'number'
+      ) {
+        throw new Error(
+          'Invalid payload structure for confirm_forced_movement',
+        );
+      }
+
+      // Get pending forced movement and immediately validate requestId atomically
+      const pending = this.pendingForcedMovement.get(roomCode);
+      if (!pending) {
+        throw new Error('No pending forced movement');
+      }
+
+      // Validate the requestId matches to prevent race conditions (check first)
+      if (pending.requestId !== payload.requestId) {
+        throw new Error('Stale forced movement request (requestId mismatch)');
+      }
+
+      // Validate the request matches pending
+      if (
+        pending.attackerId !== payload.attackerId ||
+        pending.targetId !== payload.targetId
+      ) {
+        throw new Error('Forced movement confirmation does not match pending');
+      }
+
+      // Validate destination is in valid destinations
+      const isValidDestination = pending.validDestinations.some(
+        (d) =>
+          d.q === payload.destinationHex.q && d.r === payload.destinationHex.r,
+      );
+      if (!isValidDestination) {
+        throw new Error('Invalid destination for forced movement');
+      }
+
+      // Clear pending state IMMEDIATELY after validation to prevent race conditions
+      this.clearPendingForcedMovement(roomCode);
+
+      // Verify the player owns the attacking character (authorization check)
+      const userCharacters = characterService.getCharactersByPlayerId(userId);
+      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
+      if (!isOwner) {
+        throw new Error('Not authorized to confirm this forced movement');
+      }
+
+      // Apply the movement
+      const monsters = this.roomMonsters.get(roomCode) || [];
+      let fromHex: AxialCoordinates;
+
+      if (pending.isMonsterTarget) {
+        const monsterTarget = monsters.find((m) => m.id === pending.targetId);
+        if (!monsterTarget) {
+          throw new Error('Target not found for forced movement');
+        }
+        fromHex = { ...monsterTarget.currentHex };
+        // Move the monster
+        monsterTarget.currentHex = {
+          q: payload.destinationHex.q,
+          r: payload.destinationHex.r,
+        };
+      } else {
+        const characterTarget = characterService.getCharacterById(
+          pending.targetId,
+        );
+        if (!characterTarget) {
+          throw new Error('Target not found for forced movement');
+        }
+        fromHex = { ...characterTarget.position };
+        // Move the character
+        characterTarget.moveTo(payload.destinationHex);
+      }
+
+      // Clear pending state (includes timeout cleanup)
+      this.clearPendingForcedMovement(roomCode);
+
+      // Emit entity_forced_moved event
+      const movedPayload: EntityForcedMovedPayload = {
+        entityId: pending.targetId,
+        entityType: pending.isMonsterTarget ? 'monster' : 'character',
+        fromHex,
+        toHex: payload.destinationHex,
+        movementType: pending.movementType,
+        causedBy: pending.attackerId,
+        path: payload.path, // Include step-by-step path for animation
+      };
+
+      this.server.to(roomCode).emit('entity_forced_moved', movedPayload);
+
+      // Add game log entry for the forced movement
+      const attacker = characterService.getCharacterById(pending.attackerId);
+      const actionVerb = pending.movementType === 'push' ? 'pushed' : 'pulled';
+      this.addGameLogEntry(roomCode, [
+        { text: pending.targetName, color: '#FFA500' }, // Orange for target
+        { text: ` was ${actionVerb} by ` },
+        { text: attacker?.characterClass || 'Unknown', color: '#87CEEB' }, // Light blue for attacker
+      ]);
+
+      this.logger.log(
+        `Forced movement applied: ${pending.targetId} moved to (${payload.destinationHex.q}, ${payload.destinationHex.r})`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error confirming forced movement: ${errorMessage}`);
+      client.emit('error', {
+        code: 'CONFIRM_FORCED_MOVEMENT_FAILED',
+        message: errorMessage,
+      });
+    }
+  }
+
+  /**
+   * Handle skip_forced_movement event from player.
+   * Player chooses not to apply push/pull.
+   */
+  @SubscribeMessage('skip_forced_movement')
+  handleSkipForcedMovement(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: SkipForcedMovementPayload,
+  ): void {
+    try {
+      const userId = this.socketToPlayer.get(client.id);
+      if (!userId) {
+        throw new Error('Player not authenticated');
+      }
+
+      const roomData = this.getRoomFromSocket(client);
+      if (!roomData) {
+        throw new Error('Player not in any room');
+      }
+
+      const { room } = roomData;
+      const roomCode = room.roomCode;
+
+      // Get pending forced movement and immediately validate requestId atomically
+      const pending = this.pendingForcedMovement.get(roomCode);
+      if (!pending) {
+        this.logger.warn('Skip forced movement called but no pending movement');
+        return;
+      }
+
+      // Validate the requestId matches to prevent race conditions (check first, before any state changes)
+      if (pending.requestId !== payload.requestId) {
+        throw new Error('Stale forced movement request (requestId mismatch)');
+      }
+
+      // Clear pending state IMMEDIATELY after validating requestId to prevent race conditions
+      this.clearPendingForcedMovement(roomCode);
+
+      // Verify the player owns the attacking character (authorization check)
+      const userCharacters = characterService.getCharactersByPlayerId(userId);
+      const isOwner = userCharacters.some((c) => c.id === pending.attackerId);
+      if (!isOwner) {
+        throw new Error('Not authorized to skip this forced movement');
+      }
+
+      // Emit forced_movement_skipped event
+      const skipPayload: ForcedMovementSkippedPayload = {
+        attackerId: pending.attackerId,
+        targetId: pending.targetId,
+        movementType: pending.movementType,
+        reason: 'player_skipped',
+      };
+
+      this.server.to(roomCode).emit('forced_movement_skipped', skipPayload);
+      this.logger.log(
+        `Forced movement skipped by player: ${pending.movementType}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error skipping forced movement: ${errorMessage}`);
+      client.emit('error', {
+        code: 'SKIP_FORCED_MOVEMENT_FAILED',
+        message: errorMessage,
+      });
+    }
+  }
+
+  /**
    * Execute a card action based on its type (Issue #411 - Phase 3)
    * Reuses existing movement and attack logic where possible
    */
@@ -4143,6 +4439,144 @@ export class GameGateway
     };
 
     this.server.to(roomCode).emit('attack_resolved', attackResolvedPayload);
+
+    // Apply push/pull modifiers if target is still alive
+    if (!targetDead && actionModifiers.length > 0) {
+      const pushModifier = getPush(actionModifiers);
+      const pullModifier = getPull(actionModifiers);
+      const forcedMovementType = pushModifier
+        ? 'push'
+        : pullModifier
+          ? 'pull'
+          : null;
+      const forcedMovementDistance =
+        pushModifier?.distance || pullModifier?.distance || 0;
+
+      if (
+        forcedMovementType &&
+        Number.isInteger(forcedMovementDistance) &&
+        forcedMovementDistance > 0
+      ) {
+        // Get hex map for validation
+        const hexMap = this.roomMaps.get(roomCode);
+        const monsters = this.roomMonsters.get(roomCode) || [];
+        const room = roomService.getRoom(roomCode);
+        const allCharacters: Character[] =
+          room?.players
+            .flatMap((p: { userId: string }) =>
+              characterService.getCharactersByPlayerId(p.userId),
+            )
+            .filter((c: Character | null): c is Character => c !== null) || [];
+
+        // Build getHex function
+        const getHex = (
+          pos: AxialCoordinates,
+        ): {
+          terrainType?: TerrainType;
+          features?: HexFeature[];
+        } | null => {
+          const key = `${pos.q},${pos.r}`;
+          return hexMap?.get(key) as {
+            terrainType?: TerrainType;
+            features?: HexFeature[];
+          } | null;
+        };
+        // Use the isHexOccupied helper method
+        const isOccupied = (pos: AxialCoordinates) =>
+          this.isHexOccupied(pos, monsters, allCharacters);
+
+        // Calculate valid destinations
+        const validDestinations =
+          this.forcedMovementService.getAllValidForcedMovementDestinations(
+            character.position,
+            target.currentHex,
+            forcedMovementDistance,
+            forcedMovementType,
+            getHex,
+            isOccupied,
+          );
+
+        if (validDestinations.length > 0) {
+          // Generate unique request ID to prevent race conditions
+          const requestId = randomUUID();
+
+          // Set up auto-skip timeout for unresponsive players
+          const timeoutId = setTimeout(() => {
+            const pending = this.pendingForcedMovement.get(roomCode);
+            // Only skip if this is the same request (not stale)
+            if (pending && pending.requestId === requestId) {
+              this.pendingForcedMovement.delete(roomCode);
+              const skipPayload: ForcedMovementSkippedPayload = {
+                attackerId: pending.attackerId,
+                targetId: pending.targetId,
+                movementType: pending.movementType,
+                reason: 'timeout',
+              };
+              this.server
+                .to(roomCode)
+                .emit('forced_movement_skipped', skipPayload);
+              this.logger.log(
+                `Forced movement auto-skipped due to timeout: ${pending.movementType}`,
+              );
+            }
+          }, this.FORCED_MOVEMENT_TIMEOUT_MS);
+
+          // Get target name with player nickname for characters
+          const targetName = isMonsterTarget
+            ? target.monsterType
+            : this.getPlayerNickname(
+                roomCode,
+                target.playerId,
+                target.characterClass,
+              );
+
+          // Store pending forced movement with timeout reference
+          this.pendingForcedMovement.set(roomCode, {
+            requestId,
+            attackerId: character.id,
+            targetId: payload.targetId,
+            targetName,
+            isMonsterTarget,
+            movementType: forcedMovementType,
+            distance: forcedMovementDistance,
+            validDestinations,
+            currentPosition: target.currentHex,
+            timeoutId,
+          });
+
+          // Emit forced_movement_required event
+          const forcedMovementPayload: ForcedMovementRequiredPayload = {
+            requestId,
+            attackerId: character.id,
+            targetId: payload.targetId,
+            targetName,
+            movementType: forcedMovementType,
+            distance: forcedMovementDistance,
+            validDestinations,
+            currentPosition: target.currentHex,
+          };
+
+          this.server
+            .to(roomCode)
+            .emit('forced_movement_required', forcedMovementPayload);
+          this.logger.log(
+            `Forced movement required: ${forcedMovementType} ${forcedMovementDistance}, waiting for player selection`,
+          );
+        } else {
+          // No valid destinations - skip silently and log
+          this.logger.log(
+            `${forcedMovementType} ${forcedMovementDistance} skipped: no valid destinations`,
+          );
+          const skipPayload: ForcedMovementSkippedPayload = {
+            attackerId: character.id,
+            targetId: payload.targetId,
+            movementType: forcedMovementType,
+            reason: 'no_valid_destinations',
+          };
+          this.server.to(roomCode).emit('forced_movement_skipped', skipPayload);
+        }
+      }
+    }
 
     return {
       success: true,
@@ -4645,6 +5079,9 @@ export class GameGateway
         // Clear pending destinations for this character
         this.pendingCardDestinations.delete(character.id);
       }
+
+      // Clear any pending forced movement to prevent stale state
+      this.clearPendingForcedMovement(room.roomCode);
 
       // Reset action flags for this character's turn ending
       character.resetActionFlags();

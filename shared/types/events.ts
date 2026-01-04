@@ -758,6 +758,71 @@ export interface NarrativeHexesRevealedPayload {
   narrativeTriggerId?: string;
 }
 
+// ========== PUSH/PULL TARGETING EVENTS ==========
+
+/**
+ * Client -> Server: Confirm push/pull destination selection
+ * Player has selected a destination hex for forced movement
+ */
+export interface ConfirmForcedMovementPayload {
+  requestId: string; // Must match the requestId from ForcedMovementRequiredPayload
+  attackerId: string;
+  targetId: string;
+  destinationHex: AxialCoordinates;
+  movementType: 'push' | 'pull';
+  path?: AxialCoordinates[]; // Optional: step-by-step path for animation (if not provided, straight line is calculated)
+}
+
+/**
+ * Client -> Server: Skip push/pull action
+ * Player chose to skip the forced movement
+ */
+export interface SkipForcedMovementPayload {
+  requestId: string; // Must match the requestId from ForcedMovementRequiredPayload
+  attackerId: string;
+  targetId: string;
+}
+
+/**
+ * Server -> Client: Push/pull selection required
+ * Sent after attack resolves if push/pull modifier present and target alive
+ */
+export interface ForcedMovementRequiredPayload {
+  requestId: string; // Unique ID to prevent race conditions with stale requests
+  attackerId: string;
+  targetId: string;
+  targetName: string;
+  movementType: 'push' | 'pull';
+  distance: number;
+  validDestinations: AxialCoordinates[];
+  currentPosition: AxialCoordinates;
+}
+
+/**
+ * Server -> Client: Entity moved by forced movement
+ * Sent when push/pull is applied (after player selection or automatic)
+ */
+export interface EntityForcedMovedPayload {
+  entityId: string;
+  entityType: 'character' | 'monster';
+  fromHex: AxialCoordinates;
+  toHex: AxialCoordinates;
+  movementType: 'push' | 'pull';
+  causedBy: string; // attacker ID
+  path?: AxialCoordinates[]; // Optional: step-by-step path for animation
+}
+
+/**
+ * Server -> Client: Forced movement was skipped
+ * Sent when player skips or no valid destinations
+ */
+export interface ForcedMovementSkippedPayload {
+  attackerId: string;
+  targetId: string;
+  movementType: 'push' | 'pull';
+  reason: 'player_skipped' | 'no_valid_destinations' | 'target_died' | 'timeout';
+}
+
 // ========== EVENT TYPE MAPPING ==========
 
 export interface ClientEvents {
@@ -785,6 +850,9 @@ export interface ClientEvents {
   summon_order: SummonOrderPayload;
   // Card action selection (Issue #411)
   use_card_action: UseCardActionPayload;
+  // Push/pull targeting events
+  confirm_forced_movement: ConfirmForcedMovementPayload;
+  skip_forced_movement: SkipForcedMovementPayload;
 }
 
 export interface RoundStartedPayload {
@@ -855,4 +923,8 @@ export interface ServerEvents {
   summon_awaiting_orders: SummonAwaitingOrdersPayload;
   // Card action selection (Issue #411)
   card_action_executed: CardActionExecutedPayload;
+  // Push/pull targeting events
+  forced_movement_required: ForcedMovementRequiredPayload;
+  entity_forced_moved: EntityForcedMovedPayload;
+  forced_movement_skipped: ForcedMovementSkippedPayload;
 }

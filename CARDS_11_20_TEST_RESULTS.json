@@ -1,0 +1,176 @@
+{
+  "timestamp": "2026-01-03T12:47:59.554Z",
+  "turnActionPanelWorking": null,
+  "cards": {
+    "11": {
+      "name": "Earth Tremor",
+      "initiative": 35,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Earth Tremor",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "12": {
+      "name": "Phase Walk",
+      "initiative": 38,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Phase Walk",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "13": {
+      "name": "Radiant Blessing",
+      "initiative": 40,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Radiant Blessing",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "14": {
+      "name": "Ally Support",
+      "initiative": 42,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Ally Support",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "15": {
+      "name": "Shadow Strike",
+      "initiative": 45,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Shadow Strike",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "16": {
+      "name": "Self Heal",
+      "initiative": 48,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Self Heal",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "17": {
+      "name": "Stunning Blow",
+      "initiative": 50,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Stunning Blow",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "18": {
+      "name": "Teleport Strike",
+      "initiative": 52,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Teleport Strike",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "19": {
+      "name": "Toxic Blade",
+      "initiative": 55,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Toxic Blade",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    },
+    "20": {
+      "name": "Line Attack",
+      "initiative": 58,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Line Attack",
+        "Could not find Recovery card",
+        "Close button not found",
+        "Confirm button not found",
+        "TurnActionPanel not visible",
+        "End Turn button not found"
+      ],
+      "selectionStrategy": "not_found"
+    }
+  }
+}

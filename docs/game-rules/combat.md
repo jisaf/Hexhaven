@@ -99,6 +99,39 @@ Attack abilities will often have effects that increase their power. If an attack
 
 [**PULL X**](../../img/icons/status/pull.png) – The target is forced to move X hexes in a direction specified by the attacker, but each hex moved must place the target **closer to** the attacker than it was previously. If there are no viable hexes into which to pull the target, the pull ends. The target can be pulled through its allies, but not its enemies. Both push and pull effects are considered movements, however, they are not affected by difficult terrain.
 
+#### PUSH/PULL TARGETING (HEXHAVEN IMPLEMENTATION)
+
+When a player character attacks with a push or pull effect, they are presented with an **interactive targeting system** to select the destination hex:
+
+1. **Valid Destination Highlighting**: After the attack resolves, **ALL** valid destination hexes are highlighted in **yellow**, similar to how movement range is displayed. Valid hexes must satisfy:
+   - **Push**: Each hex in the path must be farther from the attacker than the previous hex
+   - **Pull**: Each hex in the path must be closer to the attacker than the previous hex
+   - The hex cannot be blocked by obstacles or occupied by other figures
+   - The path cannot pass through obstacles or enemies
+
+2. **Hex Selection & Auto-Pathing**: Tap any highlighted yellow hex to immediately move the target to that location:
+   - The system **automatically calculates** the step-by-step path from the target's current position to the clicked destination
+   - The target **animates smoothly** along each hex in the path with ease-out cubic easing
+   - No confirmation dialog required (tap-to-confirm pattern)
+
+3. **Animated Movement**: Unlike regular movement or teleportation, push/pull forced movement is visually animated:
+   - The monster sprite moves step-by-step through each hex in the calculated path
+   - Animation speed is 200 pixels/second with smooth easing for natural motion
+   - All players see the same animation synchronized via WebSocket
+
+4. **Skip Option**: Players can choose to skip the forced movement by tapping the "Skip Push" or "Skip Pull" button. This is useful when pushing an enemy might disadvantage the player's strategy.
+
+5. **Monster Attackers**: When a monster performs a push or pull attack, the movement is calculated automatically using the most direct path that satisfies the distance constraint, and animated the same way.
+
+6. **No Valid Destinations**: If no valid hexes exist (e.g., target is backed against a wall), the push/pull effect is skipped silently and noted in the game log.
+
+**Technical Implementation** (feat/push-pull-targeting):
+- Frontend displays all valid destination hexes (like movement range)
+- Player clicks destination → frontend auto-calculates path → sends to backend
+- Backend validates and broadcasts path to all clients
+- All clients animate the monster along the same path using `MonsterSprite.animateMoveTo()`
+- Path calculation ensures movement follows push/pull direction rules at each step
+
 [**PIERCE X**](../../img/icons/status/pierce.png) – Up to X points of the target’s Shield are ignored for the attack. Unlike other effects, PIERCE is applied while calculating the accompanying attack damage instead of afterwards.
 
 ***Example:** an Attack 3 PIERCE 2 ability used on a monster with Shield 3 would ignore two of the monster’s Shield points and inflict 2 damage (modified by an attack modifier card).*

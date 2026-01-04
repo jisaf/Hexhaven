@@ -240,6 +240,15 @@ async function bootstrap() {
       gameGateway.handleRequestSummonPlacement(socket, payload);
     });
 
+    // Push/pull forced movement handlers (Issue #448)
+    socket.on('confirm_forced_movement', (payload) => {
+      gameGateway.handleConfirmForcedMovement(socket, payload);
+    });
+
+    socket.on('skip_forced_movement', (payload) => {
+      gameGateway.handleSkipForcedMovement(socket, payload);
+    });
+
     // Item handlers
     socket.on('use_item', (payload) => {
       gameGateway.handleUseItem(socket, payload);

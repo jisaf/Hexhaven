@@ -21,6 +21,7 @@ export const HIGHLIGHT_COLORS = {
   SELECTED: 0x0099ff,  // Blue
   SUMMON: 0x9900ff,    // Purple
   HEAL: 0x00ffcc,      // Cyan/Teal - distinguishable from green movement
+  FORCED_MOVEMENT: 0xffff00,  // Yellow - for push/pull destination selection
 } as const;
 
 export class HighlightManager {
@@ -29,6 +30,7 @@ export class HighlightManager {
   private highlightedAttackHexes: Set<string>;
   private highlightedSummonHexes: Set<string>;
   private highlightedHealHexes: Set<string>;
+  private highlightedForcedMovementHexes: Set<string>;
   private selectedHexKey: string | null = null;
 
   constructor(tiles: Map<string, HexTile>) {
@@ -37,6 +39,7 @@ export class HighlightManager {
     this.highlightedAttackHexes = new Set();
     this.highlightedSummonHexes = new Set();
     this.highlightedHealHexes = new Set();
+    this.highlightedForcedMovementHexes = new Set();
   }
 
   /**
@@ -124,6 +127,20 @@ export class HighlightManager {
     this.clearHighlightedRange(this.highlightedHealHexes);
   }
 
+  /**
+   * Highlight valid forced movement (push/pull) hexes by tinting them yellow.
+   */
+  public showForcedMovementRange(hexes: Axial[]): void {
+    this.showHighlightedRange(hexes, HIGHLIGHT_COLORS.FORCED_MOVEMENT, this.highlightedForcedMovementHexes);
+  }
+
+  /**
+   * Clear all forced movement range highlights.
+   */
+  public clearForcedMovementRange(): void {
+    this.clearHighlightedRange(this.highlightedForcedMovementHexes);
+  }
+
   public setSelectedHex(hex: Axial | null): void {
     // Clear previous selection
     if (this.selectedHexKey) {
@@ -154,6 +171,7 @@ export class HighlightManager {
     this.clearAttackRange();
     this.clearSummonPlacementRange();
     this.clearHealRange();
+    this.clearForcedMovementRange();
     this.setSelectedHex(null);
   }
 

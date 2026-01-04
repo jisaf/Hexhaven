@@ -1,10 +1,10 @@
 import { websocketService, type EventName } from './websocket.service';
 import { roomSessionManager } from './room-session.service';
-import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload, RoundEndedPayload, ElementalStateChangedPayload } from '../../../shared/types';
+import type { GameStartedPayload, TurnEntity, LogMessage, LogMessagePart, CharacterMovedPayload, AttackResolvedPayload, MonsterActivatedPayload, AbilityCard, LootSpawnedPayload, RestEventPayload, TurnActionState, TurnStartedPayload, CardActionExecutedPayload, UseCardActionPayload, ForcedMovementRequiredPayload, EntityForcedMovedPayload, ForcedMovementSkippedPayload, ConfirmForcedMovementPayload, SkipForcedMovementPayload, RoundEndedPayload, ElementalStateChangedPayload } from '../../../shared/types';
 import { ElementState } from '../../../shared/types/entities';
 import type { Character, ElementalInfusion } from '../../../shared/types/entities';
 import { getRange, getConsumeModifier, type CardAction } from '../../../shared/types/modifiers';
-import { hexRangeReachable, hexAttackRange } from '../game/hex-utils';
+import { hexRangeReachable, hexAttackRange, hexNeighbors, hexDistance } from '../game/hex-utils';
 import type { Axial } from '../game/hex-utils';
 
 // Helper to format modifier value into a string like "+1", "-2"
@@ -176,11 +176,28 @@ interface GameState {
   selectedTurnCards: { card1: AbilityCard; card2: AbilityCard } | null;
   pendingAction: { cardId: string; position: 'top' | 'bottom'; consumeElement?: boolean } | null;
   // Issue #411: Targeting mode for actions from cards (extensible for heal, summon, etc.)
-  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | null;
+  cardActionTargetingMode: 'move' | 'attack' | 'heal' | 'summon' | 'push' | 'pull' | null;
   cardActionRange: number; // The range/value from the card action
   // Issue #411: Hex highlighting for heal and summon actions
   validHealHexes: Axial[];
   validSummonHexes: Axial[];
+
+  // Push/Pull targeting state
+  validForcedMovementHexes: Axial[];
+  pendingForcedMovement: {
+    requestId: string; // Unique ID to prevent race conditions
+    attackerId: string;
+    targetId: string;
+    targetName: string;
+    movementType: 'push' | 'pull';
+    distance: number;
+    attackerPosition: Axial | null; // Attacker position for direction calculation
+  } | null;
+  // Waypoint-based forced movement tracking
+  forcedMovementPath: Axial[]; // Path of hexes clicked so far
+  forcedMovementRemainingDistance: number; // How much movement is left
+  forcedMovementCurrentPosition: Axial | null; // Current position in the path (starts at target's position)
+  forcedMovementStartPosition: Axial | null; // Original target position (for direction validation)
 
   // Elemental state for UI display
   elementalState: ElementalInfusion | null;
@@ -207,7 +224,7 @@ export interface RestState {
 
 interface VisualUpdateCallbacks {
   moveCharacter?: (characterId: string, toHex: Axial, movementPath?: Axial[]) => void;
-  updateMonsterPosition?: (monsterId: string, newHex: Axial) => void;
+  updateMonsterPosition?: (monsterId: string, newHex: Axial, movementPath?: Axial[]) => void;
   updateCharacterHealth?: (characterId: string, health: number) => void;
   updateMonsterHealth?: (monsterId: string, health: number) => void;
   removeMonster?: (monsterId: string) => void;
@@ -315,6 +332,13 @@ class GameStateManager {
     cardActionRange: 0,
     validHealHexes: [],
     validSummonHexes: [],
+    // Push/Pull targeting state
+    validForcedMovementHexes: [],
+    pendingForcedMovement: null,
+    forcedMovementPath: [],
+    forcedMovementRemainingDistance: 0,
+    forcedMovementCurrentPosition: null,
+    forcedMovementStartPosition: null,
     elementalState: null,
   };
   private subscribers: Set<(state: GameState) => void> = new Set();
@@ -395,11 +419,14 @@ class GameStateManager {
     register('narrative_monster_spawned', this.handleMonsterSpawned.bind(this));
     // Issue #411: Card action execution event
     register('card_action_executed', this.handleCardActionExecuted.bind(this));
+    // Push/pull forced movement events
+    register('forced_movement_required', this.handleForcedMovementRequired.bind(this));
+    register('entity_forced_moved', this.handleEntityForcedMoved.bind(this));
+    register('forced_movement_skipped', this.handleForcedMovementSkipped.bind(this));
     // Elemental state updates
     register('elemental_state_changed', this.handleElementalStateChanged.bind(this));
     // Issue #411: Listen for errors from card actions
     register('error', (data: { code?: string; message: string }) => {
-      console.error('[GameStateManager] WebSocket error:', data);
       if (data.code === 'USE_CARD_ACTION_FAILED') {
         this.addLog([
           { text: 'Action failed: ', color: 'red' },
@@ -414,6 +441,14 @@ class GameStateManager {
         this.state.validHealHexes = [];
         this.state.validSummonHexes = [];
         this.state.attackableTargets = [];
+        this.emitStateUpdate();
+      } else if (data.code === 'CONFIRM_FORCED_MOVEMENT_FAILED' || data.code === 'SKIP_FORCED_MOVEMENT_FAILED') {
+        this.addLog([
+          { text: 'Forced movement failed: ', color: 'red' },
+          { text: data.message, color: 'orange' },
+        ]);
+        // Clear targeting state on error - user will need to try again if applicable
+        this.clearTargetingState();
         this.emitStateUpdate();
       }
     });
@@ -1049,9 +1084,13 @@ class GameStateManager {
     }
 
     // Clear pending action and targeting mode
+    // BUT preserve push/pull targeting mode if forced movement is pending
     this.state.pendingAction = null;
-    this.state.cardActionTargetingMode = null;
-    this.state.cardActionRange = 0;
+    const hasPendingForcedMovement = this.state.pendingForcedMovement !== null;
+    if (!hasPendingForcedMovement) {
+      this.state.cardActionTargetingMode = null;
+      this.state.cardActionRange = 0;
+    }
 
     // Log the action
     const card = this.state.selectedTurnCards?.card1.id === data.cardId
@@ -1332,6 +1371,40 @@ class GameStateManager {
         if (isValidSummonHex) {
           console.log('[GameStateManager] Summon targeting mode - hex selected:', hex);
           this.completeCardSummonAction({ q: hex.q, r: hex.r });
+        }
+        return;
+      }
+
+      // Push/pull forced movement targeting mode - click any valid destination
+      if (this.state.cardActionTargetingMode === 'push' || this.state.cardActionTargetingMode === 'pull') {
+        console.log('[GameStateManager] Push/pull mode hex click:', hex, 'isMyTurn:', this.state.isMyTurn, 'pendingForcedMovement:', !!this.state.pendingForcedMovement);
+        const isValidForcedMovementHex = this.state.validForcedMovementHexes.some(
+          h => h.q === hex.q && h.r === hex.r
+        );
+        console.log('[GameStateManager] isValidForcedMovementHex:', isValidForcedMovementHex, 'validHexes:', this.state.validForcedMovementHexes.length);
+
+        if (isValidForcedMovementHex && this.state.pendingForcedMovement) {
+          // Calculate the path from start position to clicked destination
+          const startPos = this.state.forcedMovementStartPosition;
+          const attackerPos = this.state.pendingForcedMovement.attackerPosition;
+
+          if (startPos && attackerPos) {
+            const path = this.calculateForcedMovementPath(
+              startPos,
+              { q: hex.q, r: hex.r },
+              attackerPos,
+              this.state.pendingForcedMovement.movementType
+            );
+
+            console.log('[GameStateManager] Calculated path:', path);
+            this.state.forcedMovementPath = path;
+            this.confirmForcedMovement();
+          } else {
+            // Missing position data - log error and use direct path as fallback
+            console.error('[GameStateManager] Missing startPos or attackerPos for path calculation. StartPos:', startPos, 'AttackerPos:', attackerPos);
+            this.state.forcedMovementPath = [{ q: hex.q, r: hex.r }];
+            this.confirmForcedMovement();
+          }
         }
         return;
       }
@@ -1832,6 +1905,8 @@ class GameStateManager {
     this.state.validAttackHexes = [];
     this.state.validHealHexes = [];
     this.state.validSummonHexes = [];
+    this.state.validForcedMovementHexes = [];
+    this.state.pendingForcedMovement = null;
     this.state.attackableTargets = [];
   }
 
@@ -1877,6 +1952,232 @@ class GameStateManager {
       return;
     }
     this.emitCardAction(undefined, targetHex, this.state.pendingAction.consumeElement);
+  }
+
+  /**
+   * Handle forced_movement_required event from backend.
+   * Sets up push/pull targeting mode for player to select destination.
+   */
+  private handleForcedMovementRequired(data: ForcedMovementRequiredPayload): void {
+    console.log('[GameStateManager] Forced movement required:', data.movementType, data.distance, 'destinations:', data.validDestinations?.length);
+
+    // Validate that we have destinations to show
+    if (!data.validDestinations || data.validDestinations.length === 0) {
+      console.warn('[GameStateManager] No valid destinations for forced movement - skipping targeting mode');
+      return;
+    }
+
+    // Get attacker position for direction calculation
+    const attacker = this.state.gameData?.characters.find(c => c.id === data.attackerId);
+    const attackerPosition = attacker?.currentHex || null;
+
+    // Store pending forced movement data (including attacker position for step calculations)
+    this.state.pendingForcedMovement = {
+      requestId: data.requestId,
+      attackerId: data.attackerId,
+      targetId: data.targetId,
+      targetName: data.targetName,
+      movementType: data.movementType,
+      distance: data.distance,
+      attackerPosition: attackerPosition,
+    };
+
+    // Initialize waypoint-based targeting
+    const targetPosition = { q: data.currentPosition.q, r: data.currentPosition.r };
+    this.state.forcedMovementStartPosition = targetPosition;
+    this.state.forcedMovementCurrentPosition = targetPosition;
+    this.state.forcedMovementPath = [];
+    this.state.forcedMovementRemainingDistance = data.distance;
+
+    // Show ALL valid destinations from backend (like movement range)
+    // This lets user click any valid final hex and we'll auto-calculate the path
+    const allValidHexes = data.validDestinations.map(d => ({ q: d.q, r: d.r }));
+
+    // Set targeting mode and valid hexes (all destinations, not just first step)
+    this.state.cardActionTargetingMode = data.movementType;
+    this.state.validForcedMovementHexes = allValidHexes;
+
+    // Log the action
+    const actionLabel = data.movementType === 'push' ? 'Push' : 'Pull';
+    this.addLog([
+      { text: `${actionLabel} ${data.distance}: `, color: 'yellow' },
+      { text: `Select destination for ${data.targetName}`, color: 'white' },
+    ]);
+
+    this.emitStateUpdate();
+  }
+
+  // Maximum path calculation steps (safety limit to prevent infinite loops in edge cases)
+  private readonly MAX_FORCED_MOVEMENT_PATH_STEPS = 10;
+
+  /**
+   * Calculate the path from start to destination for forced movement.
+   * Steps through hexes in the direction of push/pull until reaching destination.
+   */
+  private calculateForcedMovementPath(
+    startPos: Axial,
+    destPos: Axial,
+    attackerPos: Axial,
+    movementType: 'push' | 'pull'
+  ): Axial[] {
+    const path: Axial[] = [];
+    let currentPos = { ...startPos };
+
+    // Step until we reach destination (max iterations for safety)
+    for (let step = 0; step < this.MAX_FORCED_MOVEMENT_PATH_STEPS; step++) {
+      // Find the neighbor that gets us closer to destination
+      // while still respecting push/pull direction
+      const neighbors = hexNeighbors(currentPos);
+      const currentDistFromAttacker = hexDistance(currentPos, attackerPos);
+
+      // Filter neighbors by direction requirement
+      const validNeighbors = neighbors.filter(n => {
+        const neighborDistFromAttacker = hexDistance(n, attackerPos);
+        if (movementType === 'push') {
+          return neighborDistFromAttacker > currentDistFromAttacker;
+        } else {
+          return neighborDistFromAttacker < currentDistFromAttacker;
+        }
+      });
+
+      // Find the neighbor closest to destination
+      let bestNeighbor: Axial | null = null;
+      let bestDistToDest = Infinity;
+
+      for (const neighbor of validNeighbors) {
+        const distToDest = hexDistance(neighbor, destPos);
+        if (distToDest < bestDistToDest) {
+          bestDistToDest = distToDest;
+          bestNeighbor = neighbor;
+        }
+      }
+
+      if (!bestNeighbor) {
+        // No valid path found - return what we have
+        break;
+      }
+
+      path.push(bestNeighbor);
+      currentPos = bestNeighbor;
+
+      // Check if we reached destination
+      if (currentPos.q === destPos.q && currentPos.r === destPos.r) {
+        break;
+      }
+    }
+
+    return path;
+  }
+
+  /**
+   * Handle entity_forced_moved event from backend.
+   * Updates entity position after forced movement is applied.
+   * Supports animated movement along a path if provided.
+   */
+  private handleEntityForcedMoved(data: EntityForcedMovedPayload): void {
+    // Update entity position based on entity type
+    if (data.entityType === 'monster') {
+      const monster = this.state.gameData?.monsters.find(m => m.id === data.entityId);
+      if (monster) {
+        monster.currentHex = { q: data.toHex.q, r: data.toHex.r };
+        // Trigger visual update for monster sprite with animation path
+        this.visualCallbacks.updateMonsterPosition?.(data.entityId, data.toHex, data.path);
+      }
+    } else if (data.entityType === 'character') {
+      const character = this.state.gameData?.characters.find(c => c.id === data.entityId);
+      if (character && character.currentHex) {
+        character.currentHex = { q: data.toHex.q, r: data.toHex.r };
+        // Trigger visual update for character sprite with animation path
+        this.visualCallbacks.moveCharacter?.(data.entityId, data.toHex, data.path);
+      }
+    }
+
+    // Log the movement
+    const actionLabel = data.movementType === 'push' ? 'pushed' : 'pulled';
+    this.addLog([
+      { text: `Target ${actionLabel} `, color: 'yellow' },
+      { text: `to (${data.toHex.q}, ${data.toHex.r})`, color: 'white' },
+    ]);
+
+    // Clear targeting state after movement applied
+    this.clearTargetingState();
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Handle forced_movement_skipped event from backend.
+   * Clears targeting state when push/pull is skipped or unavailable.
+   */
+  private handleForcedMovementSkipped(data: ForcedMovementSkippedPayload): void {
+    // Log the skip with reason
+    const actionLabel = data.movementType === 'push' ? 'Push' : 'Pull';
+    this.addLog([
+      { text: `${actionLabel} skipped`, color: 'gray' },
+      { text: data.reason ? `: ${data.reason}` : '', color: 'gray' },
+    ]);
+
+    // Clear targeting state
+    this.clearTargetingState();
+    this.emitStateUpdate();
+  }
+
+  /**
+   * Confirm forced movement to selected destination.
+   * Uses the path built up from step-by-step hex selections.
+   * Emits confirm_forced_movement event to backend.
+   */
+  public confirmForcedMovement(): void {
+    if (!this.state.pendingForcedMovement) {
+      console.warn('[GameStateManager] No pending forced movement to confirm');
+      return;
+    }
+
+    // Get the final destination from the path (last hex clicked)
+    const path = this.state.forcedMovementPath;
+    if (path.length === 0) {
+      console.warn('[GameStateManager] No path selected for forced movement');
+      return;
+    }
+
+    const destinationHex = path[path.length - 1];
+
+    const payload: ConfirmForcedMovementPayload = {
+      requestId: this.state.pendingForcedMovement.requestId,
+      attackerId: this.state.pendingForcedMovement.attackerId,
+      targetId: this.state.pendingForcedMovement.targetId,
+      destinationHex: { q: destinationHex.q, r: destinationHex.r },
+      movementType: this.state.pendingForcedMovement.movementType,
+      path: path.map(h => ({ q: h.q, r: h.r })), // Include full path for animation
+    };
+
+    console.log('[GameStateManager] Emitting confirm_forced_movement:', payload);
+    websocketService.emit('confirm_forced_movement', payload);
+    console.log('[GameStateManager] confirm_forced_movement emitted');
+
+    // Note: State is cleared by handleEntityForcedMoved on success
+    // or restored on error via the error handler
+  }
+
+  /**
+   * Skip forced movement (player chooses not to push/pull).
+   * Emits skip_forced_movement event to backend.
+   */
+  public skipForcedMovement(): void {
+    if (!this.state.pendingForcedMovement) {
+      console.warn('[GameStateManager] No pending forced movement to skip');
+      return;
+    }
+
+    const payload: SkipForcedMovementPayload = {
+      requestId: this.state.pendingForcedMovement.requestId,
+      attackerId: this.state.pendingForcedMovement.attackerId,
+      targetId: this.state.pendingForcedMovement.targetId,
+    };
+
+    websocketService.emit('skip_forced_movement', payload);
+
+    // Note: State is cleared by handleForcedMovementSkipped on success
+    // or restored on error via the error handler
   }
 
   /**
@@ -2234,6 +2535,13 @@ class GameStateManager {
         cardActionRange: 0,
         validHealHexes: [],
         validSummonHexes: [],
+        // Push/Pull targeting state
+        validForcedMovementHexes: [],
+        pendingForcedMovement: null,
+        forcedMovementPath: [],
+        forcedMovementRemainingDistance: 0,
+        forcedMovementCurrentPosition: null,
+        forcedMovementStartPosition: null,
         elementalState: null,
     };
     this.emitStateUpdate();

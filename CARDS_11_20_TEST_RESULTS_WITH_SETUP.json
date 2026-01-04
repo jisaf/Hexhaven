@@ -1,0 +1,128 @@
+{
+  "timestamp": "2026-01-03T12:49:52.202Z",
+  "setupStatus": "partial",
+  "gameCreated": false,
+  "turnActionPanelWorking": null,
+  "cards": {
+    "11": {
+      "name": "Earth Tremor",
+      "initiative": 35,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Earth Tremor"
+      ],
+      "selectionFound": false
+    },
+    "12": {
+      "name": "Phase Walk",
+      "initiative": 38,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Phase Walk"
+      ],
+      "selectionFound": false
+    },
+    "13": {
+      "name": "Radiant Blessing",
+      "initiative": 40,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Radiant Blessing"
+      ],
+      "selectionFound": false
+    },
+    "14": {
+      "name": "Ally Support",
+      "initiative": 42,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Ally Support"
+      ],
+      "selectionFound": false
+    },
+    "15": {
+      "name": "Shadow Strike",
+      "initiative": 45,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Shadow Strike"
+      ],
+      "selectionFound": false
+    },
+    "16": {
+      "name": "Self Heal",
+      "initiative": 48,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Self Heal"
+      ],
+      "selectionFound": false
+    },
+    "17": {
+      "name": "Stunning Blow",
+      "initiative": 50,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Stunning Blow"
+      ],
+      "selectionFound": false
+    },
+    "18": {
+      "name": "Teleport Strike",
+      "initiative": 52,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Teleport Strike"
+      ],
+      "selectionFound": false
+    },
+    "19": {
+      "name": "Toxic Blade",
+      "initiative": 55,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Toxic Blade"
+      ],
+      "selectionFound": false
+    },
+    "20": {
+      "name": "Line Attack",
+      "initiative": 58,
+      "status": "FAIL",
+      "turnActionPanelVisible": false,
+      "actionExecuted": false,
+      "errors": [
+        "Hand tab not found",
+        "Could not find card button for Line Attack"
+      ],
+      "selectionFound": false
+    }
+  }
+}

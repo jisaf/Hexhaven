@@ -226,6 +226,18 @@ export function useHexGrid(
     }
   }, []);
 
+  const showForcedMovementRange = useCallback((hexes: Axial[]) => {
+    if (hexGridRef.current) {
+      hexGridRef.current.showForcedMovementRange(hexes);
+    }
+  }, []);
+
+  const clearForcedMovementRange = useCallback(() => {
+    if (hexGridRef.current) {
+      hexGridRef.current.clearForcedMovementRange();
+    }
+  }, []);
+
   /**
    * Update monster position on the hex grid
    *
@@ -236,17 +248,23 @@ export function useHexGrid(
    *
    * @param monsterId - The unique identifier of the monster to move
    * @param newHex - The target hex coordinates in axial format
+   * @param movementPath - Optional path for animated movement (e.g., push/pull)
    */
-  const updateMonsterPosition = useCallback((monsterId: string, newHex: Axial) => {
+  const updateMonsterPosition = useCallback(async (monsterId: string, newHex: Axial, movementPath?: Axial[]) => {
     if (hexGridRef.current) {
       const sprite = hexGridRef.current.getMonster(monsterId);
       if (sprite) {
+        // If a movement path is provided, animate along it
+        if (movementPath && movementPath.length > 0) {
+          await sprite.animateMoveTo(movementPath);
+        }
+
         // Update monster data
         const monsterData = sprite.getMonster();
         const updatedMonster = { ...monsterData, currentHex: newHex };
         hexGridRef.current.updateMonster(monsterId, updatedMonster);
 
-        // Update sprite position
+        // Update sprite position (snap to final position if no animation, or ensure final position after animation)
         sprite.updatePosition(newHex);
 
         // Force PIXI to recalculate interactive bounds by re-parenting the sprite
@@ -370,6 +388,8 @@ export function useHexGrid(
     clearHealRange,
     showSummonPlacementRange,
     clearSummonPlacementRange,
+    showForcedMovementRange,
+    clearForcedMovementRange,
     updateMonsterPosition,
     updateCharacterHealth,
     updateMonsterHealth,
