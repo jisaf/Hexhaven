@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 Hexhaven Hex Map Exporter
-Generates clean hex map visualizations matching the scenario designer export logic
-Uses the same green color (#00ff00) as the PixiJS scenario designer export
+Generates clean and detailed hex map visualizations as both SVG and PNG files.
+SVG files use terrain-specific colors (green, orange, red).
+PNG files are generated at 1024x1024px resolution using ffmpeg.
 """
 
 import json
 import math
 import os
+import subprocess
 from pathlib import Path
 
 
@@ -193,6 +195,59 @@ class HexMapExporter:
 
         print(f"✅ Campaign export complete!\n")
 
+    def convert_svg_to_png(self, svg_file, png_file, size=1024):
+        """Convert SVG to PNG using ffmpeg"""
+
+        try:
+            cmd = [
+                'ffmpeg',
+                '-i', svg_file,
+                '-vf', f'scale={size}:{size}',
+                '-y',  # Overwrite output file
+                png_file
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, timeout=10)
+            return result.returncode == 0
+        except Exception as e:
+            return False
+
+
+def convert_directory_to_png(svg_dir, png_dir, size=1024):
+    """Convert all SVG files in a directory to PNG at specified size"""
+
+    svg_dir = Path(svg_dir)
+    png_dir = Path(png_dir)
+    png_dir.mkdir(parents=True, exist_ok=True)
+
+    svg_files = list(svg_dir.glob('**/*.svg'))
+    if not svg_files:
+        return 0
+
+    successful = 0
+    for svg_file in svg_files:
+        # Create corresponding PNG path with same directory structure
+        rel_path = svg_file.relative_to(svg_dir)
+        png_file = png_dir / rel_path.with_suffix('.png')
+        png_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            cmd = [
+                'ffmpeg',
+                '-i', str(svg_file),
+                '-vf', f'scale={size}:{size}:force_original_aspect_ratio=decrease,pad={size}:{size}:(ow-iw)/2:(oh-ih)/2:white',
+                '-y',
+                str(png_file)
+            ]
+            result = subprocess.run(cmd, capture_output=True, timeout=15)
+            if result.returncode == 0:
+                successful += 1
+                print(f"    ✓ {svg_file.name}")
+        except Exception as e:
+            print(f"    ✗ {svg_file.name} - {e}")
+
+    return successful
+
 
 def main():
     """Main entry point"""
@@ -235,21 +290,53 @@ def main():
         maps_dir_full / 'void-expansion'
     )
 
-    print("="*70)
-    print("✅ ALL HEX MAPS EXPORTED")
+    # Convert SVGs to PNG at 1024x1024
+    print("\n📸 Converting SVG files to PNG (1024x1024px)...")
+    print("\n  Converting CLEAN maps...")
+    clean_png_count = convert_directory_to_png(
+        maps_dir / 'arcane-conspiracy',
+        campaigns_dir / 'hex-maps-clean-png' / 'arcane-conspiracy'
+    )
+    clean_png_count += convert_directory_to_png(
+        maps_dir / 'void-expansion',
+        campaigns_dir / 'hex-maps-clean-png' / 'void-expansion'
+    )
+
+    print("\n  Converting DETAILED maps...")
+    detailed_png_count = convert_directory_to_png(
+        maps_dir_full / 'arcane-conspiracy',
+        campaigns_dir / 'hex-maps-png' / 'arcane-conspiracy'
+    )
+    detailed_png_count += convert_directory_to_png(
+        maps_dir_full / 'void-expansion',
+        campaigns_dir / 'hex-maps-png' / 'void-expansion'
+    )
+
+    print("\n" + "="*70)
+    print("✅ ALL HEX MAPS EXPORTED (SVG + PNG)")
     print("="*70)
     print("\n📁 Files generated:\n")
-    print("CLEAN MAPS (scenario designer export style):")
+    print("CLEAN MAPS (SVG):")
     print("  Location: hex-maps-clean/")
     print("  - arcane-conspiracy/*-clean.svg (15 maps)")
     print("  - void-expansion/*-clean.svg (15 maps)")
-    print("  Content: Pure green (#00ff00) hexes only, no decorations\n")
+    print("  Content: Terrain-colored hexes, no decorations\n")
 
-    print("DETAILED MAPS (with game elements):")
+    print("CLEAN MAPS (PNG 1024x1024px):")
+    print("  Location: hex-maps-clean-png/")
+    print(f"  - arcane-conspiracy/*.png ({clean_png_count // 2} maps)")
+    print(f"  - void-expansion/*.png ({clean_png_count // 2} maps)\n")
+
+    print("DETAILED MAPS (SVG):")
     print("  Location: hex-maps/")
     print("  - arcane-conspiracy/*.svg (15 maps)")
     print("  - void-expansion/*.svg (15 maps)")
-    print("  Content: Hexes + coordinates + legend + monsters + objectives")
+    print("  Content: Hexes + coordinates + legend + monsters + objectives\n")
+
+    print("DETAILED MAPS (PNG 1024x1024px):")
+    print("  Location: hex-maps-png/")
+    print(f"  - arcane-conspiracy/*.png ({detailed_png_count // 2} maps)")
+    print(f"  - void-expansion/*.png ({detailed_png_count // 2} maps)")
     print("\n" + "="*70)
     print("\n")
 
